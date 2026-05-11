@@ -1,0 +1,26 @@
+# T.optional
+
+An [absence](/reference/primitives#absence) primitive: a field that might be missing, present-as-`undefined`, or present with a value. Only meaningful inside `T.object(...)`.
+
+```ts
+T.optional(inner); // ~33% omitted, ~33% undefined, ~33% value
+T.optional(inner).weighted({ omitted: 1, undefined: 1, value: 2 });
+```
+
+Uniform at 1/3 each by default. Reweight any of the three named outcomes; weights are relative proportions. A weight of `0` disables that outcome (`{ omitted: 0 }` is always present — as `undefined` or as a value). Every weight zero throws; negative weights, `NaN`, and `Infinity` are invalid.
+
+Zeroing changes the _distribution_, not the _type_: `T.optional(x).weighted({ omitted: 0 })` still types the key as optional. A narrower kind (`T.undefinable`, a required field) is still how you change the type.
+
+:::note
+`T.optional` is **not** `T.omittable(T.undefinable(inner))`. Composing those two independent 50/50 rolls gives a 50/25/25 split, not a uniform 33/33/33 — so `T.optional` runs its own dedicated three-way roll instead. If you see uneven odds between omitted/undefined/value from a hand-rolled composition, this is why.
+:::
+
+Force the field off (e.g. in `.override()` or `.fabricate(overrides)`), use the exported `Omitted` sentinel:
+
+```ts
+import { Omitted } from "@ghostry/fabricator";
+
+WidgetFabricator.fabricate({ nickname: Omitted });
+```
+
+For omitted-or-present (no `undefined` value), use [`T.omittable`](/reference/primitives/omittable). For a key that's always present with a possibly-`undefined` value, use [`T.undefinable`](/reference/primitives/undefinable).

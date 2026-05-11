@@ -1,0 +1,37 @@
+# fabricator [Fabricate typed data from composable schemas.]
+
+fabricator builds test data from schemas you define — with full type inference, seeded reproducibility, and a small set of composable primitives covering scalars, collections, absence, recursion, and an escape hatch for anything else.
+
+```ts
+import { initialize } from "@ghostry/fabricator";
+
+const { T, Fabricator } = initialize({ seed: "1234" });
+
+const ProductSchema = T.object({
+  name: T.string.whereby({ length: { min: 1, max: 25 } }),
+  price: T.number.whereby({ min: 1, max: 500 }),
+  tags: T.array(T.string.whereby({ length: { max: 15 } })),
+});
+
+const item = new Fabricator(ProductSchema).fabricate();
+```
+
+:::steps
+
+### Start here
+
+[Installation](/start/installation), then the [quick start](/start/quick-start) and [mental model](/start/mental-model) — Registry, Schema, Fabricator, and why building is where randomness happens.
+
+### Guides
+
+[Reproducibility](/guides/reproducibility), [objects](/guides/objects), [composition](/guides/composition), [distributions](/guides/distributions), and pairing with [TypeBox](/guides/typebox) or your own [custom types](/guides/custom-types).
+
+### Primitives
+
+[Overview](/reference/primitives) groups them by the question you're holding; All in the sidebar is one page per name.
+
+:::
+
+:::note
+This library is at version `0.0.0` and not yet published. See [Limitations](/about/limitations) for what's not there yet.
+:::

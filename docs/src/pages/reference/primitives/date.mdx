@@ -1,0 +1,19 @@
+# T.date
+
+A [scalar](/reference/primitives#scalars).
+
+```ts
+T.date.whereby({ min: new Date("2020-01-01"), max: new Date() });
+T.date.whereby({
+  min: { value: new Date("2020-01-01"), exclusive: true },
+  max: new Date(),
+});
+T.date.past; // any instant from the earliest representable up to "now"
+T.date.future; // any instant from "now" up to the latest representable
+T.date.past.whereby({ min: new Date("2020-01-01") });
+T.date.future.whereby({ max: new Date("2030-01-01") });
+```
+
+`.past` / `.future` are usable bare, or refined with their own `.whereby()`. Both accept a `distribution` — see [Distributions](/guides/distributions). Exclusive `min`/`max` drop the excluded millisecond: `Date` stores a whole millisecond, so an exclusive end is the next (or previous) representable instant, not a fractional nudge.
+
+"Now" here means `initialize({ clock })`. By default that is the wall-clock instant of the `initialize()` call — so a bare `T.date.past` / `.future` draws relative to the actual present. Pass `initialize({ clock: someDate })` to freeze "now" to a fixture date, or `clock: "seeded"` to derive an arbitrary instant from the instance seed (drawn across the entire representable `Date` range — an implausible date is the expected outcome of that policy). See [What "now" means](/guides/reproducibility#what-now-means).

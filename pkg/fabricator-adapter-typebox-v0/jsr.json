@@ -1,0 +1,6 @@
+{
+  "name": "@ghostry/fabricator-adapter-typebox-v0",
+  "version": "0.0.1",
+  "exports": "./src/index.ts",
+  "publish": { "exclude": ["test", "src/playground.ts"] }
+}

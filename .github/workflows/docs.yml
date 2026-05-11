@@ -1,0 +1,48 @@
+name: Docs
+
+on:
+  workflow_call:
+    inputs:
+      upload:
+        required: false
+        type: boolean
+        default: false
+        description: >
+          Upload the built site as a GitHub Pages artifact. Off for pull
+          requests, which build only to validate.
+
+jobs:
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Configure Pages
+        if: ${{ inputs.upload }}
+        uses: actions/configure-pages@v5
+
+      - name: Build
+        run: bun run build
+
+      ##
+      # `path` is repo-root-relative regardless of `working-directory` above,
+      # which only applies to `run:` steps.
+      #
+      - name: Upload
+        if: ${{ inputs.upload }}
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/dist/public

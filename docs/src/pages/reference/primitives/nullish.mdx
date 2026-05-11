@@ -1,0 +1,12 @@
+# T.nullish
+
+An [absence](/reference/primitives#absence) primitive: a value that is the wrapped inner, `null`, or `undefined`. An ordinary schema, usable anywhere.
+
+```ts
+T.nullish(T.string); // string | null | undefined, uniform 1/3 each
+T.nullish(inner).weighted({ null: 1, undefined: 1, value: 2 });
+```
+
+`T.nullish` is a dedicated three-way roll for the same reason [`T.optional`](/reference/primitives/optional) is: `T.nullable(T.undefinable(inner))` would give 50/25/25, not a uniform split.
+
+For only `null` vs a value, use [`T.nullable`](/reference/primitives/nullable). For only `undefined` vs a value, use [`T.undefinable`](/reference/primitives/undefinable).

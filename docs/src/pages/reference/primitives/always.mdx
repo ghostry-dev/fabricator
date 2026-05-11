@@ -1,0 +1,15 @@
+# T.always
+
+A [literal](/reference/primitives#literals-and-choices): exactly one fixed value, every time.
+
+```ts
+T.always("electronics");
+T.always(42);
+T.always({ status: "active" });
+```
+
+Holds any value at all — not capped to strings/numbers/booleans. Always fabricates to exactly that value. No `.as()`: a fixed value has nothing meaningful left to override.
+
+For a _fresh_ value of a kind this library has no primitive for (a `Map`, a `URL`, a class instance), use [`T.opaque`](/reference/primitives/opaque) instead — `T.always(someMap)` types correctly but hands back the same reference every call.
+
+To draw one of several fixed values, see [`T.enum`](/reference/primitives/enum). To draw one of several schemas, see [`T.choice`](/reference/primitives/choice).

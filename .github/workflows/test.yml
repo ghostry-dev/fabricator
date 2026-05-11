@@ -1,0 +1,66 @@
+name: Test
+
+on:
+  workflow_call:
+    inputs:
+      build-run-id:
+        required: true
+        type: string
+        description: The run ID of the build workflow that generated the artifacts to test.
+
+jobs:
+  test:
+    name: Test
+    permissions:
+      actions: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download the fabricator build
+        uses: actions/download-artifact@v8
+        with:
+          name: pkg-fabricator
+          path: pkg/fabricator/dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.build-run-id }}
+          repository: ${{ github.repository }}
+
+      - name: Download the fabricator-adapter-typebox-v0 build
+        uses: actions/download-artifact@v8
+        with:
+          name: pkg-fabricator-adapter-typebox-v0
+          path: pkg/fabricator-adapter-typebox-v0/dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.build-run-id }}
+          repository: ${{ github.repository }}
+
+      - name: Download the fabricator-extension-faker-v10 build
+        uses: actions/download-artifact@v8
+        with:
+          name: pkg-fabricator-extension-faker-v10
+          path: pkg/fabricator-extension-faker-v10/dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.build-run-id }}
+          repository: ${{ github.repository }}
+
+      - name: Test fabricator
+        working-directory: pkg/fabricator
+        run: bun run test
+
+      - name: Test fabricator-adapter-typebox-v0
+        working-directory: pkg/fabricator-adapter-typebox-v0
+        run: bun run test
+
+      - name: Test fabricator-extension-faker-v10
+        working-directory: pkg/fabricator-extension-faker-v10
+        run: bun run test

@@ -1,0 +1,13 @@
+# T.array
+
+A [collection](/reference/primitives#collections): one shape, a fuzzed count.
+
+```ts
+T.array(T.string.whereby({ length: { max: 15 } })).whereby({
+  length: { min: 0, max: 10 },
+});
+```
+
+Every element comes from the same schema, and the count is drawn uniformly from `[length.min, length.max]` inclusive by default. `length.min` defaults to `0` — an empty array is a legitimate outcome when you don't set a minimum, not an edge case to special-case around. Either end can be exclusive: `{ min: { value: 0, exclusive: true }, max: 10 }` never yields empty.
+
+For a fixed number of independently typed slots, see [`T.tuple`](/reference/primitives/tuple). For drawn keys instead of indices, see [`T.record`](/reference/primitives/record).

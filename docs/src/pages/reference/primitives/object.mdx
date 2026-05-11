@@ -1,0 +1,7 @@
+# T.object
+
+A [structure](/reference/primitives#structures): the primitive most other things compose inside.
+
+See [Objects](/guides/objects) for the full treatment of nesting, computed fields, sequences, and overrides, and [Composition](/guides/composition) for `.extend` / `.refine` / `.override`.
+
+Field-only rules that only make sense inside an object: [`T.omittable`](/reference/primitives/omittable), [`T.optional`](/reference/primitives/optional), and `compute` via `.refine(({ compute }) => ...)` (never `T.compute`). For a schema that references itself, see [`T.recursive`](/reference/primitives/recursive).

@@ -1,0 +1,12 @@
+# T.undefinable
+
+An [absence](/reference/primitives#absence) primitive: a value that is either the wrapped inner or literally `undefined`. An ordinary schema, usable anywhere — a top-level Fabricator, an array element, or an object field that stays required.
+
+```ts
+T.undefinable(T.string); // string | undefined, 50/50
+T.undefinable(inner).weighted({ undefined: 1, value: 9 }); // undefined 10% of the time
+```
+
+A weight of `0` disables that outcome (`{ undefined: 0 }` always produces the inner value). Every weight zero throws; negative weights, `NaN`, and `Infinity` are invalid. Zeroing changes the _distribution_, not the _type_: the value is still `T | undefined`.
+
+This is a fact about the _value_, not about whether a key exists. For a field that sometimes isn't on the object at all, use [`T.omittable`](/reference/primitives/omittable). For omitted / `undefined` / value as a three-way split, use [`T.optional`](/reference/primitives/optional).

@@ -1,0 +1,10 @@
+# T.bigint
+
+A [scalar](/reference/primitives#scalars). No bare form — same reasoning as [`T.string`](/reference/primitives/string): there's no natural bound to fuzz to, so `.whereby({ min, max })` is required.
+
+```ts
+T.bigint.whereby({ min: 0n, max: 1000n });
+T.bigint.whereby({ min: { value: 0n, exclusive: true }, max: 1000n });
+```
+
+`T.bigint.as(produce)` layers a custom producer over the schema — see [`T.opaque`](/reference/primitives/opaque).

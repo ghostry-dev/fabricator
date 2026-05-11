@@ -1,0 +1,53 @@
+# Installation
+
+:::warning
+`@ghostry/fabricator` is at version `0.0.0` and has not been published yet. `bun add @ghostry/fabricator` will not resolve until a first release ships. This page documents how installation will work once it does.
+:::
+
+fabricator ships as ESM only, with zero runtime dependencies.
+
+:::code-group
+
+```bash [bun]
+bun add @ghostry/fabricator
+```
+
+```bash [npm]
+npm install @ghostry/fabricator
+```
+
+```bash [jsr]
+bunx jsr add @ghostry/fabricator
+```
+
+:::
+
+## Requirements
+
+- An ESM-capable runtime — Bun, Node, Deno, or a bundler that supports ES modules
+- TypeScript — while not strictly required, it is highly recommended (fabricator is TypeScript-first; the value types you get back from `.fabricate()` are inferred from your schema, not hand-annotated)
+
+## Optional: a dynamic data library
+
+By default, fabricator generates fuzzing values, not realistic-looking ones — `T.string.whereby({ length: { max: 20 } })` gives you a random string, not a name. When you want output that reads like real data, add the faker extension:
+
+```bash
+bun add @ghostry/fabricator-extension-faker-v10 @faker-js/faker
+```
+
+```ts
+import { en } from "@faker-js/faker";
+import { initialize, registry } from "@ghostry/fabricator";
+import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
+
+const { T } = initialize({
+  types: registry.extend(fakerExtension({ locale: en })),
+});
+
+const schema = T.faker.person.fullName();
+// T.string using faker values when fabricated
+```
+
+Faker's generators draw from fabricator's own seed there, so those fields replay like every other one. See [faker](/guides/faker) for the full surface.
+
+You can also reach any data library by hand through `.as(...)` or `T.opaque` — see [`T.opaque`](/reference/primitives/opaque), including what it takes to keep such fields reproducible.

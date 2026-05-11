@@ -1,0 +1,77 @@
+# Primitives overview
+
+Every one of these is reached through `T`, the object `initialize()` returns — there's no other way to name a primitive. See [Public API](/reference/api) for why the entry point itself exports almost nothing else.
+
+The rest of this page is grouped by the question you're holding. Each name below has its own page; the All sidebar lists them alphabetically.
+
+Two things not in any group, deliberately: `object.compute` is only ever reached through `.refine(({ compute }) => ...)`'s closure-scoped `compute`, never named directly (see [Objects](/guides/objects#computed-fields)); and `self`, used inside `T.recursive(body)`, is only ever the placeholder `body` is handed, never `T.self` (see [`T.recursive`](/reference/primitives/recursive)).
+
+## Two things that trip people up early
+
+- **[`T.string`](/reference/primitives/string) and [`T.bigint`](/reference/primitives/bigint) have no bare form.** There's no natural bound to fuzz either to, so building `T.string` alone fails at fabricate-time — `.whereby({ length })` (or `.as(...)`) is required first.
+- **Weighted picks ([`T.enum`](/reference/primitives/enum), [`T.choice`](/reference/primitives/choice), `.weighted()` on the [absence](#absence) primitives) don't need weights that sum to anything in particular** — they're read as relative proportions, numerator over the sum of all values given. A weight of `0` disables that outcome; every weight zero throws. Negative weights, `NaN`, and `Infinity` are invalid.
+
+## Scalars
+
+A single value of one JavaScript type, drawn (or, for [`T.symbol`](/reference/primitives/symbol), minted).
+
+- [`T.string`](/reference/primitives/string) — no bare form; `.whereby({ length })` required
+- [`T.number`](/reference/primitives/number) — unbounded bare, or `.whereby({ min, max })`; `.integer` for wholes
+- [`T.bigint`](/reference/primitives/bigint) — no bare form, same reasoning as `T.string`
+- [`T.boolean`](/reference/primitives/boolean) — fair coin, or `.weighted({ true, false })`
+- [`T.date`](/reference/primitives/date) — bounded instants, plus `.past` / `.future`
+- [`T.symbol`](/reference/primitives/symbol) — `Symbol()`, or `.keyed(description)`
+
+## Literals and choices
+
+Four ways to pick from a fixed set — split along two axes: fixed value vs. weighted draw, and value vs. schema.
+
+|                                            | Picks a                    | Members are     | Bare form                   |
+| ------------------------------------------ | -------------------------- | --------------- | --------------------------- |
+| [`T.always`](/reference/primitives/always) | —                          | any fixed value | yes                         |
+| [`T.enum`](/reference/primitives/enum)     | value                      | any value       | no — `.uniform`/`.weighted` |
+| [`T.choice`](/reference/primitives/choice) | schema, then fabricates it | any schema      | no — `.uniform`/`.weighted` |
+
+## Absence
+
+Seven ways for a value to _not quite be there_, and they are not interchangeable. Most confusion here comes from picking the wrong axis, not from the primitives themselves.
+
+Two independent questions a schema can answer:
+
+- **Is the key present on the object at all?** — a structural fact about the enclosing `T.object`, meaningless outside one.
+- **Is the value, once present, `null` or `undefined` or something else?** — an ordinary fact about a value, usable anywhere a schema is usable: a top-level Fabricator, an array element, an object field.
+
+| I want...                                                                      | Use                                                         | Key present? | Value when "absent"                  | Object-only? |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------- | ------------ | ------------------------------------ | ------------ |
+| A value that is always exactly `null`                                          | [`T.null`](/reference/primitives/null)                      | —            | `null`                               | no           |
+| A value that is always exactly `undefined`                                     | [`T.undefined`](/reference/primitives/undefined)            | —            | `undefined`                          | no           |
+| A field that's always present, but the value might be `undefined`              | [`T.undefinable(inner)`](/reference/primitives/undefinable) | always       | `undefined`                          | no           |
+| A field that's always present, but the value might be `null`                   | [`T.nullable(inner)`](/reference/primitives/nullable)       | always       | `null`                               | no           |
+| A field that's always present, value might be `null` _or_ `undefined`          | [`T.nullish(inner)`](/reference/primitives/nullish)         | always       | `null` or `undefined`                | no           |
+| A field that's sometimes missing from the object entirely                      | [`T.omittable(inner)`](/reference/primitives/omittable)     | sometimes    | _(key doesn't exist)_                | yes          |
+| A field that might be missing, present-as-`undefined`, or present with a value | [`T.optional(inner)`](/reference/primitives/optional)       | sometimes    | _(key doesn't exist)_ or `undefined` | yes          |
+
+[`T.omittable`](/reference/primitives/omittable) and [`T.optional`](/reference/primitives/optional) only make sense as a field inside `T.object(...)`. [`T.nullable`](/reference/primitives/nullable), [`T.nullish`](/reference/primitives/nullish), and [`T.undefinable`](/reference/primitives/undefinable) are ordinary values, usable anywhere.
+
+A field that lands on "omitted" or "null" or "undefined" never calls its wrapped schema's `.fabricate()` — the inner draw is skipped entirely on that outcome. Every field already has its own independent stream by then, so skipping a draw only affects that field's own next call, never a sibling's. See [Reproducibility](/guides/reproducibility).
+
+## Collections
+
+Three ways to fabricate more than one value, distinguished by whether the shape is repeated or fixed, and whether positions are indices or keys.
+
+|                                            | Positions   | Shape                  | Count                |
+| ------------------------------------------ | ----------- | ---------------------- | -------------------- |
+| [`T.array`](/reference/primitives/array)   | index       | same for every element | fuzzed               |
+| [`T.tuple`](/reference/primitives/tuple)   | index       | independent per slot   | fixed                |
+| [`T.record`](/reference/primitives/record) | key (drawn) | same for every value   | fuzzed, may collapse |
+
+## Structures
+
+- [`T.object`](/reference/primitives/object) — the primitive most other things compose inside; [Objects](/guides/objects) is the full treatment
+- [`T.recursive`](/reference/primitives/recursive) — trees, linked structures, a generic JSON value: a schema that references itself
+
+## Escape hatch
+
+- [`T.opaque`](/reference/primitives/opaque) — a `Map`, a `Set`, a `URL`, a class instance: anything this library has no dedicated kind for
+
+Most other primitives also have `.as(produce)` for layering a custom producer over an existing kind. That's an override of something that already draws; `T.opaque` is when there is no kind to override. See [`T.opaque`](/reference/primitives/opaque) for the distinction, and [Custom types](/guides/custom-types) for pairing `.as()` with a data-generation library.

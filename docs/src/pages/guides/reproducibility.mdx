@@ -1,0 +1,228 @@
+# Reproducibility
+
+Every `initialize()` instance has a [clock](#what-now-means) and an optional [seed](#seeds-are-optional-mixers). The same seed, clock, and [attribution policy](#where-a-stream-is-attributed) always produce the same data. By default `clock` is the wall-clock instant of that `initialize()` call and `seed` is empty, so an unconfigured instance varies by run, has realistic dates, and replays from `context.clock` alone. Pass `clock: "seeded"` when `seed` itself should be the reproducibility unit (at the cost of an implausible "now").
+
+## Seeds are optional mixers
+
+```ts
+const { T, Fabricator, seed } = initialize({ seed: "1234" });
+```
+
+`seed` is a mixer composed into every stream beside `clock`. Omit it and the seed is empty — wall-clock `clock` is the run's entropy. An unconfigured run is still replayable: log `context.clock` after fabricating, and pass it back as `clock: new Date(logged)`. If you also passed a `seed`, log that too.
+
+:::tip
+Seeds are strings, not numbers — `seed: "1234"`, not `seed: 1234`.
+:::
+
+## Env-var seeding
+
+If no `seed` is passed to `initialize()`, these environment variables are checked, in order. None of them generate a value: if all are unset, the seed stays empty.
+
+1. `FABRICATOR_SEED` — this library's own override
+2. `SEED` — a more generic, informally-conventional name
+3. `RANDOM_SEED` — likewise
+
+Useful for pinning a mixer across a test run without touching any call site. It does **not** pin `clock`: an unconfigured instance still captures wall-clock time, so replay still needs `context.clock` (or an explicit `clock` / `clock: "seeded"`).
+
+```bash
+FABRICATOR_SEED=repro-1234 bun test
+```
+
+## Isolation between instances
+
+Each `initialize()` call captures its own seeded generator and its own internal stream state. Independently initialized instances never interfere with each other — safe for parallel tests that each pick their own seed, and safe to run two unrelated fabricators in the same process without one perturbing the other's output.
+
+## Where a stream is attributed
+
+Randomness is assigned in two steps. First, once per `new Fabricator(...)` call, that _construction_ is rooted — by default, at the file that called it. Then every field inside it draws from a stream keyed by its own position in the schema (a field name, a tuple slot, a choice option) plus that root — this is why two `T.number` fields in two different files never collide, and why inserting, removing, or renaming a field never disturbs any of its siblings: a field's stream depends on where it sits, never on how many other fields were dispatched before it.
+
+`initialize({ attribution })` controls how a construction's file gets normalized before it becomes part of that root:
+
+```ts
+attribution?:
+  | { kind: "rooted"; root: string }   // relative to an explicit root
+  | { kind: "call site" }              // relative to wherever initialize() was called — the default
+  | { kind: "none" }                   // no file at all
+```
+
+- **`{ kind: "rooted", root }`** expresses every file relative to `root` — an absolute path, or a `file://` URL like `new URL("..", import.meta.url).href` (no `node:path` needed). `root` is a normalization detail, never entropy: moving it without moving the files underneath changes nothing about the data produced.
+- **`{ kind: "call site" }`**, the default, is `"rooted"` at the directory of whichever file called `initialize()`. Reach for an explicit `"rooted"` root instead when multiple `initialize()` calls across a monorepo might resolve to the same relative path from their own call sites (two packages each with a `test/index.test.ts`, say) and share a seed — that's the one way two unrelated files' roots can collide under `"call site"`.
+- **`{ kind: "none" }`** drops file attribution entirely: every construction, anywhere in the instance, draws its root from one shared counter. Maximally portable — nothing about a file path can ever influence a seed — but every construction now depends on every other: adding, removing, or reordering a _construction_ anywhere in the instance shifts every later one. Fields within one construction are unaffected either way, since they're keyed by their own position, not by dispatch order.
+
+A file that falls outside the resolved root (above it, or in an unrelated directory) is expressed with a leading `..` rather than left as an absolute path, so it stays stable as long as both locations move together under the same checkout. The one case nothing can smooth over is a file genuinely outside the checkout — there, the `..` count itself depends on where the checkout happens to sit, and no attribution scheme changes that.
+
+Two constructions of the same schema from the same file, by default, still get different data — each is assigned the next available index for that file, so calling `new Fabricator(schema)` twice in a row never silently hands back identical results.
+
+## Overriding a seed per construction
+
+```ts
+new Fabricator(schema, { seed: "fixed-user" });
+```
+
+A per-construction `seed` forks a brand-new, fully isolated source from exactly that value — the same seed reproduces the same result no matter which file it's constructed from, which instance built it, or how that instance was itself seeded. Reach for this when you want one exact fixture, always, regardless of everything else about the run — reseeding the whole suite for a wider fuzz pass won't touch it. It keeps the instance's own `clock`, though — a construction asking for its own seed isn't asking for a different "now" — so a fixture built this way from two instances only matches if those instances also agree on their clock (both captured the same wall-clock instant, both `"seeded"` from the same seed, or both given the same explicit `clock`); see [What "now" means](#what-now-means) below.
+
+That last part is also the limit of what a _bare_ seed can express: a fixture that should stay exactly the same no matter how the run is reseeded. For an identity that should instead keep moving when the instance is reseeded — a schema's registered name, a test's own id — wrap the seed in `layer(...)` instead:
+
+```ts
+import { layer } from "@ghostry/fabricator";
+
+new Fabricator(schema, { seed: layer("some-identity") });
+```
+
+This still forks an isolated source, but composes `"some-identity"` onto the instance's own seed (`[...instance.seed, "some-identity"]`) rather than replacing it outright — so the construction still varies when the instance is reseeded, the one thing a bare seed deliberately can't do. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below for the full mechanism, and [Deriving a related instance: fork](#deriving-a-related-instance-fork) for the same idea one level up — applied to a whole derived instance, rather than one construction at a time.
+
+## Deriving a related instance: fork
+
+`initialize()` mints one instance. `fork` mints a related one, laid over the instance it was called on:
+
+```ts
+const base = initialize({ seed: "base" });
+
+const tenant = base.fork({ seed: "tenant-7" });
+tenant.seed; // ["tenant-7"] — replaced
+```
+
+Anything the overlay names overrides; anything it omits inherits — `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the seed composes. The exception is an explicit `clock: "seeded"`: that sentinel re-derives from whatever seed the fork ends up with (see [What "now" means](#what-now-means) below), so `fork({ seed: layer(...) })` without also overriding `clock` gets a _different_ `"seeded"` clock than its base.
+
+By default a fork's `seed` _replaces_ the base's outright — the ordinary meaning `seed` has everywhere in this library. To compose onto the base's seed instead, reach for `layer(...)`:
+
+```ts
+const tenant = base.fork({ seed: layer("tenant-7") });
+tenant.seed; // ["base", "tenant-7"] — composed
+```
+
+See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below — the same helper works identically at three levels: `fork`, `wrap` ([below](#making-a-fork-ambient-wrap)), and a single `new Fabricator(schema, { seed })` call.
+
+`attribution` is resolved once, when `fork()` itself is called — not deferred to whenever the derived instance first constructs. So a fork inherits its base's _already-resolved_ root even when called from an entirely different file, and a fork given `{ attribution: { kind: "call site" } }` explicitly re-roots at `fork()`'s own call site, not the base's.
+
+## Composing instead of replacing: layer(...)
+
+A bare `seed` always means the same thing in this library: replace whatever seed applied before, entirely. `layer(seed)` marks the opposite intent at the call site — append onto whatever seed is already in effect, rather than discard it:
+
+```ts
+import { initialize, layer } from "@ghostry/fabricator";
+
+const base = initialize({ seed: "base" });
+
+base.fork({ seed: "a" }).seed; // ["a"]         — replaced
+base.fork({ seed: layer("a") }).seed; // ["base", "a"] — composed
+```
+
+`layer` works identically everywhere a `seed` is accepted against some base:
+
+- **`fork({ seed: layer(...) })`** — composes onto the instance's own seed.
+- **`wrap({ seed: layer(...) })`** — composes onto whichever `wrap` frame is currently active ([below](#making-a-fork-ambient-wrap)) — so nested `wrap`s accumulate.
+- **`new Fabricator(schema, { seed: layer(...) })`** — composes onto the instance's seed (or the active `wrap` frame's, if the construction happens inside one), for a single construction rather than a whole derived instance.
+
+Reach for `layer(...)` any time an identity — a tenant id, a test's own name, a schema's registered name — should still vary when the surrounding run is reseeded. A bare seed is for the opposite case: a fixture that must stay exactly the same no matter what.
+
+## Making a fork ambient: wrap
+
+`fork` derives a related instance; `wrap` makes one _ambient_ for a block of code, so ordinary calls inside it pick it up with no plumbing:
+
+```ts
+const { T, Fabricator, combinatorial, wrap, context } = initialize({
+  seed: "base",
+});
+
+wrap({ seed: layer("a") }, (scope) => {
+  new Fabricator(T.number).fabricate(); // picks up the wrap automatically
+  new scope.Fabricator(T.number).fabricate(); // identical source, used explicitly
+  [...combinatorial(T.boolean)]; // also picks up the wrap
+});
+```
+
+`wrap` reaches every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` call made while it's active — on the instance `wrap` was called on, or on any other instance derived from the same root `initialize()` call, including a `fork` created before the `wrap` even started. The block also receives the fork directly, as `scope`: reach for it when explicit is clearer, or when work needs to survive past the block's first `await` (see below).
+
+Nested `wrap`s compose the same way `layer(...)` composes anywhere else — each lays its overlay over whichever `wrap` is _currently_ active, not over the instance it was called on:
+
+```ts
+wrap({ seed: layer("a") }, () => {
+  wrap({ seed: layer("b") }, (inner) => {
+    inner.seed; // [...base.seed, "a", "b"]
+  });
+});
+```
+
+A bare (non-layered) `seed` at any nesting depth still replaces outright, discarding every enclosing layer.
+
+### The synchronous boundary
+
+`wrap` only affects _synchronous_ code. A build reached after an `await` inside the block sees the instance's own configuration again, not the wrap's — silently, with no error:
+
+```ts
+await wrap({ seed: layer("a") }, async (scope) => {
+  new Fabricator(T.number).fabricate(); // wrapped
+  await something();
+  new Fabricator(T.number).fabricate(); // NOT wrapped — the ambient frame is gone
+  new scope.Fabricator(T.number).fabricate(); // still wrapped — scope isn't ambient, it's just a value
+});
+```
+
+`scope` is the answer for any work that needs the wrap's configuration on the far side of an `await`: it's an ordinary `Instance`, so it works exactly like one, with no time limit.
+
+### `context`
+
+`instance.context` reads whatever configuration is in effect _right now_ — the active `wrap` frame's, or the instance's own outside any `wrap`:
+
+```ts
+wrap({ seed: layer("a") }, () => {
+  context.seed; // [...base.seed, "a"] — same as scope.seed, read ambiently
+});
+```
+
+It's a live view, not a snapshot: a `context` reference held onto before a `wrap` still reflects it while active, and reverts once the `wrap` ends.
+
+## Which field gets which randomness
+
+Two different questions get asked about reproducibility, and they have different answers:
+
+**"Does skipping a field change what other fields produce?"** No. A field's stream is derived from its own structural path within the schema — its field name, its position in a tuple, and so on — never from how many fields were dispatched before it. Adding, removing, reordering, or renaming a field changes nothing about any other field's own randomness.
+
+**"Does skipping a _draw_ at fabricate-time change other fields?"** Also no. Once a field has its own private stream, calling `.fabricate()` conditionally (e.g. an [omittable](/reference/primitives/omittable) field that only draws its inner value when its presence roll says "present") only affects that field's own position in its own stream on the _next_ call. It can't touch any sibling field, because by that point every field already has an independent generator instance. This is why `object.omittable`/`object.optional`/`nullable`/`undefinable` all skip their wrapped value's draw entirely when the roll doesn't need it — it's free, and it costs nothing in reproducibility.
+
+The practical upshot: schema edits never perturb unrelated fields, and calling `.fabricate()` fewer times within an already-built Fabricator never does either.
+
+## `.trace`
+
+Every built Fabricator records where its randomness comes from, on a required `trace` property — including nodes that never draw of their own (a bare `T.object`, `T.always`). That is what makes a nested subtree replayable.
+
+```ts
+const NameField = new Fabricator(T.string.whereby({ length: { max: 20 } }));
+NameField.fabricate();
+
+NameField.trace;
+// { seed: ["default-seed"], clock: 1234567890000, root: "attributed", file: "tests/user.test.ts", path: [], kind: "string", ordinal: 0 }
+```
+
+The result is the fixed tuple that field's stream was hashed from — `seed` is the _instance's_ seed (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [What "now" means](#what-now-means) below — every field's stream depends on it, not just a `T.date` field's), `root` is how `file` and `ordinal` were resolved (`"attributed"` under a default instance and under `{ kind: "none" }`, `"unattributed"` under `new Fabricator(s, { seed })`, `"counted"` inside a `T.recursive` expansion), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction, among those sharing `file`, this one is. `file` is relative to the instance's attribution root under `"rooted"`/`"call site"` (see [Where a stream is attributed](#where-a-stream-is-attributed)), and `undefined` under an explicitly seeded construction, under `{ kind: "none" }`, or inside a recursive expansion — `root` says which.
+
+`new Fabricator(schema, trace)` reproduces exactly what that schema produced as a nested node of a larger construction: pass the node's own schema plus `node.trace`. The same sequence of `.fabricate()` calls yields the same values; the trace does not jump to a later draw.
+
+Three values are not a function of the node's own stream. Replay the parent instead:
+
+- a `.refine()` compute field — `.fabricate()` throws without the parent object
+- a `recursive.self` node — `.fabricate()` throws without the enclosing `T.recursive`
+- an `.override()` `[Fixed]` field — replaying the field's own schema yields the drawn value the parent discarded
+
+## What "now" means
+
+`T.date.past`/`T.date.future` (and any custom `.as(produce)`/`T.opaque` producer that reads `clock` off its context) resolve "now" against `initialize({ clock })`:
+
+```ts
+initialize(); // wall-clock instant of this call — the default
+initialize({ clock: new Date("2024-06-01") }); // pinned to that instant
+initialize({ seed: "abc", clock: "seeded" }); // derived from the seed
+```
+
+The default is the wall-clock instant captured at `initialize()` — realistic dates, a varied run each process, and one number (`context.clock`) to log for replay. Pass a fixed `Date` to freeze "now" (and, because `clock` sits in every leaf's trace, the rest of the run unless `seed` also differs). Pass `"seeded"` to derive a fixed instant from the instance seed instead — drawn across the _entire_ representable `Date` range, so a wildly implausible date is the expected outcome of that policy, not a bug. `"seeded"` is what makes `seed` alone the reproducibility unit, with no dependence on wall-clock time.
+
+`clock` composes with `seed` the same way `fork`/`wrap` already do: a captured or explicit instant is inherited as-is by a `fork`/`wrap` that doesn't override it. An explicit `"seeded"` clock is the exception — `fork({ seed: layer(...) })` without also overriding `clock` re-derives "now" from the composed seed.
+
+## Bring your own PRNG
+
+```ts
+initialize({ seed: "1234", algorithm: (seed) => myPrng(seed) });
+```
+
+`algorithm` is a factory: given the seed, it returns a `() => number` in `[0, 1)` — a drop-in replacement for `Math.random`. It's seeded the same way the built-in generator is, so output stays reproducible. Defaults to a built-in `sfc32` generator.

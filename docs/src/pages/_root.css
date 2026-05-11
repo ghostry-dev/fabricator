@@ -1,0 +1,117 @@
+/**
+ * Brand tokens from the ghostry mark:
+ *   #000000  black field
+ *   #9378ff  light lavender (dark-mode accent)
+ *   #7551ff  mid purple
+ *   #5633ff  indigo
+ *   #4c51ff  electric blue (light-mode accent)
+ *   #292ca3  deep navy (dark borders / receding facet)
+ *
+ * Accent itself is set via `accentColor` in vocs.config.ts so Vocs can
+ * derive the rest of the accent scale. This file tints the gray ramp
+ * and surfaces toward the same indigo, rather than leaving them neutral.
+ */
+:root {
+  --vocs-color-gray1: oklch(0.1 0.03 275);
+  --vocs-color-gray2: oklch(0.14 0.032 275);
+  --vocs-color-gray3: oklch(0.18 0.034 275);
+  --vocs-color-gray4: oklch(0.22 0.036 275);
+  --vocs-color-gray5: oklch(0.27 0.04 275);
+  --vocs-color-gray6: oklch(0.34 0.08 275);
+  --vocs-color-gray7: oklch(0.48 0.07 275);
+  --vocs-color-gray8: oklch(0.55 0.06 275);
+  --vocs-color-gray9: oklch(0.64 0.05 275);
+  --vocs-color-gray10: oklch(0.72 0.04 275);
+  --vocs-color-gray11: oklch(0.84 0.03 275);
+  --vocs-color-gray12: oklch(0.92 0.02 275);
+  --vocs-color-gray13: oklch(0.96 0.015 275);
+  --vocs-color-gray14: oklch(0.985 0.012 275);
+
+  --vocs-background-color-primary: light-dark(#f6f4ff, #000000);
+  --vocs-background-color-surface: light-dark(#ffffff, #0c0c12);
+  --vocs-background-color-surfaceMuted: light-dark(#efeaff, #0a0a14);
+  --vocs-background-color-surfaceTint: light-dark(#ece8ff, #1a1a2e);
+
+  --vocs-text-color-primary: light-dark(#1a1730, #ece8ff);
+  --vocs-text-color-secondary: light-dark(#4a4670, #b8b3d6);
+  --vocs-text-color-muted: light-dark(#6b6790, #8a86a8);
+  --vocs-text-color-heading: light-dark(#0d0b18, #f7f5ff);
+  --vocs-text-color-link: var(--vocs-color-accent);
+  --vocs-text-color-link-hover: light-dark(#5633ff, #b8a4ff);
+
+  --vocs-border-color-primary: light-dark(#ddd6ff, #191b66);
+  --vocs-border-color-secondary: light-dark(
+    #ece8ff,
+    color-mix(in srgb, #191b66 45%, #000)
+  );
+
+  --vocs-background-color-code-block: light-dark(#f3f0ff, #080810);
+  --vocs-background-color-inline-code: light-dark(#ece8ff, #0c0c12);
+  --vocs-background-color-code-highlighted: light-dark(
+    #ddd6ff,
+    color-mix(in srgb, #4c51ff 22%, #080810)
+  );
+  --vocs-border-color-code-highlighted: light-dark(#c4b8ff, #4c51ff);
+
+  --vocs-color-info: light-dark(#4c51ff, #9378ff);
+  --vocs-color-info-hover: light-dark(#5633ff, #b8a4ff);
+  --vocs-background-color-info-tint: color-mix(
+    in srgb,
+    var(--vocs-color-info) 10%,
+    var(--vocs-background-color-surface)
+  );
+  --vocs-border-color-info-tint: color-mix(
+    in srgb,
+    var(--vocs-color-info) 28%,
+    transparent
+  );
+
+  --vocs-color-tip: light-dark(#7551ff, #9378ff);
+  --vocs-color-tip-hover: light-dark(#5633ff, #b8a4ff);
+  --vocs-background-color-tip-tint: color-mix(
+    in srgb,
+    var(--vocs-color-tip) 10%,
+    var(--vocs-background-color-surface)
+  );
+  --vocs-border-color-tip-tint: color-mix(
+    in srgb,
+    var(--vocs-color-tip) 28%,
+    transparent
+  );
+}
+
+[data-v-logo-link] img,
+[data-v-logo] img {
+  height: 2.25rem;
+  width: auto;
+}
+
+/**
+ * Vocs's Logo is exclusive: `logoUrl` renders an <img>, otherwise `title`
+ * renders as `data-v-logo-text`. There is no slot for both. Nested
+ * `[data-v-logo]` wrappers exist (sidebar gutter + the Logo itself), so
+ * target only the node that actually holds the image.
+ */
+[data-v-logo]:has(> [data-v-logo-image]) {
+  gap: 0.625rem;
+}
+
+[data-v-logo]:has(> [data-v-logo-image])::after {
+  content: "fabricator";
+  color: var(--vocs-text-color-heading);
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+
+[data-v-sidebar-section-header] span {
+  font-weight: bold;
+}
+[data-v-sidebar-section-header]:is([role="button"]) span {
+  font-weight: normal;
+}
+
+[data-v-sidebar-section-content] a:hover {
+  color: var(--vocs-text-color-link-hover);
+}

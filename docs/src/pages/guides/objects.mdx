@@ -1,0 +1,61 @@
+# Objects
+
+`T.object({ ... })` is the primitive nearly everything else composes inside. This page covers the parts of it that go beyond a flat field list: nested objects, computed fields, sequences, and per-call overrides.
+
+## Nesting
+
+Fields can be any schema, including another `T.object`:
+
+```ts
+T.object({
+  name: T.string.whereby({ length: { min: 1, max: 25 } }),
+  pricing: T.object({
+    currency: T.enum.uniform(["USD", "YEN", "GBP"]),
+    amount: T.number.whereby({ min: 0, max: 500 }),
+  }),
+});
+```
+
+Every field — nested or not — draws from its own independent stream, assigned when the Fabricator is built. See [Reproducibility](/guides/reproducibility) for what that guarantees.
+
+## Sequences
+
+```ts
+T.object({ id: T.number.integer.sequence });
+```
+
+A monotonically increasing counter starting at 1, fresh per `new Fabricator(schema)` — every `.fabricate()` call on the same Fabricator instance advances it, so ten calls yield ids 1 through 10.
+
+## Computed fields
+
+A computed field derives its value from the rest of the object, once the rest has already been fabricated. It's reached through `.refine(({ compute }) => ({ ... }))`, not through `T.object` directly:
+
+```ts
+const IdentifiableProductSchema = ProductSchema.refine(({ compute }) => ({
+  slug: compute(T.string).as(({ fabricated }) =>
+    fabricated.name.toLowerCase().replace(/\s+/g, "-"),
+  ),
+}));
+```
+
+`compute(source)` takes a schema (or a bare builder like `T.string`, when you just need to name the field's type and don't care about its length/range) and returns something with a single method, `.as(resolve)`. `resolve` receives `{ fabricated }` — the rest of the object, already built — and returns the computed value.
+
+This is why `.refine()` needs its own method distinct from `.extend()`: a computed field genuinely needs a second pass, after the ordinary fields resolve. See [Composition](/guides/composition) for the full `extend`/`refine`/`override` picture and the performance trade-off between the two.
+
+## Per-call overrides
+
+```ts
+const Product = new Fabricator(ProductSchema);
+const widget = Product.fabricate({
+  name: "Widget",
+  pricing: { currency: "USD" },
+});
+```
+
+Every field you don't name still comes from the Fabricator's own already-drawn randomness — this isn't a new schema, and it doesn't touch any other field's stream. Values are deep-merged into the fabricated result. To force an [omittable](/reference/primitives/omittable) or [optional](/reference/primitives/optional) field off, pass the exported `Omitted` sentinel:
+
+```ts
+import { Omitted } from "@ghostry/fabricator";
+
+Product.fabricate({ nickname: Omitted });
+```

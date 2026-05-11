@@ -1,0 +1,13 @@
+# T.tuple
+
+A [collection](/reference/primitives#collections): fixed arity, one schema per slot.
+
+```ts
+T.tuple([
+  T.number.whereby({ min: 1, max: 100 }),
+  T.number.whereby({ min: 1, max: 100 }),
+  T.number.whereby({ min: 1, max: 100 }),
+]);
+```
+
+For "exactly these things, in this order, each possibly a different shape." Contrast with [`T.array`](/reference/primitives/array): an array has one shape repeated a fuzzed number of times; a tuple has a fixed number of slots, each independently typed and independently fabricated — each slot draws from its own private stream, the same way each field of a `T.object` does, so one slot's randomness never affects another's.

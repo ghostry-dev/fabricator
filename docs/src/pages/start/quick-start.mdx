@@ -1,0 +1,41 @@
+# Quick start
+
+```ts
+import { initialize } from "@ghostry/fabricator";
+
+const { T, Fabricator } = initialize({ seed: "1234" });
+
+const ProductSchema = T.object({
+  name: T.string.whereby({ length: { min: 1, max: 25 } }),
+  price: T.number.whereby({ min: 1, max: 500 }),
+  inStock: T.boolean,
+  createdAt: T.date.past,
+  tags: T.array(T.string.whereby({ length: { max: 15 } })).whereby({
+    length: { max: 5 },
+  }),
+});
+
+const Product = new Fabricator(ProductSchema);
+
+const item = Product.fabricate();
+// { name: "...", price: ..., inStock: ..., createdAt: ..., tags: [...] }
+```
+
+That's the whole loop:
+
+1. `initialize(...)` gives you `T` (a namespace of type builders) and `Fabricator` (a constructor for turning a Schema into something live).
+2. `T.object({ ... })` builds a **Schema** — inert, serializable data describing a shape. Building it draws no randomness.
+3. `new Fabricator(schema)` builds a live **Fabricator** with a `.fabricate()` method.
+4. `.fabricate()` is the only place randomness actually happens.
+
+See [Mental model](/start/mental-model) for why this three-layer split exists, and [Reproducibility](/guides/reproducibility) for what `seed: '1234'` buys you.
+
+## Overriding specific fields
+
+Fabricate with everything random except a few fields you care about:
+
+```ts
+const item = Product.fabricate({ name: "Widget", inStock: true });
+```
+
+This uses the Fabricator's own already-drawn randomness for every other field — it's a per-call override, not a new schema. See [Composition](/guides/composition) for the schema-level equivalent, `.override(...)`.

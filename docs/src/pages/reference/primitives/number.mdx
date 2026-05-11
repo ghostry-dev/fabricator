@@ -1,0 +1,21 @@
+# T.number
+
+A [scalar](/reference/primitives#scalars). Bare `T.number` / `T.number.integer` are buildable with no `.whereby()` — an unbounded draw. `.integer` is whole; a bounded integer uses the same discrete floor path.
+
+```ts
+T.number.whereby({ min: 1, max: 100 });
+T.number.whereby({ min: 0, max: { value: 1, exclusive: true } }); // [0, 1)
+T.number.whereby({ min: 0 }); // [0, +∞)
+T.number.integer.whereby({ min: 1, max: 100 });
+```
+
+Omit `min` or `max` to leave that end unbounded — the same policy as a bare `T.number`, not a default of `0`. An omitted end is not stored; adapters see only the ends you named.
+
+Add a `distribution` to shape how values cluster within a bounded range — see [Distributions](/guides/distributions).
+
+```ts
+T.number.integer.sequence; // 1, 2, 3, ...
+T.number.integer.big; // T.bigint
+```
+
+See [Objects](/guides/objects) for `.sequence`.

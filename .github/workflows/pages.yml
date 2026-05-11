@@ -1,0 +1,56 @@
+##
+# Deploys the documentation site to GitHub Pages.
+#
+# Requires a one-time manual setting: Settings -> Pages -> Build and
+# deployment -> Source: "GitHub Actions".
+#
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - docs/**
+      - .github/workflows/docs.yml
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+##
+# One deployment at a time, and never cancel one mid-flight: a cancelled
+# deploy-pages run can leave the Pages site in a partially-updated state.
+#
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    name: Docs
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    with:
+      upload: true
+
+  deploy:
+    name: Deploy
+    needs: [docs]
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

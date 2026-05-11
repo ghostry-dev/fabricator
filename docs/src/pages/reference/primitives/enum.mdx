@@ -1,0 +1,19 @@
+# T.enum
+
+A [literal](/reference/primitives#literals-and-choices): a random member from a set of values.
+
+```ts
+T.enum.uniform(["electronics", "clothing", "food"]);
+
+T.enum.weighted([
+  [6, "USD"],
+  [3, "YEN"],
+  [1, "GBP"],
+]);
+```
+
+There's no bare `T.enum(...)` — pick `.uniform` (equal probability) or `.weighted` (relative probability via `[weight, member]` pairs). Weights are relative between members: each value can be read as the numerator over the sum of all values. In the example above, `"YEN"` is 3× more likely than `"GBP"`; `"USD"` is 2× more likely than `"YEN"`; `"USD"` is 6× more likely than `"GBP"`. A weight of `0` disables that member (the remaining members still draw). Every weight zero throws; negative weights, `NaN`, and `Infinity` are invalid.
+
+Like [`T.always`](/reference/primitives/always), an enum's members can be any value, not just primitives.
+
+To pick among _schemas_ rather than values, see [`T.choice`](/reference/primitives/choice).

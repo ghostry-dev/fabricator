@@ -1,0 +1,46 @@
+# Distributions
+
+By default, a range-bound value — `T.number.whereby({ min, max })`, `T.date.whereby({ min, max })`, `T.date.past`, `T.date.future` — draws uniformly: every value in the range is equally likely. A scalar `min`/`max` is inclusive; `{ value, exclusive: true }` excludes that end. A `distribution` shapes the draw inside that interval, so generated data can cluster the way real-world data usually does.
+
+```ts
+T.number.whereby({
+  min: 0,
+  max: 1000,
+  distribution: { kind: "normal", mean: 500, spread: 100 },
+});
+```
+
+:::note
+`distribution` is a plain tagged object, not a builder you import — the field is structurally typed, so a matching object literal is accepted with no import at all. Available on any `whereby` that takes a `{ min, max }` range: `T.number.whereby`, `T.number.integer.whereby`, `T.date.whereby`, `T.date.past.whereby`, `T.date.future.whereby`.
+:::
+
+## The variants
+
+**`{ kind: 'uniform' }`** — the default. Every value in the range equally likely.
+
+**`{ kind: 'normal', mean?, spread? }`** — a bell curve truncated to the range. `mean` defaults to the range's center; `spread` (standard deviation) defaults to a sixth of the span, which puts the range's bounds at roughly ±3σ before truncation.
+
+**`{ kind: 'skew', exponent }`** — a power curve. `exponent > 1` biases toward `min`, `exponent < 1` biases toward `max`, `exponent === 1` is uniform.
+
+**`{ kind: 'triangular', mode? }`** — linear ramps peaking at `mode` (defaults to the range's center). Simpler than a normal curve when you just want "values cluster around here, taper off toward the edges" without the bell-curve shape.
+
+**`{ kind: 'logarithmic' }`** — log-uniform: density proportional to `1/x`, so values spread evenly across orders of magnitude and cluster toward `min`. Good for things like request latencies or file sizes, where "10 vs 100" and "1000 vs 10000" should feel equally likely. Requires a strictly positive range — the range's `min` must be greater than zero.
+
+**`{ kind: 'multi', components: [{ weight, distribution }, ...] }`** — a weighted blend of component distributions, each drawn over the same range. Two `normal`s at different means, blended, produce the two separate peaks of a bimodal distribution. Weights are relative and don't need to sum to one. A component with weight `0` is dropped; every component zero throws.
+
+```ts
+{
+  kind: 'multi',
+  components: [
+    { weight: 3, distribution: { kind: 'normal', mean: 20, spread: 5 } },
+    { weight: 1, distribution: { kind: 'normal', mean: 80, spread: 5 } },
+  ],
+}
+// clusters mostly around 20, with a smaller cluster around 80
+```
+
+**`{ kind: 'custom', shape }`** — the escape hatch. `shape` is an inverse CDF: `(u: number) => number`, mapping a uniform draw in `[0, 1)` to a position in `[0, 1)` within the range. The result is clamped to `[0, 1]`, so it always lands within bounds no matter what `shape` returns.
+
+## What every variant guarantees
+
+Every distribution, including `custom`, produces a value within `[min, max]` by construction — truncated via inverse CDF rather than rejected or clamped mid-range, so no distribution can silently loop or bias the output by discarding out-of-range draws.

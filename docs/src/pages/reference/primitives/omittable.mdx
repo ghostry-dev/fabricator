@@ -1,0 +1,26 @@
+# T.omittable
+
+An [absence](/reference/primitives#absence) primitive: a field that's sometimes missing from the enclosing object entirely. Only meaningful inside `T.object(...)` — it describes whether a key exists, not a value in isolation.
+
+```ts
+T.object({
+  name: T.string.whereby({ length: { max: 20 } }),
+  nickname: T.omittable(T.string.whereby({ length: { max: 20 } })),
+});
+```
+
+A 50/50 roll by default: `nickname` either doesn't appear on the fabricated object at all, or holds a fabricated string. Reweight either side:
+
+```ts
+T.omittable(inner).weighted({ omitted: 1, value: 4 }); // present 80% of the time
+```
+
+Force the field off (e.g. in `.override()` or `.fabricate(overrides)`), use the exported `Omitted` sentinel:
+
+```ts
+import { Omitted } from "@ghostry/fabricator";
+
+WidgetFabricator.fabricate({ nickname: Omitted });
+```
+
+For a three-way split across omitted / present-as-`undefined` / present with a value, use [`T.optional`](/reference/primitives/optional) — not `T.omittable(T.undefinable(inner))`, which would give 50/25/25. For a key that's always present with a possibly-`undefined` value, use [`T.undefinable`](/reference/primitives/undefinable).

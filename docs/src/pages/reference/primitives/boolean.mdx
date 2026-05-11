@@ -1,0 +1,10 @@
+# T.boolean
+
+A [scalar](/reference/primitives#scalars). Bare form is a fair coin flip.
+
+```ts
+T.boolean; // 50/50
+T.boolean.weighted({ true: 3 }); // 75% true
+```
+
+`.weighted({ true, false })` — only one side needs specifying; the other defaults to `1`. Weights are relative proportions, not a requirement that they sum to anything in particular. A weight of `0` disables that side (`T.boolean.weighted({ true: 0 })` is always false). Every weight zero throws; negative weights, `NaN`, and `Infinity` are invalid.

@@ -1,0 +1,63 @@
+# Composition
+
+Three ways to derive one schema from another, plus one way to override an already-built Fabricator for a single call. They compose with each other.
+
+## `.extend()` — add or replace fields
+
+```ts
+const IdentifiableProductSchema = ProductSchema.extend(({ base }) => ({
+  id: T.number.integer.sequence,
+}));
+```
+
+Combines the base schema's field definitions with the ones you provide. The result is deep-merged: a new field is added, and a field with the same name as an existing one replaces it wholesale (nested objects merge; anything else overrides). `base` is the original definition, handed to the extender in case the new fields need to reference it — return `{}` if you don't need it.
+
+## `.refine()` — add fields computed from fabricated data
+
+```ts
+const WithSlug = ProductSchema.refine(({ compute }) => ({
+  slug: compute(T.string).as(({ fabricated }) =>
+    fabricated.name.toLowerCase().replace(/\s+/g, "-"),
+  ),
+}));
+```
+
+Same shape as `.extend()`, but the new fields are computed from the _fabricated_ result of the base schema rather than defined statically — see [Objects](/guides/objects) for the full `compute` API. Refine stages chain: a later `.refine()` can reference a field a prior one computed.
+
+:::note
+Each `.refine()` stage means the base schema has to actually be fabricated to compute the refinement, so it's less performant than `.extend()` at scale. Prefer `.extend()` unless you genuinely need to reference already-fabricated data.
+:::
+
+## `.override()` — bake fixed values into a schema
+
+```ts
+const WidgetSchema = ProductSchema.override({
+  name: "Widget",
+  pricing: { currency: "USD" },
+});
+
+const widget = new Fabricator(WidgetSchema).fabricate();
+```
+
+Pure Schema → Schema — never touches randomness. The named fields are still fully dispatched when the resulting schema is built (so unrelated fields' random streams stay assigned exactly as they would without the override — see [Reproducibility](/guides/reproducibility)), but their draws are discarded in favor of the fixed value. Values deep-merge into the existing definition, and chained overrides compose (`.override(a).override(b)`, with `b` winning on conflicts).
+
+## `.fabricate(overrides)` — a per-call override, not a new schema
+
+```ts
+const Product = new Fabricator(ProductSchema);
+const widget = Product.fabricate({ name: "Widget" });
+```
+
+The lightweight sibling of `.override()`: instead of producing a new Schema, it overrides one call's result on an _already-built_ Fabricator, using that Fabricator's own already-drawn randomness for every other field. See [Objects](/guides/objects#per-call-overrides) for the `Omitted` sentinel and merge details.
+
+## Extending a subtype
+
+```ts
+const ElectronicsSchema = ProductSchema.extend(() => ({
+  category: T.always("electronics"),
+}));
+
+const laptop = new Fabricator(ElectronicsSchema).fabricate({ name: "Laptop" });
+```
+
+`.extend()`, `.refine()`, and `.override()` all return ordinary Schemas, so they compose with each other and with `.fabricate(overrides)` freely — a schema-level fixed field (`T.always('electronics')`) and a per-call override (`{ name: 'Laptop' }`) are just two different points in the same pipeline.

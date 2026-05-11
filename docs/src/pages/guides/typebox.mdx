@@ -1,0 +1,107 @@
+:::warning
+The TypeBox adapter described on this page lives in its own package, `pkg/fabricator-adapter-typebox-v0` in this repo, but isn't published yet — publishing is disabled repo-wide. Treat the imports below as aspirational until a release ships.
+:::
+
+# TypeBox
+
+Every Schema can be converted to a [TypeBox](https://github.com/sinclairzx81/typebox) schema — useful if you want to validate fabricated data, or reuse the same shape for both test-data generation and runtime validation.
+
+```ts
+import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
+
+const TProduct = toTypeBox(ProductSchema);
+```
+
+## Adapters are values, not names
+
+An adapter is an ordinary value you import — there is nothing to register, and this package knows no schema library by name. It carries its own key, which is what `.adapt()` files an override under, so two adapters never collide and naming the wrong one is an import error rather than an override nothing ever reads.
+
+That is also what lets adapters for two versions of the same library coexist: one schema can carry an adaptation for each.
+
+## The default mapping
+
+Each kind maps to one fixed TypeBox counterpart:
+
+| Kind               | TypeBox                                                |
+| ------------------ | ------------------------------------------------------ |
+| `object`           | `Type.Object({ ...fields })`                           |
+| `array`            | `Type.Array(element, { minItems, maxItems })`          |
+| `tuple`            | `Type.Tuple([...items])`                               |
+| `record`           | `Type.Record(key, value)`                              |
+| `object.omittable` | `Type.Optional(inner)`                                 |
+| `object.optional`  | `Type.Optional(Type.Union([inner, Type.Undefined()]))` |
+| `always`           | a pinned literal (see below)                           |
+| `opaque`           | `Type.Unknown()`                                       |
+| `bigint`           | `Type.BigInt(bounds)`                                  |
+| `boolean`          | `Type.Boolean()`                                       |
+| `enum`             | `Type.Union([...pinned literals])`                     |
+| `choice`           | `Type.Union([...option schemas])`                      |
+| `date`             | `Type.Date(timestamp bounds)`                          |
+| `number`           | `Type.Number(hints + bounds)` or `Type.Integer(...)`   |
+| `string`           | `Type.String(hints + minLength/maxLength)`             |
+| `symbol`           | `Type.Symbol()`                                        |
+| `undefined`        | `Type.Undefined()`                                     |
+| `undefinable`      | `Type.Union([inner, Type.Undefined()])`                |
+| `null`             | `Type.Null()`                                          |
+| `nullable`         | `Type.Union([inner, Type.Null()])`                     |
+| `nullish`          | `Type.Union([inner, Type.Null(), Type.Undefined()])`   |
+| `recursive`        | `Type.Recursive(...)`, `$ref`-based                    |
+
+`number`/`string`'s `hints` come from `.as(produce, { format, pattern, multipleOf })` — orthogonal JSON-Schema keywords that merge with `whereby` bounds. Inclusive bounds become `minimum`/`minLength`/`minItems`; exclusive value bounds become `exclusiveMinimum` (stated, not the discrete interior). Length has no exclusive JSON-Schema keyword, so exclusive length maps through the effective inclusive integers.
+
+## When the default is wrong
+
+```ts
+import { typebox } from "@ghostry/fabricator-adapter-typebox-v0";
+
+T.string
+  .whereby({ length: { max: 254 } })
+  .adapt(typebox, () => Type.String({ format: "email" }));
+```
+
+`.adapt(adapter, produce)` overrides the mapping for one schema. The adaptation survives further chaining — `.whereby()`, `.as()`, `.extend()` after an `.adapt()` still carry it — because `adapt` is a method on the schema's own type, not a free-standing helper. Adapting to several libraries is several chained calls; each replaces only its own adapter's override.
+
+Because the adapter is passed rather than named, its own external type is known here: a producer that returns something TypeBox could never emit fails at this call site, not silently at conversion time.
+
+### What the producer is handed
+
+One argument, `{ schema, meta }` — destructure whichever half you need.
+
+`meta` is the schema's own config, so an adaptation can derive from what the fabricator was already told rather than restating it:
+
+```ts
+T.string
+  .whereby({ length: { max: 254 } })
+  .adapt(typebox, ({ meta }) =>
+    Type.String({ format: "email", maxLength: meta.whereby.length.max.value }),
+  );
+```
+
+Its shape is the kind's own — `whereby` for a `string`, `definition` for an `object`, and so on. Readable, but not part of the stable surface: an adaptation that reads it is opting into a shape that may change between versions.
+
+`schema` is the schema being adapted, carrying whichever override it replaced — so `toTypeBox(schema)` inside a producer resolves to the previous layer, or to the ordinary mapping when there is none, which is what makes intersecting with it read as it looks:
+
+```ts
+email.adapt(typebox, ({ schema }) =>
+  Type.Intersect([toTypeBox(schema), Type.String({ minLength: 3 })]),
+);
+```
+
+Both are read where the adapter walks, not captured when `.adapt()` was called, so a builder method chained afterward is reflected in what the producer sees.
+
+## Two kinds that need `.adapt()` more than most
+
+**`record` keyed by `T.symbol`** throws rather than silently producing an unusable schema — TypeBox's `Type.Record` has no representation for a symbol key, and returning something nothing validates against would be worse than failing loudly. `.adapt(typebox, ...)` is the way out.
+
+**`opaque`** always maps to `Type.Unknown()` — an honest statement that the adapter has no idea what your producer returns. If the static type matters, adapt it.
+
+## Where `Static<ToTypeBox<S>>` and the fabricated value type can legitimately diverge
+
+Four sources, all expected, none a bug:
+
+1. **An adaptation** — you told TypeBox something the fabricator doesn't honor; keeping them compatible is on you.
+2. **`always`/`enum` over a value TypeBox can only approximate** — a `Uint8Array`'s contents, or a `symbol`, can't be pinned to an exact literal (TypeBox has no such capability), so the static type widens even though the fabricator still produces the exact value.
+3. **`record` over a finite literal key set** — TypeBox collapses this to a `TObject` marking every property _required_, while the fabricated value type is `Partial`: a record's size is drawn and colliding keys collapse, so a two-member key schema may only end up covering one.
+4. **`opaque`** — `Static<TUnknown>` is `unknown`, while the fabricated value is the producer's precise return type.
+
+Only the last of these is a pure widening (safe by construction); the others are places where the two representations are saying genuinely different things about the same field.

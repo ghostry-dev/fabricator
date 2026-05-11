@@ -1,0 +1,229 @@
+##
+# Changing a package's version in a commit to main publishes it under that
+# version.
+#
+name: Build, Test, and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
+
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml
+    needs: [build]
+    permissions:
+      actions: read
+    with:
+      build-run-id: ${{ needs.build.outputs.run-id }}
+
+  get-version-fabricator:
+    name: Get current version (fabricator)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Read package version
+        id: read-version
+        working-directory: pkg/fabricator
+        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
+
+  get-version-fabricator-adapter-typebox-v0:
+    name: Get current version (fabricator-adapter-typebox-v0)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Read package version
+        id: read-version
+        working-directory: pkg/fabricator-adapter-typebox-v0
+        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
+
+  get-version-fabricator-extension-faker-v10:
+    name: Get current version (fabricator-extension-faker-v10)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Read package version
+        id: read-version
+        working-directory: pkg/fabricator-extension-faker-v10
+        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
+
+  check-release-fabricator:
+    name: Check for existing release (fabricator)
+    needs: [get-version-fabricator]
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.release-exists.outputs.result }}
+    steps:
+      - name: Find existing release if it exists
+        id: release-exists
+        uses: actions/github-script@v9
+        with:
+          result-encoding: string
+          script: |
+            return github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'fabricator/${{ needs.get-version-fabricator.outputs.version }}',
+            }).then(() => 'true').catch(() => 'false');
+
+      - name: Release `fabricator/${{ needs.get-version-fabricator.outputs.version }}` already exists?
+        run: echo "${{ steps.release-exists.outputs.result }}"
+
+  check-release-fabricator-adapter-typebox-v0:
+    name: Check for existing release (fabricator-adapter-typebox-v0)
+    needs: [get-version-fabricator-adapter-typebox-v0]
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.release-exists.outputs.result }}
+    steps:
+      - name: Find existing release if it exists
+        id: release-exists
+        uses: actions/github-script@v9
+        with:
+          result-encoding: string
+          script: |
+            return github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'fabricator-adapter-typebox-v0/${{ needs.get-version-fabricator-adapter-typebox-v0.outputs.version }}',
+            }).then(() => 'true').catch(() => 'false');
+
+      - name: Release `fabricator-adapter-typebox-v0/${{ needs.get-version-fabricator-adapter-typebox-v0.outputs.version }}` already exists?
+        run: echo "${{ steps.release-exists.outputs.result }}"
+
+  check-release-fabricator-extension-faker-v10:
+    name: Check for existing release (fabricator-extension-faker-v10)
+    needs: [get-version-fabricator-extension-faker-v10]
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.release-exists.outputs.result }}
+    steps:
+      - name: Find existing release if it exists
+        id: release-exists
+        uses: actions/github-script@v9
+        with:
+          result-encoding: string
+          script: |
+            return github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'fabricator-extension-faker-v10/${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}',
+            }).then(() => 'true').catch(() => 'false');
+
+      - name: Release `fabricator-extension-faker-v10/${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}` already exists?
+        run: echo "${{ steps.release-exists.outputs.result }}"
+
+  publish-fabricator:
+    name: Publish (fabricator)
+    if: ${{ needs.check-release-fabricator.outputs.exists == 'false' }}
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - build
+      - test
+      - get-version-fabricator
+      - check-release-fabricator
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+    with:
+      package: fabricator
+      version: ${{ needs.get-version-fabricator.outputs.version }}
+      build-run-id: ${{ needs.build.outputs.run-id }}
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
+  ##
+  # Held back while `fabricator` bootstraps alone. Restore the condition
+  # from the comment once this package exists on npm (so a trusted
+  # publisher can be configured) and on JSR (created, with the repository
+  # linked) — see `publish.yml`'s note on `NODE_AUTH_TOKEN`.
+  #
+  publish-fabricator-adapter-typebox-v0:
+    name: Publish (fabricator-adapter-typebox-v0)
+    if: false # ${{ needs.check-release-fabricator-adapter-typebox-v0.outputs.exists == 'false' }}
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - build
+      - test
+      - get-version-fabricator-adapter-typebox-v0
+      - check-release-fabricator-adapter-typebox-v0
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+    with:
+      package: fabricator-adapter-typebox-v0
+      version: ${{ needs.get-version-fabricator-adapter-typebox-v0.outputs.version }}
+      build-run-id: ${{ needs.build.outputs.run-id }}
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
+  ##
+  # Held back while `fabricator` bootstraps alone — see the note on
+  # `publish-fabricator-adapter-typebox-v0` above.
+  #
+  publish-fabricator-extension-faker-v10:
+    name: Publish (fabricator-extension-faker-v10)
+    if: false # ${{ needs.check-release-fabricator-extension-faker-v10.outputs.exists == 'false' }}
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - build
+      - test
+      - get-version-fabricator-extension-faker-v10
+      - check-release-fabricator-extension-faker-v10
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+    with:
+      package: fabricator-extension-faker-v10
+      version: ${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}
+      build-run-id: ${{ needs.build.outputs.run-id }}
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

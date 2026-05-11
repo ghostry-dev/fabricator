@@ -1,0 +1,47 @@
+# Mental model
+
+fabricator has three layers, always used in this order:
+
+:::steps
+
+### Registry
+
+`T`, returned by `initialize({ types })`, is a namespace of builder functions and objects — one per primitive kind. `T.string`, `T.object({ ... })`, `T.array(T.string)`. Calling or accessing one produces a **Schema**.
+
+### Schema
+
+A Schema is inert, serializable data — a plain object tagged with what kind it is and how it's configured. Building a Schema never touches randomness. Schemas compose freely: pass them around, store them, nest them inside `T.object`/`T.array`, or derive new ones with `.extend()`, `.refine()`, `.override()`. None of that produces a value — it just describes one.
+
+### Fabricator
+
+`new Fabricator(schema)` turns a Schema into something live, with a `.fabricate()` method. This is the point where randomness actually gets drawn. A Schema is a blueprint; a Fabricator is a loaded instance of it, ready to produce values.
+
+:::
+
+```ts
+import { initialize } from "@ghostry/fabricator";
+
+const { T, Fabricator } = initialize();
+
+const UserSchema = T.object({
+  name: T.string.whereby({ length: { min: 3, max: 20 } }),
+  age: T.number.integer.whereby({ min: 18, max: 99 }),
+});
+// UserSchema is inert data — no randomness has run yet
+
+const User = new Fabricator(UserSchema);
+// User is live — it has a .fabricate() method
+
+const user = User.fabricate();
+// only *this* call draws randomness
+```
+
+## One instance, one isolated world
+
+`initialize({ seed, algorithm, types, clock })` mints a single self-contained instance: its own source of randomness, its own `T`, its own `Fabricator` constructor. Nothing here is shared module-level state — two `initialize()` calls never perturb each other, which is what makes it safe to seed independently in parallel tests. See [Reproducibility](/guides/reproducibility) for how that isolation actually works, including what `clock` controls for `T.date`.
+
+## Why the split matters
+
+Because a Schema never touches randomness, it can be composed, stored, and reused freely — `ProductSchema.extend(...)`, `Product.schema.override({ ... })` — without ever accidentally drawing a value. Building a Schema is always pure data, no matter how it's assembled or chained.
+
+The one draw that isn't schema-shaped: `initialize()` itself captures one instant as `clock` (wall-clock time by default) before any Schema exists — a one-time, instance-level setup step, not something tied to a particular field. Every _field's_ own value, though, is still drawn at exactly one point: when its Fabricator's `.fabricate()` is called.

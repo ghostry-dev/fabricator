@@ -1,0 +1,53 @@
+{
+  "name": "@ghostry/fabricator",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Fabricate typed data from composable schemas.",
+  "keywords": [
+    "factory"
+  ],
+  "author": {
+    "name": "Patrick Rebsch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ghostry-dev/fabricator",
+    "directory": "pkg/fabricator"
+  },
+  "homepage": "https://github.com/ghostry-dev/fabricator",
+  "bugs": "https://github.com/ghostry-dev/fabricator/issues",
+  "type": "module",
+  "types": "./dist/types/index.d.ts",
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./internal": {
+      "types": "./dist/types/internal.d.ts",
+      "import": "./dist/esm/internal.js",
+      "default": "./dist/esm/internal.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build:reset": "rm -rf ./dist",
+    "build:compile": "bunx --no-install --bun rslib build --config ./rslib.config.ts",
+    "build:compile:rsdoctor": "RSDOCTOR=true bunx --no-install --bun rslib build --config ./rslib.config.ts",
+    "build:clean": "find ./dist -type f -name '*.tsbuildinfo' -delete",
+    "build": "bun run build:reset && bun run build:compile && bun run build:clean",
+    "build:rsdoctor": "bun run build:reset && bun run build:compile:rsdoctor && bun run build:clean",
+    "check": "tsc --noEmit",
+    "check:ts5": "bun --bun ../../node_modules/typescript-5/lib/tsc.js --noEmit",
+    "prettier": "bunx --no-install --bun prettier .",
+    "test": "bun run check && bun run check:ts5 && bun test"
+  },
+  "files": [
+    "dist"
+  ]
+}

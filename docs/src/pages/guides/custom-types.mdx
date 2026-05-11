@@ -1,0 +1,75 @@
+import { faker } from "@faker-js/faker";
+
+# Custom types
+
+`registry` — the same set of builders reachable as `T` after `initialize()` — is exported so it can be extended before you ever call `initialize`:
+
+```ts
+import { initialize, registry } from "@ghostry/fabricator";
+
+const types = registry.extend(({ T }) => ({
+  category: {
+    ...T.enum.uniform(["electronics", "clothing", "food"]),
+    electronics: T.always("electronics"),
+    clothing: T.always("clothing"),
+    food: T.always("food"),
+  },
+}));
+
+const { T } = initialize({ types });
+
+T.category; // a random category
+T.category.electronics; // always "electronics"
+```
+
+`.extend()` deep-merges the object you return into the existing registry, so unrelated builders are untouched. Chain multiple `.extend()` calls to layer several additions.
+
+## The "namespace with a default" pattern
+
+A custom type can be both _usable bare_ (`T.category`) and hold named sub-variants (`T.category.electronics`). The way to get that is to spread an existing Schema and add properties alongside it — the same convention `T.date.past`/`T.date.future` and `T.number.integer.sequence` already use internally:
+
+```ts
+category: {
+  ...T.enum.uniform(['electronics', 'clothing', 'food']),
+  electronics: T.always('electronics'),
+  clothing: T.always('clothing'),
+  food: T.always('food'),
+}
+```
+
+:::warning
+There is no `fabricate:`-keyed convention for this — a plain object entry like `{ fabricate: T.enum.uniform([...]), electronics: ... }` does **not** work. Normalizing a registry entry discards a `fabricate` property along with any other builder methods; only spreading an actual Schema (as above) carries `[Kind]`/`[Meta]` through.
+:::
+
+## Bringing a dynamic data library
+
+If that library is faker, reach for the [faker extension](/guides/faker) rather than wiring it by hand — it is itself a `registry.extend` callback, so it composes exactly like anything on this page, and its builders draw from fabricator's own seed:
+
+```ts
+import { en } from "@faker-js/faker";
+import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
+
+const types = registry
+  .extend(fakerExtension({ locale: en }))
+  .extend(({ T }) => ({
+    category: T.enum.uniform(["electronics", "clothing", "food"]),
+  }));
+
+const { T } = initialize({ types });
+
+T.faker.person.fullName();
+T.category;
+```
+
+For any other library — or for one-off logic — the pattern is a producer of your own:
+
+```ts
+const types = registry.extend(({ T }) => ({
+  person: {
+    fullName: T.string.as(() => faker.person.fullName()),
+    email: T.string.as(() => faker.internet.email()),
+  },
+}));
+```
+
+`T.string.as(produce)` layers an opaque, user-supplied producer on top of the `string` schema. `produce` is handed a `{ random, clock }` context — the same shape `T.opaque`'s producer gets — but nothing requires reading it: a call like `faker.person.fullName()` above draws from faker's own separate randomness regardless, so the field falls outside fabricator's seeded-reproducibility guarantee unless the producer explicitly consumes `random` itself. If that matters for your case, see [`T.opaque`](/reference/primitives/opaque), where the producer's logic _is_ the whole value, so using the given stream is the point rather than an option.

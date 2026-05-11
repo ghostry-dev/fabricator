@@ -1,0 +1,18 @@
+# T.record
+
+A [collection](/reference/primitives#collections): fuzzed keys, both sides schema-driven.
+
+```ts
+T.record(
+  T.string.whereby({ length: { min: 4, max: 12 } }),
+  T.string.whereby({ length: { max: 40 } }),
+).whereby({ size: { max: 6, minTried: 2 } });
+```
+
+For keys you don't know when you write the schema — a metadata bag, an i18n map, a lookup keyed by generated id. Both the keys and the values are fabricated from schemas, so a key's format is as controllable as any other value's.
+
+`size` reads `{ max, minTried }`, not `{ max, min }` — deliberately. Keys are drawn independently, so two can come out identical and collapse into a single entry. `max` is a real upper bound; the lower number is only ever _attempted_, never guaranteed. Give the key schema enough room (a wide string, say) and collisions stop mattering in practice; make it narrow (a single digit) and you'll reliably get fewer entries than you asked for. There's no facility anywhere in this library to redraw a colliding key — the collapse is the answer, not a bug to route around.
+
+:::warning
+A `record` keyed only by `T.symbol` (or a union including it) throws when adapted to TypeBox — TypeBox's `Type.Record` has no way to represent a symbol-keyed object and would otherwise silently return a schema (`TNever`) that nothing validates against. See [TypeBox](/guides/typebox).
+:::

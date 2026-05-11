@@ -1,0 +1,16 @@
+# T.choice
+
+A [literal](/reference/primitives#literals-and-choices): a random schema from a set of schemas, then fabricated.
+
+```ts
+T.choice.uniform([T.always(null), T.number.whereby({ min: 0, max: 100 })]);
+
+T.choice.weighted([
+  [3, T.string.whereby({ length: { max: 10 } })],
+  [1, T.number],
+]);
+```
+
+Same idea as [`T.enum`](/reference/primitives/enum), but between arbitrary _schemas_ instead of literal _values_. `T.enum` draws one of several fixed values directly; `T.choice` draws one of several schemas and then fabricates from whichever one wins — so each option can itself be dynamic, nested, or composed from other primitives.
+
+There's no bare `T.choice(...)` — pick `.uniform` or `.weighted`. Weights are relative proportions, numerator over the sum of all values given. A weight of `0` disables that option. Every weight zero throws; negative weights, `NaN`, and `Infinity` are invalid.

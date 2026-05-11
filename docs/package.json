@@ -1,0 +1,26 @@
+{
+  "name": "@ghostry/fabricator-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bunx --no-install --bun vocs dev",
+    "build": "bunx --no-install --bun vocs build",
+    "preview": "bunx --no-install --bun vocs preview"
+  },
+  "dependencies": {
+    "react": "^19",
+    "react-dom": "^19",
+    "vocs": "2.8.5",
+    "waku": "^1.0.0-beta.3"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.5.0",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6",
+    "typescript": "^5",
+    "vite": "^8"
+  }
+}

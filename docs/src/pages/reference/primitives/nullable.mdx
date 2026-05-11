@@ -1,0 +1,10 @@
+# T.nullable
+
+An [absence](/reference/primitives#absence) primitive: a value that is either the wrapped inner or `null`. An ordinary schema, usable anywhere.
+
+```ts
+T.nullable(T.string); // string | null, 50/50
+T.nullable(inner).weighted({ null: 1, value: 9 }); // null 10% of the time
+```
+
+For `null` _or_ `undefined` as well as a value, use [`T.nullish`](/reference/primitives/nullish) — not `T.nullable(T.undefinable(inner))`, which would give 50/25/25. For a value that is always exactly `null`, use [`T.null`](/reference/primitives/null).
