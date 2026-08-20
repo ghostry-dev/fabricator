@@ -427,9 +427,29 @@ The explicit builders and their 251 assignability checks measure ~54,700 TS5 ins
 
 ## JSR's "slow types" — a constraint neither `check` nor `build` enforces
 
-`jsr publish` rejects any **public-API** symbol whose type it cannot read off the source syntactically: a function without an explicit return type, or a `const` whose type is inferred (a trailing `satisfies` does not count — JSR wants an annotation). `tsc --noEmit`, `tsgo`'s declaration emit, and `bun test` are all silent on this, so a violation surfaces only at publish time. `bunx --no-install jsr publish --dry-run --allow-dirty`, run in a package directory, is the check — `--allow-dirty` because JSR otherwise aborts on an uncommitted tree before reaching the type pass.
+`jsr publish` rejects any **public-API** symbol whose type it cannot read off the source syntactically. Four shapes trip it in this codebase, all of them in `Primitive/*/Registry.ts`, which reaches the public API through `registry`:
+
+- a function without an explicit return type (`array`, `record`, and the builder methods on `bigint`/`string`);
+- a `const` whose type is inferred — a trailing `satisfies` does not count, JSR wants an annotation (`Primitive/string/Constants.ts`'s `classes`, annotated member-by-member rather than with an index signature, because `Types.ts` derives `CharacterClass = keyof typeof classes` and an index signature would widen it to `string`);
+- a **default export that is a call expression** (`null`, `undefined`), fixed with an `as` clause;
+- a **default export whose object literal contains a spread** (`boolean`, `symbol`, `date`, `number`), fixed with an `as` clause. Where the annotation needs a name — a generic return type, or a literal carrying members beyond the spread — it is a local `ThisRegistry` alias, mirroring the `ThisMeta` spelling each `Schema.ts` already uses for the same "this module's own version of a shared concept" role, and never `Builder`, which `object/compute/Types.ts` already owns as a different concept. The member docs then live on `ThisRegistry`, since that is what a consumer's editor resolves to.
+
+`tsc --noEmit` and `tsgo`'s declaration emit are both silent on this. **`bun run check:jsr` is the check** — per package, or the root fan-out across all three — and it is chained into every package's `test`, so CI's existing test step covers it with no workflow change. It runs `jsr publish --dry-run --allow-dirty`; `--allow-dirty` because JSR otherwise aborts on an uncommitted tree before reaching the type pass.
+
+**The `DENO_BIN_PATH` in that script is the load-bearing part, not incidental.** The `jsr` npm CLI does not implement fast check itself and never consults `PATH`: it downloads the deno version pinned in `node_modules/jsr/dist/deno_version.js` into `node_modules/jsr/.download/<version>/<platform>/deno` and shells out to that. That pin lags the fast check JSR's own server runs, often by enough to matter — a bare `jsr publish` then succeeds while the server records the package as slow-typed, costing 5 of the 17 JSR score points with no error anywhere in the CI log. `DENO_BIN_PATH` overrides which binary it uses, and the root `deno` devDependency (the official distribution, `bin` + platform-gated `@deno/*` optional deps) is what makes that binary a pinned, lockfile-reproducible version rather than whatever a developer happens to have installed. **Pin it exactly — no `^`** — a floating range would let the strictness of the check drift between installs, which is the whole failure this guards against. Bumping it is a deliberate, reviewable change; expect it to surface new diagnostics, which is the point.
+
+The authoritative post-publish signal is `allFastCheck` on `https://api.jsr.io/scopes/<scope>/packages/<package>/score` (rendered at `https://jsr.io/@<scope>/<package>/score` as "No slow types are used"). It is scored per version, so a fix only shows up once a new version publishes.
 
 The `--allow-slow-types` escape hatch exists but is not used here: it degrades consumers' type-checking performance and JSR's generated docs.
+
+When adding an annotation to satisfy this, verify it did not widen the public type rather than merely stating it. Copy each module's pre-change version into a scratch directory that sits at the same depth (`src/Primitive/__orig/`, so `../../` and `../<kind>` still resolve), then assert both directions in a throwaway file under `src/`:
+
+```ts
+type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+export const date: Exact<typeof oDate, typeof nDate> = true;
+```
+
+`bun x tsc --noEmit` failing with "Type 'true' is not assignable to type 'false'" is the annotation having changed the type.
 
 ## Documentation site (`docs/`)
 

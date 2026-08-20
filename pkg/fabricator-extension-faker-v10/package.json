@@ -43,8 +43,9 @@
     "build:rsdoctor": "bun run build:reset && bun run build:compile:rsdoctor && bun run build:types && bun run build:verify && bun run build:clean",
     "check": "tsc --noEmit",
     "check:ts5": "bun --bun ../../node_modules/typescript-5/lib/tsc.js --noEmit",
+    "check:jsr": "DENO_BIN_PATH=$PWD/../../node_modules/.bin/deno bunx --no-install jsr publish --dry-run --allow-dirty",
     "prettier": "bunx --no-install --bun prettier .",
-    "test": "bun run check && bun run check:ts5 && bun test"
+    "test": "bun run check && bun run check:ts5 && bun run check:jsr && bun test"
   },
   "files": [
     "dist"

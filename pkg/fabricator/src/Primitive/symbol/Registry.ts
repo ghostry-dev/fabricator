@@ -3,7 +3,11 @@ import { Adaptation, Kind, Meta, Produces } from "../../Types";
 import { Schema } from "./Schema";
 import type { Fabricated } from "./Types";
 
-export default {
+type ThisRegistry = Schema<{}, Adaptations> & {
+  keyed: (key: string) => Schema<{ key: string }>;
+};
+
+const registry: ThisRegistry = {
   /**
    * Keep `[Produces]` and `[Adaptation]` assigned here — see CLAUDE.md's
    * "declaration-emit trap." Both are optional and symbol-keyed, so this
@@ -21,3 +25,5 @@ export default {
     return Schema({ [Kind]: "symbol", [Meta]: { key } });
   },
 };
+
+export default registry;

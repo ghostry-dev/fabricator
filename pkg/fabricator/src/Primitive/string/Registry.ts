@@ -2,7 +2,7 @@ import { toLengthRange } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import { Kind, Meta } from "../../Types";
 import { Schema } from "./Schema";
-import type { Fabricated, InputWhereby, JsonSchema } from "./Types";
+import type { Fabricated, InputWhereby, JsonSchema, Whereby } from "./Types";
 
 export default {
   /**
@@ -17,7 +17,13 @@ export default {
    * `produce`, optionally tagged with a `format` hint that schema exporters
    * (e.g. `toTypeBox`) read.
    */
-  as: (produce: Produce<Fabricated>, hints?: JsonSchema) => {
+  as: (
+    produce: Produce<Fabricated>,
+    hints?: JsonSchema,
+  ): Schema<{
+    produce: Produce<Fabricated>;
+    hints: JsonSchema | undefined;
+  }> => {
     return Schema({ [Kind]: "string", [Meta]: { produce, hints } });
   },
 
@@ -34,7 +40,7 @@ export default {
    * the gap is topped up with a well-formed BMP character outside the
    * requested `composition`, inserted at a random character boundary.
    */
-  whereby: (whereby: InputWhereby) => {
+  whereby: (whereby: InputWhereby): Schema<{ whereby: Whereby }> => {
     return Schema({
       [Kind]: "string",
       [Meta]: {

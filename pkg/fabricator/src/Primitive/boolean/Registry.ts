@@ -3,7 +3,7 @@ import { Adaptation, Kind, Meta, Produces } from "../../Types";
 import { Schema } from "./Schema";
 import type { Fabricated } from "./Types";
 
-export default {
+const registry: Schema<{}, Adaptations> = {
   /**
    * Keep `[Produces]` and `[Adaptation]` assigned here — see CLAUDE.md's
    * "declaration-emit trap." Both are optional and symbol-keyed, so this
@@ -17,3 +17,5 @@ export default {
     [Adaptation]: undefined as unknown as Adaptations,
   }),
 };
+
+export default registry;

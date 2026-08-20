@@ -10,30 +10,30 @@ import { unboundedContinuous, unboundedDiscrete } from "./defaults";
 import { Schema } from "./Schema";
 import type { Fabricated, InputWhereby, Whereby } from "./Types";
 
-function toWhereby(input: InputWhereby, integer: boolean): Whereby {
-  const min = input.min === undefined ? undefined : toBound(input.min);
-  const max = input.max === undefined ? undefined : toBound(input.max);
-  const defaults = integer ? unboundedDiscrete : unboundedContinuous;
-  const label = integer ? "T.number.integer.whereby" : "T.number.whereby";
-
+type ThisRegistry = Schema<{}, Adaptations> & {
   /**
-   * An omitted end is not stored — same as `T.date` — but emptiness is
-   * judged against the fabricate-time cap so a one-sided exclusive end
-   * that leaves no value still fails at `.whereby()`, not first
-   * `fabricate()`.
+   * A `number` drawn from `[min, max]`, either end optional. Pass a
+   * `distribution` to shape how values cluster within the range; without one,
+   * every value is equally likely.
    */
-  if (integer) {
-    assertNonemptyDiscrete(label, min ?? defaults.min, max ?? defaults.max);
-  } else {
-    assertNonemptyContinuous(label, min ?? defaults.min, max ?? defaults.max);
-  }
+  whereby: (whereby: InputWhereby) => Schema<{ whereby: Whereby }>;
 
-  return input.distribution === undefined
-    ? { min, max }
-    : { min, max, distribution: input.distribution };
-}
+  /** The same surface, restricted to integers. */
+  integer: Schema<{ integer: true }> & {
+    whereby: (
+      whereby: InputWhereby,
+    ) => Schema<{ integer: true; whereby: Whereby }>;
 
-export default {
+    /**
+     * A monotonically increasing counter starting at 1, fresh per `construct()`.
+     */
+    sequence: Schema<{ sequence: true; integer: true }>;
+
+    big: typeof bigint;
+  };
+};
+
+const registry: ThisRegistry = {
   /**
    * Keep `[Produces]` and `[Adaptation]` assigned here — see CLAUDE.md's
    * "declaration-emit trap." Both are optional and symbol-keyed, so this
@@ -62,9 +62,6 @@ export default {
         [Meta]: { integer: true, whereby: toWhereby(whereby, true) },
       }),
 
-    /**
-     * A monotonically increasing counter starting at 1, fresh per `construct()`.
-     */
     sequence: Schema({
       [Kind]: "number",
       [Meta]: { sequence: true, integer: true },
@@ -73,3 +70,28 @@ export default {
     big: bigint,
   },
 };
+
+export default registry;
+
+function toWhereby(input: InputWhereby, integer: boolean): Whereby {
+  const min = input.min === undefined ? undefined : toBound(input.min);
+  const max = input.max === undefined ? undefined : toBound(input.max);
+  const defaults = integer ? unboundedDiscrete : unboundedContinuous;
+  const label = integer ? "T.number.integer.whereby" : "T.number.whereby";
+
+  /**
+   * An omitted end is not stored — same as `T.date` — but emptiness is
+   * judged against the fabricate-time cap so a one-sided exclusive end
+   * that leaves no value still fails at `.whereby()`, not first
+   * `fabricate()`.
+   */
+  if (integer) {
+    assertNonemptyDiscrete(label, min ?? defaults.min, max ?? defaults.max);
+  } else {
+    assertNonemptyContinuous(label, min ?? defaults.min, max ?? defaults.max);
+  }
+
+  return input.distribution === undefined
+    ? { min, max }
+    : { min, max, distribution: input.distribution };
+}
