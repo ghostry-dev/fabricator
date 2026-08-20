@@ -2,14 +2,13 @@ import { FabricatorError } from "../Error";
 import type { Stream } from "../Random/Types";
 
 /**
- * How randomly generated values cluster within a `{ min, max }` range.
- * Without one, generation is uniform — every value in the range is
- * equally likely.
+ * How randomly generated values cluster within a `{ min, max }` range. Without
+ * one, generation is uniform — every value in the range is equally likely.
  *
- * Each variant is a tagged object so distributions stay
- * introspectable and serializable. The `custom` variant is the escape
- * hatch: a shaping function `(u) => p` mapping a uniform draw in
- * `[0, 1)` to a position in `[0, 1)` within the range.
+ * Each variant is a tagged object so distributions stay introspectable and
+ * serializable. The `custom` variant is the escape hatch: a shaping function
+ * `(u) => p` mapping a uniform draw in `[0, 1)` to a position in `[0, 1)`
+ * within the range.
  */
 export type Distribution =
   | Distribution.Uniform
@@ -32,9 +31,9 @@ export namespace Distribution {
     spread?: number | undefined;
   };
   /**
-   * Bell curve truncated to the range. `mean` defaults to the range's
-   * center; `spread` (standard deviation) defaults to a sixth of the
-   * span, placing the bounds at roughly ±3σ before truncation.
+   * Bell curve truncated to the range. `mean` defaults to the range's center;
+   * `spread` (standard deviation) defaults to a sixth of the span, placing the
+   * bounds at roughly ±3σ before truncation.
    */
   export const normal = (params?: {
     mean?: number;
@@ -47,8 +46,8 @@ export namespace Distribution {
 
   export type Skew = { kind: "skew"; exponent: number };
   /**
-   * Power curve. `exponent > 1` biases toward `min`, `exponent < 1`
-   * biases toward `max`, and `exponent === 1` is uniform.
+   * Power curve. `exponent > 1` biases toward `min`, `exponent < 1` biases
+   * toward `max`, and `exponent === 1` is uniform.
    */
   export const skew = (exponent: number): Distribution => ({
     kind: "skew",
@@ -66,10 +65,9 @@ export namespace Distribution {
 
   export type Logarithmic = { kind: "logarithmic" };
   /**
-   * Log-uniform (reciprocal): density proportional to `1/x`, so values
-   * spread evenly across orders of magnitude and cluster toward `min`.
-   * Requires a strictly positive range — the logarithm is undefined at
-   * or below zero.
+   * Log-uniform (reciprocal): density proportional to `1/x`, so values spread
+   * evenly across orders of magnitude and cluster toward `min`. Requires a
+   * strictly positive range — the logarithm is undefined at or below zero.
    */
   export const logarithmic = (): Distribution => ({ kind: "logarithmic" });
 
@@ -78,11 +76,10 @@ export namespace Distribution {
     components: ReadonlyArray<{ weight: number; distribution: Distribution }>;
   };
   /**
-   * A weighted blend of component distributions, each drawn over the
-   * same range. Localized components with distinct centers (e.g. two
-   * `normal`s at different means) produce the separate peaks of a
-   * multimodal distribution. Weights are relative — they need not sum
-   * to 1.
+   * A weighted blend of component distributions, each drawn over the same
+   * range. Localized components with distinct centers (e.g. two `normal`s at
+   * different means) produce the separate peaks of a multimodal distribution.
+   * Weights are relative — they need not sum to 1.
    */
   export const multi = (
     components: ReadonlyArray<{ weight: number; distribution: Distribution }>,
@@ -90,10 +87,9 @@ export namespace Distribution {
 
   export type Custom = { kind: "custom"; shape: (u: number) => number };
   /**
-   * Escape hatch: `shape` maps a uniform draw in `[0, 1)` to a
-   * position in `[0, 1)` within the range (an inverse CDF). The output
-   * is clamped to `[0, 1]` so the result always lands within the
-   * bounds.
+   * Escape hatch: `shape` maps a uniform draw in `[0, 1)` to a position in `[0,
+   * 1)` within the range (an inverse CDF). The output is clamped to `[0, 1]` so
+   * the result always lands within the bounds.
    */
   export const custom = (shape: (u: number) => number): Distribution => ({
     kind: "custom",
@@ -102,23 +98,21 @@ export namespace Distribution {
 }
 
 /**
- * Map a unit position `u` in `[0, 1]` onto `[min, max]` without ever
- * forming `max - min`. That subtraction overflows to `Infinity` when
- * both ends sit on `±Number.MAX_VALUE` (and for other equally wide
- * pairs); `min + u * span` then yields `Infinity`/`NaN`. The convex
- * combination stays finite because it never adds the two magnitudes
- * as a single value.
+ * Map a unit position `u` in `[0, 1]` onto `[min, max]` without ever forming
+ * `max - min`. That subtraction overflows to `Infinity` when both ends sit on
+ * `±Number.MAX_VALUE` (and for other equally wide pairs); `min + u * span` then
+ * yields `Infinity`/`NaN`. The convex combination stays finite because it never
+ * adds the two magnitudes as a single value.
  */
 function at(u: number, min: number, max: number): number {
   return (1 - u) * min + u * max;
 }
 
 /**
- * Inverse of {@link at}: where `x` sits in `[min, max]` as a unit
- * position. `(x - min) / (max - min)` is the finite-span form;
- * `max - min` overflowing makes that `0` or `NaN`, so rewrite as
- * `1 / (1 + (max - x) / (x - min))` — a ratio of two finite distances
- * when `x` is strictly inside.
+ * Inverse of {@link at}: where `x` sits in `[min, max]` as a unit position. `(x
+ * - min) / (max - min)` is the finite-span form; `max - min` overflowing makes
+ * that `0` or `NaN`, so rewrite as `1 / (1 + (max - x) / (x - min))` — a ratio
+ * of two finite distances when `x` is strictly inside.
  */
 function unitPosition(x: number, min: number, max: number): number {
   if (x === min) return 0;
@@ -133,11 +127,11 @@ function unitPosition(x: number, min: number, max: number): number {
 }
 
 /**
- * Build a sampler that draws values within `range` following
- * `distribution`. Each call consumes one fresh uniform draw and, by
- * construction, returns a value within `[min, max]` — distributions
- * with mass outside the range (e.g. a normal's tails) are truncated
- * via their inverse CDF rather than rejected or clamped.
+ * Build a sampler that draws values within `range` following `distribution`.
+ * Each call consumes one fresh uniform draw and, by construction, returns a
+ * value within `[min, max]` — distributions with mass outside the range (e.g. a
+ * normal's tails) are truncated via their inverse CDF rather than rejected or
+ * clamped.
  */
 export function sampler(
   distribution: Distribution,
@@ -179,9 +173,9 @@ export function sampler(
           : Math.max(Math.abs(min), Math.abs(max)) / 6 || 1);
 
       /**
-       * Inverse-CDF truncation: confine the uniform draw to the
-       * probability mass that already falls within [min, max], so
-       * every mapped value stays in range without rejection.
+       * Inverse-CDF truncation: confine the uniform draw to the probability
+       * mass that already falls within [min, max], so every mapped value stays
+       * in range without rejection.
        */
       const lower = normalCdf((min - mean) / spread);
       const upper = normalCdf((max - mean) / spread);
@@ -202,8 +196,8 @@ export function sampler(
         );
       }
       /**
-       * Inverse-CDF of a log-uniform: a uniform draw in log-space —
-       * `min * (max/min)^u` — lands in [min, max) by construction.
+       * Inverse-CDF of a log-uniform: a uniform draw in log-space — `min *
+       * (max/min)^u` — lands in [min, max) by construction.
        */
       const ratio = max / min;
       return () => min * ratio ** stream.next();
@@ -211,10 +205,9 @@ export function sampler(
 
     case "multi": {
       /**
-       * Pick a component by weight, then draw from it. Each component
-       * sampler already confines itself to [min, max], so the blend
-       * does too; the multimodality comes from the components' own
-       * shapes.
+       * Pick a component by weight, then draw from it. Each component sampler
+       * already confines itself to [min, max], so the blend does too; the
+       * multimodality comes from the components' own shapes.
        */
       const pick = weighted(
         distribution.components.map((component): [number, () => number] => [
@@ -245,8 +238,8 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Standard normal CDF via the Abramowitz & Stegun 7.1.26 approximation
- * of the error function (|error| < 1.5e-7).
+ * Standard normal CDF via the Abramowitz & Stegun 7.1.26 approximation of the
+ * error function (|error| < 1.5e-7).
  */
 function normalCdf(x: number): number {
   return 0.5 * (1 + erf(x / Math.SQRT2));
@@ -267,8 +260,8 @@ function erf(x: number): number {
 }
 
 /**
- * Inverse of the standard normal CDF (quantile function) via Peter
- * Acklam's rational approximation (relative error < 1.15e-9).
+ * Inverse of the standard normal CDF (quantile function) via Peter Acklam's
+ * rational approximation (relative error < 1.15e-9).
  */
 function normalInv(p: number): number {
   if (p <= 0) return -Infinity;
@@ -350,9 +343,8 @@ export function sample<$T>(list: ReadonlyArray<$T>, stream: Stream): $T {
 
 /**
  * Fisher–Yates (Durstenfeld) shuffle: a new array holding `items` in a
- * uniformly random order — every permutation is equally likely. Does
- * not mutate `items`, matching `sample`/`weighted`'s read-only
- * convention.
+ * uniformly random order — every permutation is equally likely. Does not mutate
+ * `items`, matching `sample`/`weighted`'s read-only convention.
  */
 export function shuffle<$T>(items: ReadonlyArray<$T>, stream: Stream): $T[] {
   const shuffled = [...items];
@@ -368,33 +360,32 @@ export function shuffle<$T>(items: ReadonlyArray<$T>, stream: Stream): $T[] {
 }
 
 /**
- * `weighted()`'s own inclusion rule: whether this entry stays in the
- * draw table. `0` is valid and disables the outcome; negative/`NaN`
- * are rejected earlier by {@link isValidWeight}. Exposed so
- * `Enumeration/Plan.ts` and the construction guards share one
- * definition of "will this be drawn" rather than each writing
- * `weight > 0`.
+ * `weighted()`'s own inclusion rule: whether this entry stays in the draw
+ * table. `0` is valid and disables the outcome; negative/`NaN` are rejected
+ * earlier by {@link isValidWeight}. Exposed so `Enumeration/Plan.ts` and the
+ * construction guards share one definition of "will this be drawn" rather than
+ * each writing `weight > 0`.
  */
 export function isDrawable(weight: number): boolean {
   return weight > 0;
 }
 
 /**
- * Whether a weight is *expressible* at all, as opposed to whether it is
- * drawable. `0` is valid and disables the outcome; a negative weight or
- * `NaN` is a mistake. `Infinity` is rejected because it cannot be summed
- * into a usable draw table — every cumulative bound becomes `Infinity`,
- * so `weighted()`'s `x < weight` scan matches nothing.
+ * Whether a weight is _expressible_ at all, as opposed to whether it is
+ * drawable. `0` is valid and disables the outcome; a negative weight or `NaN`
+ * is a mistake. `Infinity` is rejected because it cannot be summed into a
+ * usable draw table — every cumulative bound becomes `Infinity`, so
+ * `weighted()`'s `x < weight` scan matches nothing.
  */
 export function isValidWeight(weight: number): boolean {
   return weight >= 0 && Number.isFinite(weight);
 }
 
 /**
- * Outcomes that still have a positive weight after applying the
- * baseline of `1` for any unspecified (missing or explicitly
- * `undefined`) key. The one home of that `?? 1` default, so
- * `assertDrawableKeyedWeights` and `Enumeration/Plan.ts` cannot drift.
+ * Outcomes that still have a positive weight after applying the baseline of `1`
+ * for any unspecified (missing or explicitly `undefined`) key. The one home of
+ * that `?? 1` default, so `assertDrawableKeyedWeights` and
+ * `Enumeration/Plan.ts` cannot drift.
  */
 export function drawableOutcomes<$Outcome extends string>(
   outcomes: ReadonlyArray<$Outcome>,
@@ -404,11 +395,10 @@ export function drawableOutcomes<$Outcome extends string>(
 }
 
 /**
- * Two-stage guard for a `[weight, item]` list (`enum`/`choice`'s
- * `.weighted()` registries). Stage 1 rejects any entry that is not
- * {@link isValidWeight}; stage 2 rejects a list with no
- * {@link isDrawable} entry left. `label` names the call site
- * (`"T.enum.weighted"`/`"T.choice.weighted"`), `noun` the kind of
+ * Two-stage guard for a `[weight, item]` list (`enum`/`choice`'s `.weighted()`
+ * registries). Stage 1 rejects any entry that is not {@link isValidWeight};
+ * stage 2 rejects a list with no {@link isDrawable} entry left. `label` names
+ * the call site (`"T.enum.weighted"`/`"T.choice.weighted"`), `noun` the kind of
  * entry (`"member"`/`"option"`).
  */
 export function assertDrawableWeights(
@@ -433,16 +423,16 @@ export function assertDrawableWeights(
 }
 
 /**
- * The same two-stage guard as {@link assertDrawableWeights}, for the
- * kinds whose `.weighted(...)` weighs a *fixed, named* outcome set
- * (`boolean`'s `true`/`false`; `nullable`/`nullish`/`undefinable`/
+ * The same two-stage guard as {@link assertDrawableWeights}, for the kinds
+ * whose `.weighted(...)` weighs a _fixed, named_ outcome set (`boolean`'s
+ * `true`/`false`; `nullable`/`nullish`/`undefinable`/
  * `object.omittable`/`object.optional`'s presence outcomes) rather than a
- * caller-supplied list. Stage 2 must see the kind's **full** outcome list
- * — an omitted key still defaults to `1` — hence `outcomes`.
+ * caller-supplied list. Stage 2 must see the kind's **full** outcome list — an
+ * omitted key still defaults to `1` — hence `outcomes`.
  *
- * An explicitly-`undefined` value means "unspecified" — `Weights`'
- * keys are all optional and fall back to a baseline of `1` — so it is
- * skipped in stage 1 and defaulted in stage 2.
+ * An explicitly-`undefined` value means "unspecified" — `Weights`' keys are all
+ * optional and fall back to a baseline of `1` — so it is skipped in stage 1 and
+ * defaulted in stage 2.
  */
 export function assertDrawableKeyedWeights<$Outcome extends string>(
   label: string,
@@ -476,9 +466,9 @@ export function weighted<const $Item>(
     .map(([weight, item]) => [(sum += weight), item] as const);
 
   /**
-   * Eager: this closure is built during `new Fabricator(...)`, so an
-   * empty table is a construction error, matching the `.weighted()`
-   * guards. A lazy throw would surface at `.fabricate()` instead.
+   * Eager: this closure is built during `new Fabricator(...)`, so an empty
+   * table is a construction error, matching the `.weighted()` guards. A lazy
+   * throw would surface at `.fabricate()` instead.
    */
   if (weightings.length === 0) {
     throw new FabricatorError.NoDrawableOutcomesError(label, "outcome");

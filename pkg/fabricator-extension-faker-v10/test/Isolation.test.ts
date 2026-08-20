@@ -7,9 +7,9 @@ import {
 import { expect, test } from "bun:test";
 
 /**
- * The bridge's shared `scope` is a module-level mutable — these tests are
- * the guard that it never leaks across unrelated fabrications, or is
- * confused with faker's own global singleton.
+ * The bridge's shared `scope` is a module-level mutable — these tests are the
+ * guard that it never leaks across unrelated fabrications, or is confused with
+ * faker's own global singleton.
  */
 
 const types = () => registry.extend(fakerExtension({ locale: en }));

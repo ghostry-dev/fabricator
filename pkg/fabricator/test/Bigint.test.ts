@@ -71,8 +71,8 @@ test("a single-value range always fabricates that value", () => {
 
 /**
  * A large range exercises the byte-buffer/rejection-sampling machinery
- * (`bigint/Fabricator.ts`) beyond what fits a single `Uint8Array` byte,
- * still staying reproducible and in range.
+ * (`bigint/Fabricator.ts`) beyond what fits a single `Uint8Array` byte, still
+ * staying reproducible and in range.
  */
 test("a range spanning multiple bytes stays within bounds", () => {
   const { T, Fabricator } = initialize({ seed: "bigint-multibyte" });

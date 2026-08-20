@@ -9,9 +9,9 @@ import {
 } from "@ghostry/fabricator/internal";
 
 /**
- * Drives `plan`/`resolve` directly — no public API exists yet (that's
- * phases 4/5). Enumerates every "product"-strategy combination a built
- * Fabricator has.
+ * Drives `plan`/`resolve` directly — no public API exists yet (that's phases
+ * 4/5). Enumerates every "product"-strategy combination a built Fabricator
+ * has.
  */
 function enumerateAll(built: any): { width: bigint; results: unknown[] } {
   const axis: Axis = plan(built, { strategy: "product" });

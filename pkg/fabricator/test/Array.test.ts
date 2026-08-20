@@ -5,8 +5,8 @@ import { FabricatorError, initialize } from "@ghostry/fabricator";
  * `whereby.length.min` was declared in `array/Types.ts` and documented in
  * `array/Registry.ts`, but `array/Fabricator.ts` drew its length as
  * `Math.ceil(stream.next() * max)` and never read `min` at all. Nothing
- * asserted array length against a spec, so the whole suite stayed green —
- * these are the assertions that would have caught it.
+ * asserted array length against a spec, so the whole suite stayed green — these
+ * are the assertions that would have caught it.
  */
 
 test("length.min is honored as a lower bound", () => {

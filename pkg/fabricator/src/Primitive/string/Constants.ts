@@ -1,15 +1,14 @@
 import type { CodepointRange } from "./Types";
 
 /**
- * Unicode code point ranges for spanning the codespace — a fuzzing aid
- * for exercising input far outside ordinary text. Use a preset or build
- * an arbitrary inclusive range with `range(from, to)`.
+ * Unicode code point ranges for spanning the codespace — a fuzzing aid for
+ * exercising input far outside ordinary text. Use a preset or build an
+ * arbitrary inclusive range with `range(from, to)`.
  *
- * Lives here rather than `Types.ts` so that file stays type-only. A
- * value export alongside `export type Fabricated = string` makes the
- * module a value module, and `export * as string` in
- * `Primitive/namespace.ts` then resolves `string` to the namespace —
- * a cycle that drops `[Kind]`/`[Meta]` off `Core`.
+ * Lives here rather than `Types.ts` so that file stays type-only. A value
+ * export alongside `export type Fabricated = string` makes the module a value
+ * module, and `export * as string` in `Primitive/namespace.ts` then resolves
+ * `string` to the namespace — a cycle that drops `[Kind]`/`[Meta]` off `Core`.
  */
 export const unicode = {
   /**
@@ -26,8 +25,8 @@ export const unicode = {
 
   /**
    * The entire Unicode codespace, U+0000–U+10FFFF, including the surrogate
-   * block — so it can yield lone surrogates and thus ill-formed UTF-16.
-   * Opt in for lone surrogates and other ill-formed UTF-16 when fuzzing.
+   * block — so it can yield lone surrogates and thus ill-formed UTF-16. Opt in
+   * for lone surrogates and other ill-formed UTF-16 when fuzzing.
    */
   codespace: { from: 0x0, to: 0x10ffff },
 
@@ -42,9 +41,9 @@ export const unicode = {
 };
 
 /**
- * The built-in character classes as code point ranges, each an alias for
- * the code point ranges it spans. For use in the `[weight, source]` form
- * of `composition` (e.g. mixing a class with a Unicode range).
+ * The built-in character classes as code point ranges, each an alias for the
+ * code point ranges it spans. For use in the `[weight, source]` form of
+ * `composition` (e.g. mixing a class with a Unicode range).
  */
 export const classes: {
   lowercase: ReadonlyArray<CodepointRange>;

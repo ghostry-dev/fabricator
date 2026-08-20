@@ -33,19 +33,19 @@ type Expect<_ extends true> = true;
 const { T, Fabricator } = initialize({ types: registry });
 
 /**
- * An adapter for a library this repo ships nothing for, standing in for a
- * third party's. `toTypeBox` must carry its entries and ignore them.
+ * An adapter for a library this repo ships nothing for, standing in for a third
+ * party's. `toTypeBox` must carry its entries and ignore them.
  *
  * A whole adapter rather than a bare key because that is now the only way to
- * put an entry on a schema — and it is what makes this a real test of
- * isolation rather than of a cast: `zod`'s adaptations are filed under a key
- * `zod` itself owns, so nothing about them is assignable to, or confusable
- * with, `typebox`'s. Registering it anywhere is neither needed nor possible;
- * an adapter is a value.
+ * put an entry on a schema — and it is what makes this a real test of isolation
+ * rather than of a cast: `zod`'s adaptations are filed under a key `zod` itself
+ * owns, so nothing about them is assignable to, or confusable with,
+ * `typebox`'s. Registering it anywhere is neither needed nor possible; an
+ * adapter is a value.
  *
  * `convert` returns `string` — a deliberately non-TypeBox external type, so
- * that an adaptation for this adapter is exactly what `ToTypeBox`'s
- * `infer ... extends TSchema` guard has to refuse.
+ * that an adaptation for this adapter is exactly what `ToTypeBox`'s `infer ...
+ * extends TSchema` guard has to refuse.
  */
 const zod = {
   key: "test/zod",
@@ -105,9 +105,8 @@ const extended = toTypeBox(record.extend(() => ({ y: T.number.integer })));
 const overridden = toTypeBox(record.override({ x: 7 }));
 
 /**
- * Layering: an adaptation that adapts its own argument resolves to whatever
- * it replaced — the previous adaptation here, the kind's ordinary mapping
- * below.
+ * Layering: an adaptation that adapts its own argument resolves to whatever it
+ * replaced — the previous adaptation here, the kind's ordinary mapping below.
  */
 const layered = toTypeBox(
   email.adapt(typebox, ({ schema }) =>
@@ -145,11 +144,10 @@ T.number.integer.adapt(zod, () => Type.Integer());
 T.number.integer.adapt("test/zod", () => "z.number()");
 
 /**
- * A computed field ordinarily maps via the `source` it derives its shape
- * from; adapting the field itself is how the two are told apart. Adapted to
- * an integer deliberately, so this diverges from what the `T.string` source
- * would have produced — an adaptation returning `TString` here would assert
- * nothing.
+ * A computed field ordinarily maps via the `source` it derives its shape from;
+ * adapting the field itself is how the two are told apart. Adapted to an
+ * integer deliberately, so this diverges from what the `T.string` source would
+ * have produced — an adaptation returning `TString` here would assert nothing.
  */
 const computed = T.object({
   name: T.string.whereby({ length: { max: 4 } }),
@@ -167,9 +165,9 @@ const inCompute = toTypeBox(computed);
 const inAdaptedCompute = toTypeBox(adaptedComputed);
 
 /**
- * The producer's parameter as a caller actually receives it — read back off
- * a real `.adapt(...)`, so it tracks whatever that method declares rather
- * than restating `Adapting` and asserting against itself.
+ * The producer's parameter as a caller actually receives it — read back off a
+ * real `.adapt(...)`, so it tracks whatever that method declares rather than
+ * restating `Adapting` and asserting against itself.
  */
 type AdaptingOf<$Schema extends { adapt: (...args: never) => unknown }> =
   Parameters<$Schema["adapt"]>[1] extends (adapting: infer $Adapting) => unknown
@@ -179,9 +177,10 @@ type AdaptingOf<$Schema extends { adapt: (...args: never) => unknown }> =
 export type Assertions = [
   /**
    * `meta` resolves to the kind's own config rather than `unknown` — implicit
-   * in `email`'s producer reading `meta.whereby.length.max.value` above (which would
-   * not compile otherwise), stated here so a regression to `unknown` fails as
-   * an assertion rather than as a property access somewhere unrelated.
+   * in `email`'s producer reading `meta.whereby.length.max.value` above (which
+   * would not compile otherwise), stated here so a regression to `unknown`
+   * fails as an assertion rather than as a property access somewhere
+   * unrelated.
    */
   Expect<
     Equal<
@@ -206,11 +205,10 @@ export type Assertions = [
   Expect<Equal<typeof layered, TString>>,
   Expect<Equal<typeof overDefault, TString>>,
   /**
-   * Falls through the adaptation branch, so still precisely `TInteger`.
-   * Each of the three covers a different way that has to hold: an entry under
-   * another adapter's key only, the same via a hand-written map, and the two
-   * adapters' entries coexisting on one schema without either reading the
-   * other's.
+   * Falls through the adaptation branch, so still precisely `TInteger`. Each of
+   * the three covers a different way that has to hold: an entry under another
+   * adapter's key only, the same via a hand-written map, and the two adapters'
+   * entries coexisting on one schema without either reading the other's.
    */
   Expect<Equal<typeof adaptedForZodOnly, TInteger>>,
   Expect<Equal<ToTypeBox<CarryingForeignOnly>, TInteger>>,
@@ -335,10 +333,10 @@ test("`meta` is read where the adapter walks, not closed over at `.adapt`", () =
   );
 
   /**
-   * A builder method chained *after* `.adapt(...)` rewrites `[Meta]`, and the
+   * A builder method chained _after_ `.adapt(...)` rewrites `[Meta]`, and the
    * adaptation has to see that rewrite — `toSchemaAdaptation` reads `meta` off
-   * whichever schema `layer` hands down, rather than closing over the one
-   * being adapted at the point `.adapt(...)` was called.
+   * whichever schema `layer` hands down, rather than closing over the one being
+   * adapted at the point `.adapt(...)` was called.
    */
   expect(Object.keys(toTypeBox(probe).properties)).toEqual(["x"]);
   expect(

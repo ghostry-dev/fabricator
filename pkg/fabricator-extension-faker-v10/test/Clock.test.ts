@@ -5,9 +5,8 @@ import { expect, test } from "bun:test";
 
 /**
  * Faker inherits the instance's own `clock` rather than carrying a second,
- * independently configured one — the whole point being that `T.faker.date`
- * and core's own `T.date` never disagree about what "now" is within one
- * schema.
+ * independently configured one — the whole point being that `T.faker.date` and
+ * core's own `T.date` never disagree about what "now" is within one schema.
  */
 
 const types = () => registry.extend(fakerExtension({ locale: en }));

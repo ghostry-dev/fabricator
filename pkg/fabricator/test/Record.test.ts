@@ -3,9 +3,9 @@ import { initialize, registry } from "@ghostry/fabricator";
 
 /**
  * The registry `initialize()` hands back, so the helpers below stay typed.
- * Instantiated explicitly: a bare `ReturnType<typeof initialize>` resolves
- * the type parameter to its *constraint* (`PlainObject`) rather than its
- * default, which would leave every `T.<kind>` as `unknown`.
+ * Instantiated explicitly: a bare `ReturnType<typeof initialize>` resolves the
+ * type parameter to its _constraint_ (`PlainObject`) rather than its default,
+ * which would leave every `T.<kind>` as `unknown`.
  */
 type Registry = ReturnType<typeof initialize<typeof registry>>["T"];
 
@@ -61,9 +61,9 @@ test("size stays within max and is actually fuzzed across draws", () => {
 
 /**
  * With a key schema wide enough that collisions are vanishingly unlikely,
- * `minTried` is observed as a real lower bound — the half of the contract
- * that *is* reliable. `array` had this wrong for its own `length.min` until
- * it was fixed to use the same inclusive draw; see `test/Array.test.ts`.
+ * `minTried` is observed as a real lower bound — the half of the contract that
+ * _is_ reliable. `array` had this wrong for its own `length.min` until it was
+ * fixed to use the same inclusive draw; see `test/Array.test.ts`.
  */
 test("minTried is honored as a lower bound when collisions are unlikely", () => {
   const { T, Fabricator } = initialize({ seed: "record-min-tried" });
@@ -83,10 +83,10 @@ test("minTried is honored as a lower bound when collisions are unlikely", () => 
 });
 
 /**
- * The assertion that catches a regression from `Object.defineProperty` back
- * to bracket assignment. `obj["__proto__"] = v` silently mutates the
- * prototype instead of creating a property, and a fuzzed key schema can
- * reach that key for real — here it is pinned so the case is deterministic.
+ * The assertion that catches a regression from `Object.defineProperty` back to
+ * bracket assignment. `obj["__proto__"] = v` silently mutates the prototype
+ * instead of creating a property, and a fuzzed key schema can reach that key
+ * for real — here it is pinned so the case is deterministic.
  */
 test("a __proto__ key becomes an own property and does not pollute", () => {
   const { T, Fabricator } = initialize({ seed: "record-pollution" });
@@ -114,8 +114,8 @@ test("a __proto__ key becomes an own property and does not pollute", () => {
 
 /**
  * A key schema with only 10 possible values, asked for 10 entries: collisions
- * are effectively certain, and they collapse rather than throwing or
- * redrawing. This is exactly what `minTried`'s name exists to communicate.
+ * are effectively certain, and they collapse rather than throwing or redrawing.
+ * This is exactly what `minTried`'s name exists to communicate.
  */
 test("colliding keys collapse instead of throwing", () => {
   const { T, Fabricator } = initialize({ seed: "record-collisions" });

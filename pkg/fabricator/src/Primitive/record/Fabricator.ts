@@ -60,8 +60,8 @@ export function Fabricator<$Key extends Key, $Value extends Value>(
   const fabricate = (): Fabricated<$Key, $Value> => {
     /**
      * Uniform and inclusive across `[minTried, max]` — the same formula
-     * `string/Fabricator.ts` uses for its length and `array/Fabricator.ts`
-     * for its own.
+     * `string/Fabricator.ts` uses for its length and `array/Fabricator.ts` for
+     * its own.
      */
     const size = minTried + Math.floor(stream.next() * (max - minTried + 1));
 
@@ -78,16 +78,15 @@ export function Fabricator<$Key extends Key, $Value extends Value>(
 
       /**
        * `defineProperty`, never `fabricated[k] = v`. Keys here are drawn, so
-       * `"__proto__"` is reachable — and bracket-assigning that key mutates
-       * the prototype instead of creating a property. `defineProperty`
-       * writes a real enumerable own property and leaves `Object.prototype`
-       * intact.
+       * `"__proto__"` is reachable — and bracket-assigning that key mutates the
+       * prototype instead of creating a property. `defineProperty` writes a
+       * real enumerable own property and leaves `Object.prototype` intact.
        *
        * Not `object/Fabricator.ts`'s `isPollutionKey` throw: that guard
-       * protects developer-written keys, where throwing is actionable. A
-       * throw on a *drawn* key would fire on a seed-dependent schedule —
-       * the pseudo-flakiness the testing notes warn about. Removing the
-       * hazard beats reporting it here.
+       * protects developer-written keys, where throwing is actionable. A throw
+       * on a _drawn_ key would fire on a seed-dependent schedule — the
+       * pseudo-flakiness the testing notes warn about. Removing the hazard
+       * beats reporting it here.
        *
        * A repeated key overwrites, shrinking the record — see `Types.ts`'s
        * `Whereby` for why that is accepted rather than redrawn.

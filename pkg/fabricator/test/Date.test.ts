@@ -3,10 +3,10 @@ import { expect, test } from "bun:test";
 
 /**
  * These four tests assert boundedness relative to "now" — under the default
- * wall-clock, that means whatever instant `instance.context.clock` captured
- * at `initialize()`, not a later `Date.now()` (see `Clock.test.ts` for
- * the clock mechanism itself). Asserting against `context.clock` directly is
- * what these tests actually mean, and it's exact.
+ * wall-clock, that means whatever instant `instance.context.clock` captured at
+ * `initialize()`, not a later `Date.now()` (see `Clock.test.ts` for the clock
+ * mechanism itself). Asserting against `context.clock` directly is what these
+ * tests actually mean, and it's exact.
  */
 test("T.date.past always lands at or before now", () => {
   const { T, Fabricator, context } = initialize({ seed: "date-past" });
@@ -31,10 +31,10 @@ test("T.date.future always lands at or after now", () => {
 });
 
 /**
- * These two pin an explicit `clock` inside the `min`/`max` window, rather
- * than relying on the instance's captured "now": a wall-clock default near
- * the actual present would sit outside a historical calendar window like
- * this one, making `[min, now]`/`[now, max]` an invalid (inverted) range.
+ * These two pin an explicit `clock` inside the `min`/`max` window, rather than
+ * relying on the instance's captured "now": a wall-clock default near the
+ * actual present would sit outside a historical calendar window like this one,
+ * making `[min, now]`/`[now, max]` an invalid (inverted) range.
  */
 test("T.date.past.whereby({ min }) stays within [min, now]", () => {
   const min = new Date("2020-01-01T00:00:00.000Z");
@@ -71,13 +71,12 @@ test("T.date.future.whereby({ max }) stays within [now, max]", () => {
 });
 
 /**
- * Inclusive dates are sampled as continuous epoch ms and then clipped
- * to a whole millisecond by the `Date` constructor, so — like a
- * continuous `T.number.whereby({ min, max })` — an exact draw of either
- * endpoint isn't the right thing to assert; approach from within an
- * epsilon of each bound instead. Exclusive ends resolve as discrete
- * milliseconds first (`TimeClip` would otherwise land back on the
- * excluded instant).
+ * Inclusive dates are sampled as continuous epoch ms and then clipped to a
+ * whole millisecond by the `Date` constructor, so — like a continuous
+ * `T.number.whereby({ min, max })` — an exact draw of either endpoint isn't the
+ * right thing to assert; approach from within an epsilon of each bound instead.
+ * Exclusive ends resolve as discrete milliseconds first (`TimeClip` would
+ * otherwise land back on the excluded instant).
  */
 test("T.date.whereby({ min, max }) stays within [min, max] and approaches both ends", () => {
   const { T, Fabricator } = initialize({ seed: "date-whereby-bounds" });

@@ -6,8 +6,8 @@ import {
 } from "@ghostry/fabricator/internal";
 
 /**
- * These three helpers exist to fold together spellings of one location that
- * an ordinary POSIX checkout can never produce on its own (a percent-encoded
+ * These three helpers exist to fold together spellings of one location that an
+ * ordinary POSIX checkout can never produce on its own (a percent-encoded
  * `file://` URL, a Windows drive letter, a backslashed path) — so unlike the
  * rest of this package's test suite, which drives real behavior through real
  * stack frames, this file has to construct the inputs by hand.
@@ -66,10 +66,10 @@ test("relativize ascends with .. when the file sits outside the root", () => {
 });
 
 /**
- * The exact class of bug `isOwnFrame`'s old `includes(OWN_ROOT)` had:
- * `/a/bcd/` merely shares a character prefix with `/a/b/`, but is not a
- * descendant of it. A correct implementation must ascend out and back in,
- * never treat the character overlap as a match.
+ * The exact class of bug `isOwnFrame`'s old `includes(OWN_ROOT)` had: `/a/bcd/`
+ * merely shares a character prefix with `/a/b/`, but is not a descendant of it.
+ * A correct implementation must ascend out and back in, never treat the
+ * character overlap as a match.
  */
 test("relativize does not mistake a sibling directory for a nested one", () => {
   expect(relativize("/a/b/", "/a/bcd/x.ts")).toBe("../bcd/x.ts");

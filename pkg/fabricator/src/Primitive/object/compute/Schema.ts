@@ -28,10 +28,10 @@ export interface Schema<
   $Adaptations extends Adaptations = {},
 > extends Core<$Fabricated, $Source, $Adaptations> {
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
-   * Adapting the computed field itself, rather than the `source` it derives
-   * its shape from, is the way to say the two differ.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract. Adapting the
+   * computed field itself, rather than the `source` it derives its shape from,
+   * is the way to say the two differ.
    */
   adapt: <
     const $Adapter extends Adapter,

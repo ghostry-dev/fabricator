@@ -2,10 +2,10 @@ import { initialize } from "@ghostry/fabricator";
 import { expect, test } from "bun:test";
 
 /**
- * The property structural (schema-path) keying exists for: a leaf's stream
- * is identified by its own position in the schema — a field name, a tuple
- * slot index, a choice option index — never by how many same-kind leaves
- * were dispatched before it in the same file.
+ * The property structural (schema-path) keying exists for: a leaf's stream is
+ * identified by its own position in the schema — a field name, a tuple slot
+ * index, a choice option index — never by how many same-kind leaves were
+ * dispatched before it in the same file.
  */
 
 test("inserting a field leaves every existing sibling's value unchanged", () => {
@@ -80,15 +80,14 @@ test("renaming a field changes only that field's own value, not its siblings'", 
 });
 
 /**
- * `Constructor.ts`'s `choice` branch dispatches its options via `.map`,
- * which would misattribute every option's randomness under the old
- * call-stack-based design (a native `Array.prototype.map` frame sits
- * between the two calls, collapsing every option onto one shared
- * `"native"` bucket) — structural path keying never reads the call stack
- * per leaf, so this is safe regardless. Adding an option to one field must
- * not perturb an unrelated sibling field's own draws, the same "no
- * disturb" property every other composite kind (`object`, `tuple`) is held
- * to.
+ * `Constructor.ts`'s `choice` branch dispatches its options via `.map`, which
+ * would misattribute every option's randomness under the old call-stack-based
+ * design (a native `Array.prototype.map` frame sits between the two calls,
+ * collapsing every option onto one shared `"native"` bucket) — structural path
+ * keying never reads the call stack per leaf, so this is safe regardless.
+ * Adding an option to one field must not perturb an unrelated sibling field's
+ * own draws, the same "no disturb" property every other composite kind
+ * (`object`, `tuple`) is held to.
  */
 test("adding a choice option leaves an unrelated sibling field's draws unchanged", () => {
   const seed = "choice-add-option";

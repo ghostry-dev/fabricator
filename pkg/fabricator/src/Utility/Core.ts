@@ -30,8 +30,8 @@ export function isPollutionKey(key: string): boolean {
 }
 
 /**
- * A plain `{}`/`Object.create(null)` object — not an array, `Date`,
- * class instance, etc.
+ * A plain `{}`/`Object.create(null)` object — not an array, `Date`, class
+ * instance, etc.
  */
 export function isPlainObject(value: unknown): value is PlainObject {
   if (typeof value !== "object") return false;
@@ -45,8 +45,8 @@ export function isPlainObject(value: unknown): value is PlainObject {
  * Keys worth carrying across a merge. String keys are subject to the
  * prototype-pollution guard; symbol keys (e.g. a fabricator's
  * `[Kind]`/`[Meta]`) are carried through — dropping them would strip a
- * primitive's identity when it is extended — except `Replace`, which is
- * a directive consumed here rather than data to propagate.
+ * primitive's identity when it is extended — except `Replace`, which is a
+ * directive consumed here rather than data to propagate.
  */
 export function mergeableKeys(source: PlainObject): Array<string | symbol> {
   return Reflect.ownKeys(source).filter((key) => {
@@ -57,11 +57,10 @@ export function mergeableKeys(source: PlainObject): Array<string | symbol> {
 }
 
 /**
- * Tag an object so a subsequent deep or shallow merge replaces the
- * left-hand operand wholesale instead of merging into it. The
- * `[Replace]` directive is consumed by the merge and does not appear
- * on the result, so callers can wrap a replacement value without ever
- * naming the symbol.
+ * Tag an object so a subsequent deep or shallow merge replaces the left-hand
+ * operand wholesale instead of merging into it. The `[Replace]` directive is
+ * consumed by the merge and does not appear on the result, so callers can wrap
+ * a replacement value without ever naming the symbol.
  */
 export function replace<$T extends PlainObject>(
   value: $T,

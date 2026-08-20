@@ -2,9 +2,9 @@ import { defineConfig } from "vocs/config";
 
 /**
  * The single source of truth for where this site lives. Moving to a custom
- * domain (e.g. https://docs.ghostry.dev/) is a change to this line and
- * nothing else. A custom domain additionally needs a CNAME file emitted into
- * the build output.
+ * domain (e.g. https://docs.ghostry.dev/) is a change to this line and nothing
+ * else. A custom domain additionally needs a CNAME file emitted into the build
+ * output.
  */
 const DEPLOYMENT = new URL("https://ghostry-dev.github.io/fabricator/");
 const BASE_PATH = DEPLOYMENT.pathname.replace(/\/$/, "");
@@ -39,15 +39,15 @@ export default defineConfig({
   title: "fabricator",
   description: "Fabricate typed data from composable schemas.",
   /**
-   * Vocs does not prefix `logoUrl`/`iconUrl` with `basePath`, so these have
-   * to include it or GitHub Pages resolves them at the domain root.
+   * Vocs does not prefix `logoUrl`/`iconUrl` with `basePath`, so these have to
+   * include it or GitHub Pages resolves them at the domain root.
    */
   logoUrl: `${BASE_PATH}/logo.png`,
   iconUrl: `${BASE_PATH}/logo.png`,
   /**
-   * Electric blue on light surfaces, lavender on dark — the two most
-   * readable faces of the mark. Surfaces and the gray ramp live in
-   * `src/pages/_root.css` so they stay aligned with the same palette.
+   * Electric blue on light surfaces, lavender on dark — the two most readable
+   * faces of the mark. Surfaces and the gray ramp live in `src/pages/_root.css`
+   * so they stay aligned with the same palette.
    */
   accentColor: "light-dark(#4c51ff, #9378ff)",
   renderStrategy: "full-static",

@@ -6,8 +6,8 @@ import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 
 /**
  * `always`/`enum` are no longer capped at `string | number | boolean`. These
- * cover that the TypeBox mapping *pins* the widened values rather than
- * widening to "any bigint"/"any date" (see `toConst` in `../src/index.ts`).
+ * cover that the TypeBox mapping _pins_ the widened values rather than widening
+ * to "any bigint"/"any date" (see `toConst` in `../src/index.ts`).
  *
  * Every pinning assertion is deliberately two-directional. A bare
  * `Type.BigInt()` accepts `BigInt(5)` perfectly happily, so a lone positive
@@ -48,8 +48,8 @@ test("toTypeBox pins null/undefined always-es", () => {
 
 /**
  * The reason `toConst` recurses itself instead of handing a whole object to
- * `Type.Const`: without that, a nested pinnable value would silently come
- * out unpinned while the same value at the top level came out exact.
+ * `Type.Const`: without that, a nested pinnable value would silently come out
+ * unpinned while the same value at the top level came out exact.
  */
 test("toTypeBox pins values nested inside an always-ed object or array", () => {
   const { T } = initialize({ seed: "always-nested" });
@@ -67,10 +67,10 @@ test("toTypeBox pins values nested inside an always-ed object or array", () => {
 });
 
 /**
- * Not everything is pinnable, and the honest boundary is worth asserting so
- * it is not mistaken for a bug later: TypeBox's `Symbol(options?)` takes no
- * value constraint, and `Uint8Array` can only express a byte length.
- * `.adapt(typebox, ...)` is the escape hatch for both.
+ * Not everything is pinnable, and the honest boundary is worth asserting so it
+ * is not mistaken for a bug later: TypeBox's `Symbol(options?)` takes no value
+ * constraint, and `Uint8Array` can only express a byte length. `.adapt(typebox,
+ * ...)` is the escape hatch for both.
  */
 test("toTypeBox widens where TypeBox cannot pin: symbols, and Uint8Array contents", () => {
   const { T } = initialize({ seed: "always-unpinnable" });
@@ -96,11 +96,11 @@ test("a string/number/boolean always still maps to a plain literal", () => {
 });
 
 /**
- * `toConst` recurses through objects and arrays itself (to pin nested
- * values), which only stays sound if its structure matches what `Type.Const`
- * would have produced — otherwise the runtime output would drift from the
- * type-level `ToConst`, which is a plain `TConst`. The readonly marking is
- * the easy half to get wrong.
+ * `toConst` recurses through objects and arrays itself (to pin nested values),
+ * which only stays sound if its structure matches what `Type.Const` would have
+ * produced — otherwise the runtime output would drift from the type-level
+ * `ToConst`, which is a plain `TConst`. The readonly marking is the easy half
+ * to get wrong.
  */
 test("toConst's own recursion matches Type.Const structurally", () => {
   const { T } = initialize({ seed: "always-mirrors-const" });

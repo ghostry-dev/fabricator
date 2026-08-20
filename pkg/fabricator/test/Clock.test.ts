@@ -3,10 +3,10 @@ import { expect, test } from "bun:test";
 
 /**
  * `clock` is what `T.date.past`/`T.date.future` (and any producer reading
- * `ProduceContext.clock`) resolve "now" against — an epoch-millisecond
- * instant. The unconfigured default is the wall-clock instant of
- * `initialize()` itself; `"seeded"` is the explicit opt-in that derives
- * that instant from the instance seed instead.
+ * `ProduceContext.clock`) resolve "now" against — an epoch-millisecond instant.
+ * The unconfigured default is the wall-clock instant of `initialize()` itself;
+ * `"seeded"` is the explicit opt-in that derives that instant from the instance
+ * seed instead.
  */
 
 test("an unconfigured instance captures wall-clock time and an empty seed", () => {
@@ -54,8 +54,8 @@ test("a seeded clock re-derives when the seed it composes changes, while an expl
 
   /**
    * `fork({ seed: layer("child") })` composes onto the base's seed, so an
-   * explicit `"seeded"` clock — never resolved eagerly by `overlay()` — sees
-   * a different effective seed and derives a different instant.
+   * explicit `"seeded"` clock — never resolved eagerly by `overlay()` — sees a
+   * different effective seed and derives a different instant.
    */
   expect(forkedSeeded.context.clock).not.toBe(seeded.context.clock);
 
@@ -240,10 +240,10 @@ test("instance.context.clock is a live getter, reflecting an active wrap while i
 });
 
 /**
- * `.as(produce)`'s `ProduceContext` also carries `clock` — this is what lets
- * a custom producer resolve "now" reproducibly too, the same guarantee
- * `random` already gives it. It arrives as a plain epoch-millisecond number,
- * the same representation everywhere else.
+ * `.as(produce)`'s `ProduceContext` also carries `clock` — this is what lets a
+ * custom producer resolve "now" reproducibly too, the same guarantee `random`
+ * already gives it. It arrives as a plain epoch-millisecond number, the same
+ * representation everywhere else.
  */
 test("ProduceContext.clock reaches a kind's own .as(produce)", () => {
   const pinned = new Date("2005-06-15T00:00:00.000Z");

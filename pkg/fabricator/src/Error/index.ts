@@ -1,18 +1,17 @@
 /**
  * Every error this library throws is a named subclass of
- * {@link FabricatorError}, kept in one dependency-free module:
- * `instanceof FabricatorError` catches everything the library raises, and no
- * error definition can pull a primitive's module graph into an unrelated
- * import.
+ * {@link FabricatorError}, kept in one dependency-free module: `instanceof
+ * FabricatorError` catches everything the library raises, and no error
+ * definition can pull a primitive's module graph into an unrelated import.
  *
- * Kind tags are plain `string`, not the `Kind` union from
- * `Primitive/index.ts` — that second reason, and because several of these
- * errors exist precisely because the kind in hand was *not* a member of it.
+ * Kind tags are plain `string`, not the `Kind` union from `Primitive/index.ts`
+ * — that second reason, and because several of these errors exist precisely
+ * because the kind in hand was _not_ a member of it.
  *
  * Context is `public readonly` constructor parameters, but the message still
- * stands on its own: a consumer reading only `.message` should not need a
- * field to understand the failure. Fields are for programmatic access, and
- * for detail too bulky to inline.
+ * stands on its own: a consumer reading only `.message` should not need a field
+ * to understand the failure. Fields are for programmatic access, and for detail
+ * too bulky to inline.
  */
 
 /**
@@ -43,8 +42,8 @@ export namespace FabricatorError {
   }
 
   /**
-   * `initialize({ limits: { combinatorial } })` when the configured limit
-   * could never be a meaningful instance count.
+   * `initialize({ limits: { combinatorial } })` when the configured limit could
+   * never be a meaningful instance count.
    */
   export class InvalidCombinatorialLimitError extends FabricatorError {
     constructor(
@@ -64,12 +63,12 @@ export namespace FabricatorError {
   }
 
   /**
-   * `initialize({ attribution: { kind: "rooted", root } })` when `root` is
-   * not an absolute path or a `file://` URL. A relative root can never prefix
-   * a resolved caller file, so `relativize` would leave every file unchanged
-   * — the option would look configured while silently doing nothing. Thrown
-   * eagerly at `initialize()`, not deferred to wherever that would first
-   * become observable.
+   * `initialize({ attribution: { kind: "rooted", root } })` when `root` is not
+   * an absolute path or a `file://` URL. A relative root can never prefix a
+   * resolved caller file, so `relativize` would leave every file unchanged —
+   * the option would look configured while silently doing nothing. Thrown
+   * eagerly at `initialize()`, not deferred to wherever that would first become
+   * observable.
    */
   export class InvalidAttributionRootError extends FabricatorError {
     constructor(
@@ -87,9 +86,9 @@ export namespace FabricatorError {
   }
 
   /**
-   * A `self` placeholder resolved with no `T.recursive` expanding around it
-   * — only reachable by holding a `self` reference outside the
-   * `T.recursive(...)` callback it was handed to.
+   * A `self` placeholder resolved with no `T.recursive` expanding around it —
+   * only reachable by holding a `self` reference outside the `T.recursive(...)`
+   * callback it was handed to.
    */
   export class DetachedSelfError extends FabricatorError {
     constructor(
@@ -109,18 +108,18 @@ export namespace FabricatorError {
   }
 
   /**
-   * `T.recursive(body).whereby({ depth })` with no `terminal`, when `body`
-   * has a `self` that is not behind a kind that can stop recursing — a
-   * required object field, a tuple slot, the body itself, or a `choice`
-   * whose every option still contains `self`. Thrown at `.whereby()`, not
-   * at fabricate time. An explicit `terminal` is the way out.
+   * `T.recursive(body).whereby({ depth })` with no `terminal`, when `body` has
+   * a `self` that is not behind a kind that can stop recursing — a required
+   * object field, a tuple slot, the body itself, or a `choice` whose every
+   * option still contains `self`. Thrown at `.whereby()`, not at fabricate
+   * time. An explicit `terminal` is the way out.
    */
   export class UnterminableRecursiveError extends FabricatorError {
     constructor(
       /**
-       * Structural path from the recursive body to the unterminable
-       * `self` (or to the `choice` that had no remaining non-`self`
-       * option), as field names / slot indices.
+       * Structural path from the recursive body to the unterminable `self` (or
+       * to the `choice` that had no remaining non-`self` option), as field
+       * names / slot indices.
        */
       public readonly path: ReadonlyArray<string>,
     ) {
@@ -137,15 +136,16 @@ export namespace FabricatorError {
   }
 
   /**
-   * A walk reached a node whose `[Kind]` it has no case for — a Schema built
-   * by hand or cast past the type system, or a kind added to
-   * `Primitive/index.ts` without wiring it into every dispatch site.
+   * A walk reached a node whose `[Kind]` it has no case for — a Schema built by
+   * hand or cast past the type system, or a kind added to `Primitive/index.ts`
+   * without wiring it into every dispatch site.
    */
   export class UnknownKindError extends FabricatorError {
     constructor(
       /**
-       * The unrecognized `[Kind]` tag, stringified — it may be any value at all,
-       * since reaching this error means the type system was already bypassed.
+       * The unrecognized `[Kind]` tag, stringified — it may be any value at
+       * all, since reaching this error means the type system was already
+       * bypassed.
        */
       public readonly kind: string,
 
@@ -186,10 +186,9 @@ export namespace FabricatorError {
   }
 
   /**
-   * An object's definition names a key that would reach `Object.prototype` —
-   * a developer-written key, where throwing is actionable (contrast
-   * `record`'s *drawn* keys, written with `Object.defineProperty` instead of
-   * rejected).
+   * An object's definition names a key that would reach `Object.prototype` — a
+   * developer-written key, where throwing is actionable (contrast `record`'s
+   * _drawn_ keys, written with `Object.defineProperty` instead of rejected).
    */
   export class PrototypePollutionError extends FabricatorError {
     constructor(
@@ -224,8 +223,8 @@ export namespace FabricatorError {
   }
 
   /**
-   * A `.refine()`-computed field's resolver returned a value of the wrong
-   * shape for the source schema it was declared against.
+   * A `.refine()`-computed field's resolver returned a value of the wrong shape
+   * for the source schema it was declared against.
    */
   export class ComputeResultMismatchError extends FabricatorError {
     constructor(
@@ -248,8 +247,8 @@ export namespace FabricatorError {
   }
 
   /**
-   * An override names a field the object schema does not define — most
-   * often a typo, which is why the known fields are listed.
+   * An override names a field the object schema does not define — most often a
+   * typo, which is why the known fields are listed.
    */
   export class UnknownOverrideFieldError extends FabricatorError {
     constructor(
@@ -274,8 +273,8 @@ export namespace FabricatorError {
   }
 
   /**
-   * An override value does not fit the field it is meant to replace. Raised
-   * for every field shape — a plain field, a nested object, and each presence
+   * An override value does not fit the field it is meant to replace. Raised for
+   * every field shape — a plain field, a nested object, and each presence
    * wrapper unwrapped to its inner kind — the same failure in each case.
    */
   export class InvalidOverrideValueError extends FabricatorError {
@@ -287,7 +286,7 @@ export namespace FabricatorError {
 
       /**
        * The `[Kind]` the value was checked against — for a wrapper field, the
-       * *inner* kind, since the wrapper's own absent/null outcomes are accepted
+       * _inner_ kind, since the wrapper's own absent/null outcomes are accepted
        * separately.
        */
       public readonly kind: string,
@@ -306,9 +305,8 @@ export namespace FabricatorError {
   }
 
   /**
-   * Thrown when `Omitted` is passed to override a field that has no
-   * absent outcome. Only `T.omittable`/`T.optional` fields can be forced
-   * off.
+   * Thrown when `Omitted` is passed to override a field that has no absent
+   * outcome. Only `T.omittable`/`T.optional` fields can be forced off.
    */
   export class IllegalOmittedOverrideError extends FabricatorError {
     constructor(
@@ -357,8 +355,8 @@ export namespace FabricatorError {
   }
 
   /**
-   * `resolve()` handed a pin for a kind `plan()` never produces one for —
-   * the two must stay in agreement; internal invariant, not caller-reachable.
+   * `resolve()` handed a pin for a kind `plan()` never produces one for — the
+   * two must stay in agreement; internal invariant, not caller-reachable.
    */
   export class UnpinnableKindError extends FabricatorError {
     constructor(
@@ -405,8 +403,8 @@ export namespace FabricatorError {
 
   /**
    * A `record`'s key schema has no counterpart in the external schema library
-   * being adapted to — a symbol key, for TypeBox, whose `Type.Record`
-   * silently yields a schema nothing can satisfy rather than raising.
+   * being adapted to — a symbol key, for TypeBox, whose `Type.Record` silently
+   * yields a schema nothing can satisfy rather than raising.
    */
   export class UnrepresentableRecordKeyError extends FabricatorError {
     constructor(
@@ -425,10 +423,10 @@ export namespace FabricatorError {
   }
 
   /**
-   * A `{ min, max }` range contains no fabricable value — inverted bounds,
-   * a point range with an exclusive end, or a discrete exclusive pair whose
-   * effective integers are none. Thrown at `.whereby()` (or at construction
-   * for `T.date.past`/`future`, whose other end is the instance clock).
+   * A `{ min, max }` range contains no fabricable value — inverted bounds, a
+   * point range with an exclusive end, or a discrete exclusive pair whose
+   * effective integers are none. Thrown at `.whereby()` (or at construction for
+   * `T.date.past`/`future`, whose other end is the instance clock).
    */
   export class EmptyRangeError extends FabricatorError {
     constructor(
@@ -471,8 +469,8 @@ export namespace FabricatorError {
 
   /**
    * A distribution's bounds fall outside its own domain — a `logarithmic`
-   * distribution's density is proportional to `1/x`, so it is undefined at
-   * or below zero.
+   * distribution's density is proportional to `1/x`, so it is undefined at or
+   * below zero.
    */
   export class InvalidDistributionBoundError extends FabricatorError {
     constructor(
@@ -501,18 +499,18 @@ export namespace FabricatorError {
   }
 
   /**
-   * Which entry of a `.weighted(...)` call carried the bad weight: a position in
-   * a caller-supplied list, or one of a fixed, named outcome set.
+   * Which entry of a `.weighted(...)` call carried the bad weight: a position
+   * in a caller-supplied list, or one of a fixed, named outcome set.
    */
   export type WeightEntry =
     | { readonly kind: "index"; readonly index: number; readonly noun: string }
     | { readonly kind: "name"; readonly name: string };
 
   /**
-   * A `.weighted(...)` call gives an outcome a weight that is not
-   * expressible: negative, `NaN`, or `Infinity`. Zero is valid — it
-   * disables the outcome — so this is not "anything `weighted()` would
-   * drop." An empty drawable set is {@link NoDrawableOutcomesError}.
+   * A `.weighted(...)` call gives an outcome a weight that is not expressible:
+   * negative, `NaN`, or `Infinity`. Zero is valid — it disables the outcome —
+   * so this is not "anything `weighted()` would drop." An empty drawable set is
+   * {@link NoDrawableOutcomesError}.
    */
   export class InvalidWeightError extends FabricatorError {
     constructor(
@@ -547,9 +545,9 @@ export namespace FabricatorError {
   }
 
   /**
-   * A weighted draw table has nothing left to pick: every weight is
-   * zero (or the list was empty of drawable entries). Zeroing an
-   * outcome disables it, so at least one must keep a positive weight.
+   * A weighted draw table has nothing left to pick: every weight is zero (or
+   * the list was empty of drawable entries). Zeroing an outcome disables it, so
+   * at least one must keep a positive weight.
    */
   export class NoDrawableOutcomesError extends FabricatorError {
     constructor(
@@ -573,9 +571,9 @@ export namespace FabricatorError {
   }
 
   /**
-   * `new Fabricator(schema, trace)` when `trace.kind` names a different
-   * kind than `schema`. A trace reproduces the node it was taken from,
-   * so its kind must match the schema it is replayed against.
+   * `new Fabricator(schema, trace)` when `trace.kind` names a different kind
+   * than `schema`. A trace reproduces the node it was taken from, so its kind
+   * must match the schema it is replayed against.
    */
   export class TraceKindMismatchError extends FabricatorError {
     constructor(

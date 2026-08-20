@@ -3,12 +3,11 @@ import { expect, test } from "bun:test";
 
 /**
  * The load-bearing assertion: inside one `wrap`, construction reached
- * implicitly (through the outer `instance.Fabricator`) and explicitly
- * (through `scope.Fabricator`) must resolve against the *same* `RandomSource`
- * — sharing one set of construction-ordinal counters — or an interleaved
- * sequence would diverge from the same calls made entirely through `scope`.
- * This is exactly what would break if the `wrap`'s `Frame` stashed the wrong
- * source.
+ * implicitly (through the outer `instance.Fabricator`) and explicitly (through
+ * `scope.Fabricator`) must resolve against the _same_ `RandomSource` — sharing
+ * one set of construction-ordinal counters — or an interleaved sequence would
+ * diverge from the same calls made entirely through `scope`. This is exactly
+ * what would break if the `wrap`'s `Frame` stashed the wrong source.
  */
 test("implicit (ambient) and explicit (scope.Fabricator) construction inside a wrap share one source", () => {
   const instance = initialize({ seed: "wrap-shared-source" });
@@ -100,10 +99,10 @@ test("a bare seed in a nested wrap replaces, ignoring the enclosing frame", () =
 });
 
 /**
- * `wrap` lays its overlay over the *active frame*, not over the instance it
- * was called on — so calling `sibling.wrap(...)` while `instance`'s own wrap
- * is active composes onto `instance`'s frame, completely ignoring
- * `sibling`'s own base seed.
+ * `wrap` lays its overlay over the _active frame_, not over the instance it was
+ * called on — so calling `sibling.wrap(...)` while `instance`'s own wrap is
+ * active composes onto `instance`'s frame, completely ignoring `sibling`'s own
+ * base seed.
  */
 test("wrap() called on a forked instance while another wrap is active lays over the active frame, not the fork's own base", () => {
   const instance = initialize({ seed: "wrap-fork-nesting" });
@@ -123,10 +122,9 @@ test("wrap() called on a forked instance while another wrap is active lays over 
 });
 
 /**
- * A frame reaches the whole lineage: a fork created *outside* a wrap — with
- * no ancestry relationship to the wrap beyond sharing the same lineage's
- * stack — is still overridden *inside* one, for both `Fabricator` and
- * `combinatorial`.
+ * A frame reaches the whole lineage: a fork created _outside_ a wrap — with no
+ * ancestry relationship to the wrap beyond sharing the same lineage's stack —
+ * is still overridden _inside_ one, for both `Fabricator` and `combinatorial`.
  */
 test("a sibling fork created outside a wrap is overridden inside it — both Fabricator and combinatorial", () => {
   const instance = initialize({ seed: "wrap-lineage-reach" });
@@ -156,7 +154,7 @@ test("a sibling fork created outside a wrap is overridden inside it — both Fab
  * A bare enumerable axis enumerates its members deterministically — index
  * order, not seed-dependent (only `coverage`'s `"cycle"` strategy permutes by
  * seed; see `Plan.ts`). So the schema here pairs the enumerable field with an
- * ordinary fuzzed one (`n`), whose *value* within each enumerated combination
+ * ordinary fuzzed one (`n`), whose _value_ within each enumerated combination
  * does vary by seed, which is what actually exercises the ambient-frame
  * override for `combinatorial`.
  */
@@ -186,9 +184,9 @@ test("combinatorial inside a wrap differs from outside it and matches the wrappe
 });
 
 /**
- * Coverage's `"cycle"` strategy *does* permute by seed, but a 3-member enum
- * is only 6 schedules — two seeds can land on the same one. Pair the
- * enumerable axis with a fuzzed `n`, same as the combinatorial sibling.
+ * Coverage's `"cycle"` strategy _does_ permute by seed, but a 3-member enum is
+ * only 6 schedules — two seeds can land on the same one. Pair the enumerable
+ * axis with a fuzzed `n`, same as the combinatorial sibling.
  */
 test("coverage inside a wrap differs from outside it and matches the wrapped instance's own", () => {
   const instance = initialize({
@@ -273,14 +271,14 @@ test("the frame unwinds correctly when the wrap block throws", () => {
 });
 
 /**
- * `wrap`'s own body is a plain (non-`async`) function: calling an `async`
- * block executes it synchronously up to its first `await`, then returns a
- * pending `Promise` immediately — so `stack.enter`'s `finally` pops the frame
- * right then, before the continuation after `await` ever runs. A build
- * reached after that `await` therefore sees this instance's own
- * configuration again, not the wrap's; `scope.Fabricator` is unaffected
- * either way, since it always resolves against its own closed-over source
- * regardless of whether the frame is still on the stack.
+ * `wrap`'s own body is a plain (non-`async`) function: calling an `async` block
+ * executes it synchronously up to its first `await`, then returns a pending
+ * `Promise` immediately — so `stack.enter`'s `finally` pops the frame right
+ * then, before the continuation after `await` ever runs. A build reached after
+ * that `await` therefore sees this instance's own configuration again, not the
+ * wrap's; `scope.Fabricator` is unaffected either way, since it always resolves
+ * against its own closed-over source regardless of whether the frame is still
+ * on the stack.
  */
 test("a build reached after an await inside the wrap block is unwrapped; scope.Fabricator stays wrapped", async () => {
   const instance = initialize({ seed: "wrap-async" });
@@ -316,12 +314,12 @@ test("a wrap on one lineage has no effect on an unrelated initialize() instance"
 
 /**
  * Pins an explicit `clock` on the instance: `wrap({ seed: layer("x") })`
- * composes onto the instance's own seed. A wall-clock default is inherited
- * as a number, so this pin is for `"seeded"` instances (and for making the
- * shared "now" obvious); an inherited `"seeded"` clock would re-derive
- * whenever the seed it composes changes (see `Instance/Types.ts`'s
- * `Config.clock`) — so without an explicit clock here, a `"seeded"` wrap's
- * own scoped source would carry a different "now" than the instance's own.
+ * composes onto the instance's own seed. A wall-clock default is inherited as a
+ * number, so this pin is for `"seeded"` instances (and for making the shared
+ * "now" obvious); an inherited `"seeded"` clock would re-derive whenever the
+ * seed it composes changes (see `Instance/Types.ts`'s `Config.clock`) — so
+ * without an explicit clock here, a `"seeded"` wrap's own scoped source would
+ * carry a different "now" than the instance's own.
  */
 test("a bare per-call seed inside a wrap reproduces what the same call gives outside one", () => {
   const instance = initialize({
@@ -344,15 +342,15 @@ test("a bare per-call seed inside a wrap reproduces what the same call gives out
 });
 
 /**
- * The one place `layer` and `wrap` genuinely interact: a per-call layered
- * seed composes onto the *frame's* effective seed, not the instance's own —
+ * The one place `layer` and `wrap` genuinely interact: a per-call layered seed
+ * composes onto the _frame's_ effective seed, not the instance's own —
  * differing from the same call made outside the wrap.
  */
 /**
  * Same reason as the test above: an explicit clock keeps the wrap's own
- * `layer("frame")` seed composition from also silently re-deriving a
- * different default clock, which would otherwise perturb this assertion for
- * a reason unrelated to what it's testing (seed composition, not "now").
+ * `layer("frame")` seed composition from also silently re-deriving a different
+ * default clock, which would otherwise perturb this assertion for a reason
+ * unrelated to what it's testing (seed composition, not "now").
  */
 test("a per-call layer(...) seed inside a wrap composes onto the frame's seed, not the instance's", () => {
   const instance = initialize({

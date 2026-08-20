@@ -47,7 +47,7 @@
     "check": "tsc --noEmit",
     "check:ts5": "bun --bun ../../node_modules/typescript-5/lib/tsc.js --noEmit",
     "check:jsr": "DENO_BIN_PATH=$PWD/../../node_modules/.bin/deno bunx --no-install jsr publish --dry-run --allow-dirty",
-    "prettier": "bunx --no-install --bun prettier .",
+    "format": "bunx --no-install oxfmt .",
     "test": "bun run check && bun run check:ts5 && bun run check:jsr && bun test"
   },
   "files": [

@@ -65,10 +65,10 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
   if (meta.integer) {
     const { min, max } = effectiveDiscrete(range.min, range.max);
     /**
-     * Draws over [min, max + 1) and floors, so each integer owns a
-     * full-width bucket — avoiding the half-width endpoint bias that
-     * rounding a [min, max] draw would produce. `min`/`max` here are
-     * already the effective inclusive integers after exclusive ends.
+     * Draws over [min, max + 1) and floors, so each integer owns a full-width
+     * bucket — avoiding the half-width endpoint bias that rounding a [min, max]
+     * draw would produce. `min`/`max` here are already the effective inclusive
+     * integers after exclusive ends.
      */
     const draw = sampler(distribution, { min, max: max + 1 }, stream);
     return {

@@ -5,10 +5,10 @@ import { initialize, FabricatorError } from "@ghostry/fabricator";
  * Not exhaustive over every subclass in `src/Error/index.ts` — the per-kind
  * test files (`Weights.test.ts`, `Enum.test.ts`, `Choice.test.ts`,
  * `Override.test.ts`, `Record.test.ts`, `Recursive.test.ts`, ...) already
- * exercise each call site's `toThrow()`. This file instead pins the one
- * thing none of those assert: that every failure is `instanceof
- * FabricatorError`, and that a representative subclass's context fields are
- * reachable without parsing `.message`.
+ * exercise each call site's `toThrow()`. This file instead pins the one thing
+ * none of those assert: that every failure is `instanceof FabricatorError`, and
+ * that a representative subclass's context fields are reachable without parsing
+ * `.message`.
  */
 
 test("a validation failure is an instance of FabricatorError", () => {

@@ -5,8 +5,8 @@ import { expect, test } from "bun:test";
 
 /**
  * Mirrors `pkg/fabricator/test/StructuralKeying.test.ts`: a faker builder's
- * stream is keyed by its own structural path, exactly like any other kind's,
- * so inserting, reordering, or renaming a sibling field must not perturb it.
+ * stream is keyed by its own structural path, exactly like any other kind's, so
+ * inserting, reordering, or renaming a sibling field must not perturb it.
  */
 
 const types = () => registry.extend(fakerExtension({ locale: en }));

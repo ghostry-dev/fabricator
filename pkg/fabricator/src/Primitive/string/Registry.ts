@@ -6,9 +6,9 @@ import type { Fabricated, InputWhereby, JsonSchema, Whereby } from "./Types";
 
 export default {
   /**
-   * The builder carries the primitive's `[Kind]` so it can be named directly
-   * as a `compute` source — which derives its schema by kind — without
-   * first satisfying a `whereby`.
+   * The builder carries the primitive's `[Kind]` so it can be named directly as
+   * a `compute` source — which derives its schema by kind — without first
+   * satisfying a `whereby`.
    */
   [Kind]: "string" as const,
 
@@ -37,8 +37,8 @@ export default {
    * `length` counts UTF-16 code units, so the result's `.length` equals the
    * chosen length exactly. When the composition cannot fill the final code
    * units — e.g. only astral, two-unit characters remain for a one-unit gap —
-   * the gap is topped up with a well-formed BMP character outside the
-   * requested `composition`, inserted at a random character boundary.
+   * the gap is topped up with a well-formed BMP character outside the requested
+   * `composition`, inserted at a random character boundary.
    */
   whereby: (whereby: InputWhereby): Schema<{ whereby: Whereby }> => {
     return Schema({

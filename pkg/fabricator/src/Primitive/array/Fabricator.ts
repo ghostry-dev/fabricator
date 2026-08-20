@@ -55,9 +55,9 @@ export function Fabricator<$Definition extends Definition>(
   const fabricate = (): Fabricated<$Definition> => {
     const length = inline((): number => {
       /**
-       * Uniform and inclusive across the effective `[min, max]` after
-       * exclusive ends are resolved — the same formula `string/Fabricator.ts`
-       * uses for its own length (and `record`'s for its `size`).
+       * Uniform and inclusive across the effective `[min, max]` after exclusive
+       * ends are resolved — the same formula `string/Fabricator.ts` uses for
+       * its own length (and `record`'s for its `size`).
        */
       const { min, max } = effectiveDiscrete(
         whereby.length.min,

@@ -10,12 +10,12 @@ import {
 import { expect, test } from "bun:test";
 
 /**
- * Compile-time assertions. `Expect<Equal<A, B>>` fails to typecheck unless
- * `A` and `B` are the exact same type, so a wrong `Fabrication<...>`
- * resolution (e.g. an unexpected `never`) surfaces as a `tsc` error rather
- * than passing silently. `Extends` is the one-directional variant, paired
- * up below where a type carries an irrelevant `& {}` (from `Pretty`) that
- * the strict `Equal` would reject.
+ * Compile-time assertions. `Expect<Equal<A, B>>` fails to typecheck unless `A`
+ * and `B` are the exact same type, so a wrong `Fabrication<...>` resolution
+ * (e.g. an unexpected `never`) surfaces as a `tsc` error rather than passing
+ * silently. `Extends` is the one-directional variant, paired up below where a
+ * type carries an irrelevant `& {}` (from `Pretty`) that the strict `Equal`
+ * would reject.
  */
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
@@ -38,10 +38,10 @@ const array = new Fabricator(
 );
 const tuple = new Fabricator(T.tuple([T.always("x"), T.number]));
 /**
- * All four key shapes a `record` can take. The split its `Fabricated` makes
- * is *open keyspace vs. finite one*, not string vs. symbol — so the mixed
- * `string | symbol` case has to keep both halves, and only the finite case
- * becomes `Partial` (collisions mean a literal key set may not be covered).
+ * All four key shapes a `record` can take. The split its `Fabricated` makes is
+ * _open keyspace vs. finite one_, not string vs. symbol — so the mixed `string
+ * | symbol` case has to keep both halves, and only the finite case becomes
+ * `Partial` (collisions mean a literal key set may not be covered).
  */
 /**
  * `opaque` infers straight from its producer's return type, so the value type
@@ -107,9 +107,9 @@ const nullish = new Fabricator(T.nullish(T.always("x")));
 
 /**
  * A refined object's Schema, asserted here pre-`build()` via `ValueOf` (a
- * computed field's type is readable straight off the Schema without
- * building it). See the `test("a .refine()-computed field builds and
- * fabricates ...")` block below for the built/fabricated runtime behavior.
+ * computed field's type is readable straight off the Schema without building
+ * it). See the `test("a .refine()-computed field builds and fabricates ...")`
+ * block below for the built/fabricated runtime behavior.
  */
 const refinedSchema = T.object({ id: T.always(1) }).refine(({ compute }) => ({
   refined: compute(T.date).as(({ fabricated }) => new Date(fabricated.id)),
@@ -193,15 +193,15 @@ export type LocalFabricationAssertions = [
 ];
 
 /**
- * Regression guard: a concretely-parameterized `Primitive.object.Fabricator<$Schema>`
- * (e.g. `typeof object` above) must still structurally satisfy the bare,
- * unparameterized `Primitive.object.Fabricator` — the same `$Fabricator extends
- * Fabricator` constraint every kind-local `Fabrication` helper relies on.
+ * Regression guard: a concretely-parameterized
+ * `Primitive.object.Fabricator<$Schema>` (e.g. `typeof object` above) must
+ * still structurally satisfy the bare, unparameterized
+ * `Primitive.object.Fabricator` — the same `$Fabricator extends Fabricator`
+ * constraint every kind-local `Fabrication` helper relies on.
  * `Schema.refine`/`.extend`/`.from` all use `$Definition` contravariantly, so
  * adding a field whose type depends on `$Definition` (like `.schema` or
- * `.from`) risks silently breaking this — see `object/Core.ts`'s
- * `Fabricator` doc comment for the `{ [Meta]: Meta<any> }` default that
- * keeps it working.
+ * `.from`) risks silently breaking this — see `object/Core.ts`'s `Fabricator`
+ * doc comment for the `{ [Meta]: Meta<any> }` default that keeps it working.
  */
 export type FromDoesNotBreakBareFabricatorAssertions = [
   Expect<Extends<typeof object, Primitive.object.Fabricator>>,

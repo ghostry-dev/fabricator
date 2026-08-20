@@ -61,10 +61,10 @@ const built = new Fabricator(
     /** A core kind, to pin that extending did not displace the originals. */
     id: T.string.whereby({ length: { max: 8 } }),
     /**
-     * `use`'s kind-tagged forms — each resolves to the value type the
-     * callback itself declares, not `unknown`, since `.string`/`.number`
-     * constrain `produce`'s own return type rather than merely tagging it
-     * after the fact.
+     * `use`'s kind-tagged forms — each resolves to the value type the callback
+     * itself declares, not `unknown`, since `.string`/`.number` constrain
+     * `produce`'s own return type rather than merely tagging it after the
+     * fact.
      */
     used: T.faker.use.string((f) => f.helpers.fromRegExp("[A-Z]{3}")),
     usedOpaque: T.faker.use.opaque((f) => f.helpers.arrayElement([1, 2, 3])),
@@ -83,9 +83,9 @@ export type Assertions = [
   Expect<Equal<Built["used"], string>>,
   /**
    * `use.opaque`'s `$T` is inferred from `produce`'s own return type, so a
-   * narrower callback (`arrayElement([1, 2, 3])`, a literal `1 | 2 | 3`)
-   * keeps its exact literal union rather than widening to `number` — the
-   * same inference `T.opaque` itself gives, per `CLAUDE.md`.
+   * narrower callback (`arrayElement([1, 2, 3])`, a literal `1 | 2 | 3`) keeps
+   * its exact literal union rather than widening to `number` — the same
+   * inference `T.opaque` itself gives, per `CLAUDE.md`.
    */
   Expect<Equal<Built["usedOpaque"], 1 | 2 | 3>>,
 
@@ -104,46 +104,42 @@ export type Assertions = [
 ];
 
 /**
- * Strips `readonly` one level deep. `object/Types.ts`'s `Fabricated` maps
- * over a *computed* key set (`Exclude<keyof $Definition, OmittableKeys<...>>`),
- * not `keyof $Definition` directly — a non-homomorphic mapped type, which
- * never carries a source property's modifiers forward. So a fabricated
- * object's properties are never `readonly`, regardless of the schema's own
- * field definitions, while faker declares some of its record shapes
- * (`Airline`, `Airplane`, `Airport`) with `readonly` fields and others
- * (`Currency`, `Language`, `ChemicalElement`, `Unit`) without. `Honest<...>`
- * cares whether the two sides can hold the same *values*, not whether one
- * of them promises not to reassign a property — mutability is a complete
- * non-issue for a data-generation library — so both sides are stripped
- * before comparing.
+ * Strips `readonly` one level deep. `object/Types.ts`'s `Fabricated` maps over
+ * a _computed_ key set (`Exclude<keyof $Definition, OmittableKeys<...>>`), not
+ * `keyof $Definition` directly — a non-homomorphic mapped type, which never
+ * carries a source property's modifiers forward. So a fabricated object's
+ * properties are never `readonly`, regardless of the schema's own field
+ * definitions, while faker declares some of its record shapes (`Airline`,
+ * `Airplane`, `Airport`) with `readonly` fields and others (`Currency`,
+ * `Language`, `ChemicalElement`, `Unit`) without. `Honest<...>` cares whether
+ * the two sides can hold the same _values_, not whether one of them promises
+ * not to reassign a property — mutability is a complete non-issue for a
+ * data-generation library — so both sides are stripped before comparing.
  */
 type Mutable<$T> = $T extends object
   ? { -readonly [$K in keyof $T]: $T[$K] }
   : $T;
 
 /**
- * `Honest<$M, $K>` — the enforcer that lets the mirror be hand-written at
- * all. There is no generator and no runtime probe; a human decides which
- * core kind each of faker's 237 methods maps to, and *this* is what makes a
- * wrong decision a compile error instead of a silent bug.
+ * `Honest<$M, $K>` — the enforcer that lets the mirror be hand-written at all.
+ * There is no generator and no runtime probe; a human decides which core kind
+ * each of faker's 237 methods maps to, and _this_ is what makes a wrong
+ * decision a compile error instead of a silent bug.
  *
- * For every module/method the mirror covers, it compares the *value* type
- * the declared builder resolves to
- * (`ValueOf<ReturnType<FakerModules[$M][$K]>>`) against faker's own declared
- * return type (`ReturnType<Faker[$M][$K]>`). That catches a method mapped to
- * the wrong kind, an object entry whose field shape is wrong, an enum
- * missing a member, and a faker release changing a return type — each
- * reported at the exact entry.
+ * For every module/method the mirror covers, it compares the _value_ type the
+ * declared builder resolves to (`ValueOf<ReturnType<FakerModules[$M][$K]>>`)
+ * against faker's own declared return type (`ReturnType<Faker[$M][$K]>`). That
+ * catches a method mapped to the wrong kind, an object entry whose field shape
+ * is wrong, an enum missing a member, and a faker release changing a return
+ * type — each reported at the exact entry.
  *
- * It reads `FakerModules` — the shipped surface — rather than any
- * intermediate description of it, so what is asserted is precisely what
- * consumers get.
+ * It reads `FakerModules` — the shipped surface — rather than any intermediate
+ * description of it, so what is asserted is precisely what consumers get.
  *
- * `Faker[$M][$K] extends (...) => unknown ? ... : never` re-narrows the
- * indexed access to a callable before `ReturnType<>`: `$K` is only known to
- * be `MethodName<$M>`, an intersection of two independently-indexed
- * `keyof`s, which isn't enough for the compiler to prove the access is
- * callable.
+ * `Faker[$M][$K] extends (...) => unknown ? ... : never` re-narrows the indexed
+ * access to a callable before `ReturnType<>`: `$K` is only known to be
+ * `MethodName<$M>`, an intersection of two independently-indexed `keyof`s,
+ * which isn't enough for the compiler to prove the access is callable.
  */
 type Honest<$M extends ModuleName, $K extends MethodName<$M>> = Equal<
   FakerModules[$M][$K] extends (...args: never[]) => unknown
@@ -156,33 +152,41 @@ type Honest<$M extends ModuleName, $K extends MethodName<$M>> = Equal<
 
 type Values<$T> = $T[keyof $T];
 
-/** Collapses a union of booleans to `true` only if every member is `true` —
- * so `Expect<AllTrue<...>>` fails to compile the moment any one method in a
- * module disagrees, without needing 237 individually named assertions. */
+/**
+ * Collapses a union of booleans to `true` only if every member is `true` — so
+ * `Expect<AllTrue<...>>` fails to compile the moment any one method in a module
+ * disagrees, without needing 237 individually named assertions.
+ */
 type AllTrue<$U extends boolean> = [$U] extends [true] ? true : false;
 
 /**
  * The one deliberate deviation `Honest<...>` cannot express, carved out here
  * rather than papered over in the surface itself.
  *
- * `color`'s 7 split methods are each one faker method but *two* builders
- * (`{ text, channels }`), so the node is a plain object rather than a
- * callable and there is no single return type to compare — `ReturnType<...>`
- * would not even apply. Their correctness is pinned instead by
- * `TypeBoxAssertions` below (`text` → `TString`, `channels` →
- * `TArray<TNumber>`) and by `Deviation.test.ts` fabricating both halves.
+ * `color`'s 7 split methods are each one faker method but _two_ builders (`{
+ * text, channels }`), so the node is a plain object rather than a callable and
+ * there is no single return type to compare — `ReturnType<...>` would not even
+ * apply. Their correctness is pinned instead by `TypeBoxAssertions` below
+ * (`text` → `TString`, `channels` → `TArray<TNumber>`) and by
+ * `Deviation.test.ts` fabricating both halves.
  *
- * They remain covered by `MethodsExhaustive<$M>`, which checks that the
- * *keys* match faker's — only the return-type comparison is skipped. See the
- * deviation policy in `CLAUDE.md`'s "The faker extension".
+ * They remain covered by `MethodsExhaustive<$M>`, which checks that the _keys_
+ * match faker's — only the return-type comparison is skipped. See the deviation
+ * policy in `CLAUDE.md`'s "The faker extension".
  *
- * Nothing else is exempt, `location.nearbyGPSCoordinate` included: the
- * mirror gives it `T.tuple([T.number, T.number])`, matching faker's declared
+ * Nothing else is exempt, `location.nearbyGPSCoordinate` included: the mirror
+ * gives it `T.tuple([T.number, T.number])`, matching faker's declared
  * `[latitude, longitude]` arity exactly, so `Honest<...>` covers it like any
  * other method.
  */
 type ColorSplitMethod =
-  "rgb" | "cmyk" | "hsl" | "hwb" | "lab" | "lch" | "colorByCSSColorSpace";
+  | "rgb"
+  | "cmyk"
+  | "hsl"
+  | "hwb"
+  | "lab"
+  | "lch"
+  | "colorByCSSColorSpace";
 
 type CheckedMethodName<$M extends ModuleName> = $M extends "color"
   ? Exclude<MethodName<$M>, ColorSplitMethod>
@@ -193,9 +197,9 @@ type ModuleHonest<$M extends ModuleName> = AllTrue<
 >;
 
 /**
- * One assertion per module — narrower than one per method, but a failure
- * still names the module to bisect into, and 26 hand-written lines stays
- * legible where 237 would not.
+ * One assertion per module — narrower than one per method, but a failure still
+ * names the module to bisect into, and 26 hand-written lines stays legible
+ * where 237 would not.
  */
 export type HonestAssertions = [
   Expect<ModuleHonest<"airline">>,
@@ -228,19 +232,19 @@ export type HonestAssertions = [
 
 /**
  * Module exhaustiveness, checked against **faker's own member list** rather
- * than a hand-kept roster of names. A hand-kept list can only ever confirm
- * that the mirror matches itself; this fails when faker adds or removes a
- * module, which is the drift that actually matters.
+ * than a hand-kept roster of names. A hand-kept list can only ever confirm that
+ * the mirror matches itself; this fails when faker adds or removes a module,
+ * which is the drift that actually matters.
  *
- * Every exclusion is a deliberate deviation and is named. `helpers` is
- * faker's utility belt, omitted because core already expresses all of it and
- * better (`arrayElement` is `T.enum.uniform`, `maybe` is
- * `T.optional`/`T.omittable`, and so on — see the deviation policy in
- * `CLAUDE.md`'s "The faker extension"); reach it through `T.faker.use.*`.
- * The rest are not data-generating modules at all — two definition bags, and
- * four members describing the instance itself rather than producing values
- * from it (`getMetadata()` reports the resolved locale, `seed()` reseeds
- * faker's own randomizer, which this package deliberately never uses).
+ * Every exclusion is a deliberate deviation and is named. `helpers` is faker's
+ * utility belt, omitted because core already expresses all of it and better
+ * (`arrayElement` is `T.enum.uniform`, `maybe` is `T.optional`/`T.omittable`,
+ * and so on — see the deviation policy in `CLAUDE.md`'s "The faker extension");
+ * reach it through `T.faker.use.*`. The rest are not data-generating modules at
+ * all — two definition bags, and four members describing the instance itself
+ * rather than producing values from it (`getMetadata()` reports the resolved
+ * locale, `seed()` reseeds faker's own randomizer, which this package
+ * deliberately never uses).
  */
 type NotAModule =
   | "helpers"
@@ -256,19 +260,19 @@ export type _ModulesExhaustive = Expect<
 >;
 
 /**
- * Method exhaustiveness, per module — the guard that catches a method added
- * to an existing faker module, the one drift surface no return-type check
- * can see (a method the mirror simply doesn't have has no entry to compare).
+ * Method exhaustiveness, per module — the guard that catches a method added to
+ * an existing faker module, the one drift surface no return-type check can see
+ * (a method the mirror simply doesn't have has no entry to compare).
  *
- * Both of faker's module base classes declare their `faker` back-reference
- * as `protected`, so `keyof Faker[$M]` is exactly the public method set and
- * needs no exclusions of its own. `color` is equal too, despite its 7 split
- * nodes: a split occupies the same key faker declares, just with a
- * `{ text, channels }` object rather than a function behind it.
+ * Both of faker's module base classes declare their `faker` back-reference as
+ * `protected`, so `keyof Faker[$M]` is exactly the public method set and needs
+ * no exclusions of its own. `color` is equal too, despite its 7 split nodes: a
+ * split occupies the same key faker declares, just with a `{ text, channels }`
+ * object rather than a function behind it.
  *
- * `Equal` rather than a one-directional `extends`, so an upstream *removal*
- * fails just as loudly as an addition — a builder left behind after faker
- * drops a method would otherwise call a function that no longer exists.
+ * `Equal` rather than a one-directional `extends`, so an upstream _removal_
+ * fails just as loudly as an addition — a builder left behind after faker drops
+ * a method would otherwise call a function that no longer exists.
  */
 type MethodsExhaustive<$M extends ModuleName> = Equal<
   keyof FakerModules[$M],
@@ -305,20 +309,19 @@ export type MethodExhaustivenessAssertions = [
 ];
 
 /**
- * `use` shares a key space with the real faker module names on
- * `FakerExtension` — this is the guard that it never silently becomes one
- * (a faker release adding a module literally named `use`, however
- * unlikely) without a compile error surfacing here. `Deviation.test.ts`'s
- * runtime test checks `use`'s own shape; this checks the collision
- * specifically.
+ * `use` shares a key space with the real faker module names on `FakerExtension`
+ * — this is the guard that it never silently becomes one (a faker release
+ * adding a module literally named `use`, however unlikely) without a compile
+ * error surfacing here. `Deviation.test.ts`'s runtime test checks `use`'s own
+ * shape; this checks the collision specifically.
  */
 export type _UseIsNotAModuleName = Expect<
   "use" extends ModuleName ? false : true
 >;
 
 /**
- * `FakerExtension` is `FakerModules` plus `use`, so this asserts the two
- * halves compose to exactly what `T.faker` exposes — no module lost to the
+ * `FakerExtension` is `FakerModules` plus `use`, so this asserts the two halves
+ * compose to exactly what `T.faker` exposes — no module lost to the
  * intersection, and nothing extra smuggled in alongside `use`.
  */
 export type _ExtensionCoversEveryModule = Expect<
@@ -331,9 +334,9 @@ export type _ExtensionCoversEveryModule = Expect<
  * something assignable to it, and not to a loose `TSchema`. This is the
  * "adapter-compatible" promise stated as a type.
  *
- * Asserted with `Equal<...>` against an *inferred* local, never by annotating
- * the local (`const s: TString = toTypeBox(...)`). The annotation form forces
- * a structural assignability walk between `ToTypeBox<...>` and a recursive
+ * Asserted with `Equal<...>` against an _inferred_ local, never by annotating
+ * the local (`const s: TString = toTypeBox(...)`). The annotation form forces a
+ * structural assignability walk between `ToTypeBox<...>` and a recursive
  * TypeBox interface, and one such check exceeds TypeScript 5's
  * 5,000,000-instantiation budget by itself — see `Adapter.test.ts`'s header.
  * `Equal`'s identity comparison avoids that walk, and pins the type more
@@ -389,9 +392,9 @@ export type TypeBoxAssertions = [
   Expect<Equal<typeof asUseString, TString>>,
 
   /**
-   * `use.opaque` is the one builder that converts to `Unknown` — honest,
-   * since it is the only place the caller has told us nothing about the
-   * shape. `Adapter.test.ts`'s sweep carves it out for the same reason.
+   * `use.opaque` is the one builder that converts to `Unknown` — honest, since
+   * it is the only place the caller has told us nothing about the shape.
+   * `Adapter.test.ts`'s sweep carves it out for the same reason.
    */
   Expect<Equal<typeof asUseOpaque, TUnknown>>,
 ];

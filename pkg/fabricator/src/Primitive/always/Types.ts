@@ -2,14 +2,14 @@ import type { Adaptations } from "../../Adapter/Types";
 import type { Adaptation, Kind, Meta, Produces } from "../../Types";
 
 /**
- * Any value at all. Deliberately unconstrained: fabricating a fixed value
- * needs nothing of it. A `string | number | boolean` cap would be TypeBox's
- * `TLiteralValue` leaking into the primitive. Narrowing back to what a
- * given external schema library can express is that library's adapter's
- * job — see `Adapter/TypeBox`'s `toConst`.
+ * Any value at all. Deliberately unconstrained: fabricating a fixed value needs
+ * nothing of it. A `string | number | boolean` cap would be TypeBox's
+ * `TLiteralValue` leaking into the primitive. Narrowing back to what a given
+ * external schema library can express is that library's adapter's job — see
+ * `Adapter/TypeBox`'s `toConst`.
  *
- * Kept as a named alias: it is the public name for this kind's domain, and
- * both `Registry.ts` and `Schema.ts` use it as a bound.
+ * Kept as a named alias: it is the public name for this kind's domain, and both
+ * `Registry.ts` and `Schema.ts` use it as a bound.
  */
 export type Value = unknown;
 

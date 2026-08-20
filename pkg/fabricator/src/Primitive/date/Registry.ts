@@ -12,9 +12,8 @@ import type { Fabricated, InputWhereby, Whereby } from "./Types";
 
 type ThisRegistry = Schema<{}, Adaptations> & {
   /**
-   * A `Date` drawn from `[min, max]`. Pass a `distribution` to shape how
-   * values cluster within the range; without one, every instant is equally
-   * likely.
+   * A `Date` drawn from `[min, max]`. Pass a `distribution` to shape how values
+   * cluster within the range; without one, every instant is equally likely.
    */
   whereby: (whereby: {
     min: InputBound<Date>;
@@ -22,13 +21,16 @@ type ThisRegistry = Schema<{}, Adaptations> & {
     distribution?: Distribution | undefined;
   }) => Schema<{ whereby: Whereby }>;
 
-  /** Any `Date` from the earliest representable instant up to the present moment. */
+  /**
+   * Any `Date` from the earliest representable instant up to the present
+   * moment.
+   */
   past: Schema<{ mode: "past" }> & {
     /**
      * A past `Date` drawn from `[min, now]`. `min` defaults to the earliest
      * representable instant. The implicit `now` end stays inclusive. Pass a
-     * `distribution` to shape how values cluster within the range; without
-     * one, every instant is equally likely.
+     * `distribution` to shape how values cluster within the range; without one,
+     * every instant is equally likely.
      */
     whereby: (whereby: {
       min?: InputBound<Date> | undefined;
@@ -41,8 +43,8 @@ type ThisRegistry = Schema<{}, Adaptations> & {
     /**
      * A future `Date` drawn from `[now, max]`. `max` defaults to the latest
      * representable instant. The implicit `now` end stays inclusive. Pass a
-     * `distribution` to shape how values cluster within the range; without
-     * one, every instant is equally likely.
+     * `distribution` to shape how values cluster within the range; without one,
+     * every instant is equally likely.
      */
     whereby: (whereby: {
       max?: InputBound<Date> | undefined;
@@ -108,10 +110,10 @@ function toWhereby(input: InputWhereby): Whereby {
 
   if (min !== undefined && max !== undefined) {
     /**
-     * `Date` stores a whole millisecond (`TimeClip`). Exclusive ends are
-     * empty exactly when no integer ms remains, not when no float sits
-     * between the stated instants — `new Date` would collapse those
-     * floats back onto the excluded endpoint.
+     * `Date` stores a whole millisecond (`TimeClip`). Exclusive ends are empty
+     * exactly when no integer ms remains, not when no float sits between the
+     * stated instants — `new Date` would collapse those floats back onto the
+     * excluded endpoint.
      */
     assertNonemptyDiscrete("T.date.whereby", epochBound(min), epochBound(max));
   }

@@ -135,15 +135,15 @@ const withTuple = toTypeBox(
 );
 
 /**
- * `always` and `object.compute` are the two kinds whose Schema shape used to
- * be declared inline in their `Schema.ts`, with no `Core` for the adapters to
+ * `always` and `object.compute` are the two kinds whose Schema shape used to be
+ * declared inline in their `Schema.ts`, with no `Core` for the adapters to
  * match — so `ToTypeBox` matched their `Schema` types, which silently made
  * every builder method part of the match. Adding `.adapt(...)` to those
- * interfaces was enough to stop a *built* Fabricator (which has no builder
- * methods) from matching at all, dropping it to the generic `TSchema`
- * fallback with `tsc` still green, because nothing asserted these two shapes
- * post-build. Both kinds now have a real `Core`, and these are the
- * assertions that would have caught it.
+ * interfaces was enough to stop a _built_ Fabricator (which has no builder
+ * methods) from matching at all, dropping it to the generic `TSchema` fallback
+ * with `tsc` still green, because nothing asserted these two shapes post-build.
+ * Both kinds now have a real `Core`, and these are the assertions that would
+ * have caught it.
  */
 const builtAlways = toTypeBox(new Fabricator(T.always("x")));
 const builtComputed = toTypeBox(
@@ -167,9 +167,9 @@ const alwaysDate = toTypeBox(new Fabricator(T.always(new Date(0))));
 const alwaysObject = toTypeBox(new Fabricator(T.always({ a: 1 })));
 
 /**
- * `readonly` on every key: `T.object`'s definition parameter is a `const`
- * type parameter, so `toTypeBox` already reflects that on an *unbuilt*
- * Schema too — nothing to do with `construct()`, unaffected by this fix.
+ * `readonly` on every key: `T.object`'s definition parameter is a `const` type
+ * parameter, so `toTypeBox` already reflects that on an _unbuilt_ Schema too —
+ * nothing to do with `construct()`, unaffected by this fix.
  */
 export type Assertions = [
   Expect<Equal<typeof intSeq, TInteger>>,
@@ -337,28 +337,28 @@ export type Assertions = [
   Expect<Equal<typeof alwaysObject, TObject<{ a: TReadonly<TLiteral<1>> }>>>,
 
   /**
-   * Bare-vs-concrete, the assertion `ToConst`'s `unknown extends $Value`
-   * guard exists for. `TConst<unknown>` resolves to `TObject<{}>`, not
-   * `TSchema` — so without the guard a bare, unparameterized `always.Core`
-   * would claim to be an empty object type instead of falling back to the
-   * loose `TSchema` every other unresolved branch uses. This is the same
-   * class of trap `tuple`'s `TupleItems` hit (a malformed type that
-   * type-checks fine until a bare-vs-concrete comparison is actually
-   * written down), so it gets the same guard.
+   * Bare-vs-concrete, the assertion `ToConst`'s `unknown extends $Value` guard
+   * exists for. `TConst<unknown>` resolves to `TObject<{}>`, not `TSchema` — so
+   * without the guard a bare, unparameterized `always.Core` would claim to be
+   * an empty object type instead of falling back to the loose `TSchema` every
+   * other unresolved branch uses. This is the same class of trap `tuple`'s
+   * `TupleItems` hit (a malformed type that type-checks fine until a
+   * bare-vs-concrete comparison is actually written down), so it gets the same
+   * guard.
    */
   Expect<Equal<ToTypeBox<Primitive.always.Core>, TSchema>>,
   Expect<Equal<ToTypeBox<Primitive.always.Core<"x">>, TLiteral<"x">>>,
 
   /**
    * The same bare-vs-concrete pair for `enum`, which `EnumOptions` makes
-   * arity-preserving by head/tail recursion rather than a homomorphic
-   * `{ [$K in keyof $Items]: ... }` mapped type. The mapped type would
-   * type-check right up until exactly this comparison: `keyof` a still-
-   * abstract array-constrained `$Items` pulls in `"length"`/method keys too,
-   * yielding a malformed bare type (see `ChoiceOptions`' doc comment). Bare,
-   * `$Items` matches neither tuple pattern, so it lands on the widened-array
-   * fallback and resolves to `TUnion<TSchema[]>` — the same "some union of an
-   * unknown number of schemas" shape a bare `choice` gives.
+   * arity-preserving by head/tail recursion rather than a homomorphic `{ [$K in
+   * keyof $Items]: ... }` mapped type. The mapped type would type-check right
+   * up until exactly this comparison: `keyof` a still- abstract
+   * array-constrained `$Items` pulls in `"length"`/method keys too, yielding a
+   * malformed bare type (see `ChoiceOptions`' doc comment). Bare, `$Items`
+   * matches neither tuple pattern, so it lands on the widened-array fallback
+   * and resolves to `TUnion<TSchema[]>` — the same "some union of an unknown
+   * number of schemas" shape a bare `choice` gives.
    */
   Expect<Equal<ToTypeBox<Primitive.enum.Core>, TUnion<TSchema[]>>>,
   Expect<

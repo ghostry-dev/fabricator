@@ -5,7 +5,7 @@ import type {
 } from "@ghostry/fabricator/internal";
 
 /**
- * Rebuilds `schema` from a captured trace in *this* file, so a round-trip
+ * Rebuilds `schema` from a captured trace in _this_ file, so a round-trip
  * assertion in `Trace.test.ts` is not file-bound.
  */
 export function fabricateFromTrace(

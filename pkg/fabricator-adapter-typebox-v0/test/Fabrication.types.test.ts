@@ -4,8 +4,8 @@ import type { Fabrication, Primitive } from "@ghostry/fabricator/internal";
 import { typebox } from "@ghostry/fabricator-adapter-typebox-v0";
 
 /**
- * Compile-time assertions — see `Fabrication.types.test.ts` in the core
- * package for why `Equal`/`Expect`/`Extends` are shaped this way.
+ * Compile-time assertions — see `Fabrication.types.test.ts` in the core package
+ * for why `Equal`/`Expect`/`Extends` are shaped this way.
  */
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2

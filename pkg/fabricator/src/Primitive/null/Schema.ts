@@ -18,8 +18,8 @@ export interface Schema<$Adaptations extends Adaptations = {}> extends Core<
   $Adaptations
 > {
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

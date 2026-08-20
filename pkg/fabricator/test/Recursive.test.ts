@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import { FabricatorError, initialize, registry } from "@ghostry/fabricator";
 
 /**
- * Instantiated explicitly: a bare `ReturnType<typeof initialize>` resolves
- * the type parameter to its *constraint* (`PlainObject`) rather than its
- * default, which would leave every `T.<kind>` as `unknown` — the same trap
+ * Instantiated explicitly: a bare `ReturnType<typeof initialize>` resolves the
+ * type parameter to its _constraint_ (`PlainObject`) rather than its default,
+ * which would leave every `T.<kind>` as `unknown` — the same trap
  * `Record.test.ts` hit.
  */
 type Registry = ReturnType<typeof initialize<typeof registry>>["T"];
@@ -14,8 +14,8 @@ type Registry = ReturnType<typeof initialize<typeof registry>>["T"];
  * trees, linked structures, a generic JSON value — none of which were
  * expressible before, since every compound kind normalized eagerly and
  * `Constructor.ts` walked the whole schema tree eagerly at build time. Manual
- * nesting worked exactly one level deep (verified during design: the
- * children had no children).
+ * nesting worked exactly one level deep (verified during design: the children
+ * had no children).
  *
  * These tests lean on the same tree shape throughout so the interesting
  * differences (depth, seed, isolation) stay the only variable.
@@ -93,10 +93,10 @@ test("the terminal appears only once depth.max is reached, and never recurses fu
   const { T, Fabricator } = initialize({ seed: "recursive-terminal" });
 
   /**
-   * A terminal deliberately shaped differently from `body` (a negative
-   * value, outside `body`'s own `[0, 9]` range) so its presence at a given
-   * node is unambiguous, and a max depth of exactly 1 so every leaf is
-   * reachable in a small sample.
+   * A terminal deliberately shaped differently from `body` (a negative value,
+   * outside `body`'s own `[0, 9]` range) so its presence at a given node is
+   * unambiguous, and a max depth of exactly 1 so every leaf is reachable in a
+   * small sample.
    */
   const Marked = T.recursive((self) =>
     T.object({
@@ -141,11 +141,11 @@ test("the same seed replays exactly, across any number of prior fabricate() call
 });
 
 /**
- * The invariant the whole `fork`/private-source design exists for: a
- * recursive schema's dispatch count is data-dependent (how deep any given
- * `fabricate()` call happens to go), so if it touched the shared, global
- * `(file, kind)` stream counters, that data-dependence would leak into
- * whichever *unrelated* Fabricator gets built next from the same instance.
+ * The invariant the whole `fork`/private-source design exists for: a recursive
+ * schema's dispatch count is data-dependent (how deep any given `fabricate()`
+ * call happens to go), so if it touched the shared, global `(file, kind)`
+ * stream counters, that data-dependence would leak into whichever _unrelated_
+ * Fabricator gets built next from the same instance.
  */
 test("an unrelated Fabricator is unaffected by how many times a recursive schema fabricated before it", () => {
   function unrelatedAfter(recursiveCalls: number) {
@@ -182,10 +182,10 @@ test("two unrelated recursive schemas from the same instance don't perturb each 
 });
 
 /**
- * Derived terminals empty a collection with a fresh `opaque(() => [])` per
- * call — never `always([])`. Each leaf must get its *own* array; a shared
- * reference would mean mutating one leaf's `children` silently mutates
- * every other leaf that happened to terminate in the same `fabricate()`.
+ * Derived terminals empty a collection with a fresh `opaque(() => [])` per call
+ * — never `always([])`. Each leaf must get its _own_ array; a shared reference
+ * would mean mutating one leaf's `children` silently mutates every other leaf
+ * that happened to terminate in the same `fabricate()`.
  */
 test("leaves that terminate do not share a collection reference", () => {
   const { T, Fabricator } = initialize({ seed: "recursive-no-shared-refs" });
@@ -209,10 +209,10 @@ test("leaves that terminate do not share a collection reference", () => {
 });
 
 /**
- * `self` is never exposed as `T.self` — the only way to reach this error is
- * by holding onto a `self` reference captured from one `T.recursive`
- * callback and reusing it somewhere with no active recursion, e.g. storing
- * it in a variable and using it in an unrelated schema afterward.
+ * `self` is never exposed as `T.self` — the only way to reach this error is by
+ * holding onto a `self` reference captured from one `T.recursive` callback and
+ * reusing it somewhere with no active recursion, e.g. storing it in a variable
+ * and using it in an unrelated schema afterward.
  */
 test("using a captured self reference outside any active recursion throws", () => {
   const { T, Fabricator } = initialize({ seed: "recursive-misuse" });
@@ -232,9 +232,9 @@ test("using a captured self reference outside any active recursion throws", () =
 
 /**
  * The `CategorySchema` example from `README.md`, verbatim. Kept as a test
- * because this README has previously documented API that did not typecheck
- * — the annotation below is the part that matters, since it pins the shape
- * the docs implicitly promise.
+ * because this README has previously documented API that did not typecheck —
+ * the annotation below is the part that matters, since it pins the shape the
+ * docs implicitly promise.
  */
 test("README's T.recursive category tree example builds, typechecks, and fabricates", () => {
   const { T, Fabricator } = initialize({ seed: "recursive-readme" });

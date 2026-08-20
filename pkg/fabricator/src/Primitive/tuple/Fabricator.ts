@@ -26,19 +26,18 @@ export type Fabricator<
 };
 
 /**
- * `elements` are each slot's *already-dispatched* Fabricator, one per
+ * `elements` are each slot's _already-dispatched_ Fabricator, one per
  * `[Meta].items` entry, built by `Constructor.ts`'s `make` before this call —
  * mirrors `choice.Fabricator`'s `weightings`, one per option, rather than
  * `array.Fabricator`'s single shared `element`. The `array`/`tuple`
- * distinction: each slot gets its own private stream, so
- * `T.tuple([T.number, T.number])` behaves like a two-field `object` of
- * numbers, not a length-2 `array` of numbers (every element drawn
- * sequentially off one shared stream).
+ * distinction: each slot gets its own private stream, so `T.tuple([T.number,
+ * T.number])` behaves like a two-field `object` of numbers, not a length-2
+ * `array` of numbers (every element drawn sequentially off one shared stream).
  *
  * `toStreamFromTrace` is only consulted on the `.as(...)`-overridden path: an
- * ordinary tuple draws no randomness of its own — every draw belongs to a
- * slot, exactly like `object`. `trace` is still recorded so a nested
- * tuple can be replayed from its own schema.
+ * ordinary tuple draws no randomness of its own — every draw belongs to a slot,
+ * exactly like `object`. `trace` is still recorded so a nested tuple can be
+ * replayed from its own schema.
  */
 export function Fabricator<$Items extends Items>(
   context: FabricatorContext<Schema<$Items>>,

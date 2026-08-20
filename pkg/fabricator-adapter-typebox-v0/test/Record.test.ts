@@ -4,9 +4,9 @@ import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 
 /**
  * The registry `initialize()` hands back, so the helpers below stay typed.
- * Instantiated explicitly: a bare `ReturnType<typeof initialize>` resolves
- * the type parameter to its *constraint* (`PlainObject`) rather than its
- * default, which would leave every `T.<kind>` as `unknown`.
+ * Instantiated explicitly: a bare `ReturnType<typeof initialize>` resolves the
+ * type parameter to its _constraint_ (`PlainObject`) rather than its default,
+ * which would leave every `T.<kind>` as `unknown`.
  */
 type Registry = ReturnType<typeof initialize<typeof registry>>["T"];
 
@@ -22,8 +22,8 @@ const value = (T: Registry) => T.number.integer.whereby({ min: 0, max: 1000 });
 
 /**
  * `Type.Record` answers an unrepresentable key with `TNever` rather than
- * raising — a schema nothing validates against, produced silently. This is
- * the assertion that would catch a regression back to that.
+ * raising — a schema nothing validates against, produced silently. This is the
+ * assertion that would catch a regression back to that.
  */
 test("toTypeBox throws on a symbol-keyed record rather than emitting TNever", () => {
   const { T } = initialize({ seed: "record-symbol-typebox" });

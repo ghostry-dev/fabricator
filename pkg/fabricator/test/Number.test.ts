@@ -58,8 +58,8 @@ test("a single-value integer range always fabricates that value", () => {
 
 /**
  * Without a `distribution`, every integer in the range is equally likely —
- * asserted as a rough uniformity check (each bucket gets a similar share),
- * not an exact one, since it's still a random draw.
+ * asserted as a rough uniformity check (each bucket gets a similar share), not
+ * an exact one, since it's still a random draw.
  */
 test("an unshaped range distributes roughly uniformly across its buckets", () => {
   const { T, Fabricator } = initialize({ seed: "number-uniform" });
@@ -82,8 +82,8 @@ test("an unshaped range distributes roughly uniformly across its buckets", () =>
 
 /**
  * A `skew` distribution with `exponent > 1` biases the draw toward `min` —
- * asserted by comparing which half of the range gets more weight, rather
- * than pinning an exact ratio.
+ * asserted by comparing which half of the range gets more weight, rather than
+ * pinning an exact ratio.
  */
 test("a skewed distribution visibly biases the draw", () => {
   const { T, Fabricator } = initialize({ seed: "number-skewed" });

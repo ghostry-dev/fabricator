@@ -28,28 +28,27 @@ export type Fabricator<
 /**
  * Expansion is lazy — one dispatch per `self` at fabricate time, not unrolled
  * to `depth.max` at build. This is the only place dispatch (assigning a node
- * its private stream) happens *inside* `fabricate()`, not at
- * `new Fabricator(...)`. Safe because of isolation, not memoization: every
- * other kind's dispatch count is a function of schema shape, so structural
- * path keying already identifies it. A recursive node's count is
- * data-dependent — how deep this `fabricate()` goes — so no structural path
- * distinguishes sibling expansions at the same depth (an `array` of three
- * `self` children calls `fabricateAt` three times on one shared element
- * Fabricator; the schema does not tell them apart). Each expansion gets its
- * own *root*: `forkSource` mints an isolated `RandomSource` seeded from this
- * node's draw, and each `fabricateAt` opens a `"counted"` scope on it
- * (`Random/Types.ts`'s `RootKind` — recorded on each expansion's
- * `trace`, not chosen at `ConstructorOptions`). The
- * private source's construction counter orders expansions; nothing to
+ * its private stream) happens _inside_ `fabricate()`, not at `new
+ * Fabricator(...)`. Safe because of isolation, not memoization: every other
+ * kind's dispatch count is a function of schema shape, so structural path
+ * keying already identifies it. A recursive node's count is data-dependent —
+ * how deep this `fabricate()` goes — so no structural path distinguishes
+ * sibling expansions at the same depth (an `array` of three `self` children
+ * calls `fabricateAt` three times on one shared element Fabricator; the schema
+ * does not tell them apart). Each expansion gets its own _root_: `forkSource`
+ * mints an isolated `RandomSource` seeded from this node's draw, and each
+ * `fabricateAt` opens a `"counted"` scope on it (`Random/Types.ts`'s `RootKind`
+ * — recorded on each expansion's `trace`, not chosen at `ConstructorOptions`).
+ * The private source's construction counter orders expansions; nothing to
  * increment here. Isolation also keeps this node's data-dependent draws from
  * perturbing (or being perturbed by) an unrelated Fabricator from the same
  * `initialize()` instance.
  *
  * Each `self` gets its own independently-dispatched expansion — calling
- * `context.self` twice (two array slots) is two `fabricateAt` calls, each
- * with its own scope and stream space — `tuple`'s per-slot convention, not
- * `array`'s shared-element one. Sibling tree branches therefore draw
- * independently, not a correlated shared sequence.
+ * `context.self` twice (two array slots) is two `fabricateAt` calls, each with
+ * its own scope and stream space — `tuple`'s per-slot convention, not `array`'s
+ * shared-element one. Sibling tree branches therefore draw independently, not a
+ * correlated shared sequence.
  */
 export function Fabricator<$Body>(
   context: FabricatorContext<Schema<$Body>>,
@@ -79,8 +78,8 @@ export function Fabricator<$Body>(
        * `privateSource` is a fork of the outer construction's `source` (see
        * this function's doc). `fork` threads `clock` unchanged
        * (`Random/index.ts`), so `construction.clock` is the parent
-       * construction's resolved "now" for every lazy expansion, however
-       * deep `fabricateAt` recurses — each node's own `trace` carries it.
+       * construction's resolved "now" for every lazy expansion, however deep
+       * `fabricateAt` recurses — each node's own `trace` carries it.
        */
       algorithm,
       self: atMax ? undefined : () => fabricateAt(depth + 1),

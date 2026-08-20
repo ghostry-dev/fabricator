@@ -1,10 +1,10 @@
 import type { NumberGenerator } from "../Types";
 
 /**
- * sfc32 ("Small Fast Counter"): a 128-bit-state PRNG that is fast, compact,
- * and statistically strong (passes both PractRand and TestU01 BigCrush).
- * Each call advances the state and returns the top 32 bits scaled into
- * `[0, 1)`. Non-cryptographic: never use this for secrets or tokens.
+ * sfc32 ("Small Fast Counter"): a 128-bit-state PRNG that is fast, compact, and
+ * statistically strong (passes both PractRand and TestU01 BigCrush). Each call
+ * advances the state and returns the top 32 bits scaled into `[0, 1)`.
+ * Non-cryptographic: never use this for secrets or tokens.
  *
  * @see https://stackoverflow.com/a/47593316
  */

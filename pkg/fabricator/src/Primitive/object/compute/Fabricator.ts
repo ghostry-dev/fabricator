@@ -38,11 +38,10 @@ export function isObjectComputeFabricator(
 
 /**
  * Turn an `object.compute` Schema into a live Fabricator. Unlike every other
- * kind, there's nothing of `source` to build here — a computed field's
- * value comes entirely from `resolve`, given the rest of the object. The
- * node still records `trace` so it can be rebuilt from a parent field's
- * captured trace; `.fabricate()` without the parent object throws
- * `DetachedComputeError`.
+ * kind, there's nothing of `source` to build here — a computed field's value
+ * comes entirely from `resolve`, given the rest of the object. The node still
+ * records `trace` so it can be rebuilt from a parent field's captured trace;
+ * `.fabricate()` without the parent object throws `DetachedComputeError`.
  */
 export function Fabricator<$Fabricated, $Source extends Source>(
   context: FabricatorContext<Schema<$Fabricated, $Source>>,

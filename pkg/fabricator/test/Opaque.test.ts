@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import { initialize, type ProduceContext } from "@ghostry/fabricator";
 
 /**
- * `T.opaque` is the escape hatch for values no kind models. Before it, the
- * only routes were `T.always(value)` — which hands back the *same reference*
- * every call — and an accidental `T.enum.uniform([dummy]).as(...)` trick that
+ * `T.opaque` is the escape hatch for values no kind models. Before it, the only
+ * routes were `T.always(value)` — which hands back the _same reference_ every
+ * call — and an accidental `T.enum.uniform([dummy]).as(...)` trick that
  * required a throwaway member purely to fix the type. Neither could produce a
  * reproducible fresh value, which is what these cover.
  */
@@ -18,8 +18,8 @@ class Point {
 
 /**
  * The reason `ProduceContext` is a public export: a producer written as a
- * standalone named function has to be able to name its own parameter type.
- * If this stops compiling, the export has regressed.
+ * standalone named function has to be able to name its own parameter type. If
+ * this stops compiling, the export has regressed.
  */
 function shipping({ random }: ProduceContext): Map<string, number> {
   return new Map([["zone", Math.floor(random.next() * 5) + 1]]);
@@ -136,9 +136,9 @@ test("the producer's stream advances across calls", () => {
  * takes one, because the stream is what `produce` is handed.
  */
 /**
- * The counterpart to `random.test.ts`'s "every kind carries a defined
- * `.trace`" — this is the positive case `opaque` exists to be: a kind
- * that *always* draws, because its stream is what `produce` is handed.
+ * The counterpart to `random.test.ts`'s "every kind carries a defined `.trace`"
+ * — this is the positive case `opaque` exists to be: a kind that _always_
+ * draws, because its stream is what `produce` is handed.
  */
 test("an opaque Fabricator always carries a trace, unlike always", () => {
   const { T, Fabricator } = initialize({ seed: "opaque-trace" });
@@ -213,9 +213,9 @@ test("README's T.opaque example builds, typechecks, and replays", () => {
 });
 
 /**
- * An opaque-valued field is an ordinary full-replacement leaf — no changes
- * were needed in `object`'s `Override`, which only holds because
- * `opaque.Core` carries the phantom `[Produces]`.
+ * An opaque-valued field is an ordinary full-replacement leaf — no changes were
+ * needed in `object`'s `Override`, which only holds because `opaque.Core`
+ * carries the phantom `[Produces]`.
  */
 test("an opaque field can be overridden wholesale", () => {
   const { T, Fabricator } = initialize({ seed: "opaque-override" });

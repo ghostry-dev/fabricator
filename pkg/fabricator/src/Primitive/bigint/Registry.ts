@@ -6,9 +6,9 @@ import type { Fabricated, InputWhereby, Whereby } from "./Types";
 
 export default {
   /**
-   * The builder carries the primitive's `[Kind]` so it can be named directly
-   * as a `compute` source — which derives its schema by kind — without
-   * first satisfying a `whereby`.
+   * The builder carries the primitive's `[Kind]` so it can be named directly as
+   * a `compute` source — which derives its schema by kind — without first
+   * satisfying a `whereby`.
    */
   [Kind]: "bigint" as const,
 

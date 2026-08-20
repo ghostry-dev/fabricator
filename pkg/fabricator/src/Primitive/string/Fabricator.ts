@@ -33,8 +33,8 @@ export type Fabricator<
 
 /**
  * Turn a `string` Schema into a live Fabricator — the one place this kind's
- * character-generation logic actually runs. `Constructor.ts` calls this once per
- * `construct()`, never from inside the returned `fabricate`.
+ * character-generation logic actually runs. `Constructor.ts` calls this once
+ * per `construct()`, never from inside the returned `fabricate`.
  */
 export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
   const { schema, algorithm, trace } = context;
@@ -92,10 +92,10 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     /**
      * Spend a budget of UTF-16 code units so the joined result's `.length`
      * lands on `length` exactly. A drawn unit is placed only if it fits the
-     * remaining budget; when it is too wide (an astral, two-unit character
-     * with one unit of room left), a single BMP character tops up instead —
-     * spliced in at a random character boundary rather than always at the
-     * end, and never inside a multi-unit character.
+     * remaining budget; when it is too wide (an astral, two-unit character with
+     * one unit of room left), a single BMP character tops up instead — spliced
+     * in at a random character boundary rather than always at the end, and
+     * never inside a multi-unit character.
      */
     const pieces: string[] = [];
     let remaining = length;
@@ -137,9 +137,9 @@ const toRanges = (source: CharacterSource): ReadonlyArray<CodepointRange> => {
 };
 
 /**
- * Single-UTF-16-unit, well-formed code points (the BMP minus surrogates).
- * Used to top up a length budget when a drawn unit is too wide to fit the
- * remaining space (see `fabricate`).
+ * Single-UTF-16-unit, well-formed code points (the BMP minus surrogates). Used
+ * to top up a length budget when a drawn unit is too wide to fit the remaining
+ * space (see `fabricate`).
  */
 const bmpScalars: ReadonlyArray<CodepointRange> = [
   { from: 0x0, to: 0xd7ff },

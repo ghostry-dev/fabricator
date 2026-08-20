@@ -10,13 +10,13 @@ import { Kind, Meta } from "../../Types";
 import type { Core, Fabricated, Meta as ThisMeta } from "./Types";
 
 /**
- * Buildable `bigint` recipe: a range (`whereby` — required, like `string`;
- * no natural bound to fuzz to), or opaque production via `as`.
+ * Buildable `bigint` recipe: a range (`whereby` — required, like `string`; no
+ * natural bound to fuzz to), or opaque production via `as`.
  *
- * `$Meta` is generic (defaulting to the full `Meta` union) so builder
- * return types stay narrow — see `number/Schema.ts`. `$Adaptations` is
- * threaded through every builder method for the same reason — see
- * `string/Schema.ts`'s `adapt`.
+ * `$Meta` is generic (defaulting to the full `Meta` union) so builder return
+ * types stay narrow — see `number/Schema.ts`. `$Adaptations` is threaded
+ * through every builder method for the same reason — see `string/Schema.ts`'s
+ * `adapt`.
  */
 export interface Schema<
   $Meta extends ThisMeta = ThisMeta,
@@ -30,8 +30,8 @@ export interface Schema<
   as: (produce: Produce<Fabricated>) => Schema<$Meta, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

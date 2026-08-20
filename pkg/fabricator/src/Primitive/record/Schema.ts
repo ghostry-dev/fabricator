@@ -10,9 +10,9 @@ import { Kind, Meta } from "../../Types";
 import type { Core, Fabricated, Key, Value } from "./Types";
 
 /**
- * The buildable recipe for a `record`: a key Schema and a value Schema,
- * drawn `whereby.size` times. `array`'s sibling — one repeated value shape
- * and a fuzzed count — but keyed rather than indexed.
+ * The buildable recipe for a `record`: a key Schema and a value Schema, drawn
+ * `whereby.size` times. `array`'s sibling — one repeated value shape and a
+ * fuzzed count — but keyed rather than indexed.
  */
 export interface Schema<
   $Key extends Key = Key,
@@ -21,20 +21,18 @@ export interface Schema<
 > extends Core<$Key, $Value, $Adaptations> {
   /**
    * Layer an opaque production on this schema's existing `[Meta]` — carrying
-   * `whereby`/`key`/`value` forward, not discarding them, so a later
-   * `.as(...)` (or future validation of `produce`) still has them to check
-   * against.
+   * `whereby`/`key`/`value` forward, not discarding them, so a later `.as(...)`
+   * (or future validation of `produce`) still has them to check against.
    */
   as: (
     produce: Produce<Fabricated<$Key, $Value>>,
   ) => Schema<$Key, $Value, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt`. Particularly relevant
-   * here: a symbol-keyed record has no TypeBox counterpart
-   * (`Adapter/TypeBox`'s `record` case), so this is the only way to give
-   * one a mapping.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt`. Particularly relevant here: a
+   * symbol-keyed record has no TypeBox counterpart (`Adapter/TypeBox`'s
+   * `record` case), so this is the only way to give one a mapping.
    */
   adapt: <
     const $Adapter extends Adapter,

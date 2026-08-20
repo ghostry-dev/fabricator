@@ -6,33 +6,32 @@ import { Kind as TypeBoxKind } from "@sinclair/typebox";
 import { expect, test } from "bun:test";
 
 /**
- * The acceptance test for the whole premise: nothing in the mirror itself
- * is `opaque`, so nothing it produces should ever convert to TypeBox's
- * `Unknown` — the mapping `T.opaque` gets because the adapter genuinely
- * cannot constrain it (see the adapter's own `Opaque.test.ts`). Every one of
- * these 251 builders wraps a real core kind instead, specifically so it stays
- * usable with an adapter. `use.opaque` (one of `use`'s 6 escape-hatch forms —
- * bringing the mirror's true total to 257) is the sole, deliberate exception:
- * it exists precisely to reach a shape this package has no kind for, and is
- * carved out of the sweep below rather than a false alarm to chase.
+ * The acceptance test for the whole premise: nothing in the mirror itself is
+ * `opaque`, so nothing it produces should ever convert to TypeBox's `Unknown` —
+ * the mapping `T.opaque` gets because the adapter genuinely cannot constrain it
+ * (see the adapter's own `Opaque.test.ts`). Every one of these 251 builders
+ * wraps a real core kind instead, specifically so it stays usable with an
+ * adapter. `use.opaque` (one of `use`'s 6 escape-hatch forms — bringing the
+ * mirror's true total to 257) is the sole, deliberate exception: it exists
+ * precisely to reach a shape this package has no kind for, and is carved out of
+ * the sweep below rather than a false alarm to chase.
  *
- * Every conversion here is checked at *runtime*, against an inferred local —
+ * Every conversion here is checked at _runtime_, against an inferred local —
  * never `const schema: TString = toTypeBox(...)`. The type-level side of the
  * same coverage lives in `index.types.test.ts` as `Expect<Equal<...>>`, which
  * is both more precise (it pins `TUnion<[TLiteral<"female">, ...]>`, not a
  * loose `TUnion<TLiteral[]>`) and dramatically cheaper.
  *
- * Cheaper because annotating the local forces TypeScript to *structurally*
- * check assignability between `ToTypeBox<...>` — a ~20-branch conditional
- * over recursive Schema interfaces — and a recursive TypeBox interface. A
- * single such check exceeds TypeScript 5's 5,000,000-instantiation budget on
- * its own and fails with TS2589, for a plain core schema as readily as a
- * faker one. `Equal<A, B>`'s identity comparison
- * (`(<T>() => T extends A ? 1 : 2) extends ...`) sidesteps the structural
- * walk entirely — which is why the adapter's own suite asserts 81 conversions
- * that way without trouble, and why this file must not drift back to
- * annotations. `bun run check` runs TypeScript 7, whose budget is larger, so
- * it would not catch that drift.
+ * Cheaper because annotating the local forces TypeScript to _structurally_
+ * check assignability between `ToTypeBox<...>` — a ~20-branch conditional over
+ * recursive Schema interfaces — and a recursive TypeBox interface. A single
+ * such check exceeds TypeScript 5's 5,000,000-instantiation budget on its own
+ * and fails with TS2589, for a plain core schema as readily as a faker one.
+ * `Equal<A, B>`'s identity comparison (`(<T>() => T extends A ? 1 : 2) extends
+ * ...`) sidesteps the structural walk entirely — which is why the adapter's own
+ * suite asserts 81 conversions that way without trouble, and why this file must
+ * not drift back to annotations. `bun run check` runs TypeScript 7, whose
+ * budget is larger, so it would not catch that drift.
  */
 
 const { T } = initialize({
@@ -50,8 +49,8 @@ test("a date-kind builder converts to TDate", () => {
    * `TDate.type` is declared as the literal `'date'`, but the actual
    * `Type.Date()` factory sets it to `'Date'` — a real mismatch between
    * `@sinclair/typebox`'s own runtime and its `.d.ts`, not something to paper
-   * over here. `[Kind]` (the symbol every TypeBox schema carries) is
-   * consistent between the two, so it's the reliable check.
+   * over here. `[Kind]` (the symbol every TypeBox schema carries) is consistent
+   * between the two, so it's the reliable check.
    */
   expect(schema[TypeBoxKind]).toBe("Date");
 });

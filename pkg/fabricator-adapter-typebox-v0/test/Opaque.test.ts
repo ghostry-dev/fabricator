@@ -8,10 +8,10 @@ test("toTypeBox maps an opaque schema to Unknown", () => {
   const { T } = initialize({ seed: "opaque-typebox" });
 
   /**
-   * `Unknown` rather than a throw: the adapter genuinely cannot constrain
-   * the value, and throwing would break `toTypeBox` for any schema merely
-   * *containing* one. It emits no constraint keywords at all — only
-   * TypeBox's own symbol-keyed `Kind`, which `Object.keys` excludes.
+   * `Unknown` rather than a throw: the adapter genuinely cannot constrain the
+   * value, and throwing would break `toTypeBox` for any schema merely
+   * _containing_ one. It emits no constraint keywords at all — only TypeBox's
+   * own symbol-keyed `Kind`, which `Object.keys` excludes.
    */
   const schema = toTypeBox(T.opaque(() => new Map()));
   expect(Object.keys(schema)).toEqual([]);

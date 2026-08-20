@@ -2,19 +2,19 @@
  * The `faker` namespace's public type surface: one concrete property
  * declaration per builder, hand-maintained alongside `./Build.ts`.
  *
- * **This file and `./Build.ts` are two halves of one thing.** This one
- * declares the contract; that one implements it, under a `FakerModules`
- * return annotation that makes any disagreement a compile error. Neither is
- * derived from the other, and neither may be edited alone.
+ * **This file and `./Build.ts` are two halves of one thing.** This one declares
+ * the contract; that one implements it, under a `FakerModules` return
+ * annotation that makes any disagreement a compile error. Neither is derived
+ * from the other, and neither may be edited alone.
  *
- * Written out property by property, not mapped over a table. A mapped type
- * must instantiate every member to resolve any one of them, so having the
- * derived form in the program exhausted TypeScript 5's 5,000,000-instantiation
- * budget and made every `toTypeBox(...)` call fail with TS2589. Each
- * property here is a plain declaration TypeScript reads rather than
- * computes. This repo's `check` runs TypeScript 7, whose budget is larger —
- * `bun run check` passing is *not* evidence a derived form would be
- * affordable for consumers; `check:ts5` is.
+ * Written out property by property, not mapped over a table. A mapped type must
+ * instantiate every member to resolve any one of them, so having the derived
+ * form in the program exhausted TypeScript 5's 5,000,000-instantiation budget
+ * and made every `toTypeBox(...)` call fail with TS2589. Each property here is
+ * a plain declaration TypeScript reads rather than computes. This repo's
+ * `check` runs TypeScript 7, whose budget is larger — `bun run check` passing
+ * is _not_ evidence a derived form would be affordable for consumers;
+ * `check:ts5` is.
  *
  * A `type` alias, never an `interface`: only an object-literal type gets an
  * implicit index signature, and without one `DeepMerge`'s `$AV extends
@@ -26,29 +26,29 @@
  * `Parameters<...>` tuple, so arity and requiredness are faker's own —
  * `date.between`'s required options stay required, and
  * `string.fromCharacters`'s second parameter stays reachable. A single
- * `options?` is wrong in both directions: it invites omitting an argument
- * faker throws without, and it hides every parameter past the first.
+ * `options?` is wrong in both directions: it invites omitting an argument faker
+ * throws without, and it hides every parameter past the first.
  *
  * ## Bumping `@faker-js/faker`
  *
- * No generator; `bun run check` is the worklist. Each drift surface has its
- * own assertion in `test/index.types.test.ts`:
+ * No generator; `bun run check` is the worklist. Each drift surface has its own
+ * assertion in `test/index.types.test.ts`:
  *
  * 1. A module added or removed fails `_ModulesExhaustive`.
  * 2. A method added or removed fails `MethodsExhaustive<$M>` for that module.
- * 3. A changed return type fails `ModuleHonest<$M>` at the exact entry —
- *    narrow with `T.enum.uniform([...])` where faker's declared return is a
- *    literal union rather than a bare `string`.
- * 4. A reordered overload set changes `Parameters<...>` here, which the
- *    matching builder's `...args` forwarding then fails to accept.
+ * 3. A changed return type fails `ModuleHonest<$M>` at the exact entry — narrow
+ *    with `T.enum.uniform([...])` where faker's declared return is a literal
+ *    union rather than a bare `string`.
+ * 4. A reordered overload set changes `Parameters<...>` here, which the matching
+ *    builder's `...args` forwarding then fails to accept.
  *
- * Fix the entry in **both** files; the annotation on `build` fails until
- * they agree.
+ * Fix the entry in **both** files; the annotation on `build` fails until they
+ * agree.
  *
  * These assertions resolve through built `dist/`, not `src/` (`CLAUDE.md`'s
  * test-import convention), so a `src`-only edit proves nothing about faker
- * drift until you rebuild. A disagreement between this file and `./Build.ts`
- * is caught without one, being internal to `src`.
+ * drift until you rebuild. A disagreement between this file and `./Build.ts` is
+ * caught without one, being internal to `src`.
  */
 import type { Faker } from "@faker-js/faker";
 import type { Primitive } from "@ghostry/fabricator/internal";

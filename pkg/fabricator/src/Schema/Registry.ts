@@ -3,9 +3,9 @@ import { deepMerge, type DeepMerge } from "../Utility/DeepMerge";
 import { type PlainObject } from "../Utility/Types";
 
 /**
- * `Primitive/index.ts` also exports the kind-module namespace as
- * `Primitive` (`Primitive.boolean.Schema`, …). That is not a builder —
- * omitting it here is what keeps `T.Primitive` from existing.
+ * `Primitive/index.ts` also exports the kind-module namespace as `Primitive`
+ * (`Primitive.boolean.Schema`, …). That is not a builder — omitting it here is
+ * what keeps `T.Primitive` from existing.
  */
 type Builders = Omit<typeof primitives, "Primitive">;
 

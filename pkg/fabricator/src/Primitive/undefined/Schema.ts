@@ -10,16 +10,16 @@ import type { Core, Meta as ThisMeta } from "./Types";
 
 /**
  * Nothing to configure (see `Types.ts`'s `Meta`), so `adapt` is this kind's
- * only builder method — an external library that spells "undefined"
- * differently still needs a way to say so.
+ * only builder method — an external library that spells "undefined" differently
+ * still needs a way to say so.
  */
 export interface Schema<$Adaptations extends Adaptations = {}> extends Core<
   ThisMeta,
   $Adaptations
 > {
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

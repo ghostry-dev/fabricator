@@ -10,17 +10,16 @@ import { Kind, Meta } from "../../Types";
 import type { Core, Fabricated, JsonSchema, Meta as ThisMeta } from "./Types";
 
 /**
- * Buildable `number` recipe: a range/distribution (`whereby`, absent for
- * the full-range bare form), `integer` for whole-number semantics, a
- * `sequence` counter, or opaque production via `as`. `construct()` derives
- * `fabricate` from this data — no variant carries its own closure until
- * it's built.
+ * Buildable `number` recipe: a range/distribution (`whereby`, absent for the
+ * full-range bare form), `integer` for whole-number semantics, a `sequence`
+ * counter, or opaque production via `as`. `construct()` derives `fabricate`
+ * from this data — no variant carries its own closure until it's built.
  *
- * `$Meta` is generic (defaulting to the full `Meta` union) so builder
- * return types stay narrow — e.g. `T.number.integer.sequence` types as
- * `Schema<{ sequence: true; integer: true }>`, not the widened `Schema`, so
- * a downstream conditional (`ToTypeBox`) can still tell an integer schema
- * apart from a bare one.
+ * `$Meta` is generic (defaulting to the full `Meta` union) so builder return
+ * types stay narrow — e.g. `T.number.integer.sequence` types as `Schema<{
+ * sequence: true; integer: true }>`, not the widened `Schema`, so a downstream
+ * conditional (`ToTypeBox`) can still tell an integer schema apart from a bare
+ * one.
  */
 export interface Schema<
   $Meta extends ThisMeta = ThisMeta,
@@ -38,8 +37,8 @@ export interface Schema<
   ) => Schema<$Meta, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

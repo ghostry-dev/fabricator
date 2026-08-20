@@ -11,13 +11,13 @@ import type { Core, Fabricated, JsonSchema, Meta as ThisMeta } from "./Types";
 
 /**
  * Buildable `string` recipe: length/composition (`whereby` — required, unlike
- * `number`/`date`; no natural bound to fuzz a length to), or opaque
- * production via `as`.
+ * `number`/`date`; no natural bound to fuzz a length to), or opaque production
+ * via `as`.
  *
  * `$Meta` is generic (defaulting to the full `Meta` union) so builder return
- * types stay narrow — see `number/Schema.ts`. `$Adaptations` is generic for
- * the same reason, threaded through every builder method so an adaptation
- * survives chaining (see `adapt`).
+ * types stay narrow — see `number/Schema.ts`. `$Adaptations` is generic for the
+ * same reason, threaded through every builder method so an adaptation survives
+ * chaining (see `adapt`).
  */
 export interface Schema<
   $Meta extends ThisMeta = ThisMeta,

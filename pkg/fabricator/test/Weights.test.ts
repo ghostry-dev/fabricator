@@ -2,11 +2,11 @@ import { expect, test } from "bun:test";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
 /**
- * `.weighted(...)` construction and fabricate-time filtering. Shared
- * guards live in `Distribution/index.ts`; these cover the wiring per
- * kind rather than re-testing the predicates themselves — `NaN`,
- * `Infinity`, and the explicit-`undefined` passthrough are exercised
- * once each on whichever kind reaches the same shared body.
+ * `.weighted(...)` construction and fabricate-time filtering. Shared guards
+ * live in `Distribution/index.ts`; these cover the wiring per kind rather than
+ * re-testing the predicates themselves — `NaN`, `Infinity`, and the
+ * explicit-`undefined` passthrough are exercised once each on whichever kind
+ * reaches the same shared body.
  */
 
 test("an explicitly-undefined weight means unspecified and is allowed", () => {
@@ -177,10 +177,10 @@ test("a negative weight still throws InvalidWeightError", () => {
 });
 
 /**
- * `NaN` fails every ordering comparison, so a `weight <= 0` rejection
- * check would let it through while `weighted()`'s own `weight > 0`
- * filter still drops it — the reason validity uses `isValidWeight`
- * (`NaN >= 0` is false) rather than an independent `<= 0`.
+ * `NaN` fails every ordering comparison, so a `weight <= 0` rejection check
+ * would let it through while `weighted()`'s own `weight > 0` filter still drops
+ * it — the reason validity uses `isValidWeight` (`NaN >= 0` is false) rather
+ * than an independent `<= 0`.
  */
 test("a NaN weight is rejected, not silently dropped", () => {
   const { T } = initialize({ seed: "weights-nan" });

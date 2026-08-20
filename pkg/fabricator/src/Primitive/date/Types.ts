@@ -20,10 +20,10 @@ export type Fabricated = Date;
 
 /**
  * A range/distribution (`whereby`, absent for the full-range bare form),
- * optionally scoped by `mode` to `"past"` (up to now) or `"future"` (from
- * now), optionally overridden by an opaque `as` production — carried
- * alongside the rest rather than replacing it, so a prior scoping survives
- * `as` for future validation.
+ * optionally scoped by `mode` to `"past"` (up to now) or `"future"` (from now),
+ * optionally overridden by an opaque `as` production — carried alongside the
+ * rest rather than replacing it, so a prior scoping survives `as` for future
+ * validation.
  */
 export type Meta = {
   mode?: "past" | "future";

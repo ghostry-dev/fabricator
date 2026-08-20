@@ -7,13 +7,13 @@ import type { Adaptation, Kind, Meta, Produces } from "../../Types";
 export type Item = AnySchema;
 
 /**
- * A *tuple* of `[weight, option]` pairs, one per position — not a flattened
- * `ReadonlyArray<[number, Item]>`, which would remember only the union of
- * every option's type and lose how many options there were (two identical
- * option types would collapse to one union member). The real tuple is what
- * lets `Adapter/TypeBox` mirror TypeBox's `Union<T>` — which collapses to a
- * bare schema for a single option and only wraps in `TUnion<T>` for two or
- * more — instead of always wrapping regardless of count.
+ * A _tuple_ of `[weight, option]` pairs, one per position — not a flattened
+ * `ReadonlyArray<[number, Item]>`, which would remember only the union of every
+ * option's type and lose how many options there were (two identical option
+ * types would collapse to one union member). The real tuple is what lets
+ * `Adapter/TypeBox` mirror TypeBox's `Union<T>` — which collapses to a bare
+ * schema for a single option and only wraps in `TUnion<T>` for two or more —
+ * instead of always wrapping regardless of count.
  */
 export type Items = ReadonlyArray<readonly [number, Item]>;
 
@@ -24,10 +24,10 @@ export type Fabricated<
 
 /**
  * Always stored as weighted pairs — `.uniform(...)` (`Registry.ts`) is
- * `.weighted(...)` with every item given weight `1`, so there is only one
- * shape to fabricate from. `produce` layers an opaque production via
- * `.as()`, carried alongside `items` rather than replacing it, so a prior
- * option set survives `.as()` for future validation.
+ * `.weighted(...)` with every item given weight `1`, so there is only one shape
+ * to fabricate from. `produce` layers an opaque production via `.as()`, carried
+ * alongside `items` rather than replacing it, so a prior option set survives
+ * `.as()` for future validation.
  */
 export type Meta<$Items extends Items = Items> = {
   items: $Items;

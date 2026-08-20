@@ -3,15 +3,15 @@ import { isPlainObject } from "./Utility/Core";
 
 /**
  * Canonical endpoint stored on `[Meta].whereby`. Call sites still accept a
- * scalar (inclusive) via {@link InputBound}; `.whereby()` runs {@link toBound}
- * so adapters always see this shape — never a scalar/object union.
+ * scalar (inclusive) via {@link InputBound}; `.whereby()` runs {@link toBound} so
+ * adapters always see this shape — never a scalar/object union.
  */
 export type Bound<$T> = { value: $T; exclusive: boolean };
 
 /**
- * What `.whereby({ min, max })` accepts: a scalar is inclusive, an object
- * names an endpoint policy. `exclusive` is required on the object form so
- * that form exists only to state one.
+ * What `.whereby({ min, max })` accepts: a scalar is inclusive, an object names
+ * an endpoint policy. `exclusive` is required on the object form so that form
+ * exists only to state one.
  */
 export type InputBound<$T> = $T | Bound<$T>;
 
@@ -35,8 +35,8 @@ function isCanonicalBound<$T>(input: InputBound<$T>): input is Bound<$T> {
 }
 
 /**
- * Inclusive integer interval implied by a discrete Bound pair. Exclusive min
- * is `value + 1`, exclusive max is `value - 1` — the same unit the length/
+ * Inclusive integer interval implied by a discrete Bound pair. Exclusive min is
+ * `value + 1`, exclusive max is `value - 1` — the same unit the length/
  * integer/bigint draws already use. Empty iff `min > max`.
  */
 export function effectiveDiscrete(
@@ -84,9 +84,9 @@ export function assertNonemptyDiscreteBigint(
 /**
  * Continuous emptiness: inverted bounds, a point range with either end
  * exclusive, or both ends exclusive with no float strictly between them.
- * Sampling still uses the closed interval and {@link constrainContinuous}
- * steps off an exclusive endpoint — this check is what makes that step
- * always have somewhere to land.
+ * Sampling still uses the closed interval and {@link constrainContinuous} steps
+ * off an exclusive endpoint — this check is what makes that step always have
+ * somewhere to land.
  */
 export function assertNonemptyContinuous(
   label: string,
@@ -108,9 +108,9 @@ function isEmptyContinuous(min: Bound<number>, max: Bound<number>): boolean {
 }
 
 /**
- * One ulp toward `toward` from `value`. Approximate, and enough to leave
- * an exclusive endpoint without rejection-looping a truncated distribution
- * that clamped onto it.
+ * One ulp toward `toward` from `value`. Approximate, and enough to leave an
+ * exclusive endpoint without rejection-looping a truncated distribution that
+ * clamped onto it.
  */
 export function towardInterior(value: number, toward: number): number {
   if (value === toward) return value;
@@ -148,12 +148,13 @@ export function epochBound(bound: Bound<Date>): Bound<number> {
 }
 
 /**
- * Array/string `length`: a bare number is an exact count; an omitted `min`
- * is inclusive `0`. Always stored as a Bound pair so adapters have one path.
+ * Array/string `length`: a bare number is an exact count; an omitted `min` is
+ * inclusive `0`. Always stored as a Bound pair so adapters have one path.
  */
 export function toLengthRange(
   length:
-    number | { max: InputBound<number>; min?: InputBound<number> | undefined },
+    | number
+    | { max: InputBound<number>; min?: InputBound<number> | undefined },
   label: string,
 ): { min: Bound<number>; max: Bound<number> } {
   const range =

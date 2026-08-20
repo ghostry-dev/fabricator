@@ -25,7 +25,8 @@ type ThisRegistry = Schema<{}, Adaptations> & {
     ) => Schema<{ integer: true; whereby: Whereby }>;
 
     /**
-     * A monotonically increasing counter starting at 1, fresh per `construct()`.
+     * A monotonically increasing counter starting at 1, fresh per
+     * `construct()`.
      */
     sequence: Schema<{ sequence: true; integer: true }>;
 
@@ -80,10 +81,9 @@ function toWhereby(input: InputWhereby, integer: boolean): Whereby {
   const label = integer ? "T.number.integer.whereby" : "T.number.whereby";
 
   /**
-   * An omitted end is not stored — same as `T.date` — but emptiness is
-   * judged against the fabricate-time cap so a one-sided exclusive end
-   * that leaves no value still fails at `.whereby()`, not first
-   * `fabricate()`.
+   * An omitted end is not stored — same as `T.date` — but emptiness is judged
+   * against the fabricate-time cap so a one-sided exclusive end that leaves no
+   * value still fails at `.whereby()`, not first `fabricate()`.
    */
   if (integer) {
     assertNonemptyDiscrete(label, min ?? defaults.min, max ?? defaults.max);

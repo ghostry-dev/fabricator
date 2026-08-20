@@ -3,8 +3,8 @@ import { initialize } from "@ghostry/fabricator";
 
 /**
  * `always` and `enum` used to be capped at `string | number | boolean` —
- * TypeBox's `TLiteralValue` leaking into the primitives. These cover the
- * values that cap excluded.
+ * TypeBox's `TLiteralValue` leaking into the primitives. These cover the values
+ * that cap excluded.
  */
 
 test("T.always fabricates values the old string|number|boolean cap excluded", () => {

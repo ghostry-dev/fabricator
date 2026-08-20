@@ -43,8 +43,8 @@ export type Fabricator<
    * never drawing fresh (see `Fabricator()` below). `config.validate` defaults
    * to `true`, delegated to `schema.override(overrides)`'s existing recursive
    * checks (result unused); `{ validate: false }` skips that — used internally
-   * when recursing into an already-validated nested override, also available
-   * to a caller who already knows their overrides are valid.
+   * when recursing into an already-validated nested override, also available to
+   * a caller who already knows their overrides are valid.
    */
   fabricate: (
     overrides?: Override<$Schema[typeof Meta]["definition"]>,
@@ -65,22 +65,22 @@ export type Fields = Record<string, BaseFabricator<unknown>>;
  * built by `Constructor.ts` — which owns recursion into nested Schemas, so
  * `object` never calls `construct()` and there's no import cycle with
  * `Constructor.ts`. Schema-baked `.override()`-marked fields (`[Fixed]` in
- * `Types.ts`) are already resolved into literal-valued `fields` entries
- * before they reach here. `fabricate`'s `overrides` (below) is a separate
- * per-call mechanism; the two compose.
+ * `Types.ts`) are already resolved into literal-valued `fields` entries before
+ * they reach here. `fabricate`'s `overrides` (below) is a separate per-call
+ * mechanism; the two compose.
  *
  * `schema` is echoed as `.schema` unchanged — callers wanting a
- * `toSchema`-normalized Fabricator (no `extend`/`refine`/`override`) pass
- * that; `Constructor.ts`'s `make` passes `object.rehydrate(...)` so a
- * top-level built Fabricator's `.schema` still composes.
+ * `toSchema`-normalized Fabricator (no `extend`/`refine`/`override`) pass that;
+ * `Constructor.ts`'s `make` passes `object.rehydrate(...)` so a top-level built
+ * Fabricator's `.schema` still composes.
  *
- * A compute-kind field (from `.refine()`) needs the rest of the object
- * already fabricated (`object/compute/Fabricator.ts`), which isn't available
- * until every ordinary field has resolved. Two phases: ordinary fields
- * first, then compute fields against the accumulated result, in definition
- * order (a compute field can see an earlier compute field's value, not a
- * later one) — unless covered by `overrides`, in which case it resolves in
- * phase 1 like any other overridden field.
+ * A compute-kind field (from `.refine()`) needs the rest of the object already
+ * fabricated (`object/compute/Fabricator.ts`), which isn't available until
+ * every ordinary field has resolved. Two phases: ordinary fields first, then
+ * compute fields against the accumulated result, in definition order (a compute
+ * field can see an earlier compute field's value, not a later one) — unless
+ * covered by `overrides`, in which case it resolves in phase 1 like any other
+ * overridden field.
  */
 export function Fabricator<$Definition extends Definition>(
   context: FabricatorContext<Schema<$Definition>>,
@@ -144,7 +144,10 @@ export function Fabricator<$Definition extends Definition>(
 
       if (overrides && k in overrides) {
         const value = overrides[k];
-        /** Forces this key off entirely — never written, not even as `undefined`. */
+        /**
+         * Forces this key off entirely — never written, not even as
+         * `undefined`.
+         */
         if (value === Omitted) continue;
 
         fabricated[k] = isObjectFabricator(v)
@@ -156,8 +159,8 @@ export function Fabricator<$Definition extends Definition>(
 
       if (isObjectOmittableFabricator(v) || isObjectOptionalFabricator(v)) {
         /**
-         * Identical for both: `Omitted` means the key doesn't appear;
-         * anything else — including `undefined`, for `object.optional`'s
+         * Identical for both: `Omitted` means the key doesn't appear; anything
+         * else — including `undefined`, for `object.optional`'s
          * present-as-`undefined` outcome — is written like an ordinary value.
          */
         const value = v.fabricate();

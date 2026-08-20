@@ -6,22 +6,21 @@ import { never } from "../../Utility/Core";
 import type { PlainObject } from "../../Utility/Types";
 
 /**
- * Derive the schema that `fabricateAt` swaps in at `depth.max` when the
- * caller omits `terminal`. Walks `body` and rewrites every `self` site
- * into a declining state so the result contains *no* `recursive.self`
- * nodes — `Constructor.ts`'s `make` still dispatches nested schemas
- * eagerly, and `recursive.self` throws when `context.self` is missing
- * (which it is, at the ceiling).
+ * Derive the schema that `fabricateAt` swaps in at `depth.max` when the caller
+ * omits `terminal`. Walks `body` and rewrites every `self` site into a
+ * declining state so the result contains _no_ `recursive.self` nodes —
+ * `Constructor.ts`'s `make` still dispatches nested schemas eagerly, and
+ * `recursive.self` throws when `context.self` is missing (which it is, at the
+ * ceiling).
  *
- * Empty collections are `opaque(() => [])` / `opaque(() => ({}))`,
- * never `always([])`: each leaf must get its own reference (see
- * `Recursive.test.ts`). Presence wrappers become a self-free schema
- * that always declines (`null` / `undefined` / `Omitted`), rather than
- * keeping the inner `self` behind a produce short-circuit — `make`
- * would still construct that inner node.
+ * Empty collections are `opaque(() => [])` / `opaque(() => ({}))`, never
+ * `always([])`: each leaf must get its own reference (see `Recursive.test.ts`).
+ * Presence wrappers become a self-free schema that always declines (`null` /
+ * `undefined` / `Omitted`), rather than keeping the inner `self` behind a
+ * produce short-circuit — `make` would still construct that inner node.
  *
- * Nested `T.recursive` is its own fixed point and is treated as a
- * leaf; its inner `self` is not this walk's `self`.
+ * Nested `T.recursive` is its own fixed point and is treated as a leaf; its
+ * inner `self` is not this walk's `self`.
  */
 export function terminate(body: AnySchema): AnySchema {
   return terminateAt(body, []);

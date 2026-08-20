@@ -13,19 +13,20 @@ export type Fabricated<
 
 export type InputWhereby = {
   length:
-    number | { max: InputBound<number>; min?: InputBound<number> | undefined };
+    | number
+    | { max: InputBound<number>; min?: InputBound<number> | undefined };
 };
 
 export type Whereby = { length: { min: Bound<number>; max: Bound<number> } };
 
 /**
  * `whereby` (a length spec — no natural bound to fuzz to, so unlike
- * `number`/`date` there's no bare form), optionally overridden by an
- * opaque `as` production, carried alongside `whereby` rather than replacing
- * it (when `whereby` was already set) so a prior length spec survives `as`
- * for future validation. `definition` stays required regardless — it's
- * known at `T.array(...)` call time and describes the element shape TypeBox
- * derives either way.
+ * `number`/`date` there's no bare form), optionally overridden by an opaque
+ * `as` production, carried alongside `whereby` rather than replacing it (when
+ * `whereby` was already set) so a prior length spec survives `as` for future
+ * validation. `definition` stays required regardless — it's known at
+ * `T.array(...)` call time and describes the element shape TypeBox derives
+ * either way.
  */
 export type Meta<$Definition extends Definition = Definition> =
   | { definition: $Definition; whereby: Whereby; produce?: never }

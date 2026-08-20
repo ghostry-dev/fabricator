@@ -10,10 +10,10 @@ import { Kind, Meta } from "../../Types";
 import type { Core, Fabricated, Items } from "./Types";
 
 /**
- * Buildable `choice` recipe: a weighted set of option Schemas, one of which
- * is drawn (and only then dispatched into a value) each fabrication. No
- * bare form — see `Registry.ts`'s `uniform`/`weighted`, the only way to
- * reach this Schema.
+ * Buildable `choice` recipe: a weighted set of option Schemas, one of which is
+ * drawn (and only then dispatched into a value) each fabrication. No bare form
+ * — see `Registry.ts`'s `uniform`/`weighted`, the only way to reach this
+ * Schema.
  */
 export interface Schema<
   $Items extends Items = Items,
@@ -27,8 +27,8 @@ export interface Schema<
   as: (produce: Produce<Fabricated<$Items>>) => Schema<$Items, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

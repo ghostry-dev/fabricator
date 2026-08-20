@@ -25,10 +25,10 @@ export type Fabricator<
   [Children]: BaseFabricator<any>;
   readonly [Adaptation]?: AdaptationsOf<$Schema>;
   /**
-   * `Omitted` on the empty roll (or when an `.as(...)` producer returns it)
-   * — read only by `object/Fabricator.ts`'s fabricate loop, which omits the
-   * key entirely rather than writing `undefined`. Fabricating this outside
-   * a parent `object` hands the sentinel straight back.
+   * `Omitted` on the empty roll (or when an `.as(...)` producer returns it) —
+   * read only by `object/Fabricator.ts`'s fabricate loop, which omits the key
+   * entirely rather than writing `undefined`. Fabricating this outside a parent
+   * `object` hands the sentinel straight back.
    */
   fabricate: () => Resolved<$Schema[typeof Meta]["definition"]>;
 };
@@ -40,14 +40,14 @@ export function isObjectOmittableFabricator(
 }
 
 /**
- * A presence roll on this field's private stream, drawn only when present
- * is decided — an omission roll never advances `source`'s stream, and since
+ * A presence roll on this field's private stream, drawn only when present is
+ * decided — an omission roll never advances `source`'s stream, and since
  * `source` is already dispatched into its own independent stream by
- * `Constructor.ts` regardless of this roll, skipping its draw here can
- * never perturb any other field's reproducibility (`Random/index.ts`'s
+ * `Constructor.ts` regardless of this roll, skipping its draw here can never
+ * perturb any other field's reproducibility (`Random/index.ts`'s
  * `toStreamFromTrace`: every field's stream is private from the moment it's
- * minted). 50/50 by default; `.weighted(...)` (`Schema.ts`) reweights
- * either outcome relative to that same default of `1`.
+ * minted). 50/50 by default; `.weighted(...)` (`Schema.ts`) reweights either
+ * outcome relative to that same default of `1`.
  */
 export function Fabricator<$Definition extends Definition>(
   context: FabricatorContext<Schema<$Definition>>,

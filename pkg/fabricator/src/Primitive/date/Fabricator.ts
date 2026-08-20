@@ -104,13 +104,7 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
       )
     : () => new Date((stream.next() * 2 - 1) * MAX_TIME);
 
-  return {
-    [Kind]: "date",
-    [Meta]: meta,
-    trace,
-    fabricate,
-    schema: rehydrated,
-  };
+  return { [Kind]: "date", [Meta]: meta, trace, fabricate, schema: rehydrated };
 }
 
 function drawPastOrFuture(
@@ -124,12 +118,11 @@ function drawPastOrFuture(
 }
 
 /**
- * Draw a `Date` from an epoch-millisecond range. `Date` is millisecond-
- * valued (`TimeClip`), so exclusive ends resolve the same way integer
- * bounds do — then the existing continuous `Distribution` sampler runs
- * on that inclusive ms interval. Sampling the stated floats and
- * constructing a `Date` would clip an exclusive-min draw back onto the
- * excluded instant.
+ * Draw a `Date` from an epoch-millisecond range. `Date` is millisecond- valued
+ * (`TimeClip`), so exclusive ends resolve the same way integer bounds do — then
+ * the existing continuous `Distribution` sampler runs on that inclusive ms
+ * interval. Sampling the stated floats and constructing a `Date` would clip an
+ * exclusive-min draw back onto the excluded instant.
  */
 const draw = (
   range: { min: Bound<number>; max: Bound<number> },

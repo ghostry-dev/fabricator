@@ -20,8 +20,8 @@ export interface Schema<
    * Layer an opaque production on this schema's existing `[Meta]` — carrying
    * `definition` forward, not discarding it, so a later `.as(...)` (or future
    * validation of `produce`) still has it to check against. `produce` may
-   * return `undefined` or `Omitted`, so custom logic composes the same way
-   * the built-in three-way roll does.
+   * return `undefined` or `Omitted`, so custom logic composes the same way the
+   * built-in three-way roll does.
    */
   as: (
     produce: Produce<Resolved<$Definition>>,
@@ -38,8 +38,8 @@ export interface Schema<
   weighted: (weights: Weights) => Schema<$Definition, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

@@ -42,13 +42,13 @@ import {
 
 /**
  * This adapter's `[Adaptation]` namespace. Versioned because
- * `@sinclair/typebox` (0.34.x) and the unscoped `typebox` (1.x) are
- * separate packages, not a continuation — a schema can carry both at
- * once, and neither is mistaken for the other.
+ * `@sinclair/typebox` (0.34.x) and the unscoped `typebox` (1.x) are separate
+ * packages, not a continuation — a schema can carry both at once, and neither
+ * is mistaken for the other.
  *
- * Nothing outside this file writes it: `.adapt(typebox, ...)` reads it
- * off {@link typebox}. Naming it wrong is an import error, not an
- * entry nothing looks up.
+ * Nothing outside this file writes it: `.adapt(typebox, ...)` reads it off
+ * {@link typebox}. Naming it wrong is an import error, not an entry nothing
+ * looks up.
  */
 const key = "@ghostry/fabricator-typebox/v0";
 type Key = typeof key;
@@ -57,28 +57,28 @@ type Returnable = TSchema;
 
 /**
  * Tuple-preserving map from a `choice`'s `[weight, option]` pairs to each
- * option's `ToTypeBox<...>`. Head/tail recursion, not a homomorphic
- * `{ [$K in keyof $Items]: ... }`: the latter can't be proven
- * `TSchema[]`-shaped while `$Items` is only the general `Primitive.choice.Items`
- * bound (`keyof` a still-abstract array-constrained parameter pulls in
- * `"length"`/method keys, which don't resolve to `TSchema`). Matching
- * `readonly [infer $Head, ...infer $Rest]` re-verifies `TSchema[]` at
- * every step, so it type-checks whether `$Items` is abstract (inside
- * `ToTypeBox`'s generic body) or already a concrete tuple.
+ * option's `ToTypeBox<...>`. Head/tail recursion, not a homomorphic `{ [$K in
+ * keyof $Items]: ... }`: the latter can't be proven `TSchema[]`-shaped while
+ * `$Items` is only the general `Primitive.choice.Items` bound (`keyof` a
+ * still-abstract array-constrained parameter pulls in `"length"`/method keys,
+ * which don't resolve to `TSchema`). Matching `readonly [infer $Head, ...infer
+ * $Rest]` re-verifies `TSchema[]` at every step, so it type-checks whether
+ * `$Items` is abstract (inside `ToTypeBox`'s generic body) or already a
+ * concrete tuple.
  *
- * Three outcomes, matching TypeBox's `Union<Types extends
- * TSchema[]>(types: [...Types])`:
- * - Empty tuple (`$Items` is `readonly []`, e.g. `T.choice.uniform([])`)
- *   → `[]`; `Union<[]>` is `TNever`, matching `Type.Union([])`.
+ * Three outcomes, matching TypeBox's `Union<Types extends TSchema[]>(types:
+ * [...Types])`:
+ *
+ * - Empty tuple (`$Items` is `readonly []`, e.g. `T.choice.uniform([])`) → `[]`;
+ *   `Union<[]>` is `TNever`, matching `Type.Union([])`.
  * - Non-empty tuple → same-length tuple, so `Union<T>` can apply its
  *   single-vs-multi collapse.
- * - Widened array (`$Items` inferred as `ReadonlyArray<...>` with no
- *   known length — options built elsewhere and passed as a variable,
- *   not a fresh literal) matches neither tuple pattern → arity-less
- *   `ToTypeBox<...>[]`. `Union<T>` then resolves to
- *   `TUnion<ToTypeBox<...>[]>` — the same "union of unknown arity"
- *   `Type.Union` falls back to when it can't infer a literal tuple —
- *   not the `TNever` a two-way (tuple-or-empty) split would give.
+ * - Widened array (`$Items` inferred as `ReadonlyArray<...>` with no known length
+ *   — options built elsewhere and passed as a variable, not a fresh literal)
+ *   matches neither tuple pattern → arity-less `ToTypeBox<...>[]`. `Union<T>`
+ *   then resolves to `TUnion<ToTypeBox<...>[]>` — the same "union of unknown
+ *   arity" `Type.Union` falls back to when it can't infer a literal tuple — not
+ *   the `TNever` a two-way (tuple-or-empty) split would give.
  */
 type ChoiceOptions<$Items extends Primitive.choice.Items> =
   $Items extends readonly []
@@ -97,13 +97,12 @@ type ChoiceOptions<$Items extends Primitive.choice.Items> =
 
 /**
  * Tuple-preserving map from a `tuple`'s slot schemas to each slot's
- * `ToTypeBox<...>`. Same head/tail recursion as {@link ChoiceOptions},
- * same reason: `TTuple<T extends TSchema[]>` needs `T` provably
- * `TSchema[]` at every step, which a homomorphic
- * `{ [$K in keyof $Items]: ... }` can't guarantee while `$Items` is
- * only the general `Primitive.tuple.Items` bound. No single-item collapse —
- * `Type.Tuple` / `TTuple` never collapses — so only empty, non-empty,
- * and the widened-array fallback.
+ * `ToTypeBox<...>`. Same head/tail recursion as {@link ChoiceOptions}, same
+ * reason: `TTuple<T extends TSchema[]>` needs `T` provably `TSchema[]` at every
+ * step, which a homomorphic `{ [$K in keyof $Items]: ... }` can't guarantee
+ * while `$Items` is only the general `Primitive.tuple.Items` bound. No
+ * single-item collapse — `Type.Tuple` / `TTuple` never collapses — so only
+ * empty, non-empty, and the widened-array fallback.
  */
 type TupleItems<$Items extends Primitive.tuple.Items> =
   $Items extends readonly []
@@ -116,37 +115,34 @@ type TupleItems<$Items extends Primitive.tuple.Items> =
       : ToTypeBox<$Items[number]>[];
 
 /**
- * TypeBox counterpart of a fixed JS value — what `always` and `enum`
- * (members are values, not schemas) map to. Neither kind is capped at
- * `string | number | boolean`.
+ * TypeBox counterpart of a fixed JS value — what `always` and `enum` (members
+ * are values, not schemas) map to. Neither kind is capped at `string | number |
+ * boolean`.
  *
- * TypeBox's `TConst` already dispatches: `TLiteral` for the three
- * literal-able types, `TNull`/`TUndefined`/`TBigInt`/`TDate`/`TSymbol`/
- * `TUint8Array` for the rest, recursing through objects and arrays.
- * Runtime `toConst` pins exact values via option bags, but options are
- * invisible to `Static<>` (`Static<TBigInt>` is `bigint` either way),
- * so nothing extra is expressible here and the two sides stay in
- * agreement.
+ * TypeBox's `TConst` already dispatches: `TLiteral` for the three literal-able
+ * types, `TNull`/`TUndefined`/`TBigInt`/`TDate`/`TSymbol`/ `TUint8Array` for
+ * the rest, recursing through objects and arrays. Runtime `toConst` pins exact
+ * values via option bags, but options are invisible to `Static<>`
+ * (`Static<TBigInt>` is `bigint` either way), so nothing extra is expressible
+ * here and the two sides stay in agreement.
  *
- * `unknown extends $Value` is load-bearing: `TConst<unknown>` resolves
- * to `TObject<{}>`, not `TSchema`, so a bare unparameterized
+ * `unknown extends $Value` is load-bearing: `TConst<unknown>` resolves to
+ * `TObject<{}>`, not `TSchema`, so a bare unparameterized
  * `Primitive.always.Core` would claim to be an empty object instead of falling
- * back to `TSchema`. Guard:
- * `test/Adapter/TypeBox/index.types.test.ts`'s bare-vs-concrete
- * assertion — same trap as `tuple`'s `TupleItems`.
+ * back to `TSchema`. Guard: `test/Adapter/TypeBox/index.types.test.ts`'s
+ * bare-vs-concrete assertion — same trap as `tuple`'s `TupleItems`.
  */
 type ToConst<$Value> = unknown extends $Value ? Returnable : TConst<$Value>;
 
 /**
- * Tuple-preserving map from an `enum`'s `[weight, item]` pairs to each
- * member's {@link ToConst}. Same head/tail recursion as
- * {@link ChoiceOptions} (see that comment for why a homomorphic mapped
- * type fails, and what the three branches mean).
+ * Tuple-preserving map from an `enum`'s `[weight, item]` pairs to each member's
+ * {@link ToConst}. Same head/tail recursion as {@link ChoiceOptions} (see that
+ * comment for why a homomorphic mapped type fails, and what the three branches
+ * mean).
  *
- * Difference: `enum` members are *values*, so they map through
- * `ToConst` rather than recursing into `ToTypeBox` the way a `choice`'s
- * option Schemas do — mirroring `convert()`'s `enum` case (`toConst`
- * per member, not `convert`).
+ * Difference: `enum` members are _values_, so they map through `ToConst` rather
+ * than recursing into `ToTypeBox` the way a `choice`'s option Schemas do —
+ * mirroring `convert()`'s `enum` case (`toConst` per member, not `convert`).
  */
 type EnumOptions<$Items extends Primitive.enum.Items> =
   $Items extends readonly []
@@ -162,13 +158,13 @@ type EnumOptions<$Items extends Primitive.enum.Items> =
       : ToConst<$Items[number][1]>[];
 
 /**
- * TypeBox schema type a Schema corresponds to — identical to writing
- * the schema by hand with `Type.*`.
+ * TypeBox schema type a Schema corresponds to — identical to writing the schema
+ * by hand with `Type.*`.
  *
- * Mirrors {@link Fabrication}: composites (`object`, `array`,
- * `object.compute`) recurse into children; every leaf maps to its
- * TypeBox counterpart. `always` (and each `enum` member) maps through
- * {@link ToConst}; anything else falls back to `TSchema`.
+ * Mirrors {@link Fabrication}: composites (`object`, `array`, `object.compute`)
+ * recurse into children; every leaf maps to its TypeBox counterpart. `always`
+ * (and each `enum` member) maps through {@link ToConst}; anything else falls
+ * back to `TSchema`.
  */
 /* prettier-ignore */
 export type ToTypeBox<$Schema> =
@@ -329,10 +325,10 @@ export type ToTypeBox<$Schema> =
 
 /**
  * Build a TypeBox schema from a Schema (or an already-built Fabricator —
- * `convert` only reads `[Kind]`/`[Meta]`, never `fabricate`, so either
- * works). The result is a real TypeBox schema — `Static`, `Value.Check`,
- * and `TypeCompiler` all work — typed identically to the equivalent
- * hand-written `Type.*` schema (see {@link ToTypeBox}).
+ * `convert` only reads `[Kind]`/`[Meta]`, never `fabricate`, so either works).
+ * The result is a real TypeBox schema — `Static`, `Value.Check`, and
+ * `TypeCompiler` all work — typed identically to the equivalent hand-written
+ * `Type.*` schema (see {@link ToTypeBox}).
  */
 export function toTypeBox<const $Schema extends Buildable>(
   schema: $Schema,
@@ -341,39 +337,36 @@ export function toTypeBox<const $Schema extends Buildable>(
 }
 
 /**
- * This adapter as a value — what `schema.adapt(typebox, ...)` takes, and
- * what {@link toTypeBox} drives the walk with. The only two surfaces a
- * caller needs: one to attach an adaptation, one to convert.
+ * This adapter as a value — what `schema.adapt(typebox, ...)` takes, and what
+ * {@link toTypeBox} drives the walk with. The only two surfaces a caller needs:
+ * one to attach an adaptation, one to convert.
  *
  * Naming `Key` as the parameter is what keeps `key`'s literal type, which
- * `.adapt(...)` reads off this value; `ReturnType<$Adapter["convert"]>`
- * is what it checks the adaptation's return against — `Returnable` is
- * `TSchema`, so a producer that hands back anything else fails at the
- * call site.
+ * `.adapt(...)` reads off this value; `ReturnType<$Adapter["convert"]>` is what
+ * it checks the adaptation's return against — `Returnable` is `TSchema`, so a
+ * producer that hands back anything else fails at the call site.
  */
 export const typebox: Adapter<Key, BuildContext, Returnable> = { key, convert };
 
 /**
- * Threaded through the recursion while walking beneath a `T.recursive`
- * schema's `body` — every other branch forwards it unchanged, so it
- * reaches however deeply a `self` node sits nested. Mirrors
- * `Constructor.ts`'s `ConstructionContext`, but only carries `This`:
- * `Type.Recursive` already gives back the placeholder to bind, so
- * there's no equivalent of the runtime stream-isolation problem —
- * building a TypeBox schema draws no randomness.
+ * Threaded through the recursion while walking beneath a `T.recursive` schema's
+ * `body` — every other branch forwards it unchanged, so it reaches however
+ * deeply a `self` node sits nested. Mirrors `Constructor.ts`'s
+ * `ConstructionContext`, but only carries `This`: `Type.Recursive` already
+ * gives back the placeholder to bind, so there's no equivalent of the runtime
+ * stream-isolation problem — building a TypeBox schema draws no randomness.
  */
 type BuildContext = { self?: Returnable };
 
 /**
- * Untyped per-kind dispatch. Switches on the runtime `[Kind]` tag;
- * precise typing lives on {@link toTypeBox} and {@link ToTypeBox}.
+ * Untyped per-kind dispatch. Switches on the runtime `[Kind]` tag; precise
+ * typing lives on {@link toTypeBox} and {@link ToTypeBox}.
  *
- * Recurses through `recurse` rather than calling itself, so every
- * nested node passes back through the adaptation lookup in
- * `Adapter/Core.ts`'s `drive` — an `object` field, `array` element, or
- * `choice` option is adapted exactly as the root is. Nothing here
- * reads `[Adaptation]`; by the time a schema reaches this switch,
- * `drive` has already established it carries no adaptation for this
+ * Recurses through `recurse` rather than calling itself, so every nested node
+ * passes back through the adaptation lookup in `Adapter/Core.ts`'s `drive` — an
+ * `object` field, `array` element, or `choice` option is adapted exactly as the
+ * root is. Nothing here reads `[Adaptation]`; by the time a schema reaches this
+ * switch, `drive` has already established it carries no adaptation for this
  * adapter.
  */
 function convert(
@@ -403,11 +396,11 @@ function convert(
 
     /**
      * `Type.Record` answers an unrepresentable key by returning `TNever`
-     * (`{"not":{}}`) rather than raising — a schema *nothing* validates
+     * (`{"not":{}}`) rather than raising — a schema _nothing_ validates
      * against, produced silently. A symbol key is the case that arises
-     * (`TRecordOrObject` has no `TSymbol` branch), but testing the
-     * *result* for `Never` catches every such key shape, and stays
-     * correct if TypeBox adds or removes a branch.
+     * (`TRecordOrObject` has no `TSymbol` branch), but testing the _result_ for
+     * `Never` catches every such key shape, and stays correct if TypeBox adds
+     * or removes a branch.
      *
      * `.adapt(typebox, ...)` wins over this mapping entirely.
      */
@@ -429,14 +422,13 @@ function convert(
     }
 
     /**
-     * `Type.Recursive` already builds a `$ref`-based schema whose
-     * validation recurses however deep a value goes — a terminal-shaped
-     * leaf is an ordinary instance of the same shape with
-     * self-referencing fields empty/absent — so `[Meta].terminal` is
-     * never separately built; only `body` matters. `This` is bound
-     * fresh for this call, so a `self` nested inside `body` resolves to
-     * *this* recursion, not the caller's — mirrors `case "recursive"`
-     * in `Constructor.ts`'s `make`.
+     * `Type.Recursive` already builds a `$ref`-based schema whose validation
+     * recurses however deep a value goes — a terminal-shaped leaf is an
+     * ordinary instance of the same shape with self-referencing fields
+     * empty/absent — so `[Meta].terminal` is never separately built; only
+     * `body` matters. `This` is bound fresh for this call, so a `self` nested
+     * inside `body` resolves to _this_ recursion, not the caller's — mirrors
+     * `case "recursive"` in `Constructor.ts`'s `make`.
      */
     case "recursive": {
       const s = schema as Primitive.recursive.Schema;
@@ -444,12 +436,12 @@ function convert(
     }
 
     /**
-     * Resolves against whichever `T.recursive` is currently building,
-     * via `context.self` — runtime mirror of `Fabricator.ts`'s
-     * `context.self` callback, except there is nothing to *call*:
-     * `This` already *is* the schema. Absent `context.self`, `self` was
-     * used with no active recursion — see `Constructor.ts`'s identical
-     * `case "recursive.self"`; only reachable by misuse.
+     * Resolves against whichever `T.recursive` is currently building, via
+     * `context.self` — runtime mirror of `Fabricator.ts`'s `context.self`
+     * callback, except there is nothing to _call_: `This` already _is_ the
+     * schema. Absent `context.self`, `self` was used with no active recursion —
+     * see `Constructor.ts`'s identical `case "recursive.self"`; only reachable
+     * by misuse.
      */
     case "recursive.self": {
       if (!context?.self) {
@@ -489,13 +481,12 @@ function convert(
     }
 
     /**
-     * Deliberately `Unknown`, not a throw — the opposite call to
-     * `record`'s symbol key, and they differ for a reason. There,
-     * `Type.Record` *silently* returns a `TNever` nothing could
-     * satisfy, so failing loudly is strictly better. Here `Unknown` is
-     * accurate: the adapter cannot constrain the value, and throwing
-     * would make `toTypeBox` fail on any schema merely *containing* an
-     * opaque field — defeating the escape hatch.
+     * Deliberately `Unknown`, not a throw — the opposite call to `record`'s
+     * symbol key, and they differ for a reason. There, `Type.Record` _silently_
+     * returns a `TNever` nothing could satisfy, so failing loudly is strictly
+     * better. Here `Unknown` is accurate: the adapter cannot constrain the
+     * value, and throwing would make `toTypeBox` fail on any schema merely
+     * _containing_ an opaque field — defeating the escape hatch.
      */
     case "opaque":
       return Type.Unknown();
@@ -516,11 +507,10 @@ function convert(
       return Type.Boolean();
 
     /**
-     * Members are values, not schemas (that is `choice`, below), so
-     * each maps through `toConst` rather than recursing into `build`.
-     * Two members whose values share a schema shape — two distinct
-     * symbols, say — produce duplicate union branches; harmless, not
-     * worth deduplicating.
+     * Members are values, not schemas (that is `choice`, below), so each maps
+     * through `toConst` rather than recursing into `build`. Two members whose
+     * values share a schema shape — two distinct symbols, say — produce
+     * duplicate union branches; harmless, not worth deduplicating.
      */
     case "enum": {
       const s = schema as Primitive.enum.Schema;
@@ -557,12 +547,12 @@ function convert(
     }
 
     /**
-     * `[Meta].hints` holds orthogonal JSON-Schema keywords; range Bound
-     * lives on `whereby` and is forwarded as `minimum`/`exclusiveMinimum`
-     * (and the integer/string length equivalents). `integer` picks
-     * `Type.Integer()` over `Type.Number()` to match {@link ToTypeBox}
-     * reading the same flag off `$Meta`. The static type of `string` is
-     * `TString` regardless of which options are present.
+     * `[Meta].hints` holds orthogonal JSON-Schema keywords; range Bound lives
+     * on `whereby` and is forwarded as `minimum`/`exclusiveMinimum` (and the
+     * integer/string length equivalents). `integer` picks `Type.Integer()` over
+     * `Type.Number()` to match {@link ToTypeBox} reading the same flag off
+     * `$Meta`. The static type of `string` is `TString` regardless of which
+     * options are present.
      */
     case "number": {
       const s = schema as Primitive.number.Schema;
@@ -631,8 +621,8 @@ function convert(
  * Stated Bound → TypeBox draft-7 numeric keywords. Inclusive uses
  * `minimum`/`maximum`; exclusive uses `exclusiveMinimum`/`exclusiveMaximum`
  * with the stated value, not the discrete interior — validation language
- * matches fabrication's exclusive end. Length has no exclusive keyword and
- * goes through {@link effectiveDiscrete} at the call site instead.
+ * matches fabrication's exclusive end. Length has no exclusive keyword and goes
+ * through {@link effectiveDiscrete} at the call site instead.
  */
 function numericBound<$Value extends number | bigint>(
   bound: Bound<$Value> | undefined,
@@ -655,33 +645,30 @@ function timestampBound(
 }
 
 /**
- * TypeBox schema for one fixed JS value — the runtime half of
- * {@link ToConst}. Neither `always` nor `enum` needs to reject
- * anything.
+ * TypeBox schema for one fixed JS value — the runtime half of {@link ToConst}.
+ * Neither `always` nor `enum` needs to reject anything.
  *
  * Not a bare `Type.Const(value)` call, though it falls back to one.
  * `Type.Const` picks the right TypeBox type but stops there, so
- * `Type.Const(5n)` is a bare `TBigInt` that accepts any bigint — far
- * looser than what an `always` produces. Where TypeBox has an option
- * bag that can pin the value, this uses it: `minimum`/`maximum` for a
- * bigint, `minimumTimestamp`/`maximumTimestamp` for a date,
- * `min`/`maxByteLength` for a Uint8Array. Options are runtime only and
- * never reach `Static<>`, which is why {@link ToConst} stays a plain
- * `TConst` while this side is strictly more precise.
+ * `Type.Const(5n)` is a bare `TBigInt` that accepts any bigint — far looser
+ * than what an `always` produces. Where TypeBox has an option bag that can pin
+ * the value, this uses it: `minimum`/`maximum` for a bigint,
+ * `minimumTimestamp`/`maximumTimestamp` for a date, `min`/`maxByteLength` for a
+ * Uint8Array. Options are runtime only and never reach `Static<>`, which is why
+ * {@link ToConst} stays a plain `TConst` while this side is strictly more
+ * precise.
  *
- * Two values still cannot be pinned; `.adapt(typebox, ...)` is the
- * escape hatch for both: a `symbol` (`Symbol(options?)` takes no value
- * constraint) and a `Uint8Array`'s *contents* (only byte length is
- * expressible).
+ * Two values still cannot be pinned; `.adapt(typebox, ...)` is the escape hatch
+ * for both: a `symbol` (`Symbol(options?)` takes no value constraint) and a
+ * `Uint8Array`'s _contents_ (only byte length is expressible).
  *
- * Plain objects and arrays recurse here rather than being handed
- * wholesale to `Type.Const`, so a pinnable value nested inside one
- * gets pinned too — otherwise `T.always({ at: new Date(0) })` would
- * pin nothing while `T.always(new Date(0))` pinned exactly. The
- * recursion mirrors `TConst`'s readonly marking (properties and array
- * elements wrapped in `Type.Readonly`, the top level left bare) so the
- * result stays assignable to {@link ToConst}; `T.always(...)`'s
- * `const` type parameter infers readonly members to match.
+ * Plain objects and arrays recurse here rather than being handed wholesale to
+ * `Type.Const`, so a pinnable value nested inside one gets pinned too —
+ * otherwise `T.always({ at: new Date(0) })` would pin nothing while
+ * `T.always(new Date(0))` pinned exactly. The recursion mirrors `TConst`'s
+ * readonly marking (properties and array elements wrapped in `Type.Readonly`,
+ * the top level left bare) so the result stays assignable to {@link ToConst};
+ * `T.always(...)`'s `const` type parameter infers readonly members to match.
  */
 function toConst(value: unknown): TSchema {
   switch (typeof value) {
@@ -725,9 +712,9 @@ function toConst(value: unknown): TSchema {
 
   /**
    * Symbols, functions, iterators, class instances — everything with no
-   * pinnable option bag. `Type.Const` already dispatches these correctly
-   * (and is total, falling back to `Type.Object({})`), so there is nothing
-   * to add on top.
+   * pinnable option bag. `Type.Const` already dispatches these correctly (and
+   * is total, falling back to `Type.Object({})`), so there is nothing to add on
+   * top.
    */
   return Type.Const(value);
 }

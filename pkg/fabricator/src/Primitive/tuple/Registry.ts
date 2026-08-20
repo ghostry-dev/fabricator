@@ -8,10 +8,10 @@ export default function <const $Items extends Items>(
 ): Schema<$Items> {
   /**
    * `.map()` itself only returns `Array<...>`, not the tuple-preserving
-   * `$Items` — the `as unknown as $Items` hop is safe because the runtime
-   * shape (one normalized schema per input position, same order) already
-   * matches it exactly; only `.map()`'s own generic signature is too loose
-   * to say so (same trick `choice/Registry.ts`'s `weighted` uses).
+   * `$Items` — the `as unknown as $Items` hop is safe because the runtime shape
+   * (one normalized schema per input position, same order) already matches it
+   * exactly; only `.map()`'s own generic signature is too loose to say so (same
+   * trick `choice/Registry.ts`'s `weighted` uses).
    */
   const normalized = items.map((item) => toSchema(item)) as unknown as $Items;
 

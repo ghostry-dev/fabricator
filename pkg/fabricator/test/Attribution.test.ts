@@ -12,15 +12,15 @@ import {
 } from "./fixtures/sharedSchema";
 
 /**
- * The property `{ kind: "rooted" }` exists for: two sources rooted at
- * different absolute paths — standing in for the same checkout on two
- * different machines — derive the same seed for the same file, as long as
- * the file's position *relative to its own root* is the same. Real stack
- * frames can't be relocated, so this is demonstrated with two real fixture
- * directories (`fixtures/checkout-a`, `fixtures/checkout-b`) instead of one:
- * each holds a same-shaped `leaf.ts` at the same relative depth, so rooting
- * an instance at each fixture's own directory and building from it stands in
- * for the same file on two different checkouts.
+ * The property `{ kind: "rooted" }` exists for: two sources rooted at different
+ * absolute paths — standing in for the same checkout on two different machines
+ * — derive the same seed for the same file, as long as the file's position
+ * _relative to its own root_ is the same. Real stack frames can't be relocated,
+ * so this is demonstrated with two real fixture directories
+ * (`fixtures/checkout-a`, `fixtures/checkout-b`) instead of one: each holds a
+ * same-shaped `leaf.ts` at the same relative depth, so rooting an instance at
+ * each fixture's own directory and building from it stands in for the same file
+ * on two different checkouts.
  */
 test("rooted attribution reproduces the same seed across different absolute checkouts", () => {
   const instanceA = initialize({
@@ -100,10 +100,10 @@ test("a construction in another file relativizes under this file's default call-
 
 /**
  * `initializeHere()` calls `initialize()` from `test/fixtures/`, so its
- * resolved call-site root is that directory — a sibling of, not an ancestor
- * of, wherever *this* test file lives. A construction written here therefore
- * falls outside that root and must ascend with `..` rather than fall back to
- * an absolute path, which would silently reintroduce machine-dependence.
+ * resolved call-site root is that directory — a sibling of, not an ancestor of,
+ * wherever _this_ test file lives. A construction written here therefore falls
+ * outside that root and must ascend with `..` rather than fall back to an
+ * absolute path, which would silently reintroduce machine-dependence.
  */
 test("a construction outside the resolved root ascends with .. rather than staying absolute", () => {
   const { T, Fabricator } = initializeHere();
@@ -141,14 +141,13 @@ test("none produces a trace with no file", () => {
 });
 
 /**
- * Under `{ kind: "none" }`, every construction shares one file-less bucket
- * — so unlike a real file's counter, the *n*th construction anywhere in the
- * instance gets the *n*th index. Distinct constructions must still diverge
- * (never draw identical data), and an explicitly seeded
- * `new Fabricator(schema, { seed })` — which forks away from that shared
- * bucket entirely — must still reproduce exactly regardless of how many
- * ordinary, unseeded constructions ran before or between the two seeded
- * calls.
+ * Under `{ kind: "none" }`, every construction shares one file-less bucket — so
+ * unlike a real file's counter, the _n_th construction anywhere in the instance
+ * gets the _n_th index. Distinct constructions must still diverge (never draw
+ * identical data), and an explicitly seeded `new Fabricator(schema, { seed })`
+ * — which forks away from that shared bucket entirely — must still reproduce
+ * exactly regardless of how many ordinary, unseeded constructions ran before or
+ * between the two seeded calls.
  */
 test("none + an explicitly seeded Fabricator still reproduces amid unseeded builds", () => {
   const { T, Fabricator } = initialize({
@@ -186,10 +185,10 @@ test("none still diverges between two ordinary, unseeded constructions", () => {
 
 /**
  * `T.recursive`'s own top-level dispatch is an ordinary `"attributed"` draw
- * like any other leaf — relativized under a rooted policy exactly the same
- * way. Its *inner* expansions (`recursive/Fabricator.ts`) key off a private
- * forked source instead, entirely independent of file attribution; that
- * isolation is covered by `Recursive.test.ts`, not here.
+ * like any other leaf — relativized under a rooted policy exactly the same way.
+ * Its _inner_ expansions (`recursive/Fabricator.ts`) key off a private forked
+ * source instead, entirely independent of file attribution; that isolation is
+ * covered by `Recursive.test.ts`, not here.
  */
 test("T.recursive's own dispatch is relativized under a rooted policy", () => {
   const { T, Fabricator } = initialize({
@@ -212,9 +211,9 @@ test("a relative rooted root throws InvalidAttributionRootError", () => {
 });
 
 /**
- * Two constructions in the same file, by default, get different indices —
- * this is what keeps `new Fabricator(schema)` called twice from the same
- * spot from silently handing back identical data.
+ * Two constructions in the same file, by default, get different indices — this
+ * is what keeps `new Fabricator(schema)` called twice from the same spot from
+ * silently handing back identical data.
  */
 test("two constructions in the same file diverge from each other by default", () => {
   const { T, Fabricator } = initialize({ seed: "same-file-diverge" });
@@ -226,13 +225,12 @@ test("two constructions in the same file diverge from each other by default", ()
 });
 
 /**
- * The property file attribution actually earns its keep for: a file's data
- * is the same whether that file's constructions run alone or interleaved
- * with unrelated constructions from other files. Positional/dispatch-order
- * keying (the old per-`(file, kind)` counter) could not offer this at the
- * leaf level; per-file construction indices still can at the construction
- * level, since a *different* file's constructions never touch this file's
- * counter.
+ * The property file attribution actually earns its keep for: a file's data is
+ * the same whether that file's constructions run alone or interleaved with
+ * unrelated constructions from other files. Positional/dispatch-order keying
+ * (the old per-`(file, kind)` counter) could not offer this at the leaf level;
+ * per-file construction indices still can at the construction level, since a
+ * _different_ file's constructions never touch this file's counter.
  */
 test("a file's data is unaffected by unrelated constructions in another file", () => {
   const alone = () => {
@@ -263,15 +261,14 @@ test("a file's data is unaffected by unrelated constructions in another file", (
 /**
  * `options.seed` forks an entirely fresh source from exactly that value,
  * ignoring the instance's own seed — the same seed reproduces the same result
- * regardless of which file it's called from, or which instance built it,
- * *given the same clock* — a per-call seed forks the source but keeps
- * whichever clock the source it forks from already carries (see
- * `Fabricator/Constructor.ts`'s `toConstructionContext`), so two instances
- * must also agree on their clock for this to hold. Pinned explicitly here so
- * the two instances' otherwise-independent default wall-clock instants
- * don't introduce a second, unrelated source of divergence. `"seeded"`
- * would do the same job here; a pinned Date makes the shared "now"
- * obvious.
+ * regardless of which file it's called from, or which instance built it, _given
+ * the same clock_ — a per-call seed forks the source but keeps whichever clock
+ * the source it forks from already carries (see `Fabricator/Constructor.ts`'s
+ * `toConstructionContext`), so two instances must also agree on their clock for
+ * this to hold. Pinned explicitly here so the two instances'
+ * otherwise-independent default wall-clock instants don't introduce a second,
+ * unrelated source of divergence. `"seeded"` would do the same job here; a
+ * pinned Date makes the shared "now" obvious.
  */
 test("new Fabricator(schema, { seed }) reproduces regardless of the instance's own seed, given the same clock", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
@@ -302,8 +299,8 @@ test("new Fabricator(schema, { seed: layer(...) }) composes onto the instance's 
 
 /**
  * The whole reason the layered form exists: unlike a bare `{ seed }`, which
- * ignores the instance entirely, a layered seed still varies when the
- * instance itself is reseeded.
+ * ignores the instance entirely, a layered seed still varies when the instance
+ * itself is reseeded.
  */
 test("new Fabricator(schema, { seed: layer(...) }) still varies when the instance is reseeded", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
@@ -317,10 +314,10 @@ test("new Fabricator(schema, { seed: layer(...) }) still varies when the instanc
 });
 
 /**
- * A layered seed still forks a fully isolated source, exactly like a bare
- * one — so it reproduces across files/instances given the same effective
- * (instance seed + layered seed) pair, and differs from the bare form given
- * the same layered value alone.
+ * A layered seed still forks a fully isolated source, exactly like a bare one —
+ * so it reproduces across files/instances given the same effective (instance
+ * seed + layered seed) pair, and differs from the bare form given the same
+ * layered value alone.
  */
 test("new Fabricator(schema, { seed: layer(...) }) reproduces given the same instance and layer", () => {
   const a = initialize({ seed: "shared-instance-seed", clock: "seeded" });

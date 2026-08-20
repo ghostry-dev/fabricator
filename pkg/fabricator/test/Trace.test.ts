@@ -21,9 +21,9 @@ test("a leaf round-trips from its own trace, including from another file and ano
   expect(new instance.Fabricator(schema, built.trace).fabricate()).toBe(
     original,
   );
-  expect(
-    fabricateFromTrace(instance.Fabricator, schema, built.trace),
-  ).toBe(original);
+  expect(fabricateFromTrace(instance.Fabricator, schema, built.trace)).toBe(
+    original,
+  );
 
   const other = initialize({
     seed: "unrelated-instance-seed",
@@ -76,8 +76,10 @@ test("traces are self-describing: root distinguishes the three file: undefined c
   expect(noneBuilt.trace.root).toBe("attributed");
   expect(noneBuilt.trace.file).toBeUndefined();
   expect(
-    new attributedNone.Fabricator(attributedNone.T.number, noneBuilt.trace)
-      .fabricate(),
+    new attributedNone.Fabricator(
+      attributedNone.T.number,
+      noneBuilt.trace,
+    ).fabricate(),
   ).toBe(noneBuilt.fabricate());
 
   const seeded = initialize({ seed: "trace-root-seeded", clock: "seeded" });
@@ -90,19 +92,16 @@ test("traces are self-describing: root distinguishes the three file: undefined c
     new seeded.Fabricator(seeded.T.number, seededBuilt.trace).fabricate(),
   ).toBe(seededBuilt.fabricate());
 
-  const defaulted = initialize({
-    seed: "trace-root-default",
-    clock: "seeded",
-  });
+  const defaulted = initialize({ seed: "trace-root-default", clock: "seeded" });
   expect(new defaulted.Fabricator(defaulted.T.number).trace.root).toBe(
     "attributed",
   );
 
   /**
-   * A recursive body's expansion opens `"counted"` on a private fork
-   * seeded from `encode(parent.trace)`. Reconstructing that body's
-   * own Fabricator from those pins is how a node inside an expansion
-   * is observed — the expansion itself is throwaway.
+   * A recursive body's expansion opens `"counted"` on a private fork seeded
+   * from `encode(parent.trace)`. Reconstructing that body's own Fabricator from
+   * those pins is how a node inside an expansion is observed — the expansion
+   * itself is throwaway.
    */
   const body = defaulted.T.object({
     n: defaulted.T.number,
@@ -209,7 +208,9 @@ test("an object.compute field rebuilds from its trace but throws DetachedCompute
   const fieldSchema = built.schema[Meta].definition.b;
 
   const replayed = new Fabricator(fieldSchema, field.trace);
-  expect(() => replayed.fabricate()).toThrow(FabricatorError.DetachedComputeError);
+  expect(() => replayed.fabricate()).toThrow(
+    FabricatorError.DetachedComputeError,
+  );
   expect(built.fabricate().b).toBe(2);
 });
 
@@ -227,9 +228,9 @@ test("a recursive.self node rebuilds from its trace but throws DetachedSelfError
 
   const built = new Fabricator(selfSchema);
   expect(() => built.fabricate()).toThrow(FabricatorError.DetachedSelfError);
-  expect(() =>
-    new Fabricator(selfSchema, built.trace).fabricate(),
-  ).toThrow(FabricatorError.DetachedSelfError);
+  expect(() => new Fabricator(selfSchema, built.trace).fabricate()).toThrow(
+    FabricatorError.DetachedSelfError,
+  );
 });
 
 test("a [Fixed] field replayed from its own schema yields the drawn value, not the override", () => {

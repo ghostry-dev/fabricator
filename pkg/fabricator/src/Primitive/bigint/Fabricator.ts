@@ -64,10 +64,10 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     };
 
     /**
-     * Fill the buffer one byte at a time from the seeded source — the
-     * top 8 bits of each draw — so bigint generation is reproducible
-     * under a seed like every other primitive, rather than drawing
-     * unseedable bytes from `crypto.getRandomValues`.
+     * Fill the buffer one byte at a time from the seeded source — the top 8
+     * bits of each draw — so bigint generation is reproducible under a seed
+     * like every other primitive, rather than drawing unseedable bytes from
+     * `crypto.getRandomValues`.
      */
     const sample = (): bigint => {
       for (let i = 0; i < buffer.length; i++) {
@@ -77,12 +77,12 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     };
 
     /**
-     * Rejection sampling: draw bitWidth random bits and retry any
-     * draw that overshoots range. Avoids the modulo bias you'd
-     * get from `random % range`.
+     * Rejection sampling: draw bitWidth random bits and retry any draw that
+     * overshoots range. Avoids the modulo bias you'd get from `random %
+     * range`.
      *
-     * Loop expectation is <2 iterations because the mask keeps
-     * it within one bit of the range.
+     * Loop expectation is <2 iterations because the mask keeps it within one
+     * bit of the range.
      */
     while (true) {
       const candidate = sample();

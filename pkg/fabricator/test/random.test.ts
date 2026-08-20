@@ -61,10 +61,10 @@ test("a seeded fabricator is reproducible across repeated draws", () => {
 
 test("instances stay isolated regardless of what interleaves their draws", () => {
   /**
-   * Rerun the exact same scenario — build two fabricators from one
-   * instance, interleave a draw from an unrelated instance between their
-   * draws — from scratch in a fresh instance each time. If anything here
-   * leaked across instances or across builds, the two runs would diverge.
+   * Rerun the exact same scenario — build two fabricators from one instance,
+   * interleave a draw from an unrelated instance between their draws — from
+   * scratch in a fresh instance each time. If anything here leaked across
+   * instances or across builds, the two runs would diverge.
    */
   const run = () => {
     const { Fabricator } = initialize({ seed: "7", clock: "seeded" });
@@ -131,16 +131,16 @@ test("a custom random factory composes with a seed and replays", () => {
 
 /**
  * `new Fabricator(schema, { seed })` — naming an explicit seed sidesteps
- * `construct()`'s default call-site attribution entirely (see `Constructor.ts`'s
- * `construct()` doc comment), unlike `options.algorithm` below, which leaves
- * attribution untouched.
+ * `construct()`'s default call-site attribution entirely (see
+ * `Constructor.ts`'s `construct()` doc comment), unlike `options.algorithm`
+ * below, which leaves attribution untouched.
  */
 test("new Fabricator(schema, { seed }) gives every same-kind field its own draw", () => {
   /**
-   * The bug this pins: the seeded branch used to call
-   * `toStream(algorithm, join(seed, kind))` fresh on every dispatch instead
-   * of caching/incrementing per kind, so every field of the same kind read
-   * iteration 1 of an identical stream and came out equal.
+   * The bug this pins: the seeded branch used to call `toStream(algorithm,
+   * join(seed, kind))` fresh on every dispatch instead of caching/incrementing
+   * per kind, so every field of the same kind read iteration 1 of an identical
+   * stream and came out equal.
    */
   const { T, Fabricator } = initialize({ seed: "instance" });
   const built = new Fabricator(
@@ -171,13 +171,13 @@ test("new Fabricator(schema, { seed }) reproduces regardless of which file it's 
 });
 
 /**
- * Pinned to the same explicit `clock` on both instances: a per-call seed
- * forks the source but keeps whichever clock the forked-from source already
- * carries (`Fabricator/Constructor.ts`'s `toConstructionContext`), so two
- * instances must also agree on their clock, not just the per-call seed, for
- * this independence to hold — otherwise each instance's own distinct default
- * `"seeded"` clock (derived from "instance-a"/"instance-b" respectively)
- * would introduce a second, unrelated source of divergence.
+ * Pinned to the same explicit `clock` on both instances: a per-call seed forks
+ * the source but keeps whichever clock the forked-from source already carries
+ * (`Fabricator/Constructor.ts`'s `toConstructionContext`), so two instances
+ * must also agree on their clock, not just the per-call seed, for this
+ * independence to hold — otherwise each instance's own distinct default
+ * `"seeded"` clock (derived from "instance-a"/"instance-b" respectively) would
+ * introduce a second, unrelated source of divergence.
  */
 test("new Fabricator(schema, { seed }) is independent of the instance's own seed, given the same clock", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
@@ -195,10 +195,12 @@ test("new Fabricator(schema, { seed }) doesn't accumulate state across builds fr
 
   const first = new Fabricator(schema(), { seed: "repeat" }).fabricate();
 
-  /** Interleave unrelated seeded and unseeded builds between the two draws
-   * that must match — if the unattributed stream cache ever migrated off
-   * its per-build fork onto the shared instance source, this would perturb
-   * the second draw below. */
+  /**
+   * Interleave unrelated seeded and unseeded builds between the two draws that
+   * must match — if the unattributed stream cache ever migrated off its
+   * per-build fork onto the shared instance source, this would perturb the
+   * second draw below.
+   */
   new Fabricator(schema(), { seed: "unrelated" }).fabricate();
   new Fabricator(schema()).fabricate();
 
@@ -233,10 +235,10 @@ test("the built-in PRNG yields values in [0, 1)", () => {
 
 test("construct() attributes randomness to wherever it's called, not to the Schema's declaration file", () => {
   /**
-   * `sharedSchema()` constructs its Schema in fixtures/sharedSchema.ts, but
-   * a Schema carries no construction-site information of its own — only
-   * `construct()` binds randomness, and only at the moment it runs. Building
-   * it from *this* file, twice, from two fresh instances sharing a seed,
+   * `sharedSchema()` constructs its Schema in fixtures/sharedSchema.ts, but a
+   * Schema carries no construction-site information of its own — only
+   * `construct()` binds randomness, and only at the moment it runs. Building it
+   * from _this_ file, twice, from two fresh instances sharing a seed,
    * reproduces exactly — the schema's declaration site is irrelevant, only
    * construct()'s own call site matters.
    */
@@ -261,11 +263,11 @@ test("calling construct() again reproduces a schema imported from another file �
 
 test(".extend() overrides survive construct() — the actual bug this refactor fixes", () => {
   /**
-   * A hand-built custom `number` Schema, registered as an override the same
-   * way a user's `.extend()` callback would. Today's getter-based registry
-   * hardcoded `get number() { return number(); }`, reconstructing the
-   * original built-in and silently ignoring any override — this is exactly
-   * the scenario that broke.
+   * A hand-built custom `number` Schema, registered as an override the same way
+   * a user's `.extend()` callback would. Today's getter-based registry
+   * hardcoded `get number() { return number(); }`, reconstructing the original
+   * built-in and silently ignoring any override — this is exactly the scenario
+   * that broke.
    */
   const fixed = { [Kind]: "number" as const, [Meta]: { produce: () => 42 } };
   const T2 = registry.extend(() => ({ number: fixed }));
@@ -275,9 +277,9 @@ test(".extend() overrides survive construct() — the actual bug this refactor f
 });
 
 /**
- * Recording a trace is unconditional: a node that never draws still
- * carries `.trace`, so a nested `T.object` can be replayed from its own
- * schema plus that property. Guard on the kinds that never mint a stream.
+ * Recording a trace is unconditional: a node that never draws still carries
+ * `.trace`, so a nested `T.object` can be replayed from its own schema plus
+ * that property. Guard on the kinds that never mint a stream.
  */
 test("every kind carries a defined .trace, including nodes that never draw", () => {
   const { T, Fabricator } = initialize({ seed: "trace-none" });
@@ -291,19 +293,17 @@ test("every kind carries a defined .trace, including nodes that never draw", () 
 });
 
 /**
- * The positive counterpart to the test above: every kind's `.as(produce)`
- * draws this leaf's own seeded stream to hand `produce`, so `.trace` is
- * populated for `symbol`/`tuple`/`object` on that path too — the same
- * property as their bare forms, with a stream behind it.
+ * The positive counterpart to the test above: every kind's `.as(produce)` draws
+ * this leaf's own seeded stream to hand `produce`, so `.trace` is populated for
+ * `symbol`/`tuple`/`object` on that path too — the same property as their bare
+ * forms, with a stream behind it.
  */
 test(".trace is defined for every kind's `.as(...)`-produced Fabricator", () => {
   const { T, Fabricator } = initialize({ seed: "trace-as" });
 
   expect(new Fabricator(T.boolean.as(() => true)).trace).toBeDefined();
   expect(new Fabricator(T.symbol.as(() => Symbol())).trace).toBeDefined();
-  expect(
-    new Fabricator(T.tuple([T.number]).as(() => [1])).trace,
-  ).toBeDefined();
+  expect(new Fabricator(T.tuple([T.number]).as(() => [1])).trace).toBeDefined();
   expect(
     new Fabricator(T.object({ a: T.number }).as(() => ({ a: 1 }))).trace,
   ).toBeDefined();
@@ -311,12 +311,12 @@ test(".trace is defined for every kind's `.as(...)`-produced Fabricator", () => 
 
 /**
  * `RandomSource.fork` — added for `T.recursive`, whose own dispatch count is
- * data-dependent (how deep any given `fabricate()` call happens to go),
- * unlike every other kind's fixed, schema-determined dispatch count. Two
- * forks of the same seed must reproduce each other exactly, drawing
- * successive values off the *same* stream — this is what a repeated
- * `T.recursive` expansion actually does, pulling one child seed after
- * another from one construction's private source.
+ * data-dependent (how deep any given `fabricate()` call happens to go), unlike
+ * every other kind's fixed, schema-determined dispatch count. Two forks of the
+ * same seed must reproduce each other exactly, drawing successive values off
+ * the _same_ stream — this is what a repeated `T.recursive` expansion actually
+ * does, pulling one child seed after another from one construction's private
+ * source.
  */
 test("fork() produces an isolated source that replays from its own seed", () => {
   const parent = toRandomSource({ seed: "fork-parent", clock: 0 });
@@ -342,10 +342,10 @@ test("fork() produces an isolated source that replays from its own seed", () => 
 });
 
 /**
- * A forked source's own per-file construction-ordinal counters must be
- * entirely private: heavy use of a child fork (many constructions, each
- * bumping the child's own counters) must never advance — or be advanced by
- * — the parent's counters, in either direction.
+ * A forked source's own per-file construction-ordinal counters must be entirely
+ * private: heavy use of a child fork (many constructions, each bumping the
+ * child's own counters) must never advance — or be advanced by — the parent's
+ * counters, in either direction.
  */
 test("fork() never perturbs, or is perturbed by, its parent's own streams", () => {
   const parent = toRandomSource({
@@ -384,10 +384,10 @@ test("fork() never perturbs, or is perturbed by, its parent's own streams", () =
 });
 
 /**
- * A leaf's stream seed isn't merely *derived from* its `Trace` — it *is* the
- * encoding of it. This is what lets `Trace` carry no derived-seed field of
- * its own (see `Trace`'s own doc comment): every field a caller could want
- * to re-derive the stream from is already there.
+ * A leaf's stream seed isn't merely _derived from_ its `Trace` — it _is_ the
+ * encoding of it. This is what lets `Trace` carry no derived-seed field of its
+ * own (see `Trace`'s own doc comment): every field a caller could want to
+ * re-derive the stream from is already there.
  */
 test("a leaf's stream seed is exactly the encoding of its own trace", () => {
   const source = toRandomSource({ seed: "trace-is-the-key", clock: 12345 });
@@ -399,12 +399,12 @@ test("a leaf's stream seed is exactly the encoding of its own trace", () => {
 });
 
 /**
- * The clock is folded into `encode(trace)` (second slot, right after `seed`)
- * — a trace that omitted it couldn't account for its own output, since two
- * runs sharing an identical `.trace` could then produce different dates.
- * Folding it in means *every* leaf's stream shifts with the clock, not just a
- * `date`-kind one — the direct guard that the slot actually participates in
- * derivation, not just that it's present on the type.
+ * The clock is folded into `encode(trace)` (second slot, right after `seed`) —
+ * a trace that omitted it couldn't account for its own output, since two runs
+ * sharing an identical `.trace` could then produce different dates. Folding it
+ * in means _every_ leaf's stream shifts with the clock, not just a `date`-kind
+ * one — the direct guard that the slot actually participates in derivation, not
+ * just that it's present on the type.
  */
 test(".trace.clock is the resolved clock, and two instances differing only in clock diverge on a non-date field", () => {
   const a = initialize({
@@ -437,9 +437,9 @@ test(".trace.clock is the resolved clock, and two instances differing only in cl
  * `deriveClock`'s own throwaway encoding (`Random/index.ts`) is a two-element
  * JSON array (`[seed, "clock"]`), structurally distinct from a leaf's own
  * seven-element `encode(trace)` — the two can never collide onto the same
- * stream regardless of content, which is what lets the `"seeded"`
- * clock be derived below `RandomSource` without perturbing, or being
- * perturbed by, any leaf's own draws.
+ * stream regardless of content, which is what lets the `"seeded"` clock be
+ * derived below `RandomSource` without perturbing, or being perturbed by, any
+ * leaf's own draws.
  */
 test('the "seeded" clock is derived from a stream distinct from any leaf\'s own', () => {
   const { T, Fabricator, context } = initialize({

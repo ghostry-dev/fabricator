@@ -19,17 +19,16 @@ export interface Schema<
 > extends Core<$Definition, $Adaptations> {
   /**
    * Layer an opaque production on this schema's existing `[Meta]` — carrying
-   * `whereby`/`definition` forward, not discarding them, so a later
-   * `.as(...)` (or future validation of `produce`) still has them to check
-   * against.
+   * `whereby`/`definition` forward, not discarding them, so a later `.as(...)`
+   * (or future validation of `produce`) still has them to check against.
    */
   as: (
     produce: Produce<Fabricated<$Definition>>,
   ) => Schema<$Definition, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

@@ -21,8 +21,8 @@ test("an empty locale surfaces faker's own error, not a fabricator one", () => {
   /**
    * `Faker` validates `locale` eagerly, at construction — and `fakerExtension`
    * builds its instance immediately rather than deferring to the `extend`
-   * callback, so the error surfaces from the call the caller wrote rather
-   * than from inside the registry machinery.
+   * callback, so the error surfaces from the call the caller wrote rather than
+   * from inside the registry machinery.
    */
   expect(() => fakerExtension({ locale: [] })).toThrow(
     /must contain at least one locale/,

@@ -23,8 +23,8 @@ export type Fabricator<
 
 /**
  * A bare symbol draws no randomness at all — `Symbol(meta.key)` is
- * deterministic — so only the `.as(...)`-overridden path ever obtains a
- * stream. The bare path still records `trace`, like every other node.
+ * deterministic — so only the `.as(...)`-overridden path ever obtains a stream.
+ * The bare path still records `trace`, like every other node.
  */
 export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
   const { schema, algorithm, trace } = context;

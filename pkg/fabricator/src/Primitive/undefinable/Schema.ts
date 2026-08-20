@@ -13,8 +13,8 @@ import { outcomes } from "./Outcomes";
 import type { Core, Definition, Fabricated, Weights } from "./Types";
 
 /**
- * The buildable recipe for an `undefinable`: a single wrapped Schema, drawn
- * (or not) each fabrication.
+ * The buildable recipe for an `undefinable`: a single wrapped Schema, drawn (or
+ * not) each fabrication.
  */
 export interface Schema<
   $Definition extends Definition = Definition,
@@ -22,28 +22,28 @@ export interface Schema<
 > extends Core<$Definition, $Adaptations> {
   /**
    * Layer an opaque production on this schema's existing `[Meta]` — carrying
-   * `definition` forward, not discarding it, so a later `.as(...)` (or
-   * future validation of `produce`) still has it to check against.
-   * `produce` may return `undefined`, so custom logic composes the same way
-   * the built-in roll does.
+   * `definition` forward, not discarding it, so a later `.as(...)` (or future
+   * validation of `produce`) still has it to check against. `produce` may
+   * return `undefined`, so custom logic composes the same way the built-in roll
+   * does.
    */
   as: (
     produce: Produce<Fabricated<$Definition>>,
   ) => Schema<$Definition, $Adaptations>;
   /**
-   * Reweight the built-in 50/50 roll. Keys are optional — an omitted key
-   * keeps baseline weight `1`, the same weight the 50/50 split already uses
-   * — but that baseline is still relative to whatever else is specified, so
+   * Reweight the built-in 50/50 roll. Keys are optional — an omitted key keeps
+   * baseline weight `1`, the same weight the 50/50 split already uses — but
+   * that baseline is still relative to whatever else is specified, so
    * `.weighted({ undefined: 0.1 })` shifts both outcomes' shares, not just
    * `undefined`'s (see `Types.ts`'s `Weights`). Chaining `.weighted(...)`
-   * merges into previous weights rather than replacing them, the same
-   * layering `.as(...)` uses for `produce`.
+   * merges into previous weights rather than replacing them, the same layering
+   * `.as(...)` uses for `produce`.
    */
   weighted: (weights: Weights) => Schema<$Definition, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

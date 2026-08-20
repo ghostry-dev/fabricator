@@ -34,14 +34,14 @@ export type Fabricator<
 };
 
 /**
- * A presence roll on this field's private stream, drawn only when the
- * wrapped value is needed — an `undefined` roll never advances `source`'s
- * stream, and since `source` is already dispatched into its own independent
- * stream by `Constructor.ts` regardless of this roll, skipping its draw
- * here can never perturb any other field's reproducibility (see
+ * A presence roll on this field's private stream, drawn only when the wrapped
+ * value is needed — an `undefined` roll never advances `source`'s stream, and
+ * since `source` is already dispatched into its own independent stream by
+ * `Constructor.ts` regardless of this roll, skipping its draw here can never
+ * perturb any other field's reproducibility (see
  * `object/omittable/Fabricator.ts`, and CLAUDE.md's "Randomness"). 50/50 by
- * default; `.weighted(...)` (`Schema.ts`) reweights either outcome relative
- * to that same default of `1`.
+ * default; `.weighted(...)` (`Schema.ts`) reweights either outcome relative to
+ * that same default of `1`.
  */
 export function Fabricator<$Definition extends Definition>(
   context: FabricatorContext<Schema<$Definition>>,

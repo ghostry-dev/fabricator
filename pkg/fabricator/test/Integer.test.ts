@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
 /**
- * `T.number.integer` without a `whereby` must still be whole: it uses the
- * same discrete floor path as a bounded integer (`test/Integer.test.ts`).
+ * `T.number.integer` without a `whereby` must still be whole: it uses the same
+ * discrete floor path as a bounded integer (`test/Integer.test.ts`).
  */
 
 test("an unbounded T.number.integer really is an integer", () => {
@@ -91,7 +91,7 @@ test("integer.sequence is unaffected", () => {
 });
 
 /**
- * The counterpart assertion: a plain `T.number` must *not* have been dragged
+ * The counterpart assertion: a plain `T.number` must _not_ have been dragged
  * into flooring. At `Number.MAX_VALUE` scale doubles carry no fractional part
  * anyway, so integrality proves nothing there — a bounded range is what
  * actually distinguishes the two.

@@ -27,14 +27,13 @@ export type Fabricator<
 };
 
 /**
- * `weightings` are each option's *already-dispatched* Fabricator, one per
+ * `weightings` are each option's _already-dispatched_ Fabricator, one per
  * `[Meta].items` entry, built by `Constructor.ts`'s `make` before this call —
- * mirrors `array.Fabricator`'s `element`, just one per option instead of
- * one shared across every element. The weighted pick happens on this
- * field's private stream; only the chosen option's `fabricate()` is called,
- * so an unpicked option never advances its stream (safe for the same reason
- * skipping `object.omittable`'s inner draw is — see CLAUDE.md's
- * "Randomness").
+ * mirrors `array.Fabricator`'s `element`, just one per option instead of one
+ * shared across every element. The weighted pick happens on this field's
+ * private stream; only the chosen option's `fabricate()` is called, so an
+ * unpicked option never advances its stream (safe for the same reason skipping
+ * `object.omittable`'s inner draw is — see CLAUDE.md's "Randomness").
  */
 export function Fabricator<$Items extends Items>(
   context: FabricatorContext<Schema<$Items>>,

@@ -25,8 +25,8 @@ function normalizeDefinition<$Definition extends Definition>(
 
 /**
  * `adaptations` is threaded through every branch rather than living on the
- * schema object: `extend`/`refine`/`override` each rebuild via `make`, so a
- * map left on the object alone would be dropped by the next chained call
+ * schema object: `extend`/`refine`/`override` each rebuild via `make`, so a map
+ * left on the object alone would be dropped by the next chained call
  * (`Schema.ts`'s factory adds only `as` for this reason).
  */
 function make<
@@ -70,12 +70,12 @@ function make<
     /**
      * Pure Schema → Schema: never touches randomness. A present key skips
      * generation for that field — recorded via `[Fixed]` on a fresh copy of
-     * that field's Schema entry (`Types.ts`), read only by
-     * `Constructor.ts`'s `make`. A nested `object`-kind field recurses into
-     * its own `.override(...)`, so deep-merging (and chained
-     * `.override(a).override(b)`, `b` winning on conflicts) falls out:
-     * each call only replaces the definition entries its own keys name, and
-     * prior overrides already live in `definition`.
+     * that field's Schema entry (`Types.ts`), read only by `Constructor.ts`'s
+     * `make`. A nested `object`-kind field recurses into its own
+     * `.override(...)`, so deep-merging (and chained
+     * `.override(a).override(b)`, `b` winning on conflicts) falls out: each
+     * call only replaces the definition entries its own keys name, and prior
+     * overrides already live in `definition`.
      */
     override: (override) => {
       const overridden: PlainObject = { ...definition };
@@ -216,16 +216,16 @@ function make<
 
 /**
  * Rebuild a full `object` Schema — with `extend`/`refine` restored — from
- * anything already reduced to this kind's `[Meta]` (a bare Schema, or a
- * built Fabricator normalized via `toSchema`). `toSchema` alone only keeps
+ * anything already reduced to this kind's `[Meta]` (a bare Schema, or a built
+ * Fabricator normalized via `toSchema`). `toSchema` alone only keeps
  * `[Kind]`/`[Meta]`, enough to fabricate from but not to derive a subtype —
  * this is what lets a built Fabricator's `.schema` still compose via
  * `extend`/`refine` (`Constructor.ts`'s `make`). Reattaches `produce` via
- * `.as(...)` when present, so a `toSchema`-stripped, `.as(...)`-produced
- * schema doesn't lose its custom producer — and carries `[Adaptation]` for
- * the same reason: without it, `.override(...)` on a nested adapted
- * `object` field (which round-trips through here) and a built Fabricator's
- * `.schema` would both silently come back unadapted.
+ * `.as(...)` when present, so a `toSchema`-stripped, `.as(...)`-produced schema
+ * doesn't lose its custom producer — and carries `[Adaptation]` for the same
+ * reason: without it, `.override(...)` on a nested adapted `object` field
+ * (which round-trips through here) and a built Fabricator's `.schema` would
+ * both silently come back unadapted.
  */
 export function rehydrate<
   $Definition extends Definition,

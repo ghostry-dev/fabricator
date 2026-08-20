@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
 /**
- * `length` counts UTF-16 code units, so `.length` must equal the chosen
- * length exactly — not merely fall within it — even when astral characters
- * are in play (see `string/Fabricator.ts`'s top-up path).
+ * `length` counts UTF-16 code units, so `.length` must equal the chosen length
+ * exactly — not merely fall within it — even when astral characters are in play
+ * (see `string/Fabricator.ts`'s top-up path).
  */
 test("T.string.whereby length is exact, not just bounded", () => {
   const { T, Fabricator } = initialize({ seed: "string-length-exact" });
@@ -73,10 +73,10 @@ test("length.min defaults to 0, so an empty string is reachable", () => {
 });
 
 /**
- * The default composition (`unicode.scalars`) excludes the surrogate block,
- * so the result is always well-formed UTF-16 — no lone surrogates, even when
- * astral (two-code-unit) characters are drawn and the top-up path splices in
- * a filler character.
+ * The default composition (`unicode.scalars`) excludes the surrogate block, so
+ * the result is always well-formed UTF-16 — no lone surrogates, even when
+ * astral (two-code-unit) characters are drawn and the top-up path splices in a
+ * filler character.
  */
 test("the default composition never produces lone surrogates", () => {
   const { T, Fabricator } = initialize({ seed: "string-well-formed" });
@@ -100,10 +100,10 @@ test("the default composition never produces lone surrogates", () => {
 });
 
 /**
- * Forcing an all-astral composition against odd target lengths is what
- * actually exercises the top-up path: a two-unit character can't fill a
- * one-unit gap, so a well-formed BMP filler must be spliced in instead of
- * the result silently overshooting or landing on an ill-formed pair.
+ * Forcing an all-astral composition against odd target lengths is what actually
+ * exercises the top-up path: a two-unit character can't fill a one-unit gap, so
+ * a well-formed BMP filler must be spliced in instead of the result silently
+ * overshooting or landing on an ill-formed pair.
  */
 test("an all-astral composition still hits every requested length exactly", () => {
   const { T, Fabricator } = initialize({ seed: "string-topup" });
@@ -133,7 +133,7 @@ test("an all-astral composition still hits every requested length exactly", () =
 });
 
 /**
- * `composition` weights describe the string's *expected* composition, not
+ * `composition` weights describe the string's _expected_ composition, not
  * per-character uniformity — each character independently rolls a source by
  * weight. A heavily skewed weighting should still visibly skew the output.
  */
@@ -169,7 +169,10 @@ test("composition proportions are honored", () => {
   expect(digitRatio).toBeLessThan(0.98);
 });
 
-/** A named character class alone (no explicit weight object) is a valid composition. */
+/**
+ * A named character class alone (no explicit weight object) is a valid
+ * composition.
+ */
 test("a single named class composition only draws from that class", () => {
   const { T, Fabricator } = initialize({ seed: "string-single-class" });
 

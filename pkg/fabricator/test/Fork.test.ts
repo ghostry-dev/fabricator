@@ -80,12 +80,12 @@ test("fork overrides algorithm/types/limits when given", () => {
 });
 
 /**
- * `fork()`'s own attribution inheritance must not re-resolve `"call site"`
- * from wherever `fork()` itself happens to be called — `overlay()` reuses the
- * base's already-resolved attribution unless the overlay explicitly supplies
- * one. `initializeHere()` resolves its root at `test/fixtures/`; forking from
- * *this* file must keep that root, not silently re-root at this file's own
- * directory (which would report `"Fork.test.ts"` with no ascent instead).
+ * `fork()`'s own attribution inheritance must not re-resolve `"call site"` from
+ * wherever `fork()` itself happens to be called — `overlay()` reuses the base's
+ * already-resolved attribution unless the overlay explicitly supplies one.
+ * `initializeHere()` resolves its root at `test/fixtures/`; forking from _this_
+ * file must keep that root, not silently re-root at this file's own directory
+ * (which would report `"Fork.test.ts"` with no ascent instead).
  */
 test("fork() inherits the resolved attribution root rather than re-resolving from its own call site", () => {
   const instance = initializeHere();
@@ -128,8 +128,8 @@ test("fork({ limits: { combinatorial } }) throws InvalidCombinatorialLimitError 
 /**
  * The composition formula `layer(...)` follows, spelled out explicitly: a
  * fork's layered seed for a construction at a given call site reproduces
- * exactly what a bare `initialize({ seed: [...instance.seed, "a"] })` gives
- * for an equivalent call site under the same root.
+ * exactly what a bare `initialize({ seed: [...instance.seed, "a"] })` gives for
+ * an equivalent call site under the same root.
  */
 test("fork({ seed: layer('a') }) reproduces initialize({ seed: [...instance.seed, 'a'] })", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");

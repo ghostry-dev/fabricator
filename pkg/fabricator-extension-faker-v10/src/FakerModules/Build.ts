@@ -1,39 +1,39 @@
 /**
- * Every builder in the mirror's module half, written out one per faker
- * method, hand-maintained alongside `./Types.ts`.
+ * Every builder in the mirror's module half, written out one per faker method,
+ * hand-maintained alongside `./Types.ts`.
  *
- * **The `FakerModules` return annotation is the point of the file.** It
- * checks each expression against the property `./Types.ts` declares for the
- * same method, so contract and implementation cannot drift silently — no
- * cast anywhere in this package's construction path. See `./Types.ts`'s
- * header for the faker-bump workflow; an entry added or changed here needs
- * the matching edit there, and vice versa.
+ * **The `FakerModules` return annotation is the point of the file.** It checks
+ * each expression against the property `./Types.ts` declares for the same
+ * method, so contract and implementation cannot drift silently — no cast
+ * anywhere in this package's construction path. See `./Types.ts`'s header for
+ * the faker-bump workflow; an entry added or changed here needs the matching
+ * edit there, and vice versa.
  *
  * Three shapes before editing:
  *
- * - Every builder spreads faker's `Parameters<...>` rather than taking a
- *   single `options?`. Faker's zero-parameter methods (`animal.bear()`) and
- *   its optional-parameter ones (`date.past(options?)`) are indistinguishable
- *   at runtime — both report `.length === 0`, and `toString()` is `[native
- *   code]` because faker binds them — and the spread is exact for both, for
- *   the three methods whose first argument is required, and for
- *   `string.fromCharacters`'s second parameter.
- * - An object-kind builder's string fields are the shared `string`
- *   placeholder: the enclosing `.as(produce)` supplies the whole value and
- *   no field is ever drawn on its own. See its own doc for why it exists
- *   and why it is a producer rather than a length bound.
- * - `color`'s 7 split methods are a `{ text, channels }` pair each rather
- *   than one ambiguous builder, since their return type depends on their
- *   arguments; see the deviation policy in `CLAUDE.md`'s "The faker
- *   extension". All 7 name `format: "decimal"` on `.channels()`, not only
- *   `rgb`: bare is right at runtime for the other 6, but not provable
- *   through faker's declarations, whose *first* overload takes
- *   `format?: StringColorFormat` and returns `string`. `'decimal'` is
- *   `NumberColorFormat`'s sole member, so naming it is exact.
+ * - Every builder spreads faker's `Parameters<...>` rather than taking a single
+ *   `options?`. Faker's zero-parameter methods (`animal.bear()`) and its
+ *   optional-parameter ones (`date.past(options?)`) are indistinguishable at
+ *   runtime — both report `.length === 0`, and `toString()` is `[native code]`
+ *   because faker binds them — and the spread is exact for both, for the three
+ *   methods whose first argument is required, and for `string.fromCharacters`'s
+ *   second parameter.
+ * - An object-kind builder's string fields are the shared `string` placeholder:
+ *   the enclosing `.as(produce)` supplies the whole value and no field is ever
+ *   drawn on its own. See its own doc for why it exists and why it is a
+ *   producer rather than a length bound.
+ * - `color`'s 7 split methods are a `{ text, channels }` pair each rather than
+ *   one ambiguous builder, since their return type depends on their arguments;
+ *   see the deviation policy in `CLAUDE.md`'s "The faker extension". All 7 name
+ *   `format: "decimal"` on `.channels()`, not only `rgb`: bare is right at
+ *   runtime for the other 6, but not provable through faker's declarations,
+ *   whose _first_ overload takes `format?: StringColorFormat` and returns
+ *   `string`. `'decimal'` is `NumberColorFormat`'s sole member, so naming it is
+ *   exact.
  *
  * Every node is a plain object or a bare builder function, never a function
- * carrying properties — the invariant `deepMerge` needs to recurse through
- * an extended registry, guarded by `test/Mergeable.test.ts`.
+ * carrying properties — the invariant `deepMerge` needs to recurse through an
+ * extended registry, guarded by `test/Mergeable.test.ts`.
  */
 import type { Faker } from "@faker-js/faker";
 import type { ProduceContext } from "@ghostry/fabricator";
@@ -42,8 +42,8 @@ import type { FakerModules } from "./Types";
 
 /**
  * `src/index.ts`'s `draw`, by type — the save/restore wrapper that binds a
- * producer to the leaf's own `random`/`clock`. Named here rather than
- * imported so this file stays type-only in its dependencies.
+ * producer to the leaf's own `random`/`clock`. Named here rather than imported
+ * so this file stays type-only in its dependencies.
  */
 type Draw = <$T>(produce: () => $T) => (context: ProduceContext) => $T;
 
@@ -61,18 +61,18 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
    * needs no equivalent, which is why `atomicNumber` and friends are written
    * plainly.
    *
-   * `.as()` rather than a `whereby` length bound: a bound would claim a
-   * maximum length these values have no reason to respect — inert against
-   * today's TypeBox adapter, which reads `[Meta].hints` and never `whereby`,
-   * but `whereby` is carried forward through `.as()` for future validation,
-   * so the claim would eventually be read, and be wrong. A producer claims
-   * nothing about the value, and both forms convert to `{"type":"string"}`.
+   * `.as()` rather than a `whereby` length bound: a bound would claim a maximum
+   * length these values have no reason to respect — inert against today's
+   * TypeBox adapter, which reads `[Meta].hints` and never `whereby`, but
+   * `whereby` is carried forward through `.as()` for future validation, so the
+   * claim would eventually be read, and be wrong. A producer claims nothing
+   * about the value, and both forms convert to `{"type":"string"}`.
    *
-   * This producer is never called: `object/Fabricator.ts` short-circuits on
-   * the enclosing schema's `produce` before any field is fabricated. One
-   * shared instance rather than 17 identical ones is safe for that reason,
-   * and would be regardless — a Schema is inert, and a leaf's stream is keyed
-   * by structural path, not by the identity of the Schema object at it.
+   * This producer is never called: `object/Fabricator.ts` short-circuits on the
+   * enclosing schema's `produce` before any field is fabricated. One shared
+   * instance rather than 17 identical ones is safe for that reason, and would
+   * be regardless — a Schema is inert, and a leaf's stream is keyed by
+   * structural path, not by the identity of the Schema object at it.
    */
   const string = T.string.as(() => "");
 

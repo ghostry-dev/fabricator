@@ -13,8 +13,8 @@ import { outcomes } from "./Outcomes";
 import type { Core, Definition, Fabricated, Weights } from "./Types";
 
 /**
- * The buildable recipe for a `nullish`: a single wrapped Schema, drawn (or
- * not) each fabrication.
+ * The buildable recipe for a `nullish`: a single wrapped Schema, drawn (or not)
+ * each fabrication.
  */
 export interface Schema<
   $Definition extends Definition = Definition,
@@ -22,10 +22,10 @@ export interface Schema<
 > extends Core<$Definition, $Adaptations> {
   /**
    * Layer an opaque production on this schema's existing `[Meta]` — carrying
-   * `definition` forward, not discarding it, so a later `.as(...)` (or
-   * future validation of `produce`) still has it to check against.
-   * `produce` may return `null` or `undefined`, so custom logic composes
-   * the same way the built-in three-way roll does.
+   * `definition` forward, not discarding it, so a later `.as(...)` (or future
+   * validation of `produce`) still has it to check against. `produce` may
+   * return `null` or `undefined`, so custom logic composes the same way the
+   * built-in three-way roll does.
    */
   as: (
     produce: Produce<Fabricated<$Definition>>,
@@ -42,8 +42,8 @@ export interface Schema<
   weighted: (weights: Weights) => Schema<$Definition, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract.
    */
   adapt: <
     const $Adapter extends Adapter,

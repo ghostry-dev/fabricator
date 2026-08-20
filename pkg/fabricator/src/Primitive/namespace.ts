@@ -2,19 +2,19 @@
  * The kind modules as a single namespace object — `Primitive.boolean`,
  * `Primitive.object.compute`, and so on.
  *
- * Each kind's `Types.ts` must stay type-only. A value export in the same
- * file as `export type Fabricated = boolean` (or `string`) makes that
- * module a value module; `export * as boolean` here then resolves
- * `boolean` to this namespace rather than the TypeScript primitive, which
- * drops `[Kind]`/`[Meta]` off `Core`. Named outcome lists and string's
- * character tables live in `Outcomes.ts`.
+ * Each kind's `Types.ts` must stay type-only. A value export in the same file
+ * as `export type Fabricated = boolean` (or `string`) makes that module a value
+ * module; `export * as boolean` here then resolves `boolean` to this namespace
+ * rather than the TypeScript primitive, which drops `[Kind]`/`[Meta]` off
+ * `Core`. Named outcome lists and string's character tables live in
+ * `Outcomes.ts`.
  *
- * A top-level `import * as boolean` is the same trap without needing a
- * cycle through this file. Prefer `import { Primitive }`.
+ * A top-level `import * as boolean` is the same trap without needing a cycle
+ * through this file. Prefer `import { Primitive }`.
  *
  * Consumed as `import { Primitive }` from `./index` (or from
- * `@ghostry/fabricator/internal`). Do not add this object to the
- * registry: `T.Primitive` is not a builder.
+ * `@ghostry/fabricator/internal`). Do not add this object to the registry:
+ * `T.Primitive` is not a builder.
  */
 export * as always from "./always";
 export * as array from "./array";

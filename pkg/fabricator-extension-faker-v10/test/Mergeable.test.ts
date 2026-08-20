@@ -7,10 +7,9 @@ import { expect, test } from "bun:test";
  * The structural invariant every node of the mirror upholds: a plain object
  * (walkable, mergeable) or a function with no own enumerable properties (a
  * leaf, nothing to walk into). `registry.extend`'s `deepMerge` only recurses
- * where `isPlainObject` holds on both sides — a callable-with-properties
- * would silently swallow any `.extend()` aimed at it, since `deepMerge`
- * would treat it as an opaque leaf and replace it wholesale instead of
- * merging into it.
+ * where `isPlainObject` holds on both sides — a callable-with-properties would
+ * silently swallow any `.extend()` aimed at it, since `deepMerge` would treat
+ * it as an opaque leaf and replace it wholesale instead of merging into it.
  */
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

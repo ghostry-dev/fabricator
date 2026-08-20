@@ -13,13 +13,12 @@ import type { Whereby } from "./Types";
  *
  * `body` is called exactly once, here, with a single freshly-minted `self`
  * placeholder — eagerly, the same timing `array`/`record` normalize their
- * nested definitions at call time, not deferred to `.whereby()`. Every
- * `self` in the returned schema is this same placeholder;
- * `Constructor.ts`'s `make` matches it only by `[Kind]`, never by identity,
- * so a `self` captured out of its callback and reused elsewhere silently
- * resolves against whichever recursion is currently active rather than
- * erroring — a misuse this library doesn't guard, the same way passing the
- * wrong schema object elsewhere isn't.
+ * nested definitions at call time, not deferred to `.whereby()`. Every `self`
+ * in the returned schema is this same placeholder; `Constructor.ts`'s `make`
+ * matches it only by `[Kind]`, never by identity, so a `self` captured out of
+ * its callback and reused elsewhere silently resolves against whichever
+ * recursion is currently active rather than erroring — a misuse this library
+ * doesn't guard, the same way passing the wrong schema object elsewhere isn't.
  */
 export default function <const $Body extends AnySchema>(
   body: (self: SelfSchema) => $Body,

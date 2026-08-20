@@ -45,19 +45,19 @@ export interface Schema<
    * Layer an opaque production on this schema's existing `[Meta]` — carrying
    * `definition`/`refinements` forward, not discarding them, so
    * `extend`/`refine`/`override` keep working (they drop the custom producer
-   * again, falling back to definition-based fabrication) and a later
-   * `.as(...)` (or future validation of `produce`) still has the definition
-   * to check against.
+   * again, falling back to definition-based fabrication) and a later `.as(...)`
+   * (or future validation of `produce`) still has the definition to check
+   * against.
    */
   as: (
     produce: Produce<Fabricated<$Definition>>,
   ) => Schema<$Definition, $Adaptations>;
 
   /**
-   * Override what this schema maps to in one or more external schema
-   * libraries — see `string/Schema.ts`'s `adapt` for the full contract.
-   * Carried through `extend`/`refine`/`override`, which all reduce to a
-   * fresh `make(...)` (`Registry.ts`) over this same schema.
+   * Override what this schema maps to in one or more external schema libraries
+   * — see `string/Schema.ts`'s `adapt` for the full contract. Carried through
+   * `extend`/`refine`/`override`, which all reduce to a fresh `make(...)`
+   * (`Registry.ts`) over this same schema.
    */
   adapt: <
     const $Adapter extends Adapter,
@@ -74,11 +74,11 @@ export interface Schema<
 }
 
 /**
- * Unlike every other kind, `adapt` is *not* added here but by `Registry.ts`'s
+ * Unlike every other kind, `adapt` is _not_ added here but by `Registry.ts`'s
  * `make` alongside `extend`/`refine`/`override`: those three rebuild from
  * `definition`/`refinements` rather than deriving from this object, so the
- * adaptation map has to be threaded through `make` itself or chaining one
- * of them would drop it (see `make`'s `adapt`).
+ * adaptation map has to be threaded through `make` itself or chaining one of
+ * them would drop it (see `make`'s `adapt`).
  */
 export function Schema<
   $Definition extends Definition,

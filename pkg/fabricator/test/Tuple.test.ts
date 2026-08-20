@@ -38,13 +38,13 @@ test("the same seed reproduces the identical tuple", () => {
 
 test("a tuple's slots each draw from their own independent stream, unlike array's single shared element stream", () => {
   /**
-   * `array` builds one element Fabricator and calls it N times, so its
-   * entries are drawn sequentially off one shared stream — the whole
-   * sequence traces back to one structural path (`element`). `tuple` builds
-   * one independently-keyed Fabricator per slot (`0`, `1`, …), so two
-   * same-kind slots produce two genuinely independent sequences of values
-   * across repeated builds, rather than the correlated sequence a single
-   * shared stream would produce.
+   * `array` builds one element Fabricator and calls it N times, so its entries
+   * are drawn sequentially off one shared stream — the whole sequence traces
+   * back to one structural path (`element`). `tuple` builds one
+   * independently-keyed Fabricator per slot (`0`, `1`, …), so two same-kind
+   * slots produce two genuinely independent sequences of values across repeated
+   * builds, rather than the correlated sequence a single shared stream would
+   * produce.
    */
   const { T, Fabricator } = initialize({ seed: "tuple-independent-slots" });
 

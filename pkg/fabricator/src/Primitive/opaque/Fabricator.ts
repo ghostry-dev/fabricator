@@ -37,13 +37,13 @@ export function Fabricator<$T>(
   const meta = schema[Meta];
 
   /**
-   * The one kind that does *not* short-circuit on `produce` before obtaining
-   * a stream — for every other kind `produce` means "no randomness needed,"
-   * whereas here the stream is precisely what `produce` is called with. So
- * this always draws its stream and always records `trace`, the inverse
- * of `always` (a fixed value, which never draws). Don't collapse the
- * `toStreamFromTrace` call: the branch structure is what every other
- * kind's own conditional stream minting mirrors.
+   * The one kind that does _not_ short-circuit on `produce` before obtaining a
+   * stream — for every other kind `produce` means "no randomness needed,"
+   * whereas here the stream is precisely what `produce` is called with. So this
+   * always draws its stream and always records `trace`, the inverse of `always`
+   * (a fixed value, which never draws). Don't collapse the `toStreamFromTrace`
+   * call: the branch structure is what every other kind's own conditional
+   * stream minting mirrors.
    */
   const stream = toStreamFromTrace(algorithm, trace);
 

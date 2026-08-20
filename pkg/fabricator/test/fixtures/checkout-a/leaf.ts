@@ -11,8 +11,8 @@ import type { Constructor } from "@ghostry/fabricator/internal";
 export const here = new URL(".", import.meta.url).href;
 
 /**
- * Constructs `new Fabricator(T.number)` from *this* file and reads its
- * `.trace` back.
+ * Constructs `new Fabricator(T.number)` from _this_ file and reads its `.trace`
+ * back.
  */
 export function traceHere(Fabricator: Constructor) {
   return new Fabricator(T.number).trace;
