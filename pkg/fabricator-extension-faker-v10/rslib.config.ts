@@ -7,7 +7,7 @@ export default defineConfig({
       syntax: "es2019",
       bundle: false,
       autoExtension: false,
-      dts: { distPath: "./dist/types" },
+      dts: false,
       output: { distPath: { root: "./dist/esm" } },
     },
   ],
