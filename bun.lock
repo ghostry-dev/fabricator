@@ -5,7 +5,7 @@
     "": {
       "name": "@ghostry/fabricator-monorepo",
       "devDependencies": {
-        "@rsdoctor/rspack-plugin": "^1.6.0",
+        "@rsdoctor/rspack-plugin": "^1.6.2",
         "@rslib/core": "^0.23.2",
         "@types/bun": "^1.3.14",
         "jsr": "^0.14.3",
@@ -94,19 +94,19 @@
 
     "@rsbuild/plugin-check-syntax": ["@rsbuild/plugin-check-syntax@1.6.1", "", { "dependencies": { "acorn": "^8.15.0", "browserslist-to-es-version": "^1.2.0", "htmlparser2": "10.0.0", "picocolors": "^1.1.1", "source-map": "^0.7.6" }, "peerDependencies": { "@rsbuild/core": "^1.0.0 || ^2.0.0-0" }, "optionalPeers": ["@rsbuild/core"] }, "sha512-26xtEYN0QjZYoyt0lWnvIztBWjEZJvcfw7MN4f5B4SpNggmnF7F7aNPrgkY3EccXVFx1VGQBhnCkBV//OoS07Q=="],
 
-    "@rsdoctor/client": ["@rsdoctor/client@1.6.1", "", {}, "sha512-UWc8uyXPtcGZuQtVX+jBZwPxMXrMrrp0GrbVvHoHjzTxWufdn4RcG1g4PFgZLPz5smcCGYOEaNvlNn5WOtVyMw=="],
+    "@rsdoctor/client": ["@rsdoctor/client@1.6.2", "", {}, "sha512-6HngWsWIUcMoHD2ruCZLVbjeqA6Vh41xD3MQhTb/LQ1CWSpU7KVkvge0iV5JqLEv9EemSojIz5RhMRdg3AsCSA=="],
 
-    "@rsdoctor/core": ["@rsdoctor/core@1.6.1", "", { "dependencies": { "@rsbuild/plugin-check-syntax": "^1.6.1", "@rsdoctor/graph": "1.6.1", "@rsdoctor/sdk": "1.6.1", "@rsdoctor/types": "1.6.1", "@rsdoctor/utils": "1.6.1", "@rspack/resolver": "^0.2.8", "browserslist-load-config": "^1.0.2", "es-toolkit": "^1.49.0", "filesize": "^11.0.17", "fs-extra": "^11.1.1", "semver": "^7.8.5", "source-map": "^0.7.6" } }, "sha512-PkNe5Z45gR3dEhFdOcN/ZTwUxTltJR66cJA4DHXj1Zuo9s8d6SKWHFBLi5zMqPV3ZyBAQl4tsGv2LoJDQa69wA=="],
+    "@rsdoctor/core": ["@rsdoctor/core@1.6.2", "", { "dependencies": { "@rsbuild/plugin-check-syntax": "^1.6.1", "@rsdoctor/graph": "1.6.2", "@rsdoctor/sdk": "1.6.2", "@rsdoctor/types": "1.6.2", "@rsdoctor/utils": "1.6.2", "@rspack/resolver": "^0.2.8", "browserslist-load-config": "^1.0.2", "es-toolkit": "^1.49.0", "filesize": "^11.0.17", "fs-extra": "^11.1.1", "semver": "^7.8.5", "source-map": "^0.7.6" } }, "sha512-YPf71epg7RDU3nT6Q3sI53y7xdksen6B/DTVCQl6mbMnG096r8Ilx0ggV9nXaa4vDOXZpiZZ+vGOhb5VeWFMMA=="],
 
-    "@rsdoctor/graph": ["@rsdoctor/graph@1.6.1", "", { "dependencies": { "@rsdoctor/types": "1.6.1", "@rsdoctor/utils": "1.6.1", "es-toolkit": "^1.49.0", "path-browserify": "1.0.1", "source-map": "^0.7.6" } }, "sha512-LHbJKwO31BujQNUsD28kDoQKa5EkRxtSOABuHWRTv62drzz4NF9ZGSIHmrd6/jkbDBdCZEngZIwBkTSi3gtFoA=="],
+    "@rsdoctor/graph": ["@rsdoctor/graph@1.6.2", "", { "dependencies": { "@rsdoctor/types": "1.6.2", "@rsdoctor/utils": "1.6.2", "es-toolkit": "^1.49.0", "path-browserify": "1.0.1", "source-map": "^0.7.6" } }, "sha512-EzwDKYs43UyZW/FmhQAZUqw3Z0lFA/b6XVq4OQRMUcMpNBmn/hxCDWUYUubRQEiCaqJthgl1Puu4anTJhof61g=="],
 
-    "@rsdoctor/rspack-plugin": ["@rsdoctor/rspack-plugin@1.6.1", "", { "dependencies": { "@rsdoctor/core": "1.6.1", "@rsdoctor/graph": "1.6.1", "@rsdoctor/sdk": "1.6.1", "@rsdoctor/types": "1.6.1", "@rsdoctor/utils": "1.6.1" }, "peerDependencies": { "@rspack/core": "*" }, "optionalPeers": ["@rspack/core"] }, "sha512-P9/8wAF4rBEujzB42Afz9zLUR+DoaIDlsyO9Hk2Zzg4e6A+6PlZjma06zhEDbPgcAIJ3PyeX/xgH+5pcc9HjUQ=="],
+    "@rsdoctor/rspack-plugin": ["@rsdoctor/rspack-plugin@1.6.2", "", { "dependencies": { "@rsdoctor/core": "1.6.2", "@rsdoctor/graph": "1.6.2", "@rsdoctor/sdk": "1.6.2", "@rsdoctor/types": "1.6.2", "@rsdoctor/utils": "1.6.2" }, "peerDependencies": { "@rspack/core": "*" }, "optionalPeers": ["@rspack/core"] }, "sha512-vDRf/n6Uj6JkmolLFAG4rC115NMQ2W2T6OVjSiMU7oAds8yn1dtKzt8slL/OErCBl2p2sFcGZ1pGkdleZpFD/w=="],
 
-    "@rsdoctor/sdk": ["@rsdoctor/sdk@1.6.1", "", { "dependencies": { "@rsdoctor/client": "1.6.1", "@rsdoctor/graph": "1.6.1", "@rsdoctor/types": "1.6.1", "@rsdoctor/utils": "1.6.1", "launch-editor": "^2.13.2", "safer-buffer": "2.1.2", "socket.io": "4.8.1", "tapable": "2.3.3" } }, "sha512-9dBk9SDVcY2Z8mHepUKDpHc3eaAsYNSioLlbNPNVLH4XinzcRe/4kJiX37VNjUVPv93IzZ6GTJhkiax/6O+fGw=="],
+    "@rsdoctor/sdk": ["@rsdoctor/sdk@1.6.2", "", { "dependencies": { "@rsdoctor/client": "1.6.2", "@rsdoctor/graph": "1.6.2", "@rsdoctor/types": "1.6.2", "@rsdoctor/utils": "1.6.2", "launch-editor": "^2.13.2", "safer-buffer": "2.1.2", "socket.io": "4.8.1", "tapable": "2.3.3" } }, "sha512-wP26caE6hnYRQuDF5uyBXSKiBlwcOSEXtYoJRdG9ZMyf2rz0/8KWgKlp3V5Mtobf0zYlFnpi5H+8/JHfczdHVQ=="],
 
-    "@rsdoctor/types": ["@rsdoctor/types@1.6.1", "", { "dependencies": { "@types/connect": "3.4.38", "@types/estree": "1.0.5", "@types/tapable": "2.3.0", "source-map": "^0.7.6" }, "peerDependencies": { "@rspack/core": "*", "webpack": "5.x" }, "optionalPeers": ["@rspack/core", "webpack"] }, "sha512-E01VGaDGvXGig3rqQC+YRRPbGQ6tBLi9XkYCl579Hq01iYHeuVYLl1bfnODAt8SkdDYGJDMFuUWj/01A0vVy7g=="],
+    "@rsdoctor/types": ["@rsdoctor/types@1.6.2", "", { "dependencies": { "@types/connect": "3.4.38", "@types/estree": "1.0.5", "@types/tapable": "2.3.0", "source-map": "^0.7.6" }, "peerDependencies": { "@rspack/core": "*", "webpack": "5.x" }, "optionalPeers": ["@rspack/core", "webpack"] }, "sha512-+giYQPsgpPyo8OCGM9qNrdZKc2oaU+gUsZ5cnpHgbD3zwgUDj39PGgnnRj3kc9BP4PFrhVrBIJUnVVG/v60Jxw=="],
 
-    "@rsdoctor/utils": ["@rsdoctor/utils@1.6.1", "", { "dependencies": { "@babel/code-frame": "7.26.2", "@rsdoctor/types": "1.6.1", "@types/estree": "1.0.5", "acorn": "^8.10.0", "acorn-import-attributes": "^1.9.5", "acorn-walk": "8.3.5", "deep-eql": "4.1.4", "envinfo": "7.21.0", "fs-extra": "^11.1.1", "get-port": "5.1.1", "json-stream-stringify": "3.0.1", "lines-and-columns": "2.0.4", "picocolors": "^1.1.1", "rslog": "^2.1.2", "strip-ansi": "^7.2.0" } }, "sha512-Ll+X1nAE3eBq9BpBNZvAT+4hZZMQt/rxrBRzL/I8o6S3CBpo5Kh2A2JaYgCJLiYKh0kFQfuIWuOVpR3/yoFWJg=="],
+    "@rsdoctor/utils": ["@rsdoctor/utils@1.6.2", "", { "dependencies": { "@babel/code-frame": "7.26.2", "@rsdoctor/types": "1.6.2", "@types/estree": "1.0.5", "acorn": "^8.10.0", "acorn-import-attributes": "^1.9.5", "acorn-walk": "8.3.5", "deep-eql": "4.1.4", "envinfo": "7.21.0", "fs-extra": "^11.1.1", "get-port": "5.1.1", "json-stream-stringify": "3.0.1", "lines-and-columns": "2.0.4", "picocolors": "^1.1.1", "rslog": "^2.1.2", "strip-ansi": "^7.2.0" } }, "sha512-e6veT/5SdXxmTKV6K6Ay0S2LyvDMtedwaHIeRJNgT0a2T0esdAuL+O5q/jWqa33k9+Df+o+E/i2boX9CP3rYLA=="],
 
     "@rslib/core": ["@rslib/core@0.23.2", "", { "dependencies": { "@rsbuild/core": "~2.1.4", "rsbuild-plugin-dts": "0.23.2" }, "peerDependencies": { "@microsoft/api-extractor": "^7", "typescript": "^5 || ^6 || ^7.0.1-0" }, "optionalPeers": ["@microsoft/api-extractor", "typescript"], "bin": { "rslib": "./bin/rslib.js" } }, "sha512-KxSp+/y0BJ1O4oKwxX4ydBY7/ZVeJCUpWAmQniCIct8mTxIQFPGO/ibKbKq2IxZYqRuRpM8g+Dtyq0VbEQf9HQ=="],
 

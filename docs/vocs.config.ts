@@ -2,7 +2,7 @@ import { defineConfig } from "vocs/config";
 
 /**
  * The single source of truth for where this site lives. Moving to a custom
- * domain (e.g. https://fabricator.ghostry.dev/) is a change to this line and
+ * domain (e.g. https://docs.ghostry.dev/) is a change to this line and
  * nothing else. A custom domain additionally needs a CNAME file emitted into
  * the build output.
  */

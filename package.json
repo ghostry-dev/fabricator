@@ -1,7 +1,6 @@
 {
   "name": "@ghostry/fabricator-monorepo",
   "private": true,
-  "version": "0.0.0",
   "license": "MIT",
   "workspaces": [
     "pkg/*"
@@ -11,15 +10,14 @@
   },
   "scripts": {
     "build": "bun --cwd=pkg/fabricator run build && bun --cwd=pkg/fabricator-adapter-typebox-v0 run build && bun --cwd=pkg/fabricator-extension-faker-v10 run build",
-    "check:versions": "bun run scripts/check-versions.ts",
-    "check": "bun run check:versions && bun run build && bun --cwd=pkg/fabricator run check && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check && bun --cwd=pkg/fabricator-extension-faker-v10 run check && bun run check:ts5",
+    "check": "bun run build && bun --cwd=pkg/fabricator run check && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check && bun --cwd=pkg/fabricator-extension-faker-v10 run check && bun run check:ts5",
     "check:ts5": "bun --cwd=pkg/fabricator run check:ts5 && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check:ts5 && bun --cwd=pkg/fabricator-extension-faker-v10 run check:ts5",
     "test": "bun run build && bun --cwd=pkg/fabricator run test && bun --cwd=pkg/fabricator-adapter-typebox-v0 run test && bun --cwd=pkg/fabricator-extension-faker-v10 run test",
     "prettier": "bunx --no-install --bun prettier --write",
     "docs:dev": "cd ./docs && bun run dev"
   },
   "devDependencies": {
-    "@rsdoctor/rspack-plugin": "^1.6.0",
+    "@rsdoctor/rspack-plugin": "^1.6.2",
     "@rslib/core": "^0.23.2",
     "@types/bun": "^1.3.14",
     "jsr": "^0.14.3",

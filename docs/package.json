@@ -1,7 +1,6 @@
 {
   "name": "@ghostry/fabricator-docs",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "bunx --no-install --bun vocs dev",

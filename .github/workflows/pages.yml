@@ -1,9 +1,6 @@
 ##
 # Deploys the documentation site to GitHub Pages.
 #
-# Requires a one-time manual setting: Settings -> Pages -> Build and
-# deployment -> Source: "GitHub Actions".
-#
 name: Deploy Docs
 
 on:

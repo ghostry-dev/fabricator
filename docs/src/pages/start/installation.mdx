@@ -1,9 +1,5 @@
 # Installation
 
-:::warning
-`@ghostry/fabricator` is at version `0.0.0` and has not been published yet. `bun add @ghostry/fabricator` will not resolve until a first release ships. This page documents how installation will work once it does.
-:::
-
 fabricator ships as ESM only, with zero runtime dependencies.
 
 :::code-group
@@ -30,6 +26,10 @@ bunx jsr add @ghostry/fabricator
 ## Optional: a dynamic data library
 
 By default, fabricator generates fuzzing values, not realistic-looking ones — `T.string.whereby({ length: { max: 20 } })` gives you a random string, not a name. When you want output that reads like real data, add the faker extension:
+
+:::warning
+`@ghostry/fabricator-extension-faker-v10` hasn't published a first release yet, so the command below won't resolve. This section documents how it will work once it does.
+:::
 
 ```bash
 bun add @ghostry/fabricator-extension-faker-v10 @faker-js/faker

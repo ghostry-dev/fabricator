@@ -2,17 +2,13 @@
 
 Honest expectation-setting for a library at version `0.0.1`.
 
-## Not yet published
+## `@ghostry/fabricator-adapter-typebox-v0` and `@ghostry/fabricator-extension-faker-v10` aren't published yet
 
-There has never been a release, for either `@ghostry/fabricator` or `@ghostry/fabricator-adapter-typebox-v0` — both are fully implemented and packaged, but `bun add @ghostry/fabricator` does not resolve today. See [Installation](/start/installation).
-
-## Not yet exported, though implemented
-
-- **`Distribution`'s builder functions** (`Distribution.normal(...)`, `.skew(...)`, etc.) — the _shape_ they'd build is a plain, structurally-typed tagged object, so it's usable today without an import (`{ kind: 'normal', mean, spread }`), but the ergonomic builders aren't exported. See [Distributions](/guides/distributions).
+`@ghostry/fabricator` itself is published, at `0.0.1`. The TypeBox adapter and faker extension are both fully implemented and packaged, but neither has shipped a first release, so `bun add` for either does not resolve today. See [Installation](/start/installation).
 
 ## No validation
 
-There's no validation of fabricated data against a schema, and no way to opt out of drawing invalid-shaped data — because none is drawn in the first place. If you need runtime validation, convert to [TypeBox](/guides/typebox) and validate there.
+There's no validation of fabricated data against a schema, and no way to opt out of drawing invalid-shaped data, because none is drawn in the first place. If you need runtime validation, convert to [TypeBox](/guides/typebox) and validate there.
 
 ## No uniqueness facility
 
