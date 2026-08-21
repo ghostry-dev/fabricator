@@ -1,0 +1,148 @@
+diff --git a/dist/internal/vite-plugins.js b/dist/internal/vite-plugins.js
+index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..ae851e1bd9dbf64685e0f38395eee67ae4ed2b15 100644
+--- a/dist/internal/vite-plugins.js
++++ b/dist/internal/vite-plugins.js
+@@ -198,16 +198,26 @@ export function llms(config) {
+         },
+         configureServer(server) {
+             let content;
++            // The build writes these to `{outDir}/public`, so the deployed site
++            // serves them under `basePath`. Strip that prefix here so dev and
++            // production answer at the same URL.
++            const basePath = config.basePath && config.basePath !== '/'
++                ? `/${config.basePath.replace(/^\/+|\/+$/g, '')}`
++                : '';
++            const stripBasePath = (url) => basePath && (url === basePath || url.startsWith(`${basePath}/`))
++                ? url.slice(basePath.length) || '/'
++                : url;
+             server.middlewares.use(async (req, res, next) => {
+-                if (req.url === '/llms.txt' || req.url === '/llms-full.txt') {
++                const url = req.url ? stripBasePath(req.url) : req.url;
++                if (url === '/llms.txt' || url === '/llms-full.txt') {
+                     content = await buildLlmsContent();
+                     res.setHeader('Content-Type', 'text/plain');
+-                    res.end(req.url === '/llms.txt' ? content.short : content.full);
++                    res.end(url === '/llms.txt' ? content.short : content.full);
+                     return;
+                 }
+-                if (req.url?.startsWith('/assets/md/')) {
++                if (url?.startsWith('/assets/md/')) {
+                     content = await buildLlmsContent();
+-                    const pagePath = req.url.slice('/assets/md'.length, -3) || '/';
++                    const pagePath = url.slice('/assets/md'.length, -3) || '/';
+                     const result = content.results.find((r) => r.path.replace(/\/$/, '') === pagePath.replace(/\/index$/, ''));
+                     if (result) {
+                         res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+diff --git a/dist/react/internal/AskAi.js b/dist/react/internal/AskAi.js
+index 6150cb4c5efe875f37cd00dcda791bdc93e4b0d9..4a2a0b66034e2cf6d4fb7f489bc27e54fe57e498 100644
+--- a/dist/react/internal/AskAi.js
++++ b/dist/react/internal/AskAi.js
+@@ -10,11 +10,11 @@ import SimpleIconsClaude from '~icons/simple-icons/claude';
+ import SimpleIconsModelcontextprotocol from '~icons/simple-icons/modelcontextprotocol';
+ import SimpleIconsOpenai from '~icons/simple-icons/openai';
+ import { useConfig } from '../useConfig.js';
+-import { getMarkdownAssetPath } from './markdown-url.js';
++import { getMarkdownAssetPath, normalizeBasePath } from './markdown-url.js';
+ export function AskAi(props) {
+     const { className } = props;
+     const { path } = useRouter();
+-    const { mcp } = useConfig();
++    const { basePath, mcp } = useConfig();
+     const [menuOpen, setMenuOpen] = React.useState(false);
+     const [copied, setCopied] = React.useState(false);
+     const [mcpCopied, setMcpCopied] = React.useState(false);
+@@ -50,8 +50,8 @@ export function AskAi(props) {
+     const pageUrl = React.useMemo(() => {
+         if (typeof window === 'undefined')
+             return '';
+-        return window.location.origin + path;
+-    }, [path]);
++        return window.location.origin + normalizeBasePath(basePath) + path;
++    }, [basePath, path]);
+     const query = React.useMemo(() => {
+         return `Please research and analyze this page: ${pageUrl} so I can ask you questions about it. Once you have read it, prompt me with any questions I have. Do not post content from the page in your response. Any of my follow up questions must reference the site I gave you.`;
+     }, [pageUrl]);
+@@ -68,8 +68,8 @@ export function AskAi(props) {
+         },
+     ], [query]);
+     const markdownUrl = React.useMemo(() => {
+-        return getMarkdownAssetPath(path);
+-    }, [path]);
++        return getMarkdownAssetPath(path, basePath);
++    }, [basePath, path]);
+     const copyPageForAi = React.useCallback(async () => {
+         try {
+             const response = await fetch(markdownUrl);
+@@ -90,8 +90,8 @@ export function AskAi(props) {
+     const mcpUrl = React.useMemo(() => {
+         if (typeof window === 'undefined')
+             return '';
+-        return `${window.location.origin}/api/mcp`;
+-    }, []);
++        return `${window.location.origin}${normalizeBasePath(basePath)}/api/mcp`;
++    }, [basePath]);
+     return (_jsxs(Menu.Root, { open: menuOpen, onOpenChange: setMenuOpen, children: [_jsxs(Menu.Trigger, { className: cx('vocs:flex vocs:items-center vocs:justify-between vocs:cursor-pointer vocs:pl-3 vocs:pr-2 vocs:text-sm vocs:text-secondary vocs:hover:text-primary vocs:w-full vocs:h-full vocs:bg-surface vocs:hover:bg-surfaceTint vocs:border vocs:border-primary vocs:rounded-xl vocs:transition-colors vocs:duration-100', className), children: [_jsx("div", { className: "vocs:flex vocs:items-center vocs:gap-2", children: "Ask AI..." }), _jsxs("div", { className: "vocs:flex vocs:items-center vocs:gap-0.5", children: [_jsx("div", { className: "vocs:bg-primary vocs:text-xs vocs:flex vocs:items-center vocs:justify-center vocs:h-5 vocs:w-auto vocs:px-0.75 vocs:border vocs:border-primary vocs:rounded-sm", children: modifierKey }), _jsx("div", { className: "vocs:bg-primary vocs:text-xs vocs:flex vocs:items-center vocs:justify-center vocs:h-5 vocs:w-auto vocs:px-0.75 vocs:border vocs:border-primary vocs:rounded-sm", children: "I" })] })] }), _jsx(Menu.Portal, { children: _jsx(Menu.Positioner, { side: "top", align: "start", sideOffset: 4, className: "vocs:z-100", children: _jsxs(Menu.Popup, { className: "vocs:bg-surface vocs:w-(--anchor-width) vocs:border vocs:border-primary vocs:p-2 vocs:rounded-lg vocs:shadow-lg/5 vocs:origin-(--transform-origin) vocs:transition-all vocs:duration-75 vocs:scale-100 vocs:opacity-100 vocs:data-starting-style:opacity-0 vocs:data-starting-style:scale-90", children: [_jsxs(Menu.Group, { children: [_jsx(Menu.GroupLabel, { className: "vocs:flex vocs:items-center vocs:gap-1.5 vocs:px-2 vocs:py-1.5 vocs:text-secondary vocs:text-xs vocs:font-medium", children: "Open in..." }), llmProviders.map((provider) => (_jsxs(Menu.Item, { className: "vocs:flex vocs:items-center vocs:gap-2 vocs:px-2 vocs:py-1.5 vocs:text-primary/80 vocs:hover:text-heading vocs:hover:bg-accenta3 vocs:rounded-md vocs:text-sm vocs:cursor-pointer vocs:transition-colors", onClick: () => {
+                                             // On mobile, use location.href to trigger Universal Links / App Links
+                                             // which will open the native app if installed
+diff --git a/dist/react/internal/CopyForAi.client.js b/dist/react/internal/CopyForAi.client.js
+index 0ff98da05580f8eda3ab26daaf242c437b2a5a76..7f91f4e06c0e4fa776f3071a306dbde9fb8e32dc 100644
+--- a/dist/react/internal/CopyForAi.client.js
++++ b/dist/react/internal/CopyForAi.client.js
+@@ -5,17 +5,19 @@ import * as React from 'react';
+ import { useRouter } from 'waku';
+ import LucideCheck from '~icons/lucide/check';
+ import LucideClipboard from '~icons/lucide/clipboard';
++import { useConfig } from '../useConfig.js';
+ import { getMarkdownAssetPath } from './markdown-url.js';
+ export function CopyForAi(props) {
+     const { className, frontmatter } = props;
+     const router = useRouter();
++    const { basePath } = useConfig();
+     const [state, setState] = React.useState('idle');
+     const handleCopy = React.useCallback(async () => {
+         if (state === 'copying')
+             return;
+         setState('copying');
+         try {
+-            const response = await fetch(getMarkdownAssetPath(router.path));
++            const response = await fetch(getMarkdownAssetPath(router.path, basePath));
+             if (!response.ok)
+                 throw new Error('Failed to fetch markdown');
+             const markdown = await response.text();
+@@ -28,7 +30,7 @@ export function CopyForAi(props) {
+             setState('error');
+             setTimeout(() => setState('idle'), 2000);
+         }
+-    }, [router.path, state]);
++    }, [basePath, router.path, state]);
+     if (frontmatter?.showAskAi === false)
+         return null;
+     return (_jsxs("button", { "aria-label": "Copy page content as markdown for AI", className: cx('vocs:flex vocs:items-center vocs:gap-2 vocs:text-[13px] vocs:text-secondary vocs:hover:text-heading vocs:cursor-pointer vocs:disabled:cursor-default vocs:transition-colors', className), "data-v-copy-for-ai": true, disabled: state === 'copying', onClick: handleCopy, type: "button", children: [state === 'copied' ? (_jsx(LucideCheck, { className: "vocs:size-4 vocs:text-accent" })) : (_jsx(LucideClipboard, { className: "vocs:size-4" })), _jsx("span", { children: "Copy page for AI" })] }));
+diff --git a/dist/react/internal/markdown-url.d.ts b/dist/react/internal/markdown-url.d.ts
+index 9be110aed4783e44dfd22b6ed6871524ad218afe..d7664589bff2e1118a833b71544cce0bda78b0c1 100644
+--- a/dist/react/internal/markdown-url.d.ts
++++ b/dist/react/internal/markdown-url.d.ts
+@@ -1,2 +1,2 @@
+-export declare function getMarkdownAssetPath(path: string): string;
+-//# sourceMappingURL=markdown-url.d.ts.map
+\ No newline at end of file
++export declare function normalizeBasePath(basePath?: string | undefined): string;
++export declare function getMarkdownAssetPath(path: string, basePath?: string | undefined): string;
+diff --git a/dist/react/internal/markdown-url.js b/dist/react/internal/markdown-url.js
+index 5397bdf40f789fc4f8fe45b3a3e4e71416b5a7f4..05a6583f12b336b63a51eedacfa885b77beb4ebf 100644
+--- a/dist/react/internal/markdown-url.js
++++ b/dist/react/internal/markdown-url.js
+@@ -1,5 +1,9 @@
+-export function getMarkdownAssetPath(path) {
++export function normalizeBasePath(basePath) {
++    if (!basePath || basePath === '/')
++        return '';
++    return `/${basePath.replace(/^\/+|\/+$/g, '')}`;
++}
++export function getMarkdownAssetPath(path, basePath) {
+     const pagePath = path === '/' ? '/index' : path.replace(/\/$/, '');
+-    return `/assets/md${pagePath}.md`;
++    return `${normalizeBasePath(basePath)}/assets/md${pagePath}.md`;
+ }
+-//# sourceMappingURL=markdown-url.js.map
+\ No newline at end of file

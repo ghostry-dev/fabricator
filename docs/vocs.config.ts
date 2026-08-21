@@ -43,7 +43,7 @@ export default defineConfig({
    * include it or GitHub Pages resolves them at the domain root.
    */
   logoUrl: `${BASE_PATH}/logo.png`,
-  iconUrl: `${BASE_PATH}/logo.png`,
+  iconUrl: `${BASE_PATH}/icon.png`,
   /**
    * Electric blue on light surfaces, lavender on dark — the two most readable
    * faces of the mark. Surfaces and the gray ramp live in `src/pages/_root.css`
@@ -51,6 +51,14 @@ export default defineConfig({
    */
   accentColor: "light-dark(#4c51ff, #9378ff)",
   renderStrategy: "full-static",
+  /**
+   * Vocs 2.8.5 hard-codes the domain root for the markdown twins behind "Ask
+   * AI": the client links to `/assets/md/*.md` and `vocs dev` only answers
+   * there, while the build writes them under `basePath`. Both halves are fixed
+   * in `patches/vocs@2.8.5.patch`; drop the patch if upstream lands a fix.
+   *
+   * @see https://github.com/wevm/vocs/pull/627
+   */
   basePath: BASE_PATH,
   codeHighlight: { themes: { light: "catppuccin-latte", dark: "tokyo-night" } },
   socials: [
