@@ -55,3 +55,27 @@ const schema = T.faker.person.fullName();
 Faker's generators draw from fabricator's own seed parameters, so those fields replay like every other one. See [the Faker guide](/guides/faker) for the full surface.
 
 You can also reach any data library by hand through `.as(...)` or `T.opaque` — see [`T.opaque`](/reference/primitives/opaque), including what it takes to keep such fields reproducible.
+
+## Optional: schema adaptation for runtime validation
+
+fabricator doesn't validate — nothing here checks a value against a schema. When you want the same shape to serve as a validator as well as a generator, add the TypeBox adapter:
+
+:::code-group
+
+```bash [bun]
+bun add @ghostry/fabricator-adapter-typebox-v0 @sinclair/typebox
+```
+
+```bash [npm]
+npm install @ghostry/fabricator-adapter-typebox-v0 @sinclair/typebox
+```
+
+:::
+
+```ts
+import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
+
+const TProduct = toTypeBox(ProductSchema);
+```
+
+It targets `@sinclair/typebox` (0.34.x) specifically — hence the `-v0`. See [the TypeBox guide](/guides/typebox) for the default-mapping table and how to override it per schema.

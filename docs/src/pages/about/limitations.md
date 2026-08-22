@@ -1,8 +1,8 @@
 # Limitations
 
-## `@ghostry/fabricator-adapter-typebox-v0` and `@ghostry/fabricator-extension-faker-v10` aren't published yet
+## `@ghostry/fabricator-extension-faker-v10` isn't published yet
 
-`@ghostry/fabricator` itself is published, at `0.0.1`. The TypeBox adapter and faker extension are both fully implemented and packaged, but neither has shipped a first release, so `bun add` for either does not resolve today. See [Installation](/start/installation).
+The faker extension is fully implemented and packaged, but hasn't shipped a first release, so `bun add` for it does not resolve today. See [Installation](/start/installation).
 
 ## No validation
 

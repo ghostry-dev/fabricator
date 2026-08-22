@@ -53,23 +53,23 @@ export default defineConfig({
   renderStrategy: "full-static",
   /**
    * `baseUrl` is the origin, not the deployment URL — `Head.tsx` appends
-   * `basePath` + the page path itself to build the canonical URL and
-   * `og:url`. It also emits a `<base href>` tag by default, which is
-   * suppressed below via `head: { base: false }` since it would otherwise
-   * change relative-URL resolution site-wide.
+   * `basePath` + the page path itself to build the canonical URL and `og:url`.
+   * It also emits a `<base href>` tag by default, which is suppressed below via
+   * `head: { base: false }` since it would otherwise change relative-URL
+   * resolution site-wide.
    */
   baseUrl: DEPLOYMENT.origin,
   head: { base: false },
   /**
    * Vocs does not prefix `ogImageUrl` with `basePath` either (same as
    * `logoUrl`/`iconUrl`), and it must be absolute for link-preview scrapers
-   * that don't resolve relative URLs — hence building off `DEPLOYMENT`
-   * directly rather than `BASE_PATH`.
+   * that don't resolve relative URLs — hence building off `DEPLOYMENT` directly
+   * rather than `BASE_PATH`.
    */
   ogImageUrl: new URL("og.png", DEPLOYMENT).href,
   /**
-   * `href` is internal-link resolved by Vocs itself, which already prefixes
-   * it with `basePath` — unlike `logoUrl`/`iconUrl`/`ogImageUrl` above, do not
+   * `href` is internal-link resolved by Vocs itself, which already prefixes it
+   * with `basePath` — unlike `logoUrl`/`iconUrl`/`ogImageUrl` above, do not
    * prepend `BASE_PATH` here, or the link doubles it
    * (`/fabricator/fabricator/...`).
    */

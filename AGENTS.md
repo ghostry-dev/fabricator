@@ -26,7 +26,7 @@ Non-core packages resolve `@ghostry/fabricator`/`@ghostry/fabricator/internal` a
 
 `docs/` is outside the Bun workspace (own `package.json`/`bun.lock`). Package `jsr.json` `publish.exclude` need not name `docs`/`.github`/`CLAUDE.md` — they live outside every `pkg/*`, not as excluded siblings the way they would if `jsr.json` sat at the repo root.
 
-**Root `overrides: { "@ghostry/fabricator": "workspace:*" }` is required for `bun install`, not just a pin.** Dependents declare a real peer range (`>=0.0.1 <0.1.0`, not `^0.0.1` — a caret on `0.0.x` pins the patch; `^0.0.1` is only `0.0.1`). The package has never been published. Changing that peer-range text at all makes bun drop the lockfile cache and re-resolve; for `peerDependencies` it queries npm rather than the same file's `devDependencies: { "@ghostry/fabricator": "workspace:*" }`. An unpublished name 404s — exit 1 for `bun install` and `--frozen-lockfile`, before anything is written. The override forces every reference onto the workspace package. Don't remove it without re-checking `bun install` after any peer-range edit.
+**Root `overrides: { "@ghostry/fabricator": "workspace:*" }` is required for `bun install`, not just a pin.** Dependents declare a real peer range (`>=0.0.1 <0.1.0`, not `^0.0.1` — a caret on `0.0.x` pins the patch; `^0.0.1` is only `0.0.1`). Changing that peer-range text at all makes bun drop the lockfile cache and re-resolve; for `peerDependencies` it queries npm rather than the same file's `devDependencies: { "@ghostry/fabricator": "workspace:*" }`. Don't remove it without re-checking `bun install` after any peer-range edit.
 
 ## The symbol-tagged shape
 
