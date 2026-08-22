@@ -4,11 +4,25 @@ Every `initialize()` instance has a [clock](#what-now-means) and an optional [se
 
 ## Seeds are optional mixers
 
+**Most instances don't need a seed at all.**
+
+```ts
+const { T, Fabricator } = initialize();
+```
+
+`clock` — the wall-clock instant captured at this `initialize()` call — is the run's entropy on its own. Every run starts at a different instant, so every run produces different data, and a single number replays it: log `context.clock` after fabricating, then pass it back as `clock: new Date(logged)`.
+
+Adding a seed does not make a run any more varied. It adds a _second_ value that has to be captured and passed back alongside the clock before anything can be reproduced, so reach for one only when something specific wants it:
+
 ```ts
 const { T, Fabricator, seed } = initialize({ seed: "1234" });
 ```
 
-`seed` is a mixer composed into every stream beside `clock`. Omit it and the seed is empty — wall-clock `clock` is the run's entropy. An unconfigured run is still replayable: log `context.clock` after fabricating, and pass it back as `clock: new Date(logged)`. If you also passed a `seed`, log that too.
+`seed` is a mixer composed into every stream beside `clock`. Omit it and the seed is empty. The cases that genuinely want one:
+
+- **Replay that doesn't depend on wall-clock time.** Pair the seed with [`clock: "seeded"`](#what-now-means) and the seed becomes the entire reproducibility unit — one value to record instead of two. The cost is an implausible "now", drawn across the whole representable `Date` range.
+- **A fixture that must never move**, no matter how the rest of the run is seeded — that's a [per-construction seed](#overriding-a-seed-per-construction), not an instance-wide one.
+- **Injecting a mixer from outside**, without hardcoding it — that's what [env-var seeding](#env-var-seeding) below is for. It pins the seed only; an unpinned `clock` still varies, so replay still needs `context.clock`.
 
 :::tip
 Seeds are strings, not numbers — `seed: "1234"`, not `seed: 1234`.

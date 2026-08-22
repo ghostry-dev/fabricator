@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.5.0",
+    "@ghostry/fabricator": "file:../pkg/fabricator",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

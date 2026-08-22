@@ -1,9 +1,14 @@
 # Quick start
 
-```ts
+This library is particularly useful for defining test fixtures to exercise your code with inputs that you may not have anticipated. In this way, it facilitates a form of [fuzzing](https://en.wikipedia.org/wiki/Fuzzing).
+
+```ts twoslash
 import { initialize } from "@ghostry/fabricator";
 
-const { T, Fabricator } = initialize({ seed: "1234" });
+const { T, Fabricator } = initialize({
+  clock: new Date(), // default source of entropy
+  seed: "1234", // optional additional entropy
+});
 
 const ProductSchema = T.object({
   name: T.string.whereby({ length: { min: 1, max: 25 } }),
@@ -28,7 +33,9 @@ That's the whole loop:
 3. `new Fabricator(schema)` builds a live **Fabricator** with a `.fabricate()` method.
 4. `.fabricate()` is the only place randomness actually happens.
 
-See [Mental model](/start/mental-model) for why this three-layer split exists, and [Reproducibility](/guides/reproducibility) for what `seed: '1234'` buys you.
+See [Mental model](/start/mental-model) for why this three-layer split exists.
+
+Both options passed to `initialize()` above are optional, and are shown only to name the two knobs. `clock` already defaults to the instant of the call, and on its own is enough to make every run different and to replay any one of them; a `seed` is an extra mixer most instances don't need. See [Seeds are optional mixers](/guides/reproducibility#seeds-are-optional-mixers).
 
 ## Overriding specific fields
 

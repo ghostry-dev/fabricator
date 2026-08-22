@@ -1,6 +1,6 @@
 # fabricator
 
-Fabricate typed data from composable schemas.
+Fabricate typed data from composable schemas — full type inference, seeded reproducibility, and fixtures that don't churn when the schema changes.
 
 Monorepo for related packages.
 

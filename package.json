@@ -15,7 +15,7 @@
     "check:jsr": "bun --cwd=pkg/fabricator run check:jsr && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check:jsr && bun --cwd=pkg/fabricator-extension-faker-v10 run check:jsr",
     "test": "bun run build && bun --cwd=pkg/fabricator run test && bun --cwd=pkg/fabricator-adapter-typebox-v0 run test && bun --cwd=pkg/fabricator-extension-faker-v10 run test",
     "format": "bunx --no-install oxfmt .",
-    "docs:dev": "cd ./docs && bun run dev"
+    "docs:dev": "bun --cwd=pkg/fabricator run build && cd ./docs && bun run dev"
   },
   "devDependencies": {
     "@rsdoctor/rspack-plugin": "^1.6.2",

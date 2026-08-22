@@ -52,6 +52,40 @@ export default defineConfig({
   accentColor: "light-dark(#4c51ff, #9378ff)",
   renderStrategy: "full-static",
   /**
+   * `baseUrl` is the origin, not the deployment URL — `Head.tsx` appends
+   * `basePath` + the page path itself to build the canonical URL and
+   * `og:url`. It also emits a `<base href>` tag by default, which is
+   * suppressed below via `head: { base: false }` since it would otherwise
+   * change relative-URL resolution site-wide.
+   */
+  baseUrl: DEPLOYMENT.origin,
+  head: { base: false },
+  /**
+   * Vocs does not prefix `ogImageUrl` with `basePath` either (same as
+   * `logoUrl`/`iconUrl`), and it must be absolute for link-preview scrapers
+   * that don't resolve relative URLs — hence building off `DEPLOYMENT`
+   * directly rather than `BASE_PATH`.
+   */
+  ogImageUrl: new URL("og.png", DEPLOYMENT).href,
+  /**
+   * `href` is internal-link resolved by Vocs itself, which already prefixes
+   * it with `basePath` — unlike `logoUrl`/`iconUrl`/`ogImageUrl` above, do not
+   * prepend `BASE_PATH` here, or the link doubles it
+   * (`/fabricator/fabricator/...`).
+   */
+  banner: {
+    content:
+      "fabricator is v0 and will make breaking changes, and the TypeBox adapter and Faker extension aren't published yet.",
+    variant: "warning",
+    dismissable: false,
+  },
+  topNav: [
+    { text: "Start", link: "/start/quick-start", match: "/start" },
+    { text: "Guides", link: "/guides/reproducibility", match: "/guides" },
+    { text: "Primitives", link: "/reference/primitives" },
+    { text: "API", link: "/reference/api" },
+  ],
+  /**
    * Vocs 2.8.5 hard-codes the domain root for the markdown twins behind "Ask
    * AI": the client links to `/assets/md/*.md` and `vocs dev` only answers
    * there, while the build writes them under `basePath`. Both halves are fixed
@@ -60,44 +94,15 @@ export default defineConfig({
    * @see https://github.com/wevm/vocs/pull/627
    */
   basePath: BASE_PATH,
-  codeHighlight: { themes: { light: "catppuccin-latte", dark: "tokyo-night" } },
+  codeHighlight: { themes: { light: "catppuccin-latte", dark: "github-dark" } },
   socials: [
     { icon: "github", link: "https://github.com/ghostry-dev/fabricator" },
-  ],
-  /**
-   * Old grouping URLs. Middleware-only — GitHub Pages will not honor these;
-   * they exist so `vocs dev` / `vocs preview` don't 404 bookmarked paths.
-   */
-  redirects: [
-    {
-      source: "/reference/primitives/scalars",
-      destination: "/reference/primitives#scalars",
-    },
-    {
-      source: "/reference/primitives/literals-and-choices",
-      destination: "/reference/primitives#literals-and-choices",
-    },
-    {
-      source: "/reference/primitives/absence",
-      destination: "/reference/primitives#absence",
-    },
-    {
-      source: "/reference/primitives/collections",
-      destination: "/reference/primitives#collections",
-    },
-    {
-      source: "/reference/primitives/structures",
-      destination: "/reference/primitives#structures",
-    },
-    {
-      source: "/reference/primitives/escape-hatch",
-      destination: "/reference/primitives#escape-hatch",
-    },
   ],
   sidebar: [
     {
       text: "Start here",
       items: [
+        { text: "Why Fabricator?", link: "/start/why" },
         { text: "Installation", link: "/start/installation" },
         { text: "Quick start", link: "/start/quick-start" },
         { text: "Mental model", link: "/start/mental-model" },

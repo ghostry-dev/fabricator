@@ -27,6 +27,21 @@ jobs:
         with:
           bun-version-file: .bun-version
 
+      ##
+      # `docs/` resolves `@ghostry/fabricator` as `file:../pkg/fabricator` (for
+      # twoslash — see `docs/package.json`), which needs core's `dist/` to
+      # exist before `docs/`'s own install/build can resolve or type-check
+      # against it. This runs at the repo root, ignoring this job's default
+      # `working-directory: docs`.
+      #
+      - name: Install Root Dependencies
+        working-directory: .
+        run: bun install --frozen-lockfile
+
+      - name: Build Packages
+        working-directory: .
+        run: bun run build
+
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 

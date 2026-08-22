@@ -115,3 +115,41 @@
 [data-v-sidebar-section-content] a:hover {
   color: var(--vocs-text-color-link-hover);
 }
+
+/**
+ * Homepage hero (`src/pages/index.mdx`). `HomePage.Logo`'s own className is
+ * `cx()`-concatenated (not merged) with `hero-mark`, so both its `vocs:h-12
+ * vocs:md:h-14` utility classes and this rule are present at once — an
+ * element+class selector out-specifies a single-class utility, so this wins
+ * regardless of source order. The nav's `[data-v-logo]::after` wordmark (above)
+ * targets a wrapper `HomePage.Logo` never renders, so the hero needs its own.
+ */
+img.hero-mark {
+  height: 4.5rem;
+  width: auto;
+}
+
+.hero-wordmark {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--vocs-text-color-heading);
+  margin-top: -0.5rem;
+}
+
+@media (min-width: 768px) {
+  .hero-wordmark {
+    font-size: 3.75rem;
+  }
+}
+
+/**
+ * `index.mdx` opts into `content: { width: "full" }` so the hero itself can
+ * run edge to edge; this constrains the code sample and card grids below it
+ * back to a readable measure instead of stretching full-bleed.
+ */
+.hero-content {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}

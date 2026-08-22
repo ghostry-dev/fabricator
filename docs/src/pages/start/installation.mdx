@@ -12,10 +12,6 @@ bun add @ghostry/fabricator
 npm install @ghostry/fabricator
 ```
 
-```bash [jsr]
-bunx jsr add @ghostry/fabricator
-```
-
 :::
 
 ## Requirements
@@ -25,15 +21,23 @@ bunx jsr add @ghostry/fabricator
 
 ## Optional: a dynamic data library
 
-By default, fabricator generates fuzzing values, not realistic-looking ones — `T.string.whereby({ length: { max: 20 } })` gives you a random string, not a name. When you want output that reads like real data, add the faker extension:
+By default, fabricator generates fuzzing values, not realistic-looking ones — `T.string.whereby({ length: { max: 20 } })` gives you a random string, not a name. When you want output that reads like real data, add the Faker extension:
 
 :::warning
 `@ghostry/fabricator-extension-faker-v10` hasn't published a first release yet, so the command below won't resolve. This section documents how it will work once it does.
 :::
 
-```bash
+:::code-group
+
+```bash [bun]
 bun add @ghostry/fabricator-extension-faker-v10 @faker-js/faker
 ```
+
+```bash [npm]
+npm install @ghostry/fabricator-extension-faker-v10 @faker-js/faker
+```
+
+:::
 
 ```ts
 import { en } from "@faker-js/faker";
@@ -48,6 +52,6 @@ const schema = T.faker.person.fullName();
 // T.string using faker values when fabricated
 ```
 
-Faker's generators draw from fabricator's own seed there, so those fields replay like every other one. See [faker](/guides/faker) for the full surface.
+Faker's generators draw from fabricator's own seed parameters, so those fields replay like every other one. See [the Faker guide](/guides/faker) for the full surface.
 
 You can also reach any data library by hand through `.as(...)` or `T.opaque` — see [`T.opaque`](/reference/primitives/opaque), including what it takes to keep such fields reproducible.

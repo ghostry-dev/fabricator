@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - docs/**
+      - pkg/fabricator/**
       - .github/workflows/docs.yml
       - .github/workflows/pages.yml
   workflow_dispatch:

@@ -1,37 +1,107 @@
-# fabricator [Fabricate typed data from composable schemas.]
+---
+title: fabricator
+description: Fabricate typed data from composable schemas — full type inference, seeded reproducibility, and composable primitives for TypeScript tests.
+layout: minimal
+outline: false
+content:
+  width: full
+showAskAi: false
+---
 
-fabricator builds test data from schemas you define — with full type inference, seeded reproducibility, and a small set of composable primitives covering scalars, collections, absence, recursion, and an escape hatch for anything else.
+import { Card, Cards, HomePage } from "vocs";
 
-```ts
+<HomePage.Root>
+  <HomePage.Logo className="hero-mark" />
+  <h1 className="hero-wordmark">fabricator</h1>
+  <HomePage.Tagline>
+    Fabricate typed data from composable schemas.
+  </HomePage.Tagline>
+  <HomePage.Description>
+    Define a shape once, get fully typed, randomized, probabilistic test data,
+    perfectly reproducible from seed parameters.
+  </HomePage.Description>
+  <HomePage.Buttons>
+    <HomePage.Button href="/start/quick-start" variant="accent">
+      Get started
+    </HomePage.Button>
+    <HomePage.Button href="/start/why">Why Fabricator?</HomePage.Button>
+    <HomePage.Button href="https://github.com/ghostry-dev/fabricator">
+      GitHub
+    </HomePage.Button>
+  </HomePage.Buttons>
+  <HomePage.InstallPackage name="@ghostry/fabricator" />
+</HomePage.Root>
+
+<div className="hero-content">
+
+```ts twoslash
 import { initialize } from "@ghostry/fabricator";
 
-const { T, Fabricator } = initialize({ seed: "1234" });
+const { T, Fabricator } = initialize({
+  clock: new Date(), // default source of entropy
+  seed: "1234", // optional additional entropy
+});
 
 const ProductSchema = T.object({
   name: T.string.whereby({ length: { min: 1, max: 25 } }),
   price: T.number.whereby({ min: 1, max: 500 }),
-  tags: T.array(T.string.whereby({ length: { max: 15 } })),
+  inStock: T.boolean,
+  createdAt: T.date.past,
+  tags: T.array(T.string.whereby({ length: { max: 15 } })).whereby({
+    length: { max: 5 },
+  }),
 });
 
-const item = new Fabricator(ProductSchema).fabricate();
+const Product = new Fabricator(ProductSchema);
+
+const item = Product.fabricate();
+
+const createdAt = item.createdAt;
+//    ^?
+
+// Everything random except what you pin:
+const widget = Product.fabricate({ name: "Widget", inStock: true });
 ```
 
-:::steps
+</div>
 
-### Start here
-
-[Installation](/start/installation), then the [quick start](/start/quick-start) and [mental model](/start/mental-model) — Registry, Schema, Fabricator, and why building is where randomness happens.
-
-### Guides
-
-[Reproducibility](/guides/reproducibility), [objects](/guides/objects), [composition](/guides/composition), [distributions](/guides/distributions), and pairing with [TypeBox](/guides/typebox) or your own [custom types](/guides/custom-types).
-
-### Primitives
-
-[Overview](/reference/primitives) groups them by the question you're holding; All in the sidebar is one page per name.
-
-:::
-
-:::note
-`@ghostry/fabricator` is published at version `0.0.1`. The TypeBox adapter and faker extension aren't published yet. See [Limitations](/about/limitations) for what's not there yet.
-:::
+<div className="hero-content">
+  <Cards>
+    <Card
+      icon="type"
+      title="Typed all the way through"
+      description="The value type falls out of the schema — no generics to write, no `as` casts, no drift between a fixture and the type it stands in for."
+      to="/start/quick-start"
+    />
+    <Card
+      icon="route"
+      title="Reproducible by trace"
+      description="Every value is drawn from a stream keyed by seed, clock, file, and structural path. `.trace` describes exactly where a value came from and facilitates replay."
+      to="/guides/reproducibility"
+    />
+    <Card
+      icon="list-tree"
+      title="Fixtures that don't churn"
+      description="Data streams are keyed by structural position, so adding, removing, or reordering a field changes _only_ that field's data."
+      to="/guides/reproducibility"
+    />
+    <Card
+      icon="puzzle"
+      title="Compose instead of copy"
+      description="`.extend()`, `.refine()`, and `.override()` build schemas out of schemas. Per-call overrides pin what a test cares about and leave the rest random."
+      to="/guides/composition"
+    />
+    <Card
+      icon="circle-slash-2"
+      title="Absence, modelled precisely"
+      description="Object key missing, key present as `undefined`, and value `null` are different facts. The `omittable`, `optional`, `nullable`, `nullish`, and `undefinable` primitives allow describing them precisely."
+      to="/reference/primitives#absence"
+    />
+    <Card
+      icon="door-open"
+      title="Escape hatches as needed"
+      description="`T.opaque` and `.as()` cover anything with no primitive; `registry.extend()` brings your own builders; the TypeBox adapter turns a schema into a validator."
+      to="/guides/custom-types"
+    />
+  </Cards>
+</div>
