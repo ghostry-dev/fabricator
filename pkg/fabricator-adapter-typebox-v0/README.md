@@ -31,4 +31,4 @@ T.string
   .adapt(typebox, () => Type.String({ format: "email" }));
 ```
 
-See the [TypeBox guide](https://ghostry-dev.github.io/fabricator/guides/typebox) in the docs for the full default-mapping table, adaptation semantics, and where `Static<ToTypeBox<S>>` and the fabricated value type can legitimately diverge.
+See the [TypeBox guide](https://docs.ghostry.dev/fabricator/guides/typebox) in the docs for the full default-mapping table, adaptation semantics, and where `Static<ToTypeBox<S>>` and the fabricated value type can legitimately diverge.

@@ -45,7 +45,7 @@ export function initialize<
      *   anywhere in the instance shares one stream, keyed by kind alone.
      *
      * See
-     * [Reproducibility](https://ghostry-dev.github.io/fabricator/guides/reproducibility)
+     * [Reproducibility](https://docs.ghostry.dev/fabricator/guides/reproducibility)
      * for the trade-offs between the three.
      */
     attribution?: Attribution;
@@ -133,8 +133,8 @@ export { registry } from "./Schema/Registry";
  * named `.whereby(...)` argument or an `.adapt` producer reading `meta` can
  * type it — the same rationale as `Stream`.
  */
+export { effectiveDiscrete, toBound } from "./Bound";
 export type { Bound, InputBound } from "./Bound";
-export { toBound, effectiveDiscrete } from "./Bound";
 /**
  * Public because it is the type of `ProduceContext`'s `random` member — the
  * seeded stream every kind's `.as(produce)` and `T.opaque`'s producer are

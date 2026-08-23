@@ -1,12 +1,19 @@
 import { defineConfig } from "vocs/config";
 
 /**
- * The single source of truth for where this site lives. Moving to a custom
- * domain (e.g. https://docs.ghostry.dev/) is a change to this line and nothing
- * else. A custom domain additionally needs a CNAME file emitted into the build
- * output.
+ * The single source of truth for where this site lives — moving the site is a
+ * change to this line and nothing else.
+ *
+ * The `docs.ghostry.dev` domain belongs to the `ghostry-dev.github.io` org-site
+ * repo, not to this one. Project sites inherit their account's custom domain
+ * and keep their repo name as the path, which is what puts this site at
+ * `/fabricator` and leaves the other subpaths free for sibling libraries.
+ *
+ * That inheritance is also why this repo must ship no `public/CNAME`: a CNAME
+ * file in the uploaded artifact claims the domain _root_ for this repo alone,
+ * which would both move these docs to `/` and lock every other library out.
  */
-const DEPLOYMENT = new URL("https://ghostry-dev.github.io/fabricator/");
+const DEPLOYMENT = new URL("https://docs.ghostry.dev/fabricator/");
 const BASE_PATH = DEPLOYMENT.pathname.replace(/\/$/, "");
 
 /** Alphabetical `T.*` names — one page each under Schema Primitives → All. */

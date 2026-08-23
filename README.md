@@ -4,7 +4,7 @@ Fabricate typed data from composable schemas — full type inference, seeded rep
 
 Monorepo for related packages.
 
-See the [docs site](https://ghostry-dev.github.io/fabricator/) for the full guide.
+See the [docs site](https://docs.ghostry.dev/fabricator/) for the full guide.
 
 ### [`pkg/fabricator`](pkg/fabricator/README.md)
 

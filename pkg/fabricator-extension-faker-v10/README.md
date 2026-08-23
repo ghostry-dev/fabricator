@@ -98,4 +98,4 @@ T.faker.use.opaque((f) => f.helpers.arrayElement(["free", "pro"] as const));
 
 A builder called outside `fabricate()` throws `FakerExtensionError.NoActiveScopeError` — there is no active fabrication to draw from. `FakerExtensionError` extends core's `FabricatorError`, so one `catch` still covers both packages.
 
-See the [faker guide](https://ghostry-dev.github.io/fabricator/guides/faker) in the docs for the full module list and worked examples.
+See the [faker guide](https://docs.ghostry.dev/fabricator/guides/faker) in the docs for the full module list and worked examples.
