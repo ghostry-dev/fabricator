@@ -75,7 +75,7 @@ export default defineConfig({
    */
   banner: {
     content:
-      "fabricator is v0 and will make breaking changes, and the TypeBox adapter and Faker extension aren't published yet.",
+      "fabricator is v0 and will make breaking changes, and the Faker extension isn't published yet.",
     variant: "warning",
     dismissable: false,
   },
@@ -86,10 +86,20 @@ export default defineConfig({
     { text: "API", link: "/reference/api" },
   ],
   /**
-   * Vocs 2.8.5 hard-codes the domain root for the markdown twins behind "Ask
-   * AI": the client links to `/assets/md/*.md` and `vocs dev` only answers
-   * there, while the build writes them under `basePath`. Both halves are fixed
-   * in `patches/vocs@2.8.5.patch`; drop the patch if upstream lands a fix.
+   * Vocs 2.8.5 hard-codes the domain root in two unrelated places that should
+   * respect `basePath`, both fixed in `patches/vocs@2.8.5.patch`:
+   *
+   * - The markdown twins behind "Ask AI" — the client links to `/assets/md/*.md`
+   *   and `vocs dev` only answers there, while the build writes them under
+   *   `basePath`.
+   * - `sitemap.xml` and `robots.txt` — their URLs come from `baseUrl` alone, even
+   *   though `Head.tsx` does apply `basePath` to the canonical of the very same
+   *   page. On a shared domain that is worse than cosmetic: the sitemap would
+   *   claim `/start/why` rather than `/fabricator/start/why`, colliding with
+   *   the sibling libraries hosted under the other subpaths.
+   *
+   * Upstream PR #627 covers the "Ask AI" half; check whether it also reaches
+   * the sitemap before dropping any of these hunks.
    *
    * @see https://github.com/wevm/vocs/pull/627
    */

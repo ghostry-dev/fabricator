@@ -1,5 +1,5 @@
 diff --git a/dist/internal/vite-plugins.js b/dist/internal/vite-plugins.js
-index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..ae851e1bd9dbf64685e0f38395eee67ae4ed2b15 100644
+index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..9c01458e4ea9c85eb6a6cd59d1211b442e671af6 100644
 --- a/dist/internal/vite-plugins.js
 +++ b/dist/internal/vite-plugins.js
 @@ -198,16 +198,26 @@ export function llms(config) {
@@ -33,6 +33,62 @@ index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..ae851e1bd9dbf64685e0f38395eee67a
                      const result = content.results.find((r) => r.path.replace(/\/$/, '') === pagePath.replace(/\/index$/, ''));
                      if (result) {
                          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+@@ -337,6 +347,15 @@ export function mdx(config) {
+  */
+ export function sitemap(config) {
+     const { baseUrl } = config;
++    // `baseUrl` is the origin alone — `Head.tsx` applies `basePath` itself when
++    // it builds canonical URLs. Do the same here, so the URLs advertised to
++    // crawlers are the ones the site actually serves.
++    const basePath = config.basePath && config.basePath !== '/'
++        ? `/${config.basePath.replace(/^\/+|\/+$/g, '')}`
++        : '';
++    const stripBasePath = (url) => basePath && (url === basePath || url.startsWith(`${basePath}/`))
++        ? url.slice(basePath.length) || '/'
++        : url;
+     let built = false;
+     let viteConfig;
+     function getSiteUrl() {
+@@ -347,7 +366,7 @@ export function sitemap(config) {
+             'User-agent: *',
+             'Allow: /',
+             '',
+-            `Sitemap: ${siteUrl.replace(/\/$/, '')}/sitemap.xml`,
++            `Sitemap: ${siteUrl.replace(/\/$/, '')}${basePath}/sitemap.xml`,
+             '',
+         ].join('\n');
+     }
+@@ -386,7 +405,7 @@ export function sitemap(config) {
+                     .replace(/\/$/, '') || '/';
+                 if (!resolveSitemapInclude(config, pagePath, filePath))
+                     return;
+-                const loc = `${siteUrl.replace(/\/$/, '')}${pagePath}`;
++                const loc = `${siteUrl.replace(/\/$/, '')}${basePath}${pagePath}`;
+                 const gitDate = Git.getLastModified(page);
+                 const lastmod = gitDate
+                     ? gitDate.split('T')[0]
+@@ -425,7 +444,11 @@ export function sitemap(config) {
+         configureServer(server) {
+             server.middlewares.use(async (req, res, next) => {
+                 const siteUrl = getSiteUrl();
+-                if (req.url === '/robots.txt') {
++                // The build writes both files to `{outDir}/public`, so the
++                // deployed site serves them under `basePath`. Strip that prefix
++                // here so dev and production answer at the same URL.
++                const url = req.url ? stripBasePath(req.url) : req.url;
++                if (url === '/robots.txt') {
+                     if (!siteUrl || config.sitemap === false) {
+                         res.statusCode = 404;
+                         res.end('robots.txt not available: baseUrl is not configured');
+@@ -435,7 +458,7 @@ export function sitemap(config) {
+                     res.end(buildRobotsTxt(siteUrl));
+                     return;
+                 }
+-                if (req.url === '/sitemap.xml') {
++                if (url === '/sitemap.xml') {
+                     const content = await buildSitemapContent();
+                     if (!content) {
+                         res.statusCode = 404;
 diff --git a/dist/react/internal/AskAi.js b/dist/react/internal/AskAi.js
 index 6150cb4c5efe875f37cd00dcda791bdc93e4b0d9..4a2a0b66034e2cf6d4fb7f489bc27e54fe57e498 100644
 --- a/dist/react/internal/AskAi.js
