@@ -197,15 +197,9 @@ jobs:
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-  ##
-  # Held back until this package exists on npm (so a trusted publisher can
-  # be configured) and on JSR (created, with the repository linked), at
-  # which point the condition in the comment replaces `false` — see
-  # `publish.yml`'s note on `NODE_AUTH_TOKEN`.
-  #
   publish-fabricator-extension-faker-v10:
     name: Publish (fabricator-extension-faker-v10)
-    if: false # ${{ needs.check-release-fabricator-extension-faker-v10.outputs.exists == 'false' }}
+    if: ${{ needs.check-release-fabricator-extension-faker-v10.outputs.exists == 'false' }}
     uses: ./.github/workflows/publish.yml
     needs:
       - build

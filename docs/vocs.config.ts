@@ -81,8 +81,7 @@ export default defineConfig({
    * (`/fabricator/fabricator/...`).
    */
   banner: {
-    content:
-      "fabricator is v0 and will make breaking changes, and the Faker extension isn't published yet.",
+    content: "fabricator is v0 and will make breaking changes.",
     variant: "warning",
     dismissable: false,
   },

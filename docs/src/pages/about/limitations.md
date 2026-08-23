@@ -1,9 +1,5 @@
 # Limitations
 
-## `@ghostry/fabricator-extension-faker-v10` isn't published yet
-
-The faker extension is fully implemented and packaged, but hasn't shipped a first release, so `bun add` for it does not resolve today. See [Installation](/start/installation).
-
 ## No validation
 
 There's no validation of fabricated data against a schema, and no way to opt out of drawing invalid-shaped data, because none is drawn in the first place. If you need runtime validation, convert to [TypeBox](/guides/typebox) and validate there.

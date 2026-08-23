@@ -14,6 +14,6 @@ The core library ([`@ghostry/fabricator`](https://www.npmjs.com/package/@ghostry
 
 The TypeBox v0 adapter ([`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0))
 
-### [`pkg/fabricator-extension-faker-v10`](pkg/fabricator/README.md)
+### [`pkg/fabricator-extension-faker-v10`](pkg/fabricator-extension-faker-v10/README.md)
 
 The extension for the FakerJS data-gen library ([`@ghostry/fabricator-extension-faker-v10`](https://www.npmjs.com/package/@ghostry/fabricator-extension-faker-v10))
