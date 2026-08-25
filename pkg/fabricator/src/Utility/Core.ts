@@ -13,6 +13,21 @@ export function never(_: never): never {
 }
 
 /**
+ * Does nothing, deliberately. For attaching a settled handler to a promise
+ * being abandoned, so it cannot surface as an unhandled rejection.
+ */
+export function noop(): void {}
+
+/**
+ * Whether a value is thenable — the structural test, not `instanceof Promise`,
+ * since an `async` function's return may be any conforming implementation.
+ */
+export function isThenable(value: unknown): value is PromiseLike<unknown> {
+  if (typeof value !== "object" || value === null) return false;
+  return typeof (value as PromiseLike<unknown>).then === "function";
+}
+
+/**
  * @see https://github.com/microsoft/TypeScript/issues/17002
  */
 export function isArray(

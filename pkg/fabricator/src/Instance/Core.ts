@@ -12,9 +12,9 @@ import {
 import type { RandomSource, Seed } from "../Random/Types";
 import { registry } from "../Schema/Registry";
 import { Layer } from "../Types";
-import { inline } from "../Utility/Core";
+import { inline, isThenable, noop } from "../Utility/Core";
 import type { PlainObject } from "../Utility/Types";
-import type { Config, Context, Frame, Instance, Overlay, Stack } from "./Types";
+import type { Config, Context, Instance, Overlay, Stack } from "./Types";
 
 /**
  * `combinatorial`'s default limit — `2**10`, so it admits ten independent
@@ -140,32 +140,6 @@ export function overlay<$Registry extends PlainObject>(
 }
 
 /**
- * Builds a `Stack`: closes over a private `Frame[]`, pushing on `enter` and
- * popping in a `finally` — correct even around a `throw` from `block`. One per
- * root `initialize()`, threaded — never re-created — through every
- * `fork`/`wrap` descended from it, so it stays per-lineage rather than
- * module-level: two unrelated `initialize()` calls each get their own stack and
- * can never perturb each other, while every instance sharing one stack (a fork
- * included, no matter where in the lineage it was created) resolves against the
- * same active frame.
- */
-export function toStack(): Stack {
-  const frames: Frame[] = [];
-
-  return {
-    current: () => frames[frames.length - 1],
-    enter: (frame, block) => {
-      frames.push(frame);
-      try {
-        return block();
-      } finally {
-        frames.pop();
-      }
-    },
-  };
-}
-
-/**
  * The shared body `initialize` and `fork` both reduce to: build a
  * `RandomSource` from an already-resolved `Config`, then everything an
  * `Instance` exposes off of it. Returns the `RandomSource` alongside the
@@ -216,9 +190,28 @@ export function instantiate<$Registry extends PlainObject>(
     const scopedConfig = overlay<$WrapRegistry>(base, wrapOverlay);
     const scoped = instantiate<$WrapRegistry>(scopedConfig, stack);
 
-    return stack.enter({ config: scopedConfig, source: scoped.source }, () =>
-      block(scoped.instance),
+    const result = stack.enter(
+      { config: scopedConfig, source: scoped.source },
+      () => block(scoped.instance),
     );
+
+    /**
+     * A synchronous carrier has already popped the frame by now — `enter`
+     * returns `block()` without awaiting, so an `async` block's frame unwound
+     * at its first `await`. Anything built past that point would resolve
+     * against the base instance with no signal, so refuse the call instead.
+     *
+     * Thrown synchronously, so it surfaces at the `wrap` call site rather than
+     * inside a promise the caller may never await — and `result` is neutered
+     * first, since abandoning an in-flight promise would otherwise surface as
+     * an unhandled rejection on top of the error actually worth reading.
+     */
+    if (!stack.asynchronous && isThenable(result)) {
+      result.then(noop, noop);
+      throw new FabricatorError.SynchronousStackError();
+    }
+
+    return result;
   }
 
   /**

@@ -1,6 +1,7 @@
 import type { Limits } from "./Enumeration/Types";
-import { instantiate, overlay, toStack } from "./Instance/Core";
-import type { Instance } from "./Instance/Types";
+import { toStack } from "#stack";
+import { instantiate, overlay } from "./Instance/Core";
+import type { Instance, Stack } from "./Instance/Types";
 import type { Algorithm, Attribution, Seed } from "./Random/Types";
 import { registry } from "./Schema/Registry";
 import type { PlainObject } from "./Utility/Types";
@@ -73,9 +74,26 @@ export function initialize<
      * `"seeded"` is what makes `seed` alone the reproducibility unit.
      */
     clock?: Date | "seeded";
+
+    /**
+     * The ambient carrier backing `wrap` for this lineage — override only to
+     * force a specific one.
+     *
+     * Left unset (the norm), the `#stack` package import picks it: every
+     * runtime with `node:async_hooks` — Node, Bun, Deno — gets the
+     * `AsyncLocalStorage` carrier, whose frames survive `await` and isolate
+     * concurrent `wrap`s; anywhere else falls back to a synchronous LIFO, on
+     * which `wrap` rejects an async block rather than silently resolving a
+     * later build against this instance. Supplying one is how a test drives the
+     * carrier it did not get by condition.
+     */
+    stack?: Stack;
   }>,
 ): Instance<$Registry> {
-  return instantiate(overlay<$Registry>({}, config ?? {}), toStack()).instance;
+  return instantiate(
+    overlay<$Registry>({}, config ?? {}),
+    config?.stack ?? toStack(),
+  ).instance;
 }
 
 export { Omitted } from "./Types";
@@ -192,4 +210,4 @@ export type { RootKind } from "./Random/Types";
  * `fork`/`wrap` accept; `Context` is `instance.context`'s own type, so a caller
  * writing a helper that reads it can name the parameter.
  */
-export type { Config, Context, Overlay } from "./Instance/Types";
+export type { Config, Context, Overlay, Stack } from "./Instance/Types";

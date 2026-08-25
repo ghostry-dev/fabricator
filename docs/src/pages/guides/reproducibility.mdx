@@ -160,20 +160,38 @@ wrap({ seed: layer("a") }, () => {
 
 A bare (non-layered) `seed` at any nesting depth still replaces outright, discarding every enclosing layer.
 
-### The synchronous boundary
+### Async blocks
 
-`wrap` only affects _synchronous_ code. A build reached after an `await` inside the block sees the instance's own configuration again, not the wrap's — silently, with no error:
+`block` may be `async`, and the ambient frame survives `await`:
 
 ```ts
 await wrap({ seed: layer("a") }, async (scope) => {
   new Fabricator(T.number).fabricate(); // wrapped
   await something();
-  new Fabricator(T.number).fabricate(); // NOT wrapped — the ambient frame is gone
-  new scope.Fabricator(T.number).fabricate(); // still wrapped — scope isn't ambient, it's just a value
+  new Fabricator(T.number).fabricate(); // still wrapped
+  new scope.Fabricator(T.number).fabricate(); // wrapped, explicitly
 });
 ```
 
-`scope` is the answer for any work that needs the wrap's configuration on the far side of an `await`: it's an ordinary `Instance`, so it works exactly like one, with no time limit.
+Two `wrap`s running concurrently stay isolated from each other too — neither sees the other's seed, and neither leaks past its own block.
+
+This works because the ambient frame is carried by [`AsyncLocalStorage`](https://nodejs.org/api/async_context.html) wherever `node:async_hooks` exists, which covers Node, Bun, and Deno. Nothing needs configuring; the right carrier is chosen when the package is imported.
+
+#### Runtime support
+
+A runtime without `node:async_hooks` — a browser bundle, most likely — falls back to a synchronous carrier whose frame _cannot_ outlive the block's first `await`. Rather than silently resolving a later build against the base instance, `wrap` rejects the block outright:
+
+```ts
+wrap({ seed: layer("a") }, async () => {}); // throws SynchronousStackError
+```
+
+It throws on any `async` block, including one that only ever uses `scope` — `wrap` has no way to know whether something later will read the ambient frame. `scope` is still the escape hatch there: it's an ordinary `Instance`, unaffected by whether a frame is on the stack, so a synchronous block that hands `scope` to async work keeps the wrap's configuration with no time limit.
+
+If you need async blocks on such a runtime, supply a carrier yourself:
+
+```ts
+initialize({ seed: "base", stack: myAsyncCarrier });
+```
 
 ### `context`
 

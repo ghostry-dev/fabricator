@@ -80,3 +80,15 @@ export type {
  * strings instead of real stack frames.
  */
 export { directoryOf, normalizeLocation, relativize } from "./Random/CallSite";
+
+/**
+ * The synchronous ambient carrier. `#stack` (`package.json`) selects it only
+ * where there is no `node:async_hooks` — in practice a browser bundle — so on
+ * Bun, Node, and Deno alike the condition always resolves to the
+ * `AsyncLocalStorage` one instead. Exported for this package's own tests:
+ * without it, neither the synchronous carrier's behavior nor `wrap`'s rejection
+ * of an async block under it is reachable from the suite. It is also a
+ * serviceable argument for `initialize({ stack })` for anyone who wants the old
+ * semantics back deliberately.
+ */
+export { toStack as toSynchronousStack } from "./Instance/Stack/Sync";

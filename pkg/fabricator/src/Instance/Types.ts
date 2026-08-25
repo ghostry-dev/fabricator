@@ -87,6 +87,17 @@ export type Frame = {
  * regardless of where in the lineage that instance was itself created.
  */
 export type Stack = {
+  /**
+   * Whether a frame survives an `await` inside the block it was entered for.
+   *
+   * `false` means the carrier is a plain LIFO whose frame unwinds at the
+   * block's first suspension point — correct for synchronous use, and the
+   * reason `wrap` (`Instance/Core.ts`) rejects an async block outright rather
+   * than letting a build after the `await` silently resolve against the base
+   * instance. See `Instance/Stack/Sync.ts` and `Instance/Stack/Async.ts`.
+   */
+  readonly asynchronous: boolean;
+
   current(): Frame | undefined;
 
   /**

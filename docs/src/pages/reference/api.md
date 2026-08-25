@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `RootKind`, `Omitted`, `FabricatorError`, `Stream`, `Attribution`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`), or is the contract an external adapter package implements against (`drive`, `Adapter`, `Adapting`, `Adaptations`, `AdaptationsOf`, `Recurse`, `Adaptation`). See [Mental model](/start/mental-model) for why the split exists.
+The package's `.` entry point — small on purpose: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `RootKind`, `Omitted`, `FabricatorError`, `Stream`, `Attribution`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is the contract an external adapter package implements against (`drive`, `Adapter`, `Adapting`, `Adaptations`, `AdaptationsOf`, `Recurse`, `Adaptation`). See [Mental model](/start/mental-model) for why the split exists.
 
 ## `initialize(config?)`
 
@@ -12,6 +12,7 @@ function initialize(config?: {
   attribution?: Attribution;
   limits?: { combinatorial: number };
   clock?: Date | "seeded";
+  stack?: Stack;
 }): Instance;
 ```
 
@@ -24,6 +25,8 @@ Mints one isolated instance. `types` defaults to the built-in `registry`; `seed`
 - `{ kind: "none" }` attributes nothing: every construction, anywhere in the instance, draws its root from one shared counter.
 
 `new Fabricator(schema, { seed })` overrides that per construction, forking entirely away from both the resolved file and the instance's own seed — so that one build reproduces regardless of where it's written or how the instance was seeded, as long as the instance's `clock` also matches (a per-construction seed keeps whichever `clock` the instance it's built from already has — see [What "now" means](/guides/reproducibility#what-now-means)). `new Fabricator(schema, { seed: layer(identity) })` forks the same way but _composes_ `identity` onto the instance's own seed instead of replacing it, so the construction still varies when the instance is reseeded — see [`layer(seed)`](#layerseed) below.
+
+`stack` overrides the ambient carrier backing [`wrap`](#instancewrapoverlay-block), and is almost never worth setting. Left alone, the right one is chosen when the package is imported: every runtime with `node:async_hooks` gets an `AsyncLocalStorage` carrier whose frames survive `await`, and anything else gets a synchronous one. Supply your own — anything satisfying `Stack` — to bring async-capable `wrap` to a runtime that would otherwise fall back, or to force the synchronous carrier deliberately.
 
 `new Fabricator(schema, options)` also accepts every slot of a captured `Trace` — `clock`, `root`, `file`, `path`, `kind`, `ordinal` — so `new Fabricator(schema, built.trace)` replays that node. `root` given means this is a replay (`file` and `ordinal` taken verbatim, including `undefined`). `file` given without `root` pins that file and draws the next ordinal for it. `kind` must match the schema or the constructor throws. A nested node's `path` is the base `make` extends for descendants, so replaying a nested `object` reproduces its subtree. See [Reproducibility](/guides/reproducibility) for the full trade-offs, including the cases that still need the parent (`.refine()` compute fields, `recursive.self`, `.override()` `[Fixed]` fields).
 
@@ -71,7 +74,7 @@ function wrap<$Return>(
 ): $Return;
 ```
 
-`fork(overlay)`, made ambient for the synchronous extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, or any other instance derived from the same root `initialize()` call — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use and for anything that needs to survive past `block`'s first `await`:
+`fork(overlay)`, made ambient for the extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, or any other instance derived from the same root `initialize()` call — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use:
 
 ```ts
 const { T, Fabricator, wrap } = initialize({ seed: "base" });
@@ -84,7 +87,18 @@ wrap({ seed: layer("a") }, (scope) => {
 
 A nested `wrap` lays its overlay over whichever `wrap` is _currently_ active, not over the instance it was called on — so `wrap({ seed: layer(...) })` accumulates with nesting depth, while a bare `seed` at any depth still replaces outright.
 
-`wrap` only affects synchronous code: a build reached after an `await` inside `block` sees the instance's own configuration again, silently — `scope` is the answer for anything that needs the wrap's configuration afterward. See [Making a fork ambient: wrap](/guides/reproducibility#making-a-fork-ambient-wrap) for the full walkthrough, including why.
+`block` may be `async`. On any runtime with `node:async_hooks` — Node, Bun, Deno — the ambient frame is carried by `AsyncLocalStorage`, so it survives `await`, and two concurrent `wrap`s never see each other's configuration:
+
+```ts
+await wrap({ seed: layer("a") }, async () => {
+  await loadFixtures();
+  new Fabricator(T.number).fabricate(); // still the wrap's configuration
+});
+```
+
+Anywhere else — a browser bundle, or an `initialize({ stack })` given a synchronous carrier — a frame cannot outlive the block's first `await`. Rather than let a later build resolve against the base instance unannounced, `wrap` throws `SynchronousStackError` as soon as it sees `block` return a promise. The check is on the block, not on what it does: it fires even if the block only ever touches `scope`, because whether something later reads the ambient frame is not knowable from `wrap`. Keep the block synchronous, or hand `initialize({ stack })` an async-capable carrier.
+
+See [Making a fork ambient: wrap](/guides/reproducibility#making-a-fork-ambient-wrap) for the full walkthrough.
 
 ## `Instance.context`
 

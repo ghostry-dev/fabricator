@@ -1,4 +1,5 @@
-import { initialize, layer } from "@ghostry/fabricator";
+import { FabricatorError, initialize, layer } from "@ghostry/fabricator";
+import { toSynchronousStack } from "@ghostry/fabricator/internal";
 import { expect, test } from "bun:test";
 
 /**
@@ -271,16 +272,14 @@ test("the frame unwinds correctly when the wrap block throws", () => {
 });
 
 /**
- * `wrap`'s own body is a plain (non-`async`) function: calling an `async` block
- * executes it synchronously up to its first `await`, then returns a pending
- * `Promise` immediately — so `stack.enter`'s `finally` pops the frame right
- * then, before the continuation after `await` ever runs. A build reached after
- * that `await` therefore sees this instance's own configuration again, not the
- * wrap's; `scope.Fabricator` is unaffected either way, since it always resolves
- * against its own closed-over source regardless of whether the frame is still
- * on the stack.
+ * The ambient frame survives `await`. On every runtime with `node:async_hooks`
+ * — Node, Bun, Deno — `#stack` resolves to the `AsyncLocalStorage` carrier
+ * (`Instance/Stack/Async.ts`), so a build reached after an `await` still sees
+ * the wrap's configuration rather than reverting to the instance's own. All
+ * three reads are therefore `undefined`: the wrap set `{ kind: "none" }`, which
+ * suppresses file attribution, and none of them escape it.
  */
-test("a build reached after an await inside the wrap block is unwrapped; scope.Fabricator stays wrapped", async () => {
+test("the ambient frame survives an await inside the wrap block", async () => {
   const instance = initialize({ seed: "wrap-async" });
 
   let duringSyncFile: string | undefined;
@@ -295,8 +294,106 @@ test("a build reached after an await inside the wrap block is unwrapped; scope.F
   });
 
   expect(duringSyncFile).toBeUndefined();
-  expect(afterAwaitFile).toBe("Wrap.test.ts");
+  expect(afterAwaitFile).toBeUndefined();
   expect(viaScopeFile).toBeUndefined();
+});
+
+/**
+ * The async twin of this file's first test, and the invariant most at risk from
+ * a carrier swap: ambient and explicit construction must resolve against one
+ * `RandomSource` — hence one set of construction-ordinal counters — _across_ an
+ * `await`, not merely before the first one. A carrier that re-derived a source
+ * on resumption, or dropped the frame and let the base instance answer, would
+ * leave `interleaved` diverging from `allViaScope` here while the synchronous
+ * test above still passed.
+ */
+test("ambient and scope.Fabricator share one source across an await", async () => {
+  const instance = initialize({ seed: "wrap-shared-source-async" });
+
+  const interleaved: number[] = [];
+  await instance.wrap({ seed: layer("x") }, async (scope) => {
+    interleaved.push(new instance.Fabricator(instance.T.number).fabricate());
+    await Promise.resolve();
+    interleaved.push(new scope.Fabricator(scope.T.number).fabricate());
+    await Promise.resolve();
+    interleaved.push(new instance.Fabricator(instance.T.number).fabricate());
+  });
+
+  const allViaScope: number[] = [];
+  await instance.wrap({ seed: layer("x") }, async (scope) => {
+    allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
+    allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
+    allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
+  });
+
+  expect(interleaved).toEqual(allViaScope);
+});
+
+/**
+ * Two overlapping `wrap`s on one lineage each keep their own frame. A LIFO
+ * array could never satisfy this even if it awaited: interleaved pushes and
+ * pops mean `current()` returns whichever frame was stacked last globally, so
+ * both blocks would read the other's seed (or none at all). Staggered
+ * deliberately, so the two blocks are genuinely in flight together.
+ */
+test("concurrent wraps on one lineage stay isolated", async () => {
+  const instance = initialize({ seed: "wrap-concurrent" });
+
+  const seedDuring = async (
+    tag: string,
+    delay: number,
+  ): Promise<ReadonlyArray<string>> =>
+    instance.wrap({ seed: layer(tag) }, async () => {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return instance.context.seed;
+    });
+
+  const [a, b] = await Promise.all([seedDuring("a", 10), seedDuring("b", 1)]);
+
+  expect(a).toEqual([...instance.seed, "a"]);
+  expect(b).toEqual([...instance.seed, "b"]);
+  expect(instance.context.seed).toEqual(instance.seed);
+});
+
+/**
+ * The synchronous carrier cannot carry a frame across `await`, so `wrap`
+ * refuses an async block outright rather than letting a later build resolve
+ * against the base instance unannounced. Reachable in the wild only where
+ * `#stack` resolved to `default` (no `node:async_hooks`); reached here by
+ * supplying the carrier explicitly, which is what that config option is for.
+ *
+ * It throws synchronously — hence `expect(() => …)` and no `await` — so the
+ * error lands at the `wrap` call site rather than inside a promise a caller
+ * might never await.
+ */
+test("wrap rejects an async block under a synchronous stack", () => {
+  const instance = initialize({
+    seed: "wrap-sync-stack",
+    stack: toSynchronousStack(),
+  });
+
+  expect(() => instance.wrap({ seed: layer("x") }, async () => {})).toThrow(
+    FabricatorError.SynchronousStackError,
+  );
+});
+
+/**
+ * The same carrier, with a synchronous block, is entirely unaffected — the
+ * guard keys on the block's return, not on the carrier alone.
+ */
+test("a synchronous stack still carries a synchronous wrap", () => {
+  const instance = initialize({
+    seed: "wrap-sync-stack-ok",
+    stack: toSynchronousStack(),
+  });
+
+  let seedDuring: ReadonlyArray<string> | undefined;
+  instance.wrap({ seed: layer("x") }, () => {
+    seedDuring = instance.context.seed;
+  });
+
+  expect(seedDuring).toEqual([...instance.seed, "x"]);
+  expect(instance.context.seed).toEqual(instance.seed);
 });
 
 test("a wrap on one lineage has no effect on an unrelated initialize() instance", () => {
