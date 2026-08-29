@@ -57,8 +57,8 @@ export namespace FabricatorError {
       super();
       this.name = "InvalidCombinatorialLimitError";
       this.message =
-        `initialize({ limits: { combinatorial } }) requires a positive safe ` +
-        `integer; received ${String(limit)}.`;
+        `initialize({ limits: { combinatorial } }) requires a positive safe `
+        + `integer; received ${String(limit)}.`;
     }
   }
 
@@ -80,8 +80,8 @@ export namespace FabricatorError {
       super();
       this.name = "InvalidAttributionRootError";
       this.message =
-        'initialize({ attribution: { kind: "rooted", root } }) requires an ' +
-        `absolute path or a "file://" URL; received "${root}".`;
+        'initialize({ attribution: { kind: "rooted", root } }) requires an '
+        + `absolute path or a "file://" URL; received "${root}".`;
     }
   }
 
@@ -100,10 +100,10 @@ export namespace FabricatorError {
       super();
       this.name = "DetachedSelfError";
       this.message =
-        "`self` was used outside any active `T.recursive` while " +
-        `${phrase(during)} — it can only appear inside the body (or terminal) ` +
-        "passed to `T.recursive(...)`, and a `self` captured out of that " +
-        "callback cannot be reused elsewhere.";
+        "`self` was used outside any active `T.recursive` while "
+        + `${phrase(during)} — it can only appear inside the body (or terminal) `
+        + "passed to `T.recursive(...)`, and a `self` captured out of that "
+        + "callback cannot be reused elsewhere.";
     }
   }
 
@@ -128,10 +128,10 @@ export namespace FabricatorError {
       const where =
         path.length === 0 ? "the recursive body itself" : `"${path.join(".")}"`;
       this.message =
-        `T.recursive cannot derive a terminal: self at ${where} is not ` +
-        "behind a kind that can stop recursing. Wrap it in an array, " +
-        "record, choice, omittable, optional, nullable, nullish, or " +
-        "undefinable, or pass an explicit terminal.";
+        `T.recursive cannot derive a terminal: self at ${where} is not `
+        + "behind a kind that can stop recursing. Wrap it in an array, "
+        + "record, choice, omittable, optional, nullable, nullish, or "
+        + "undefinable, or pass an explicit terminal.";
     }
   }
 
@@ -157,8 +157,8 @@ export namespace FabricatorError {
       super();
       this.name = "UnknownKindError";
       this.message =
-        `Cannot dispatch a Schema of unknown kind "${kind}" while ` +
-        `${phrase(during)}.`;
+        `Cannot dispatch a Schema of unknown kind "${kind}" while `
+        + `${phrase(during)}.`;
     }
   }
 
@@ -200,9 +200,9 @@ export namespace FabricatorError {
       super();
       this.name = "PrototypePollutionError";
       this.message =
-        `Potential prototype pollution blocked for key: ${key}. An object ` +
-        "schema cannot define a field named `__proto__`, `constructor`, or " +
-        "`prototype`.";
+        `Potential prototype pollution blocked for key: ${key}. An object `
+        + "schema cannot define a field named `__proto__`, `constructor`, or "
+        + "`prototype`.";
     }
   }
 
@@ -216,9 +216,9 @@ export namespace FabricatorError {
       super();
       this.name = "DetachedComputeError";
       this.message =
-        "A `.refine()`-computed field can only be fabricated as part of its " +
-        "parent object, which supplies the already-fabricated fields its " +
-        "resolver reads.";
+        "A `.refine()`-computed field can only be fabricated as part of its "
+        + "parent object, which supplies the already-fabricated fields its "
+        + "resolver reads.";
     }
   }
 
@@ -241,8 +241,8 @@ export namespace FabricatorError {
       super();
       this.name = "ComputeResultMismatchError";
       this.message =
-        "A `.refine()`-computed field's resolver returned a value of type " +
-        `${typeof value} that does not match its "${kind}" source schema.`;
+        "A `.refine()`-computed field's resolver returned a value of type "
+        + `${typeof value} that does not match its "${kind}" source schema.`;
     }
   }
 
@@ -265,8 +265,8 @@ export namespace FabricatorError {
       super();
       this.name = "UnknownOverrideFieldError";
       this.message =
-        `Cannot override unknown field: "${field}". This object schema defines ` +
-        (available.length === 0
+        `Cannot override unknown field: "${field}". This object schema defines `
+        + (available.length === 0
           ? "no fields."
           : `${available.map((k) => `"${k}"`).join(", ")}.`);
     }
@@ -299,8 +299,8 @@ export namespace FabricatorError {
       super();
       this.name = "InvalidOverrideValueError";
       this.message =
-        `Cannot override field "${field}": a value of type ${typeof value} does ` +
-        `not match its "${kind}" schema.`;
+        `Cannot override field "${field}": a value of type ${typeof value} does `
+        + `not match its "${kind}" schema.`;
     }
   }
 
@@ -324,9 +324,9 @@ export namespace FabricatorError {
       super();
       this.name = "IllegalOmittedOverrideError";
       this.message =
-        `Cannot override field "${field}" with Omitted: a "${kind}" field is ` +
-        "neither omittable nor optional, so it has no absent outcome to " +
-        "select.";
+        `Cannot override field "${field}" with Omitted: a "${kind}" field is `
+        + "neither omittable nor optional, so it has no absent outcome to "
+        + "select.";
     }
   }
 
@@ -349,8 +349,8 @@ export namespace FabricatorError {
       super();
       this.name = "EnumerationIndexError";
       this.message =
-        `Enumeration index ${index} is out of range for an axis of width ` +
-        `${width}.`;
+        `Enumeration index ${index} is out of range for an axis of width `
+        + `${width}.`;
     }
   }
 
@@ -368,8 +368,8 @@ export namespace FabricatorError {
       super();
       this.name = "UnpinnableKindError";
       this.message =
-        `resolve() received a pin for kind "${kind}", which plan() never gives ` +
-        "one to.";
+        `resolve() received a pin for kind "${kind}", which plan() never gives `
+        + "one to.";
     }
   }
 
@@ -394,10 +394,10 @@ export namespace FabricatorError {
       super();
       this.name = "CombinatorialLimitExceededError";
       this.message =
-        `combinatorial(...) would enumerate ${width} instances which is over the ` +
-        `configured limit of ${limit}. Raise it with initialize({ limits: ` +
-        "{ combinatorial } }), or use coverage(...), which needs only as many " +
-        "instances as the widest single axis.";
+        `combinatorial(...) would enumerate ${width} instances which is over the `
+        + `configured limit of ${limit}. Raise it with initialize({ limits: `
+        + "{ combinatorial } }), or use coverage(...), which needs only as many "
+        + "instances as the widest single axis.";
     }
   }
 
@@ -416,9 +416,9 @@ export namespace FabricatorError {
       super();
       this.name = "UnrepresentableRecordKeyError";
       this.message =
-        `Cannot map a "record" schema keyed by "${kind}" to an external schema: ` +
-        "the target has no record with keys of that type. Use " +
-        ".adapt(adapter, ...) to supply one.";
+        `Cannot map a "record" schema keyed by "${kind}" to an external schema: `
+        + "the target has no record with keys of that type. Use "
+        + ".adapt(adapter, ...) to supply one.";
     }
   }
 
@@ -454,8 +454,8 @@ export namespace FabricatorError {
       super();
       this.name = "EmptyRangeError";
       this.message =
-        `${label} produces an empty range (min=${describeBound(min)}, ` +
-        `max=${describeBound(max)}).`;
+        `${label} produces an empty range (min=${describeBound(min)}, `
+        + `max=${describeBound(max)}).`;
     }
   }
 
@@ -492,9 +492,9 @@ export namespace FabricatorError {
       super();
       this.name = "InvalidDistributionBoundError";
       this.message =
-        `The ${distribution} distribution requires min > 0 (received ` +
-        `min=${min}, max=${max}); its density is proportional to 1/x and ` +
-        "undefined at or below zero.";
+        `The ${distribution} distribution requires min > 0 (received `
+        + `min=${min}, max=${max}); its density is proportional to 1/x and `
+        + "undefined at or below zero.";
     }
   }
 
@@ -538,9 +538,9 @@ export namespace FabricatorError {
           : `"${entry.name}"`;
 
       this.message =
-        `${label} requires every weight to be a finite number ≥ 0; ${where} ` +
-        `has weight ${weight}. Zero disables an outcome; a negative weight, ` +
-        "NaN, or Infinity is invalid.";
+        `${label} requires every weight to be a finite number ≥ 0; ${where} `
+        + `has weight ${weight}. Zero disables an outcome; a negative weight, `
+        + "NaN, or Infinity is invalid.";
     }
   }
 
@@ -565,8 +565,8 @@ export namespace FabricatorError {
       super();
       this.name = "NoDrawableOutcomesError";
       this.message =
-        `${label} leaves no drawable ${noun}. Zeroing an outcome disables ` +
-        "it, so at least one must keep a positive weight.";
+        `${label} leaves no drawable ${noun}. Zeroing an outcome disables `
+        + "it, so at least one must keep a positive weight.";
     }
   }
 
@@ -590,10 +590,10 @@ export namespace FabricatorError {
       super();
       this.name = "TraceKindMismatchError";
       this.message =
-        `Cannot build from a trace for kind "${given}": this schema's ` +
-        `kind is "${expected}". A trace reproduces the node it was ` +
-        "taken from, so its kind must match the schema it is replayed " +
-        "against.";
+        `Cannot build from a trace for kind "${given}": this schema's `
+        + `kind is "${expected}". A trace reproduces the node it was `
+        + "taken from, so its kind must match the schema it is replayed "
+        + "against.";
     }
   }
 
@@ -618,12 +618,12 @@ export namespace FabricatorError {
       super();
       this.name = "SynchronousStackError";
       this.message =
-        "`wrap` received an async block, but this instance's ambient stack " +
-        "cannot carry a frame across `await` — a build after the first " +
-        "`await` would silently resolve against the base instance. This " +
-        "runtime has no `node:async_hooks`, so `#stack` resolved to the " +
-        "synchronous carrier; either keep the block synchronous, or pass " +
-        "an async-capable carrier as `initialize({ stack })`.";
+        "`wrap` received an async block, but this instance's ambient stack "
+        + "cannot carry a frame across `await` — a build after the first "
+        + "`await` would silently resolve against the base instance. This "
+        + "runtime has no `node:async_hooks`, so `#stack` resolved to the "
+        + "synchronous carrier; either keep the block synchronous, or pass "
+        + "an async-capable carrier as `initialize({ stack })`.";
     }
   }
 }

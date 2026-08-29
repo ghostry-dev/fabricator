@@ -82,6 +82,16 @@ export type {
 export { directoryOf, normalizeLocation, relativize } from "./Random/CallSite";
 
 /**
+ * Resolves the file that triggered the current call. Exported here for a
+ * library that wraps fabricator (e.g. `@ghostry/extern`'s testing scope) and
+ * wants a construction attributed to _its own_ caller rather than to itself,
+ * which is what the `skip` option is for. See `Random/CallSite.ts`'s doc
+ * comment for the full contract, including why `skip` is a list of roots that
+ * composes onto this library's own root rather than replacing it.
+ */
+export { resolveCallerFile } from "./Random/CallSite";
+
+/**
  * The synchronous ambient carrier. `#stack` (`package.json`) selects it only
  * where there is no `node:async_hooks` — in practice a browser bundle — so on
  * Bun, Node, and Deno alike the condition always resolves to the
