@@ -20,6 +20,22 @@
  * type.
  */
 export type { Fabrication, NaiveFabricator } from "./Fabricator/Types";
+
+/**
+ * Schema -> the Fabricator type `construct()` produces for it, dispatching per
+ * kind. `Constructor` already names this as its own construct signature's
+ * return, but only _inside_ a generic call: a wrapping library that hands a
+ * built Fabricator to its own callers has to name the type without making that
+ * call, and cannot infer it back out of `Constructor` because the signature is
+ * generic (a `Constructor extends { new (schema: $S, ...): infer $R }` match
+ * instantiates at the constraint, not at `$S`).
+ *
+ * `@ghostry/extern-extension-fabricator-v0` is the case in point: it hands the
+ * built Fabricator to a user callback as the shaping handle, so the handle's
+ * type is exactly this. Without it, an integration is pushed into hand-writing
+ * a per-kind stand-in — a second copy of this mapping, susceptible to drift.
+ */
+export type { AsFabricator } from "./Fabricator/Types";
 export { Children, Kind, Meta, Produces, type Buildable } from "./Types";
 export { isPlainObject } from "./Utility/Core";
 
