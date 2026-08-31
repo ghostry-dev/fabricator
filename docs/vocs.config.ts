@@ -119,6 +119,7 @@ export default defineConfig({
       text: "Start here",
       items: [
         { text: "Why Fabricator?", link: "/start/why" },
+        { text: "Comparison", link: "/start/comparison" },
         { text: "Installation", link: "/start/installation" },
         { text: "Quick start", link: "/start/quick-start" },
         { text: "Mental model", link: "/start/mental-model" },

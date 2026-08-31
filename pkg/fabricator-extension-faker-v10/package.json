@@ -5,8 +5,13 @@
   "description": "@faker-js/faker integration for @ghostry/fabricator — faker's data generators, seeded and reproducible through the fabricator instance that calls them.",
   "keywords": [
     "factory",
+    "reproducible",
+    "fixtures",
+    "testing",
+    "mock",
+    "schema",
     "faker",
-    "extension"
+    "typescript"
   ],
   "author": {
     "name": "Patrick Rebsch"
@@ -16,9 +21,13 @@
     "url": "git+https://github.com/ghostry-dev/fabricator",
     "directory": "pkg/fabricator-extension-faker-v10"
   },
-  "homepage": "https://github.com/ghostry-dev/fabricator",
+  "homepage": "https://docs.ghostry.dev/fabricator/",
   "bugs": "https://github.com/ghostry-dev/fabricator/issues",
   "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "types": "./dist/types/index.d.ts",
   "module": "./dist/esm/index.js",
   "exports": {

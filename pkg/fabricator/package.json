@@ -4,7 +4,13 @@
   "license": "MIT",
   "description": "Fabricate typed data from composable schemas.",
   "keywords": [
-    "factory"
+    "factory",
+    "reproducible",
+    "fixtures",
+    "testing",
+    "mock",
+    "schema",
+    "typescript"
   ],
   "author": {
     "name": "Patrick Rebsch"
@@ -14,9 +20,13 @@
     "url": "git+https://github.com/ghostry-dev/fabricator",
     "directory": "pkg/fabricator"
   },
-  "homepage": "https://github.com/ghostry-dev/fabricator",
+  "homepage": "https://docs.ghostry.dev/fabricator/",
   "bugs": "https://github.com/ghostry-dev/fabricator/issues",
   "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "types": "./dist/types/index.d.ts",
   "module": "./dist/esm/index.js",
   "imports": {

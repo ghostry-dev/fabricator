@@ -195,41 +195,8 @@ T.number.whereby({
 
 Normal, skew, triangular, logarithmic, and weighted blends of those are available — see [Distributions](/guides/distributions).
 
-## Compared to other libraries
-
-The libraries nearest to this one fall into three groups. The differences come down to where the shape is defined, and what the generator is willing to promise about repeating itself.
-
-### Schema-derived mocks
-
-[`@anatine/zod-mock`](https://www.npmjs.com/package/@anatine/zod-mock) generates data from a [Zod](https://zod.dev) schema you already have. If an application already validates with Zod, that is a genuine advantage: one definition serves both validation and test data, at no extra authoring cost.
-
-The trade-off is that generation is inferred from a schema written for a different purpose. Values are chosen largely by matching the _field's name_ against faker's function names — a field called `email` gets an email because of what it is called, not because the schema says so — and the package's own README lists ten Zod types it does not handle, `ZodTuple` and `ZodUnion` among them.
-
-fabricator runs that relationship in the opposite direction. The schema exists to describe generation, so every primitive is generation-complete and the bounds are stated rather than guessed; validation is reached by adapting _outward_, to [TypeBox](/guides/typebox). Reach for zod-mock when Zod schemas already exist and free test data from them is the goal. Reach for this when generation is the schema's actual job.
-
-### Factory libraries
-
-[`@travelperksl/fabricator`](https://www.npmjs.com/package/@travelperksl/fabricator) — no relation, despite the name — is a JavaScript take on Ruby's [Fabrication](https://www.fabricationgem.org/). Each field gets a generator function you write; the library composes definitions with `.extend()`, keeps `sequence()` counters, and produces batches with `.times()`. Little machinery, complete control, no schema layer at all. That description covers most factory libraries in this space.
-
-Two things follow from having no schema. Values come from whatever function you call, so the library has nothing to say about a field's bounds or distribution, and there is no seed to replay a run from. And the result type is a target you supply rather than one derived from a definition: `Fabricator<User>({ id: () => 1 })` type-checks under `strict`, and its result is typed `User`, while the object actually produced is `{ id: 1 }`.
-
-The pattern's deeper cost — variations defined by what they override, and the constants every test then quietly inherits — is [The trouble with factories](#the-trouble-with-factories), above.
-
-Reach for a factory library when the shapes are few and the generators are things you would rather write by hand than describe.
-
-### Property-based testing
-
-[`fast-check`](https://www.npmjs.com/package/fast-check) answers a different question. It generates inputs in order to _falsify a property_, and when it finds a counterexample it shrinks it to the smallest input that still fails. Shrinking is the whole point, and fabricator has no equivalent.
-
-fabricator's question is what one plausible instance of a shape looks like, and how to get that instance back. The two are complements, not substitutes: if the goal is "this invariant holds for all inputs," reach for fast-check.
-
-## When not to reach for this
-
-- **This is not a validation library.** Nothing here checks a value against a schema. Fabricated data is well-shaped by construction, and validation is a different feature. You can adapt a Fabricator Schema to a validation library. There is an official adapter for [TypeBox (v0)](/guides/typebox) (and eventually others).
-- **You need uniqueness.** There's no facility that guarantees production of distinct values — not across array elements, nor `T.record` keys. Generate a wider pool and dedupe, or use `T.number.integer.sequence`.
-
-[Limitations](/about/limitations) has the full, honest list.
-
 ## Next
 
-[Installation](/start/installation), then the [quick start](/start/quick-start) for the whole loop in one page, and [Mental model](/start/mental-model) for why Registry, Schema, and Fabricator are three separate things.
+The next page covers [comparison with other libraries](/start/comparison) in this space.
+
+If you want to skip that, see [installation](/start/installation), then the [quick start](/start/quick-start) for the whole loop in one page, and [Mental model](/start/mental-model) for why Registry, Schema, and Fabricator are three separate things.
