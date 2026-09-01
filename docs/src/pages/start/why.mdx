@@ -89,7 +89,7 @@ There's no second definition to keep in sync and no type annotation to write. Ch
 
 ### Every value can be replayed
 
-An instance's data is a function of its [clock](/guides/reproducibility#what-now-means) — the instant captured when `initialize()` ran — and of a [salt](/guides/reproducibility#salt-is-optional), if one was given. No salt is required: the clock differs on every run, which is what makes runs vary, and it's readable afterwards, so a failing run can be turned back into a repeatable one:
+An instance's data is a function of its [clock](/guides/reproducibility#the-clock-is-the-entropy) — the instant captured when `initialize()` ran — and of a [salt](/guides/reproducibility#salt-is-optional), if one was given. No salt is required: the clock differs on every run, which is what makes runs vary, and it's readable afterwards, so a failing run can be turned back into a repeatable one:
 
 ```ts twoslash
 import { initialize } from "@ghostry/fabricator";
@@ -134,7 +134,7 @@ const admin = User.fabricate({ role: "admin" });
 
 The override list is the test's stated dependency, and it is the whole of it. A test that had quietly leaned on the name being `"Jane Doe"` fails the first time it runs — which is the point. The coupling was already there; varying the rest is what makes it visible now, in the test that has it, rather than months later in an unrelated diff.
 
-The usual objection to varying everything is flakiness, and it's a fair objection to unseeded randomness. It doesn't apply here: a failing run is [replayable](#every-value-can-be-replayed) from its salt and clock, so a surfaced coupling arrives as a reproducible failure rather than a red build nobody can explain.
+The usual objection to varying everything is flakiness, and it's a fair objection to unseeded randomness. It doesn't apply here: a failing run is [replayable](#every-value-can-be-replayed) from its clock, so a surfaced coupling arrives as a reproducible failure rather than a red build nobody can explain.
 
 ### A schema edit doesn't disturb unrelated data
 

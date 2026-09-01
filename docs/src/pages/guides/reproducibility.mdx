@@ -1,18 +1,37 @@
 # Reproducibility
 
-Every `initialize()` instance has a [clock](#what-now-means) and an optional [salt](#salt-is-optional). The same salt, clock, and [attribution policy](#where-a-stream-is-attributed) always produce the same data. By default `clock` is the wall-clock instant of that `initialize()` call and `salt` is empty, so an unconfigured instance varies by run, has realistic dates, and replays from `context.clock` alone. Pass `clock: "derived"` when `salt` itself should be the reproducibility unit (at the cost of an implausible "now").
+An `initialize()` instance reproduces from one number: its [clock](#the-clock-is-the-entropy). That, the [attribution policy](#where-a-stream-is-attributed), and an optional [salt](#salt-is-optional) determine every value the instance produces. Configure nothing and the clock is the wall-clock instant of the `initialize()` call, so a run varies by process, has realistic dates, and replays from `context.clock` alone.
+
+## The clock is the entropy
+
+```ts
+const { T, Fabricator, context } = initialize();
+
+// ...fabricate, and if something fails:
+context.clock; // log this
+```
+
+That instant is captured once, per `initialize()` call, and it sits in every leaf's trace — so every run produces different data, and passing the logged number back reproduces that run exactly:
+
+```ts
+initialize(); // wall-clock instant of this call — the default
+initialize({ clock: new Date(logged) }); // replay a recorded run
+initialize({ clock: new Date("2024-06-01") }); // pinned to that instant
+```
+
+That is the whole reproducibility story for most instances. Nothing else needs configuring.
+
+`clock` is also what "now" means to the library: `T.date.past`/`T.date.future`, and any custom `.as(produce)`/`T.opaque` producer that reads `clock` off its context, resolve against it. Pinning it therefore freezes both the dates and — because it sits in every trace — the rest of the run.
+
+The one other setting is `clock: "derived"`, which computes a fixed instant from the instance [salt](#salt-is-optional) instead of the wall clock. It is drawn across the _entire_ representable `Date` range, so a wildly implausible date is the expected outcome of that policy, not a bug. Reach for it only when you want replay that doesn't depend on wall-clock time at all.
+
+`clock` composes the way `fork`/`wrap` already do: a captured or explicit instant is inherited as-is by a `fork`/`wrap` that doesn't override it. An explicit `"derived"` clock is the exception — `fork({ salt: layer(...) })` without also overriding `clock` re-derives "now" from the composed salt.
 
 ## Salt is optional
 
-**Most instances don't need a salt at all.**
+**Most instances don't need a salt at all**, and the section above is why: the clock already varies every run and already replays any of them.
 
-```ts
-const { T, Fabricator } = initialize();
-```
-
-`clock` — the wall-clock instant captured at this `initialize()` call — is the run's entropy on its own. Every run starts at a different instant, so every run produces different data, and a single number replays it: log `context.clock` after fabricating, then pass it back as `clock: new Date(logged)`.
-
-Salt does not generate anything; it differentiates. Adding one does not make a run any more varied — it adds a _second_ value that has to be captured and passed back alongside the clock before anything can be reproduced. So reach for one only when something specific wants it:
+Salt does not generate anything; it differentiates. Adding one buys no extra variation — it adds a _second_ value that has to be captured and passed back alongside the clock before anything can be reproduced. So reach for one only when something specific wants it:
 
 ```ts
 const { T, Fabricator, salt } = initialize({ salt: "1234" });
@@ -20,7 +39,7 @@ const { T, Fabricator, salt } = initialize({ salt: "1234" });
 
 Omit it and the salt is empty. The cases that genuinely want one:
 
-- **Replay that doesn't depend on wall-clock time.** Pair the salt with [`clock: "derived"`](#what-now-means) and the salt becomes the entire reproducibility unit — one value to record instead of two. The cost is an implausible "now", drawn across the whole representable `Date` range.
+- **Replay that doesn't depend on wall-clock time.** Pair the salt with [`clock: "derived"`](#the-clock-is-the-entropy) and the salt becomes the entire reproducibility unit — one value to record instead of two. The cost is an implausible "now", drawn across the whole representable `Date` range.
 - **A fixture that must never move**, no matter how the rest of the run is salted — that's a [per-construction salt](#overriding-a-salt-per-construction), not an instance-wide one.
 - **Injecting a mixer from outside**, without hardcoding it — that's what [env-var salting](#env-var-salting) below is for. It pins the salt only; an unpinned `clock` still varies, so replay still needs `context.clock`.
 
@@ -75,7 +94,7 @@ Two constructions of the same schema from the same file, by default, still get d
 new Fabricator(schema, { salt: "fixed-user" });
 ```
 
-A per-construction `salt` forks a brand-new, fully isolated source from exactly that value — the same salt reproduces the same result no matter which file it's constructed from, which instance built it, or how that instance was itself salted. Reach for this when you want one exact fixture, always, regardless of everything else about the run — re-salting the whole suite for a wider fuzz pass won't touch it. It keeps the instance's own `clock`, though — a construction asking for its own salt isn't asking for a different "now" — so a fixture built this way from two instances only matches if those instances also agree on their clock (both captured the same wall-clock instant, both `"derived"` from the same salt, or both given the same explicit `clock`); see [What "now" means](#what-now-means) below.
+A per-construction `salt` forks a brand-new, fully isolated source from exactly that value — the same salt reproduces the same result no matter which file it's constructed from, which instance built it, or how that instance was itself salted. Reach for this when you want one exact fixture, always, regardless of everything else about the run — re-salting the whole suite for a wider fuzz pass won't touch it. It keeps the instance's own `clock`, though — a construction asking for its own salt isn't asking for a different "now" — so a fixture built this way from two instances only matches if those instances also agree on their clock (both captured the same wall-clock instant, both `"derived"` from the same salt, or both given the same explicit `clock`); see [The clock is the entropy](#the-clock-is-the-entropy) below.
 
 That last part is also the limit of what a _bare_ salt can express: a fixture that should stay exactly the same no matter how the run is re-salted. For an identity that should instead keep moving when the instance is re-salted — a schema's registered name, a test's own id — wrap the salt in `layer(...)` instead:
 
@@ -98,7 +117,7 @@ const tenant = base.fork({ salt: "tenant-7" });
 tenant.salt; // ["tenant-7"] — replaced
 ```
 
-Anything the overlay names overrides; anything it omits inherits — `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the salt composes. The exception is an explicit `clock: "derived"`: that sentinel re-derives from whatever salt the fork ends up with (see [What "now" means](#what-now-means) below), so `fork({ salt: layer(...) })` without also overriding `clock` gets a _different_ `"derived"` clock than its base.
+Anything the overlay names overrides; anything it omits inherits — `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the salt composes. The exception is an explicit `clock: "derived"`: that sentinel re-derives from whatever salt the fork ends up with (see [The clock is the entropy](#the-clock-is-the-entropy) below), so `fork({ salt: layer(...) })` without also overriding `clock` gets a _different_ `"derived"` clock than its base.
 
 By default a fork's `salt` _replaces_ the base's outright — the ordinary meaning `salt` has everywhere in this library. To compose onto the base's salt instead, reach for `layer(...)`:
 
@@ -229,7 +248,7 @@ NameField.trace;
 // { salt: ["default-salt"], clock: 1234567890000, root: "attributed", file: "tests/user.test.ts", path: [], kind: "string", ordinal: 0 }
 ```
 
-The result is the fixed tuple that field's stream was hashed from — `salt` is the _instance's_ salt (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [What "now" means](#what-now-means) below — every field's stream depends on it, not just a `T.date` field's), `root` is how `file` and `ordinal` were resolved (`"attributed"` under a default instance and under `{ kind: "none" }`, `"unattributed"` under `new Fabricator(s, { salt })`, `"counted"` inside a `T.recursive` expansion), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction, among those sharing `file`, this one is. `file` is relative to the instance's attribution root under `"rooted"`/`"call site"` (see [Where a stream is attributed](#where-a-stream-is-attributed)), and `undefined` under an explicitly salted construction, under `{ kind: "none" }`, or inside a recursive expansion — `root` says which.
+The result is the fixed tuple that field's stream was hashed from — `salt` is the _instance's_ salt (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [The clock is the entropy](#the-clock-is-the-entropy) below — every field's stream depends on it, not just a `T.date` field's), `root` is how `file` and `ordinal` were resolved (`"attributed"` under a default instance and under `{ kind: "none" }`, `"unattributed"` under `new Fabricator(s, { salt })`, `"counted"` inside a `T.recursive` expansion), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction, among those sharing `file`, this one is. `file` is relative to the instance's attribution root under `"rooted"`/`"call site"` (see [Where a stream is attributed](#where-a-stream-is-attributed)), and `undefined` under an explicitly salted construction, under `{ kind: "none" }`, or inside a recursive expansion — `root` says which.
 
 `new Fabricator(schema, trace)` reproduces exactly what that schema produced as a nested node of a larger construction: pass the node's own schema plus `node.trace`. The same sequence of `.fabricate()` calls yields the same values; the trace does not jump to a later draw.
 
@@ -238,20 +257,6 @@ Three values are not a function of the node's own stream. Replay the parent inst
 - a `.refine()` compute field — `.fabricate()` throws without the parent object
 - a `recursive.self` node — `.fabricate()` throws without the enclosing `T.recursive`
 - an `.override()` `[Fixed]` field — replaying the field's own schema yields the drawn value the parent discarded
-
-## What "now" means
-
-`T.date.past`/`T.date.future` (and any custom `.as(produce)`/`T.opaque` producer that reads `clock` off its context) resolve "now" against `initialize({ clock })`:
-
-```ts
-initialize(); // wall-clock instant of this call — the default
-initialize({ clock: new Date("2024-06-01") }); // pinned to that instant
-initialize({ salt: "abc", clock: "derived" }); // derived from the salt
-```
-
-The default is the wall-clock instant captured at `initialize()` — realistic dates, a varied run each process, and one number (`context.clock`) to log for replay. Pass a fixed `Date` to freeze "now" (and, because `clock` sits in every leaf's trace, the rest of the run unless `salt` also differs). Pass `"derived"` to derive a fixed instant from the instance salt instead — drawn across the _entire_ representable `Date` range, so a wildly implausible date is the expected outcome of that policy, not a bug. `"derived"` is what makes `salt` alone the reproducibility unit, with no dependence on wall-clock time.
-
-`clock` composes with `salt` the same way `fork`/`wrap` already do: a captured or explicit instant is inherited as-is by a `fork`/`wrap` that doesn't override it. An explicit `"derived"` clock is the exception — `fork({ salt: layer(...) })` without also overriding `clock` re-derives "now" from the composed salt.
 
 ## Bring your own PRNG
 

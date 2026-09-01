@@ -110,7 +110,7 @@ T.faker.use.opaque((f) => f.helpers.arrayElement(["free", "pro"] as const));
 
 ## Notes
 
-`faker.seed(...)` is inert here, by design: fabricator's seeding governs, and a second one competing for control of the same output is the bug this package exists to remove. Pass a different `salt` to `initialize()` instead.
+`faker.seed(...)` is inert here, by design: fabricator's seeding governs, and a second one competing for control of the same output is the bug this package exists to remove. Change the instance's `clock` — or its `salt`, if it has one — instead.
 
 A builder called outside `fabricate()` throws `FakerExtensionError.NoActiveScopeError` — there is no active fabrication to draw from. `FakerExtensionError` extends core's `FabricatorError`, so one `catch` still covers both packages.
 

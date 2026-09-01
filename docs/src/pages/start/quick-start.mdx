@@ -5,10 +5,7 @@ This library is particularly useful for defining test fixtures to exercise your 
 ```ts twoslash
 import { initialize } from "@ghostry/fabricator";
 
-const { T, Fabricator } = initialize({
-  clock: new Date(), // default source of entropy
-  salt: "1234", // optional additional entropy
-});
+const { T, Fabricator } = initialize();
 
 const ProductSchema = T.object({
   name: T.string.whereby({ length: { min: 1, max: 25 } }),
@@ -35,7 +32,7 @@ That's the whole loop:
 
 See [Mental model](/start/mental-model) for why this three-layer split exists.
 
-Both options passed to `initialize()` above are optional, and are shown only to name the two knobs. `clock` already defaults to the instant of the call, and on its own is enough to make every run different and to replay any one of them; a `salt` is an extra mixer most instances don't need. See [Salt is optional](/guides/reproducibility#salt-is-optional).
+`initialize()` needs no configuration. It captures the wall-clock instant of the call as its `clock`, and that single number is both what makes every run different and what replays any one of them: log `context.clock` when something fails, pass it back as `clock: new Date(logged)`, and you get that run's data again. See [Reproducibility](/guides/reproducibility).
 
 ## Overriding specific fields
 

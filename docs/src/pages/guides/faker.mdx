@@ -10,7 +10,6 @@ import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
 
 const { T, Fabricator } = initialize({
-  salt: "checkout",
   types: registry.extend(fakerExtension({ locale: en })),
 });
 
@@ -152,17 +151,17 @@ Faker's relative-date methods resolve against the same instance clock `T.date.pa
 T.object({ core: T.date.past, faker: T.faker.date.past() });
 ```
 
-That includes a `wrap({ clock }, …)` in effect at fabricate time — the clock is read per fabrication, not captured when the extension was built. See [Reproducibility](/guides/reproducibility#what-now-means) for what the clock is and how it defaults.
+That includes a `wrap({ clock }, …)` in effect at fabricate time — the clock is read per fabrication, not captured when the extension was built. See [Reproducibility](/guides/reproducibility#the-clock-is-the-entropy) for what the clock is and how it defaults.
 
 There is deliberately no reference-date option on `fakerExtension`. A second, independently-configured clock would be a second source of truth, free to drift from `T.date.past` in the same object.
 
 ## Reproducibility
 
-Everything on [Reproducibility](/guides/reproducibility) applies unchanged: the same salt and clock produce the same faker output, and a field's stream is keyed by its structural position, so inserting or reordering a sibling leaves the others untouched.
+Everything on [Reproducibility](/guides/reproducibility) applies unchanged: the same clock (and salt, if any) produces the same faker output, and a field's stream is keyed by its structural position, so inserting or reordering a sibling leaves the others untouched.
 
 Two consequences worth stating outright:
 
-**`faker.seed(...)` is inert.** Seeding is fabricator's job here, and a second seed competing for control of the same output is the problem this package exists to remove. Change `initialize({ salt })` instead.
+**`faker.seed(...)` is inert.** Seeding is fabricator's job here, and a second seed competing for control of the same output is the problem this package exists to remove. Change the instance's `clock` (or its `salt`, if it has one) instead.
 
 **The global `faker` singleton is untouched.** The extension builds its own `Faker` on its own randomizer, so seeding or draining the singleton elsewhere in your test suite cannot perturb fabricated output — and vice versa.
 
