@@ -36,9 +36,9 @@ export type FakerConfig = ConstructorParameters<typeof Faker>[0]["config"];
  *
  * No `seed` option and no pre-built `Faker`: a pre-built instance's randomizer
  * is fixed at construction, and accepting one would either ignore it silently
- * or let it compete with fabricator's seed. `create` is the honest escape: the
- * caller builds the instance; it still receives this bridge's `randomizer`, so
- * reproducibility survives.
+ * or let it compete with fabricator's seeding. `create` is the honest escape:
+ * the caller builds the instance; it still receives this bridge's `randomizer`,
+ * so reproducibility survives.
  */
 export type Options =
   | {

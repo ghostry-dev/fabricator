@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("T.choice.uniform builds and fabricates standalone, drawing every option across enough draws", () => {
-  const { T, Fabricator } = initialize({ seed: "choice-uniform-standalone" });
+  const { T, Fabricator } = initialize({ salt: "choice-uniform-standalone" });
 
   const built = new Fabricator(
     T.choice.uniform([T.always("a"), T.always("b"), T.always("c")]),
@@ -15,7 +15,7 @@ test("T.choice.uniform builds and fabricates standalone, drawing every option ac
 });
 
 test("T.choice.uniform is roughly an equal split across options", () => {
-  const { T, Fabricator } = initialize({ seed: "choice-uniform-distribution" });
+  const { T, Fabricator } = initialize({ salt: "choice-uniform-distribution" });
 
   const built = new Fabricator(
     T.choice.uniform([T.always("a"), T.always("b"), T.always("c")]),
@@ -34,7 +34,7 @@ test("T.choice.uniform is roughly an equal split across options", () => {
 
 test("T.choice.weighted draws relative to the given [weight, schema] pairs, not an equal split", () => {
   const { T, Fabricator } = initialize({
-    seed: "choice-weighted-distribution",
+    salt: "choice-weighted-distribution",
   });
 
   const built = new Fabricator(
@@ -59,7 +59,7 @@ test("T.choice.weighted draws relative to the given [weight, schema] pairs, not 
 });
 
 test("T.choice's options can be arbitrary, differently-kinded schemas", () => {
-  const { T, Fabricator } = initialize({ seed: "choice-mixed-kinds" });
+  const { T, Fabricator } = initialize({ salt: "choice-mixed-kinds" });
 
   const built = new Fabricator(
     T.choice.uniform([
@@ -77,14 +77,14 @@ test("T.choice's options can be arbitrary, differently-kinded schemas", () => {
 });
 
 test("T.choice only dispatches the option it draws — other options' streams stay untouched", () => {
-  const seed = "choice-only-picked-draws";
+  const salt = "choice-only-picked-draws";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -101,7 +101,7 @@ test("T.choice only dispatches the option it draws — other options' streams st
 });
 
 test(".override({ key: value }) forces a choice field to that value", () => {
-  const { T, Fabricator } = initialize({ seed: "choice-override" });
+  const { T, Fabricator } = initialize({ salt: "choice-override" });
 
   const schema = T.object({
     a: T.choice.uniform([T.always("x"), T.always("y")]),
@@ -111,7 +111,7 @@ test(".override({ key: value }) forces a choice field to that value", () => {
 });
 
 test(".as(...) replaces the roll with an opaque producer", () => {
-  const { T, Fabricator } = initialize({ seed: "choice-as" });
+  const { T, Fabricator } = initialize({ salt: "choice-as" });
 
   const built = new Fabricator(
     T.object({
@@ -124,7 +124,7 @@ test(".as(...) replaces the roll with an opaque producer", () => {
 });
 
 test("T.choice.uniform/.weighted throw on an empty option list", () => {
-  const { T } = initialize({ seed: "choice-empty" });
+  const { T } = initialize({ salt: "choice-empty" });
 
   // @ts-expect-error — `uniform` requires at least one option.
   expect(() => T.choice.uniform([])).toThrow();
@@ -133,7 +133,7 @@ test("T.choice.uniform/.weighted throw on an empty option list", () => {
 });
 
 test("T.choice.weighted throws on a negative weight", () => {
-  const { T } = initialize({ seed: "choice-negative-weight" });
+  const { T } = initialize({ salt: "choice-negative-weight" });
 
   expect(() =>
     T.choice.weighted([
@@ -144,7 +144,7 @@ test("T.choice.weighted throws on a negative weight", () => {
 });
 
 test("T.choice.weighted still constructs and fabricates when every weight is positive", () => {
-  const { T, Fabricator } = initialize({ seed: "choice-all-positive-weights" });
+  const { T, Fabricator } = initialize({ salt: "choice-all-positive-weights" });
 
   const built = new Fabricator(
     T.choice.weighted([

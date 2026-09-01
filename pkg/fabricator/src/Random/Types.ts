@@ -43,11 +43,11 @@ export type Algorithm = (seed: string) => NumberGenerator;
  *
  * Slots, in encoded order:
  *
- * - `seed` — the _instance's_ seed, normalized to its parts
- *   ({@link RandomSource.seed}), not anything derived per leaf.
+ * - `salt` — the _instance's_ salt, normalized to its parts
+ *   ({@link RandomSource.salt}), not anything derived per leaf.
  * - `clock` — this construction's resolved "now," epoch milliseconds
  *   (`Instance/Types.ts`'s `Config.clock`). Second, not after the per-leaf
- *   slots: blast radius matches `seed` — both are instance-level and perturb
+ *   slots: blast radius matches `salt` — both are instance-level and perturb
  *   every leaf, unlike `file`/`path`/`kind`/`ordinal`, which narrow to one
  *   leaf. Never `undefined` (unlike `file`/`ordinal`): clock is always a
  *   concrete instant before any leaf dispatches (`RandomSource`'s
@@ -55,7 +55,7 @@ export type Algorithm = (seed: string) => NumberGenerator;
  * - `root` — how `file` and `ordinal` were resolved ({@link RootKind}). Sits
  *   immediately before `file` because that is what it explains. Distinguishes
  *   the three situations that all produce `file: undefined` (`{ kind: "none" }`
- *   attributed, an unattributed seeded construction, a counted recursive
+ *   attributed, an unattributed salted construction, a counted recursive
  *   expansion), so a captured trace can be replayed faithfully via `new
  *   Fabricator(schema, trace)`.
  * - `file` — the file this node's _construction_ (not the node) was attributed
@@ -71,10 +71,10 @@ export type Algorithm = (seed: string) => NumberGenerator;
  *   `path`, but changing a field's kind must change its data.
  * - `ordinal` — which construction among those sharing this `file` this node
  *   belongs to. `undefined` for `"unattributed"`, already unique by its forked
- *   seed.
+ *   salt.
  */
 export type Trace = {
-  readonly seed: ReadonlyArray<string>;
+  readonly salt: ReadonlyArray<string>;
   readonly clock: number;
   readonly root: RootKind;
   readonly file: string | undefined;
@@ -85,8 +85,8 @@ export type Trace = {
 
 /**
  * Caller-supplied overrides for the construction-owned {@link Trace} slots
- * {@link RandomSource.toRoot} resolves. `seed` is not among them: it is the
- * {@link RandomSource}'s own identity (forked via {@link ConstructorOptions.seed}
+ * {@link RandomSource.toRoot} resolves. `salt` is not among them: it is the
+ * {@link RandomSource}'s own identity (forked via {@link ConstructorOptions.salt}
  * when replaying), not something `toRoot` substitutes. `path`/`kind` are
  * per-node and applied in `construct()`, not here.
  *
@@ -114,7 +114,7 @@ export type ConstructionTrace = Omit<Trace, "path" | "kind">;
  * What a producer is told about the fabrication it is running inside. One
  * object, not a positional list: this is the only channel a producer has, and a
  * future addition must not change every kind's `.as(...)` arity. Curated, not
- * the whole instance `Config` — a producer has no business reading `seed` or
+ * the whole instance `Config` — a producer has no business reading `salt` or
  * `attribution`, and `random` already carries this leaf's own derived seed.
  */
 export type ProduceContext = {
@@ -125,7 +125,7 @@ export type ProduceContext = {
    * This construction's resolved "now," epoch milliseconds — the active `wrap`
    * frame's `Config.clock` if one is active, else the instance's
    * (`Instance/Types.ts`'s `Config.clock`). Defaults to an instant derived from
-   * the instance's seed, not `Date.now()`, so a producer that reads it replays
+   * the instance's salt, not `Date.now()`, so a producer that reads it replays
    * like one that only reads `random`. A number, not a `Date`: the instant is
    * fixed once resolved, and a `Date` handed to every producer would be a
    * shared mutable — the same footgun `T.always([])` sharing one array
@@ -136,7 +136,7 @@ export type ProduceContext = {
 
 /**
  * A kind's opaque custom producer — `.as(produce)` — given a
- * {@link ProduceContext} so its output replays under a seed like every other
+ * {@link ProduceContext} so its output replays under a salt like every other
  * primitive's draws. A zero-argument function (`() => $T`) is still assignable,
  * so every existing `.as(() => ...)` call compiles.
  */
@@ -176,15 +176,15 @@ export type Produce<$T> = (context: ProduceContext) => $T;
  * when building — it is recorded on a node's {@link Trace} (and replayed) for
  * expansions inside `T.recursive`, whose private fork uses it so each lazy
  * expansion gets an ordinal (see `recursive/Fabricator.ts`). An identity that
- * isn't a stack frame but should still vary with the instance's seed is
- * `ConstructorOptions.seed`'s layered form (`{@link Layered}`, via
+ * isn't a stack frame but should still vary with the instance's salt is
+ * `ConstructorOptions.salt`'s layered form (`{@link Layered}`, via
  * `layer(...)`) — see `ConstructorOptions`.
  *
  * `"unattributed"` fixes neither slot — used only by a source already isolated
- * for one construction (an explicitly seeded `new Fabricator(schema, { seed
- * })`, which forks a new `RandomSource` for that one build). A layered seed
+ * for one construction (an explicitly salted `new Fabricator(schema, { salt
+ * })`, which forks a new `RandomSource` for that one build). A layered salt
  * (`{@link Layered}`, via `layer(...)`) still opens this same scope: composing
- * onto a base seed is a statement about _what_ the fork's seed is, not how the
+ * onto a base salt is a statement about _what_ the fork's salt is, not how the
  * fork itself should be rooted.
  *
  * A plain string union, not a discriminant object: none of the three variants
@@ -196,22 +196,22 @@ export type Produce<$T> = (context: ProduceContext) => $T;
 export type RootKind = "attributed" | "counted" | "unattributed";
 
 /**
- * A seed as a caller supplies it: one string, or several — several lets a
+ * A salt as a caller supplies it: one string, or several — several lets a
  * caller compose independent parts (user id, session id, scenario label)
  * without joining them first. Always normalized internally to
- * `ReadonlyArray<string>` (`toRandomSource`'s `normalizeSeed`); a single string
+ * `ReadonlyArray<string>` (`toRandomSource`'s `normalizeSalt`); a single string
  * is the one-element case.
  */
-export type Seed = string | ReadonlyArray<string>;
+export type Salt = string | ReadonlyArray<string>;
 
 /**
- * A {@link Seed} tagged as composing onto whatever base is in effect, rather
- * than replacing it — what `layer(seed)` (`Random/index.ts`) produces. Tagged
+ * A {@link Salt} tagged as composing onto whatever base is in effect, rather
+ * than replacing it — what `layer(salt)` (`Random/index.ts`) produces. Tagged
  * with `[Layer]` exactly as `replace()` (`Utility/Core.ts`) tags a merge
  * operand with `[Replace]`, so a caller never names the symbol and no ordinary
- * `Seed` — string or array — can be mistaken for one.
+ * `Salt` — string or array — can be mistaken for one.
  */
-export type Layered = { readonly [Layer]: Seed };
+export type Layered = { readonly [Layer]: Salt };
 
 /**
  * How an instance normalizes a construction's resolved file before it becomes
@@ -219,7 +219,7 @@ export type Layered = { readonly [Layer]: Seed };
  * })`.
  *
  * `"rooted"` expresses every file relative to `root`, so a checkout at a
- * different absolute path on a different machine derives the same seeds. `root`
+ * different absolute path on a different machine derives the same salts. `root`
  * accepts an absolute path or a `file://` URL (e.g. `new URL("..",
  * import.meta.url).href`, which needs no `node:path`), and is a normalization
  * parameter only — it never enters the hashed material, so moving the root
@@ -230,14 +230,14 @@ export type Layered = { readonly [Layer]: Seed };
  *
  * `"call site"`, the default, is `"rooted"` at the directory of whichever file
  * called `initialize()` — resolved once, at that call, from the live stack. Two
- * `initialize()` calls in different files that share a seed and happen to
+ * `initialize()` calls in different files that share a salt and happen to
  * produce the same file's-worth of relative paths (a symmetric monorepo layout
  * — this repo's `pkg/fabricator` and `pkg/fabricator-adapter-typebox-v0` test
  * suites) will collide; use `"rooted"` at a shared repository root instead.
  *
  * `"none"` attributes nothing: every construction in the instance draws its
  * root from one shared, file-less counter. Maximally portable — no path can
- * influence a seed — at the cost of every construction sharing one counter, so
+ * influence a salt — at the cost of every construction sharing one counter, so
  * adding, removing, or reordering a _construction_ anywhere in the instance
  * shifts every later one. Individual fields within one construction are
  * unaffected: they're keyed by structural path, not dispatch order.
@@ -253,7 +253,7 @@ export type Attribution =
  * resolution. This, not the caller-facing `Attribution`, is what
  * `RandomSource.fork` threads through: re-resolving `"call site"` inside a fork
  * would read the stack at whatever moment the fork happens to run (an
- * explicitly seeded build, an enumeration's rebuild) and root the child
+ * explicitly salted build, an enumeration's rebuild) and root the child
  * somewhere unrelated to the instance that spawned it.
  */
 export type ResolvedAttribution =
@@ -261,14 +261,14 @@ export type ResolvedAttribution =
   | { kind: "none" };
 
 /**
- * `clock` is required, unlike `seed`/`algorithm`/`attribution` — by the time a
- * `RandomSource` is built, both the wall-clock default and the `"seeded"`
+ * `clock` is required, unlike `salt`/`algorithm`/`attribution` — by the time a
+ * `RandomSource` is built, both the wall-clock default and the `"derived"`
  * policy (`Instance/Types.ts`'s `Config.clock`) have already been resolved to a
  * concrete epoch-millisecond instant (`Instance/Core.ts`'s `resolveClock`), so
  * `toRandomSource` has no default left to supply.
  */
 export type Options = {
-  seed?: Seed | undefined;
+  salt?: Salt | undefined;
   algorithm?: Algorithm | undefined;
   attribution?: Attribution | undefined;
   clock: number;
@@ -281,20 +281,20 @@ export type Options = {
  * typechecks under `exactOptionalPropertyTypes`), which is what makes `new
  * Fabricator(schema, trace)` a legal replay.
  *
- * A bare `seed` is a statement about _attribution_: it forks an isolated
+ * A bare `salt` is a statement about _attribution_: it forks an isolated
  * `RandomSource` from exactly that value, sidestepping both the default
- * call-site logic and the instance's own seed. The same seed reproduces the
+ * call-site logic and the instance's own salt. The same salt reproduces the
  * same result regardless of which file it's constructed from, which instance
- * built it, or how that instance was itself seeded — useful for a fixture that
- * should never change no matter how the surrounding run is reseeded.
+ * built it, or how that instance was itself salted — useful for a fixture that
+ * should never change no matter how the surrounding run is re-salted.
  *
- * `seed: layer(...)` (via `layer()`, `Random/index.ts`) is the same fork, but
- * composed onto the instance's own seed (`[...instance.seed, ...seed]`) instead
+ * `salt: layer(...)` (via `layer()`, `Random/index.ts`) is the same fork, but
+ * composed onto the instance's own salt (`[...instance.salt, ...salt]`) instead
  * of replacing it — the construction still varies when the instance is
- * reseeded, which the bare form does not (see {@link RootKind}'s `"counted"`
- * paragraph). This is `fork`/`wrap`'s own `Overlay.seed` mechanism one level
+ * re-salted, which the bare form does not (see {@link RootKind}'s `"counted"`
+ * paragraph). This is `fork`/`wrap`'s own `Overlay.salt` mechanism one level
  * down: the instance itself is the base, so no separate instance is needed just
- * to pin an identity that should still track the instance's seed.
+ * to pin an identity that should still track the instance's salt.
  *
  * `clock` / `root` / `file` / `ordinal` pin the construction-owned
  * {@link Trace} slots {@link RandomSource.toRoot} would otherwise resolve.
@@ -302,7 +302,7 @@ export type Options = {
  * `ordinal` taken verbatim, `undefined` included, no stack walk and no counter
  * bump). `root` absent but `file` given pins that file and draws `ordinal` from
  * _that file's_ counter — the wrapping-integration case. Neither given resolves
- * as an ordinary construction. A seeded construction is not, by default, asking
+ * as an ordinary construction. A salted construction is not, by default, asking
  * for a different "now"; a replayed trace whose `clock` is present explicitly
  * is.
  *
@@ -312,12 +312,12 @@ export type Options = {
  * `[Kind]` or `construct()` throws `TraceKindMismatchError`.
  *
  * No per-build algorithm override: it complicates root resolution for a
- * capability nobody asked for, unlike `seed`, which is a real statement about
- * attribution. Only `initialize({ seed, algorithm })` — instance-wide, via
+ * capability nobody asked for, unlike `salt`, which is a real statement about
+ * attribution. Only `initialize({ salt, algorithm })` — instance-wide, via
  * `Options` — sets the algorithm.
  */
 export type ConstructorOptions = {
-  seed?: Seed | Layered | undefined;
+  salt?: Salt | Layered | undefined;
   clock?: number | undefined;
   root?: RootKind | undefined;
   file?: string | undefined;
@@ -329,7 +329,7 @@ export type ConstructorOptions = {
 /**
  * An isolated source of randomness: everything a single `initialize()` instance
  * needs to derive private, reproducible seeds for the fabricators it builds.
- * Each instance owns its own seed, builder, and per-construction counters —
+ * Each instance owns its own salt, builder, and per-construction counters —
  * nothing here is shared module-level state, so independently initialized
  * instances (e.g. parallel tests) can never perturb each other.
  */
@@ -353,23 +353,23 @@ export type RandomSource = {
   readonly algorithm: Algorithm;
 
   /**
-   * The seed this instance currently derives every stream from, normalized to
+   * The salt this instance currently derives every stream from, normalized to
    * its parts — a single string becomes a one-element array. Always an array so
-   * a caller reading it back (e.g. `initialize({ seed: instance.seed })`)
-   * round-trips through the same `Seed`-accepting surface it came from.
+   * a caller reading it back (e.g. `initialize({ salt: instance.salt })`)
+   * round-trips through the same `Salt`-accepting surface it came from.
    */
-  readonly seed: ReadonlyArray<string>;
+  readonly salt: ReadonlyArray<string>;
 
   /**
    * Create a new, fully isolated `RandomSource` — its own private per-file
-   * construction counters, sharing only the algorithm — seeded independently
+   * construction counters, sharing only the algorithm — salted independently
    * from this one. For a build whose randomness must stay entirely
-   * self-contained (an explicitly seeded `new Fabricator(schema, { seed })`, or
+   * self-contained (an explicitly salted `new Fabricator(schema, { salt })`, or
    * `T.recursive`, whose expansion count is data-dependent, unlike every other
    * kind's fixed, schema-determined dispatch count): forking means its internal
    * draws can never perturb, or be perturbed by, anything else built from the
    * same `initialize()` instance, no matter how many times or how deeply it
    * expands.
    */
-  fork(seed: Seed): RandomSource;
+  fork(salt: Salt): RandomSource;
 };

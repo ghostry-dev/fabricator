@@ -3,7 +3,7 @@ import { initialize } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 
 test("`toTypeBox(...)` on a produce-based `array`/`object` schema still yields the structural shape", () => {
-  const { T } = initialize({ seed: "as-typebox" });
+  const { T } = initialize({ salt: "as-typebox" });
 
   const arraySchema = T.array(T.number).as(() => [1, 2, 3]);
   const arrayTypeBox = toTypeBox(arraySchema);

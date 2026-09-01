@@ -16,7 +16,7 @@ import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
  */
 
 test("toTypeBox pins an always-ed bigint to that exact value", () => {
-  const { T } = initialize({ seed: "always-bigint" });
+  const { T } = initialize({ salt: "always-bigint" });
 
   const schema = toTypeBox(T.always(BigInt(5)));
 
@@ -26,7 +26,7 @@ test("toTypeBox pins an always-ed bigint to that exact value", () => {
 });
 
 test("toTypeBox pins an always-ed date to that exact instant", () => {
-  const { T } = initialize({ seed: "always-date" });
+  const { T } = initialize({ salt: "always-date" });
 
   const schema = toTypeBox(T.always(new Date(0)));
 
@@ -35,7 +35,7 @@ test("toTypeBox pins an always-ed date to that exact instant", () => {
 });
 
 test("toTypeBox pins null/undefined always-es", () => {
-  const { T } = initialize({ seed: "always-nullish" });
+  const { T } = initialize({ salt: "always-nullish" });
 
   const nullSchema = toTypeBox(T.always(null));
   expect(Value.Check(nullSchema, null)).toBe(true);
@@ -52,7 +52,7 @@ test("toTypeBox pins null/undefined always-es", () => {
  * unpinned while the same value at the top level came out exact.
  */
 test("toTypeBox pins values nested inside an always-ed object or array", () => {
-  const { T } = initialize({ seed: "always-nested" });
+  const { T } = initialize({ salt: "always-nested" });
 
   const object = toTypeBox(T.always({ at: new Date(0), id: BigInt(5) }));
 
@@ -73,7 +73,7 @@ test("toTypeBox pins values nested inside an always-ed object or array", () => {
  * ...)` is the escape hatch for both.
  */
 test("toTypeBox widens where TypeBox cannot pin: symbols, and Uint8Array contents", () => {
-  const { T } = initialize({ seed: "always-unpinnable" });
+  const { T } = initialize({ salt: "always-unpinnable" });
 
   const symbolSchema = toTypeBox(T.always(Symbol("s")));
   expect(Value.Check(symbolSchema, Symbol("something else"))).toBe(true);
@@ -84,7 +84,7 @@ test("toTypeBox widens where TypeBox cannot pin: symbols, and Uint8Array content
 });
 
 test("a string/number/boolean always still maps to a plain literal", () => {
-  const { T } = initialize({ seed: "always-literal" });
+  const { T } = initialize({ salt: "always-literal" });
 
   const literal = toTypeBox(T.always("hello"));
   expect(literal.type).toBe("string");
@@ -103,7 +103,7 @@ test("a string/number/boolean always still maps to a plain literal", () => {
  * to get wrong.
  */
 test("toConst's own recursion matches Type.Const structurally", () => {
-  const { T } = initialize({ seed: "always-mirrors-const" });
+  const { T } = initialize({ salt: "always-mirrors-const" });
 
   for (const value of [{ a: 1, b: "x" }, [1, "a"], { a: [1, { b: 2 }] }]) {
     expect(JSON.stringify(toTypeBox(T.always(value)))).toBe(
@@ -113,7 +113,7 @@ test("toConst's own recursion matches Type.Const structurally", () => {
 });
 
 test("toTypeBox maps a widened enum to a union that pins each member", () => {
-  const { T } = initialize({ seed: "enum-typebox" });
+  const { T } = initialize({ salt: "enum-typebox" });
 
   const schema = toTypeBox(T.enum.uniform([null, BigInt(5)]));
 

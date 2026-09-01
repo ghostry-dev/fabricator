@@ -7,7 +7,7 @@ import { FabricatorError, initialize } from "@ghostry/fabricator";
  */
 
 test("an unbounded T.number.integer really is an integer", () => {
-  const { T, Fabricator } = initialize({ seed: "integer-unbounded" });
+  const { T, Fabricator } = initialize({ salt: "integer-unbounded" });
 
   const built = new Fabricator(T.number.integer);
 
@@ -20,7 +20,7 @@ test("an unbounded T.number.integer really is an integer", () => {
 
 /** Both signs still occur. */
 test("an unbounded T.number.integer spans both signs", () => {
-  const { T, Fabricator } = initialize({ seed: "integer-signs" });
+  const { T, Fabricator } = initialize({ salt: "integer-signs" });
 
   const built = new Fabricator(T.number.integer);
 
@@ -36,7 +36,7 @@ test("an unbounded T.number.integer spans both signs", () => {
 });
 
 test("a bounded T.number.integer stays integral and in range", () => {
-  const { T, Fabricator } = initialize({ seed: "integer-bounded" });
+  const { T, Fabricator } = initialize({ salt: "integer-bounded" });
 
   const built = new Fabricator(T.number.integer.whereby({ min: 0, max: 10 }));
 
@@ -57,7 +57,7 @@ test("a bounded T.number.integer stays integral and in range", () => {
 });
 
 test("exclusive integer ends drop the excluded integers", () => {
-  const { T, Fabricator } = initialize({ seed: "integer-exclusive" });
+  const { T, Fabricator } = initialize({ salt: "integer-exclusive" });
   const built = new Fabricator(
     T.number.integer.whereby({
       min: { value: 0, exclusive: true },
@@ -71,7 +71,7 @@ test("exclusive integer ends drop the excluded integers", () => {
 });
 
 test("an empty integer range throws at whereby", () => {
-  const { T } = initialize({ seed: "integer-empty" });
+  const { T } = initialize({ salt: "integer-empty" });
   expect(() =>
     T.number.integer.whereby({
       min: { value: 3, exclusive: true },
@@ -81,7 +81,7 @@ test("an empty integer range throws at whereby", () => {
 });
 
 test("integer.sequence is unaffected", () => {
-  const { T, Fabricator } = initialize({ seed: "integer-sequence" });
+  const { T, Fabricator } = initialize({ salt: "integer-sequence" });
 
   const built = new Fabricator(T.number.integer.sequence);
 
@@ -97,7 +97,7 @@ test("integer.sequence is unaffected", () => {
  * actually distinguishes the two.
  */
 test("a plain T.number is still fractional", () => {
-  const { T, Fabricator } = initialize({ seed: "number-fractional" });
+  const { T, Fabricator } = initialize({ salt: "number-fractional" });
 
   const built = new Fabricator(T.number.whereby({ min: 0, max: 10 }));
 

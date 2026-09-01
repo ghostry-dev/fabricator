@@ -12,11 +12,11 @@ import { expect, test } from "bun:test";
 const types = () => registry.extend(fakerExtension({ locale: en }));
 
 test("inserting a field leaves an existing faker field's value unchanged", () => {
-  const seed = "insert-field";
+  const salt = "insert-field";
 
   const { T: T1, Fabricator: F1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const before = new F1(
@@ -24,8 +24,8 @@ test("inserting a field leaves an existing faker field's value unchanged", () =>
   ).fabricate();
 
   const { T: T2, Fabricator: F2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const after = new F2(
@@ -39,11 +39,11 @@ test("inserting a field leaves an existing faker field's value unchanged", () =>
 });
 
 test("reordering fields leaves each faker field's own value unchanged", () => {
-  const seed = "reorder-fields";
+  const salt = "reorder-fields";
 
   const { T: T1, Fabricator: F1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const forward = new F1(
@@ -54,8 +54,8 @@ test("reordering fields leaves each faker field's own value unchanged", () => {
   ).fabricate();
 
   const { T: T2, Fabricator: F2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const reversed = new F2(
@@ -70,11 +70,11 @@ test("reordering fields leaves each faker field's own value unchanged", () => {
 });
 
 test("renaming a faker field changes only that field's own value, not its siblings'", () => {
-  const seed = "rename-field";
+  const salt = "rename-field";
 
   const { T: T1, Fabricator: F1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const original = new F1(
@@ -85,8 +85,8 @@ test("renaming a faker field changes only that field's own value, not its siblin
   ).fabricate();
 
   const { T: T2, Fabricator: F2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const renamed = new F2(

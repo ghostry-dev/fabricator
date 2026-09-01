@@ -468,7 +468,7 @@ test("a recursive field maps to a $ref-based TypeBox schema", () => {
 test("Value.Check accepts a real fabricated recursive value, at any depth reached, and rejects a wrong shape", () => {
   const { T, Fabricator } = initialize({
     types: registry,
-    seed: "tb-recursive",
+    salt: "tb-recursive",
   });
 
   const Node = T.recursive((s) =>
@@ -497,7 +497,7 @@ test("Value.Check accepts a real fabricated recursive value, at any depth reache
  * (`BuildContext` here, `DispatchContext` there), so both need covering.
  */
 test("toTypeBox throws if a captured self reference escapes its T.recursive callback", () => {
-  const { T } = initialize({ types: registry, seed: "tb-recursive-misuse" });
+  const { T } = initialize({ types: registry, salt: "tb-recursive-misuse" });
 
   let escaped: unknown;
   T.recursive((s) => {

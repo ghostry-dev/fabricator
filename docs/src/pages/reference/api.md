@@ -7,16 +7,16 @@ The package's `.` entry point — small on purpose: every primitive is reached t
 ```ts
 function initialize(config?: {
   types?: Registry;
-  seed?: Seed;
+  salt?: Salt;
   algorithm?: (seed: string) => () => number;
   attribution?: Attribution;
   limits?: { combinatorial: number };
-  clock?: Date | "seeded";
+  clock?: Date | "derived";
   stack?: Stack;
 }): Instance;
 ```
 
-Mints one isolated instance. `types` defaults to the built-in `registry`; `seed` defaults to empty if omitted (unless `FABRICATOR_SEED` / `SEED` / `RANDOM_SEED` supplies one); `algorithm` defaults to a built-in `sfc32` generator. `limits.combinatorial` caps how many instances `combinatorial(...)` (below) may enumerate before throwing — defaults to `1024`, checked eagerly at `initialize()` time, not on first call. `clock` is what `T.date.past`/`T.date.future` (and any producer reading its `ProduceContext`) resolve "now" against, and the default entropy for the instance: it defaults to the wall-clock instant of this `initialize()` call. Pass a `Date` to pin "now" to a specific instant, or `clock: "seeded"` to derive "now" from the instance seed (an instant drawn across the entire representable `Date` range). See [Reproducibility](/guides/reproducibility) and [Custom types](/guides/custom-types).
+Mints one isolated instance. `types` defaults to the built-in `registry`; `salt` defaults to empty if omitted (unless `FABRICATOR_SALT` supplies one — which pins the salt only, not `clock`); `algorithm` defaults to a built-in `sfc32` generator. `limits.combinatorial` caps how many instances `combinatorial(...)` (below) may enumerate before throwing — defaults to `1024`, checked eagerly at `initialize()` time, not on first call. `clock` is what `T.date.past`/`T.date.future` (and any producer reading its `ProduceContext`) resolve "now" against, and the default entropy for the instance: it defaults to the wall-clock instant of this `initialize()` call. Pass a `Date` to pin "now" to a specific instant, or `clock: "derived"` to derive "now" from the instance salt (an instant drawn across the entire representable `Date` range). See [Reproducibility](/guides/reproducibility) and [Custom types](/guides/custom-types).
 
 `attribution` controls how each `new Fabricator(...)` construction is attributed to the file it was written in — resolved once per construction, not once per field:
 
@@ -24,7 +24,7 @@ Mints one isolated instance. `types` defaults to the built-in `registry`; `seed`
 - `{ kind: "call site" }`, the default, is `"rooted"` at the directory of whichever file called `initialize()`.
 - `{ kind: "none" }` attributes nothing: every construction, anywhere in the instance, draws its root from one shared counter.
 
-`new Fabricator(schema, { seed })` overrides that per construction, forking entirely away from both the resolved file and the instance's own seed — so that one build reproduces regardless of where it's written or how the instance was seeded, as long as the instance's `clock` also matches (a per-construction seed keeps whichever `clock` the instance it's built from already has — see [What "now" means](/guides/reproducibility#what-now-means)). `new Fabricator(schema, { seed: layer(identity) })` forks the same way but _composes_ `identity` onto the instance's own seed instead of replacing it, so the construction still varies when the instance is reseeded — see [`layer(seed)`](#layerseed) below.
+`new Fabricator(schema, { salt })` overrides that per construction, forking entirely away from both the resolved file and the instance's own salt — so that one build reproduces regardless of where it's written or how the instance was salted, as long as the instance's `clock` also matches (a per-construction salt keeps whichever `clock` the instance it's built from already has — see [What "now" means](/guides/reproducibility#what-now-means)). `new Fabricator(schema, { salt: layer(identity) })` forks the same way but _composes_ `identity` onto the instance's own salt instead of replacing it, so the construction still varies when the instance is re-salted — see [`layer(salt)`](#layersalt) below.
 
 `stack` overrides the ambient carrier backing [`wrap`](#instancewrapoverlay-block), and is almost never worth setting. Left alone, the right one is chosen when the package is imported: every runtime with `node:async_hooks` gets an `AsyncLocalStorage` carrier whose frames survive `await`, and anything else gets a synchronous one. Supply your own — anything satisfying `Stack` — to bring async-capable `wrap` to a runtime that would otherwise fall back, or to force the synchronous carrier deliberately.
 
@@ -36,7 +36,7 @@ The shape `initialize()` returns:
 
 - **`T`** — the registry of type builders, `types` (or the default) as passed
 - **`Fabricator`** — a constructor: `new Fabricator(schema)` turns a Schema into a live Fabricator
-- **`seed`** — this instance's seed, always an array; empty if you didn't supply one (and no env var did)
+- **`salt`** — this instance's salt, always an array; empty if you didn't supply one (and no env var did)
 - **`combinatorial(schema)`** — every combination of every enumerable node in `schema` (every enum member, both sides of an optional field, and so on), as a lazy cartesian product. Throws eagerly, before producing anything, if the count would exceed `limits.combinatorial`.
 - **`coverage(schema)`** — the minimum set of instances such that every option of every enumerable node in `schema` appears at least once — count equal to the widest single axis, not the product, with narrower axes cycling to fill it. Unbounded by design: its count can never exceed the schema as written, so unlike `combinatorial` it carries no limit.
 - **`fork(overlay?)`** — derives a new, related `Instance`. See [`Instance.fork(overlay?)`](#instanceforkoverlay) below.
@@ -51,19 +51,19 @@ Both `combinatorial` and `coverage` return a lazy, re-iterable `Iterable` — sa
 function fork(overlay?: Overlay): Instance;
 ```
 
-Derives a new `Instance` laid over the one `fork` was called on: whatever `overlay` names overrides, whatever it omits inherits — `seed`, `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value in every respect, including its own `fork`/`wrap`. A captured wall-clock or explicit `Date` is inherited as-is; an inherited `"seeded"` clock re-derives from whichever seed the fork ends up with — see [What "now" means](/guides/reproducibility#what-now-means).
+Derives a new `Instance` laid over the one `fork` was called on: whatever `overlay` names overrides, whatever it omits inherits — `salt`, `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value in every respect, including its own `fork`/`wrap`. A captured wall-clock or explicit `Date` is inherited as-is; an inherited `"derived"` clock re-derives from whichever salt the fork ends up with — see [What "now" means](/guides/reproducibility#what-now-means).
 
 ```ts
-const base = initialize({ seed: "base" });
+const base = initialize({ salt: "base" });
 
-const tenant = base.fork({ seed: "tenant-7" });
-tenant.seed; // ["tenant-7"] — replaced, the ordinary meaning of `seed`
+const tenant = base.fork({ salt: "tenant-7" });
+tenant.salt; // ["tenant-7"] — replaced, the ordinary meaning of `salt`
 
-const layered = base.fork({ seed: layer("tenant-7") });
-layered.seed; // ["base", "tenant-7"] — composed instead
+const layered = base.fork({ salt: layer("tenant-7") });
+layered.salt; // ["base", "tenant-7"] — composed instead
 ```
 
-`attribution` resolves once, at `fork()`'s own call, not deferred to whenever the derived instance first constructs — so a fork inherits its base's already-resolved root even when called from a different file, and `fork({ attribution: { kind: "call site" } })` re-roots at _that_ call specifically. See [Reproducibility](/guides/reproducibility) for the full mechanism, and [`layer(seed)`](#layerseed) below for what composing a seed means.
+`attribution` resolves once, at `fork()`'s own call, not deferred to whenever the derived instance first constructs — so a fork inherits its base's already-resolved root even when called from a different file, and `fork({ attribution: { kind: "call site" } })` re-roots at _that_ call specifically. See [Reproducibility](/guides/reproducibility) for the full mechanism, and [`layer(salt)`](#layersalt) below for what composing a salt means.
 
 ## `Instance.wrap(overlay, block)`
 
@@ -77,20 +77,20 @@ function wrap<$Return>(
 `fork(overlay)`, made ambient for the extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, or any other instance derived from the same root `initialize()` call — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use:
 
 ```ts
-const { T, Fabricator, wrap } = initialize({ seed: "base" });
+const { T, Fabricator, wrap } = initialize({ salt: "base" });
 
-wrap({ seed: layer("a") }, (scope) => {
+wrap({ salt: layer("a") }, (scope) => {
   new Fabricator(T.number).fabricate(); // picks up the wrap automatically
   new scope.Fabricator(T.number).fabricate(); // the same source, used explicitly
 });
 ```
 
-A nested `wrap` lays its overlay over whichever `wrap` is _currently_ active, not over the instance it was called on — so `wrap({ seed: layer(...) })` accumulates with nesting depth, while a bare `seed` at any depth still replaces outright.
+A nested `wrap` lays its overlay over whichever `wrap` is _currently_ active, not over the instance it was called on — so `wrap({ salt: layer(...) })` accumulates with nesting depth, while a bare `salt` at any depth still replaces outright.
 
 `block` may be `async`. On any runtime with `node:async_hooks` — Node, Bun, Deno — the ambient frame is carried by `AsyncLocalStorage`, so it survives `await`, and two concurrent `wrap`s never see each other's configuration:
 
 ```ts
-await wrap({ seed: layer("a") }, async () => {
+await wrap({ salt: layer("a") }, async () => {
   await loadFixtures();
   new Fabricator(T.number).fabricate(); // still the wrap's configuration
 });
@@ -104,22 +104,22 @@ See [Making a fork ambient: wrap](/guides/reproducibility#making-a-fork-ambient-
 
 ```ts
 readonly context: {
-  seed: readonly string[];
+  salt: readonly string[];
   algorithm: (seed: string) => () => number;
   attribution: Attribution;
   clock: number;
 };
 ```
 
-The configuration in effect right now: the innermost active `wrap` frame's, or the instance's own outside any `wrap`. A live view, not a snapshot — a `context` reference held onto before a `wrap` still reflects it while active, and reverts once the `wrap` ends. `clock` is always a resolved epoch-millisecond number, even under `"seeded"` — see [What "now" means](/guides/reproducibility#what-now-means).
+The configuration in effect right now: the innermost active `wrap` frame's, or the instance's own outside any `wrap`. A live view, not a snapshot — a `context` reference held onto before a `wrap` still reflects it while active, and reverts once the `wrap` ends. `clock` is always a resolved epoch-millisecond number, even under `"derived"` — see [What "now" means](/guides/reproducibility#what-now-means).
 
-## `layer(seed)`
+## `layer(salt)`
 
 ```ts
-function layer(seed: Seed): Layered;
+function layer(salt: Salt): Layered;
 ```
 
-Tags a seed as composing onto whatever base is in effect, rather than replacing it outright — the reading a bare `seed` has everywhere else in this library. Works identically wherever a `seed` is accepted against a base: `Instance.fork`, `Instance.wrap`, and a single `new Fabricator(schema, { seed })` call. See [Composing instead of replacing: layer(...)](/guides/reproducibility#composing-instead-of-replacing-layer) for the full picture.
+Tags a salt as composing onto whatever base is in effect, rather than replacing it outright — the reading a bare `salt` has everywhere else in this library. Works identically wherever a `salt` is accepted against a base: `Instance.fork`, `Instance.wrap`, and a single `new Fabricator(schema, { salt })` call. See [Composing instead of replacing: layer(...)](/guides/reproducibility#composing-instead-of-replacing-layer) for the full picture.
 
 ## `registry`
 
@@ -131,7 +131,7 @@ The default set of type builders, exported so it can be extended via `registry.e
 readonly trace: Trace;
 ```
 
-Every built Fabricator records how its stream is derived: the instance seed, the resolved clock this construction resolves "now" against (see [What "now" means](/guides/reproducibility#what-now-means)), `root` (how `file` and `ordinal` were resolved — `"attributed"`, `"unattributed"`, or `"counted"`), the file its construction was attributed to, its structural path within that construction, its kind, and which construction (among those sharing that file) it belongs to. `file` is relative to the instance's `attribution` root (absolute only if the construction falls outside it). Recording is unconditional — a bare `object` or `always` still has a `trace`, so a nested node can be rebuilt with `new Fabricator(schema, node.trace)`. Minting a stream from that trace is still paid only by nodes that draw. See [Reproducibility](/guides/reproducibility).
+Every built Fabricator records how its stream is derived: the instance salt, the resolved clock this construction resolves "now" against (see [What "now" means](/guides/reproducibility#what-now-means)), `root` (how `file` and `ordinal` were resolved — `"attributed"`, `"unattributed"`, or `"counted"`), the file its construction was attributed to, its structural path within that construction, its kind, and which construction (among those sharing that file) it belongs to. `file` is relative to the instance's `attribution` root (absolute only if the construction falls outside it). Recording is unconditional — a bare `object` or `always` still has a `trace`, so a nested node can be rebuilt with `new Fabricator(schema, node.trace)`. Minting a stream from that trace is still paid only by nodes that draw. See [Reproducibility](/guides/reproducibility).
 
 Three values are not a function of the node's own stream, so replaying the node standalone does not reproduce them: a `.refine()` compute field (throws without the parent object), a `recursive.self` node (throws without the enclosing `T.recursive`), and an `.override()` `[Fixed]` field (replays the drawn value the parent discarded). Replay the parent.
 

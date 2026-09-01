@@ -5,16 +5,16 @@ import { expect, test } from "bun:test";
  * `clock` is what `T.date.past`/`T.date.future` (and any producer reading
  * `ProduceContext.clock`) resolve "now" against — an epoch-millisecond instant.
  * The unconfigured default is the wall-clock instant of `initialize()` itself;
- * `"seeded"` is the explicit opt-in that derives that instant from the instance
- * seed instead.
+ * `"derived"` is the explicit opt-in that derives that instant from the
+ * instance salt instead.
  */
 
-test("an unconfigured instance captures wall-clock time and an empty seed", () => {
+test("an unconfigured instance captures wall-clock time and an empty salt", () => {
   const before = Date.now();
   const instance = initialize();
   const after = Date.now();
 
-  expect(instance.seed).toEqual([]);
+  expect(instance.salt).toEqual([]);
   expect(instance.context.clock).toBeGreaterThanOrEqual(before);
   expect(instance.context.clock).toBeLessThanOrEqual(after);
 });
@@ -24,20 +24,20 @@ test("an unconfigured instance replays from its captured clock alone", () => {
   const run = new first.Fabricator(first.T.number).fabricate();
 
   const replay = initialize({
-    seed: first.seed,
+    salt: first.salt,
     clock: new Date(first.context.clock),
   });
   expect(new replay.Fabricator(replay.T.number).fabricate()).toBe(run);
 });
 
-test('clock: "seeded" derives from the instance seed, not wall-clock time', () => {
-  const a = initialize({ seed: "clock-derived", clock: "seeded" });
-  const b = initialize({ seed: "clock-derived", clock: "seeded" });
-  const c = initialize({ seed: "clock-derived-other", clock: "seeded" });
+test('clock: "derived" derives from the instance salt, not wall-clock time', () => {
+  const a = initialize({ salt: "clock-derived", clock: "derived" });
+  const b = initialize({ salt: "clock-derived", clock: "derived" });
+  const c = initialize({ salt: "clock-derived-other", clock: "derived" });
 
-  /** The same seed always derives the identical clock. */
+  /** The same salt always derives the identical clock. */
   expect(a.context.clock).toBe(b.context.clock);
-  /** A different seed derives a different clock. */
+  /** A different salt derives a different clock. */
   expect(a.context.clock).not.toBe(c.context.clock);
   /**
    * Not wall-clock time: the derived instant is drawn across the whole
@@ -48,37 +48,37 @@ test('clock: "seeded" derives from the instance seed, not wall-clock time', () =
   );
 });
 
-test("a seeded clock re-derives when the seed it composes changes, while an explicit or default clock does not", () => {
-  const seeded = initialize({ seed: "clock-rederive-base", clock: "seeded" });
-  const forkedSeeded = seeded.fork({ seed: layer("child") });
+test("a salted clock re-derives when the salt it composes changes, while an explicit or default clock does not", () => {
+  const salted = initialize({ salt: "clock-rederive-base", clock: "derived" });
+  const forkedSeeded = salted.fork({ salt: layer("child") });
 
   /**
-   * `fork({ seed: layer("child") })` composes onto the base's seed, so an
-   * explicit `"seeded"` clock — never resolved eagerly by `overlay()` — sees a
-   * different effective seed and derives a different instant.
+   * `fork({ salt: layer("child") })` composes onto the base's salt, so an
+   * explicit `"derived"` clock — never resolved eagerly by `overlay()` — sees a
+   * different effective salt and derives a different instant.
    */
-  expect(forkedSeeded.context.clock).not.toBe(seeded.context.clock);
+  expect(forkedSeeded.context.clock).not.toBe(salted.context.clock);
 
-  const wall = initialize({ seed: "clock-rederive-wall" });
-  const forkedWall = wall.fork({ seed: layer("child") });
+  const wall = initialize({ salt: "clock-rederive-wall" });
+  const forkedWall = wall.fork({ salt: layer("child") });
   /** A captured wall-clock instant is inherited as-is, like an explicit Date. */
   expect(forkedWall.context.clock).toBe(wall.context.clock);
 
   const explicit = initialize({
-    seed: "clock-rederive-explicit",
+    salt: "clock-rederive-explicit",
     clock: new Date("2020-01-01T00:00:00.000Z"),
   });
-  const forkedExplicit = explicit.fork({ seed: layer("child") });
+  const forkedExplicit = explicit.fork({ salt: layer("child") });
   expect(forkedExplicit.context.clock).toBe(
     new Date("2020-01-01T00:00:00.000Z").getTime(),
   );
 });
 
-test('T.date.past replays identically across two initialize() calls sharing a seed and clock: "seeded"', () => {
+test('T.date.past replays identically across two initialize() calls sharing a salt and clock: "derived"', () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "clock-replay",
-      clock: "seeded",
+      salt: "clock-replay",
+      clock: "derived",
     });
     return new Fabricator(T.date.past);
   };
@@ -93,7 +93,7 @@ test('T.date.past replays identically across two initialize() calls sharing a se
 
 test('T.date.past\'s bare and .whereby({ min }) forms agree on what "now" is', () => {
   const { T, Fabricator, context } = initialize({
-    seed: "clock-bare-vs-whereby",
+    salt: "clock-bare-vs-whereby",
   });
 
   const now = context.clock;
@@ -116,7 +116,7 @@ test('T.date.past\'s bare and .whereby({ min }) forms agree on what "now" is', (
 test("initialize({ clock: new Date() }) pins every draw to that literal instant, not a later wall-clock read", () => {
   const before = Date.now();
   const { T, Fabricator, context } = initialize({
-    seed: "clock-wall",
+    salt: "clock-wall",
     clock: new Date(),
   });
 
@@ -136,7 +136,7 @@ test("initialize({ clock: new Date() }) pins every draw to that literal instant,
 test("initialize({ clock: <fixed Date> }) pins every draw to that instant", () => {
   const pinned = new Date("1999-12-31T23:59:59.000Z");
   const { T, Fabricator } = initialize({
-    seed: "clock-fixed-date",
+    salt: "clock-fixed-date",
     clock: pinned,
   });
 
@@ -151,7 +151,7 @@ test("initialize({ clock: <fixed Date> }) pins every draw to that instant", () =
 
 test("fork() inherits the parent instance's clock when not overridden", () => {
   const parent = initialize({
-    seed: "clock-fork-inherit",
+    salt: "clock-fork-inherit",
     clock: new Date(2020, 0, 1),
   });
   const child = parent.fork();
@@ -159,7 +159,7 @@ test("fork() inherits the parent instance's clock when not overridden", () => {
   const a = new parent.Fabricator(parent.T.date.future).fabricate();
   const b = new child.Fabricator(child.T.date.future).fabricate();
 
-  /** Same clock, same seed lineage relationship a plain fork() preserves. */
+  /** Same clock, same salt lineage relationship a plain fork() preserves. */
   expect(a.getTime()).toBeGreaterThanOrEqual(new Date(2020, 0, 1).getTime());
   expect(b.getTime()).toBeGreaterThanOrEqual(new Date(2020, 0, 1).getTime());
   expect(child.context.clock).toBe(parent.context.clock);
@@ -167,7 +167,7 @@ test("fork() inherits the parent instance's clock when not overridden", () => {
 
 test("fork({ clock }) overrides the parent's clock for the child instance only", () => {
   const parent = initialize({
-    seed: "clock-fork-override",
+    salt: "clock-fork-override",
     clock: new Date("2000-01-01T00:00:00.000Z"),
   });
   const child = parent.fork({ clock: new Date("2010-01-01T00:00:00.000Z") });
@@ -193,7 +193,7 @@ test("fork({ clock }) overrides the parent's clock for the child instance only",
 
 test("wrap({ clock }, ...) makes the override ambient for the extent of the block, then reverts", () => {
   const instance = initialize({
-    seed: "clock-wrap",
+    salt: "clock-wrap",
     clock: new Date("2000-01-01T00:00:00.000Z"),
   });
 
@@ -220,7 +220,7 @@ test("wrap({ clock }, ...) makes the override ambient for the extent of the bloc
 
 test("instance.context.clock is a live getter, reflecting an active wrap while it's active", () => {
   const instance = initialize({
-    seed: "clock-context-live",
+    salt: "clock-context-live",
     clock: new Date("2000-01-01T00:00:00.000Z"),
   });
 
@@ -248,7 +248,7 @@ test("instance.context.clock is a live getter, reflecting an active wrap while i
 test("ProduceContext.clock reaches a kind's own .as(produce)", () => {
   const pinned = new Date("2005-06-15T00:00:00.000Z");
   const { T, Fabricator } = initialize({
-    seed: "clock-produce-context",
+    salt: "clock-produce-context",
     clock: pinned,
   });
 

@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 
 test("a non-en locale yields locale-specific values", () => {
   const { T, Fabricator } = initialize({
-    seed: "locale-de",
+    salt: "locale-de",
     types: registry.extend(fakerExtension({ locale: [de, en] })),
   });
 

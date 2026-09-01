@@ -2,7 +2,7 @@ import type { Limits } from "./Enumeration/Types";
 import { toStack } from "#stack";
 import { instantiate, overlay } from "./Instance/Core";
 import type { Instance, Stack } from "./Instance/Types";
-import type { Algorithm, Attribution, Seed } from "./Random/Types";
+import type { Algorithm, Attribution, Salt } from "./Random/Types";
 import { registry } from "./Schema/Registry";
 import type { PlainObject } from "./Utility/Types";
 
@@ -14,22 +14,24 @@ export function initialize<
     types: $Registry;
 
     /**
-     * Optional mixer composed into every stream beside `clock`. Accepts a
-     * single string, or several — several lets a seed be composed out of
-     * independent, meaningful parts (a user id, a scenario label) without
-     * hand-joining them first. If omitted, the seed is empty (unless
-     * `FABRICATOR_SEED` / `SEED` / `RANDOM_SEED` supplies one): wall-clock
-     * `clock` is the default entropy, so an unconfigured instance varies by run
-     * and replays from `context.clock` alone. Pass a seed when two instances
-     * should share a clock but draw different universes, or when `clock:
-     * "seeded"` should make the seed itself the reproducibility unit.
+     * Optional differentiator composed into every stream beside `clock` — it
+     * distinguishes runs, it does not generate them. Accepts a single string,
+     * or several — several lets a salt be composed out of independent,
+     * meaningful parts (a user id, a scenario label) without hand-joining them
+     * first. If omitted, the salt is empty (unless `FABRICATOR_SALT` supplies
+     * one): wall-clock `clock` is the default entropy, so an unconfigured
+     * instance varies by run and replays from `context.clock` alone. Pass a
+     * salt when two instances should share a clock but draw different
+     * universes, or when `clock: "derived"` should make the salt itself the
+     * reproducibility unit.
      */
-    seed?: Seed;
+    salt?: Salt;
 
     /**
      * Bring your own PRNG: a factory that, given a seed, returns a source of
      * randomness — a `() => number` in `[0, 1)`, a drop-in for `Math.random`.
-     * Defaults to the built-in `sfc32` generator.
+     * The seed is a whole encoded trace, of which `salt` is one slot, not the
+     * `salt` itself. Defaults to the built-in `sfc32` generator.
      */
     algorithm?: Algorithm;
 
@@ -38,7 +40,7 @@ export function initialize<
      * was written in:
      *
      * - `{ kind: "rooted", root }` expresses every file relative to `root` (an
-     *   absolute path or a `file://` URL), so the same seed reproduces the same
+     *   absolute path or a `file://` URL), so the same salt reproduces the same
      *   data on a checkout at a different absolute path.
      * - `{ kind: "call site" }`, the default, is `"rooted"` at the directory of
      *   whichever file called `initialize()`.
@@ -66,14 +68,14 @@ export function initialize<
      * every leaf's trace, the default entropy for the instance. Defaults to the
      * wall-clock instant of this `initialize()` call, so an unconfigured run
      * has realistic dates and varies by process, and replays from
-     * `context.clock` (with the same empty or supplied `seed`). Pass a fixed
-     * `Date` to freeze "now" (and the rest of the run, unless `seed` also
-     * differs). Pass `"seeded"` to derive "now" from the instance seed instead
+     * `context.clock` (with the same empty or supplied `salt`). Pass a fixed
+     * `Date` to freeze "now" (and the rest of the run, unless `salt` also
+     * differs). Pass `"derived"` to derive "now" from the instance salt instead
      * — an instant drawn across the whole representable `Date` span, so an
      * implausible date is the expected outcome of that policy, not a bug.
-     * `"seeded"` is what makes `seed` alone the reproducibility unit.
+     * `"derived"` is what makes `salt` alone the reproducibility unit.
      */
-    clock?: Date | "seeded";
+    clock?: Date | "derived";
 
     /**
      * The ambient carrier backing `wrap` for this lineage — override only to
@@ -98,14 +100,14 @@ export function initialize<
 
 export { Omitted } from "./Types";
 /**
- * Tags a `Seed` — for `new Fabricator(schema, { seed })`, or `fork`'s own
- * `Overlay.seed` — as composing onto whatever base is in effect, rather than
+ * Tags a `Salt` — for `new Fabricator(schema, { salt })`, or `fork`'s own
+ * `Overlay.salt` — as composing onto whatever base is in effect, rather than
  * replacing it outright.
  */
 export { layer } from "./Random";
 /**
  * `layer(...)`'s return type, so a caller building one programmatically can
- * name it — the same rationale as the existing `Seed`/`Attribution` exports.
+ * name it — the same rationale as the existing `Salt`/`Attribution` exports.
  */
 export type { Layered } from "./Random/Types";
 /**
@@ -167,11 +169,11 @@ export type { Stream } from "./Random/Types";
  */
 export type { ProduceContext } from "./Random/Types";
 /**
- * The shape `initialize({ seed })` and `new Fabricator(schema, { seed })` both
+ * The shape `initialize({ salt })` and `new Fabricator(schema, { salt })` both
  * accept — a single string, or several — so a caller building one
  * programmatically (rather than as an inline literal) can name the type.
  */
-export type { Seed } from "./Random/Types";
+export type { Salt } from "./Random/Types";
 /**
  * The shape `initialize({ attribution })` accepts, so a caller building one
  * programmatically — a rooted policy derived from an env var, say — can name
@@ -205,7 +207,7 @@ export type { RootKind } from "./Random/Types";
 /**
  * `fork`/`wrap`'s own config shapes, so a caller building an overlay
  * programmatically (rather than as an inline literal) can name them — the same
- * rationale as the existing `Seed`/`Attribution` exports. `Config` is what
+ * rationale as the existing `Salt`/`Attribution` exports. `Config` is what
  * `initialize`'s own parameter is a `Partial` of; `Overlay` is what
  * `fork`/`wrap` accept; `Context` is `instance.context`'s own type, so a caller
  * writing a helper that reads it can name the parameter.

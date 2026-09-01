@@ -26,7 +26,7 @@ function enumerateAll(built: any): { width: bigint; results: unknown[] } {
 }
 
 test("an enum and a boolean field multiply: 3 members x 2 = 6", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-product-basic" });
+  const { T, Fabricator } = initialize({ salt: "plan-product-basic" });
   const built = new Fabricator(
     T.object({ e: T.enum.uniform(["a", "b", "c"]), b: T.boolean }),
   );
@@ -45,7 +45,7 @@ test("an enum and a boolean field multiply: 3 members x 2 = 6", () => {
 });
 
 test("tuple slots multiply: two booleans give 4 combinations", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-tuple" });
+  const { T, Fabricator } = initialize({ salt: "plan-tuple" });
   const built = new Fabricator(T.tuple([T.boolean, T.boolean]));
 
   const { width, results } = enumerateAll(built);
@@ -56,7 +56,7 @@ test("tuple slots multiply: two booleans give 4 combinations", () => {
 });
 
 test("choice sums its options' widths rather than multiplying them", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-choice-sum" });
+  const { T, Fabricator } = initialize({ salt: "plan-choice-sum" });
   const built = new Fabricator(
     T.choice.uniform([T.enum.uniform(["x", "y", "z"]), T.boolean]),
   );
@@ -69,7 +69,7 @@ test("choice sums its options' widths rather than multiplying them", () => {
 });
 
 test("T.omittable is a 2-wide axis: absent and present", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-omittable" });
+  const { T, Fabricator } = initialize({ salt: "plan-omittable" });
   const built = new Fabricator(T.object({ a: T.omittable(T.always("x")) }));
 
   const { width, results } = enumerateAll(built);
@@ -80,7 +80,7 @@ test("T.omittable is a 2-wide axis: absent and present", () => {
 });
 
 test("T.optional is a 3-wide axis: absent, present-as-undefined, present", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-optional" });
+  const { T, Fabricator } = initialize({ salt: "plan-optional" });
   const built = new Fabricator(T.object({ a: T.optional(T.always("x")) }));
 
   const { width, results } = enumerateAll(built);
@@ -92,7 +92,7 @@ test("T.optional is a 3-wide axis: absent, present-as-undefined, present", () =>
 });
 
 test("T.nullable/T.nullish/T.undefinable are 2/3/2-wide axes", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-wrappers" });
+  const { T, Fabricator } = initialize({ salt: "plan-wrappers" });
 
   expect(
     plan(new Fabricator(T.nullable(T.always("x"))), { strategy: "product" })
@@ -109,7 +109,7 @@ test("T.nullable/T.nullish/T.undefinable are 2/3/2-wide axes", () => {
 });
 
 test(".as(...) collapses enum/boolean/choice/tuple/object to width 1", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-as-collapses" });
+  const { T, Fabricator } = initialize({ salt: "plan-as-collapses" });
 
   const cases = [
     new Fabricator(T.enum.uniform(["a", "b", "c"]).as(() => "a")),
@@ -129,7 +129,7 @@ test(".as(...) collapses enum/boolean/choice/tuple/object to width 1", () => {
 });
 
 test("[Fixed] from .override() pins a field to width 1, including an omittable pinned to Omitted", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-fixed" });
+  const { T, Fabricator } = initialize({ salt: "plan-fixed" });
 
   const overridden = T.object({ a: T.enum.uniform(["x", "y"]) }).override({
     a: "y",
@@ -151,7 +151,7 @@ test("[Fixed] from .override() pins a field to width 1, including an omittable p
 });
 
 test("a .refine()-computed field adds no axis, and still resolves correctly against pinned values", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-compute" });
+  const { T, Fabricator } = initialize({ salt: "plan-compute" });
 
   const schema = T.object({ e: T.enum.uniform(["a", "b"]) }).refine(
     ({ compute }) => ({
@@ -171,7 +171,7 @@ test("a .refine()-computed field adds no axis, and still resolves correctly agai
 });
 
 test("non-enumerable kinds stay width 1 — array/record don't enumerate their contents", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-non-enumerable" });
+  const { T, Fabricator } = initialize({ salt: "plan-non-enumerable" });
 
   const built = new Fabricator(
     T.object({
@@ -188,7 +188,7 @@ test("non-enumerable kinds stay width 1 — array/record don't enumerate their c
 });
 
 test("a recursive field stays width 1 — its body/self are never planned", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-recursive" });
+  const { T, Fabricator } = initialize({ salt: "plan-recursive" });
 
   const built = new Fabricator(
     T.object({
@@ -206,7 +206,7 @@ test("a recursive field stays width 1 — its body/self are never planned", () =
 });
 
 test("non-enumerated fields are still fuzzed across resolved instances", () => {
-  const { T, Fabricator } = initialize({ seed: "plan-still-fuzzed" });
+  const { T, Fabricator } = initialize({ salt: "plan-still-fuzzed" });
 
   const built = new Fabricator(
     T.object({

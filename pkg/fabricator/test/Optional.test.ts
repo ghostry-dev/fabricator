@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { Omitted, initialize } from "@ghostry/fabricator";
 
 test("an optional field's roll lands on all three outcomes: omitted, present-as-undefined, present-with-a-value", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-three-outcomes" });
+  const { T, Fabricator } = initialize({ salt: "optional-three-outcomes" });
 
   const built = new Fabricator(
     T.object({ a: T.optional(T.string.whereby({ length: { max: 5 } })) }),
@@ -30,7 +30,7 @@ test("an optional field's roll lands on all three outcomes: omitted, present-as-
 });
 
 test("an optional field's roll is a uniform 1/3 split, not the 50/25/25 that composing omittable+undefinable would give", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-distribution" });
+  const { T, Fabricator } = initialize({ salt: "optional-distribution" });
 
   const built = new Fabricator(
     T.object({ a: T.optional(T.string.whereby({ length: { max: 5 } })) }),
@@ -60,14 +60,14 @@ test("an optional field's roll is a uniform 1/3 split, not the 50/25/25 that com
 });
 
 test("an optional field's roll never disturbs its object's other randomness", () => {
-  const seed = "optional-no-disturb";
+  const salt = "optional-no-disturb";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -84,7 +84,7 @@ test("an optional field's roll never disturbs its object's other randomness", ()
 });
 
 test(".override({ key: Omitted }) bakes the field omitted into the schema", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-override-omitted" });
+  const { T, Fabricator } = initialize({ salt: "optional-override-omitted" });
 
   const schema = T.object({
     a: T.optional(T.string.whereby({ length: { max: 5 } })),
@@ -96,7 +96,7 @@ test(".override({ key: Omitted }) bakes the field omitted into the schema", () =
 });
 
 test(".override({ key: undefined }) bakes the field present-as-undefined into the schema", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-override-undefined" });
+  const { T, Fabricator } = initialize({ salt: "optional-override-undefined" });
 
   const schema = T.object({
     a: T.optional(T.string.whereby({ length: { max: 5 } })),
@@ -109,7 +109,7 @@ test(".override({ key: undefined }) bakes the field present-as-undefined into th
 });
 
 test(".override({ key: value }) forces an optional field present with that value", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-override-present" });
+  const { T, Fabricator } = initialize({ salt: "optional-override-present" });
 
   const schema = T.object({
     a: T.optional(T.string.whereby({ length: { max: 5 } })),
@@ -121,7 +121,7 @@ test(".override({ key: value }) forces an optional field present with that value
 });
 
 test("fabricate({ key: Omitted }) and fabricate({ key: undefined }) force an optional field for that call only", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-fabricate-forced" });
+  const { T, Fabricator } = initialize({ salt: "optional-fabricate-forced" });
 
   const built = new Fabricator(
     T.object({ a: T.optional(T.string.whereby({ length: { max: 5 } })) }),
@@ -145,7 +145,7 @@ test("fabricate({ key: Omitted }) and fabricate({ key: undefined }) force an opt
 
 test("Omitted against a field that is neither omittable nor optional throws, both via .override() and .fabricate(overrides)", () => {
   const { T, Fabricator } = initialize({
-    seed: "optional-omitted-non-optional",
+    salt: "optional-omitted-non-optional",
   });
 
   const schema = T.object({ b: T.number });
@@ -157,7 +157,7 @@ test("Omitted against a field that is neither omittable nor optional throws, bot
 });
 
 test("an override value that violates an optional field's inner kind throws", () => {
-  const { T } = initialize({ seed: "optional-kind-violation" });
+  const { T } = initialize({ salt: "optional-kind-violation" });
 
   const schema = T.object({
     a: T.optional(T.string.whereby({ length: { max: 5 } })),
@@ -167,7 +167,7 @@ test("an override value that violates an optional field's inner kind throws", ()
 });
 
 test(".as(...) replaces the three-way roll with an opaque producer, which may itself return undefined or Omitted", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-as" });
+  const { T, Fabricator } = initialize({ salt: "optional-as" });
 
   const alwaysValue = new Fabricator(
     T.object({
@@ -195,7 +195,7 @@ test(".as(...) replaces the three-way roll with an opaque producer, which may it
 });
 
 test("an optional field nested in an array of objects resolves independently per element", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-in-array" });
+  const { T, Fabricator } = initialize({ salt: "optional-in-array" });
 
   const built = new Fabricator(
     T.array(
@@ -216,7 +216,7 @@ test("an optional field nested in an array of objects resolves independently per
 });
 
 test(".weighted(...) reweights relative to a fixed baseline of 1 for unspecified outcomes, shifting every outcome's share, not just the one named", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-weighted" });
+  const { T, Fabricator } = initialize({ salt: "optional-weighted" });
 
   const built = new Fabricator(
     T.object({
@@ -251,7 +251,7 @@ test(".weighted(...) reweights relative to a fixed baseline of 1 for unspecified
 });
 
 test("chained .weighted(...) calls merge into previous weights rather than replacing them wholesale", () => {
-  const { T, Fabricator } = initialize({ seed: "optional-weighted-chain" });
+  const { T, Fabricator } = initialize({ salt: "optional-weighted-chain" });
 
   const built = new Fabricator(
     T.object({

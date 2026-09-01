@@ -36,7 +36,7 @@ export type Fabricator<
  * sibling expansions at the same depth (an `array` of three `self` children
  * calls `fabricateAt` three times on one shared element Fabricator; the schema
  * does not tell them apart). Each expansion gets its own _root_: `forkSource`
- * mints an isolated `RandomSource` seeded from this node's draw, and each
+ * mints an isolated `RandomSource` salted from this node's draw, and each
  * `fabricateAt` opens a `"counted"` scope on it (`Random/Types.ts`'s `RootKind`
  * — recorded on each expansion's `trace`, not chosen at `ConstructorOptions`).
  * The private source's construction counter orders expansions; nothing to
@@ -52,7 +52,7 @@ export type Fabricator<
  */
 export function Fabricator<$Body>(
   context: FabricatorContext<Schema<$Body>>,
-  forkSource: (seed: string) => RandomSource,
+  forkSource: (salt: string) => RandomSource,
   make: (
     schema: unknown,
     path: ReadonlyArray<string>,

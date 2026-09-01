@@ -26,7 +26,7 @@ function shipping({ random }: ProduceContext): Map<string, number> {
 }
 
 test("the public ProduceContext type names a standalone producer", () => {
-  const { T, Fabricator } = initialize({ seed: "opaque-stream-export" });
+  const { T, Fabricator } = initialize({ salt: "opaque-stream-export" });
 
   const built = new Fabricator(T.object({ shipping: T.opaque(shipping) }));
   const fabricated: { shipping: Map<string, number> } = built.fabricate();
@@ -37,7 +37,7 @@ test("the public ProduceContext type names a standalone producer", () => {
 });
 
 test("produces a fresh value per call, unlike T.always", () => {
-  const { T, Fabricator } = initialize({ seed: "opaque-fresh" });
+  const { T, Fabricator } = initialize({ salt: "opaque-fresh" });
 
   const opaque = new Fabricator(T.opaque(() => new Map([["k", 1]])));
   const a = opaque.fabricate();
@@ -55,7 +55,7 @@ test("produces a fresh value per call, unlike T.always", () => {
 });
 
 test("fabricates values no other kind models", () => {
-  const { T, Fabricator } = initialize({ seed: "opaque-long-tail" });
+  const { T, Fabricator } = initialize({ salt: "opaque-long-tail" });
 
   const built = new Fabricator(
     T.object({
@@ -89,11 +89,11 @@ test("fabricates values no other kind models", () => {
  * parameter were ever swapped for a fresh or unseeded source, or dropped so
  * callers reached for `Math.random()`, this is what would fail.
  */
-test("a producer using the stream replays from the same seed", () => {
+test("a producer using the stream replays from the same salt", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "opaque-reproducible",
-      clock: "seeded",
+      salt: "opaque-reproducible",
+      clock: "derived",
     });
     return new Fabricator(
       T.opaque(({ random }) => new Map([["k", random.next()]])),
@@ -108,10 +108,10 @@ test("a producer using the stream replays from the same seed", () => {
   }
 });
 
-test("different seeds produce different opaque values", () => {
+test("different salts produce different opaque values", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
-  const build = (seed: string) => {
-    const { T, Fabricator } = initialize({ seed, clock });
+  const build = (salt: string) => {
+    const { T, Fabricator } = initialize({ salt, clock });
     return new Fabricator(T.opaque(({ random }) => random.next()));
   };
 
@@ -119,7 +119,7 @@ test("different seeds produce different opaque values", () => {
 });
 
 test("the producer's stream advances across calls", () => {
-  const { T, Fabricator } = initialize({ seed: "opaque-advances" });
+  const { T, Fabricator } = initialize({ salt: "opaque-advances" });
 
   const built = new Fabricator(T.opaque(({ random }) => random.next()));
 
@@ -141,7 +141,7 @@ test("the producer's stream advances across calls", () => {
  * draws, because its stream is what `produce` is handed.
  */
 test("an opaque Fabricator always carries a trace, unlike always", () => {
-  const { T, Fabricator } = initialize({ seed: "opaque-trace" });
+  const { T, Fabricator } = initialize({ salt: "opaque-trace" });
 
   const opaque = new Fabricator(T.opaque(() => new Map()));
   const traced = opaque.trace;
@@ -151,7 +151,7 @@ test("an opaque Fabricator always carries a trace, unlike always", () => {
 });
 
 test("composes as an array element and a record value", () => {
-  const { T, Fabricator } = initialize({ seed: "opaque-composes" });
+  const { T, Fabricator } = initialize({ salt: "opaque-composes" });
 
   const array = new Fabricator(
     T.array(T.opaque(() => new Set([1]))).whereby({
@@ -184,8 +184,8 @@ test("composes as an array element and a record value", () => {
 test("README's T.opaque example builds, typechecks, and replays", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "opaque-readme",
-      clock: "seeded",
+      salt: "opaque-readme",
+      clock: "derived",
     });
     return new Fabricator(
       T.object({
@@ -208,7 +208,7 @@ test("README's T.opaque example builds, typechecks, and replays", () => {
   expect(fabricated.shipping.get("days")).toBeGreaterThanOrEqual(1);
   expect(fabricated.shipping.get("days")).toBeLessThanOrEqual(10);
 
-  /** The point the doc comment makes: it replays from the seed. */
+  /** The point the doc comment makes: it replays from the salt. */
   expect(build().fabricate()).toEqual(build().fabricate());
 });
 
@@ -218,7 +218,7 @@ test("README's T.opaque example builds, typechecks, and replays", () => {
  * carries the phantom `[Produces]`.
  */
 test("an opaque field can be overridden wholesale", () => {
-  const { T, Fabricator } = initialize({ seed: "opaque-override" });
+  const { T, Fabricator } = initialize({ salt: "opaque-override" });
 
   const schema = T.object({ payload: T.opaque(() => new Map([["a", 1]])) });
   const pinned = new Map([["b", 2]]);

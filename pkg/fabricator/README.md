@@ -27,7 +27,7 @@ npm install @ghostry/fabricator
 ```ts
 import { initialize } from "@ghostry/fabricator";
 
-const { T, Fabricator } = initialize({ seed: "1234" });
+const { T, Fabricator } = initialize({ salt: "1234" });
 
 const ProductSchema = T.object({
   name: T.string.whereby({ length: { min: 1, max: 25 } }),
@@ -50,4 +50,4 @@ const item = Product.fabricate();
 const widget = Product.fabricate({ name: "Widget", inStock: true });
 ```
 
-`seed: "1234"` is an optional mixer; `clock` (the wall-clock instant of this call, by default) is the run's entropy. Pass the same seed and clock to replay. See the [docs site](https://docs.ghostry.dev/fabricator/) for the full guide: the mental model behind Schemas and Fabricators, composing and overriding schemas, custom types, distributions, and the [TypeBox adapter](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0).
+`salt: "1234"` is an optional mixer; `clock` (the wall-clock instant of this call, by default) is the run's entropy. Pass the same salt and clock to replay. See the [docs site](https://docs.ghostry.dev/fabricator/) for the full guide: the mental model behind Schemas and Fabricators, composing and overriding schemas, custom types, distributions, and the [TypeBox adapter](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0).

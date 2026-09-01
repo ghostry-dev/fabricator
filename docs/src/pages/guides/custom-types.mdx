@@ -43,7 +43,7 @@ There is no `fabricate:`-keyed convention for this — a plain object entry like
 
 ## Bringing a dynamic data library
 
-If that library is faker, reach for the [faker extension](/guides/faker) rather than wiring it by hand — it is itself a `registry.extend` callback, so it composes exactly like anything on this page, and its builders draw from fabricator's own seed:
+If that library is faker, reach for the [faker extension](/guides/faker) rather than wiring it by hand — it is itself a `registry.extend` callback, so it composes exactly like anything on this page, and its builders draw from fabricator's own randomness:
 
 ```ts
 import { en } from "@faker-js/faker";

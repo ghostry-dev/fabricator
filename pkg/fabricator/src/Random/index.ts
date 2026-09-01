@@ -20,37 +20,39 @@ import type {
   ResolvedAttribution,
   RootKind,
   RootPins,
-  Seed,
+  Salt,
   Stream,
   Trace,
 } from "./Types";
 
 /**
- * Build the library's built-in PRNG from a seed. The same seed always yields
- * the same stream. Seeds may be numbers or strings; both are stringified and
- * hashed to fully seed sfc32's state.
+ * Build the library's built-in PRNG from a seed — the genuine article, not a
+ * caller-supplied {@link Salt}: by the time anything reaches here the salt is
+ * one slot of an `encode`d {@link Trace}, and this string is that whole
+ * encoding. The same seed always yields the same stream, and `cyrb128` hashes
+ * it to fully seed sfc32's 128 bits of state.
  */
 export function defaultAlgorithm(seed: string): NumberGenerator {
   return sfc32(...cyrb128(seed));
 }
 
 /**
- * Mint a fresh seed value — a uint32 label. Not used as `initialize()`'s
- * default (an omitted seed is empty; wall-clock `clock` is the default
+ * Mint a fresh salt value — a uint32 label. Not used as `initialize()`'s
+ * default (an omitted salt is empty; wall-clock `clock` is the default
  * entropy); kept for callers that want a generated mixer, and for tests that
  * need one.
  */
-export function randomSeed(): string {
+export function randomSalt(): string {
   return ((Math.random() * 0x1_0000_0000) >>> 0).toString(10);
 }
 
 /**
- * Derive the explicit `"seeded"` clock — an epoch-millisecond instant, drawn
+ * Derive the explicit `"derived"` clock — an epoch-millisecond instant, drawn
  * across the full representable `Date` span — from an instance's own
- * `algorithm`/`seed`. The unconfigured default is wall-clock time
- * (`Instance/Core.ts`'s `overlay`); this is the opt-in that makes `seed` alone
+ * `algorithm`/`salt`. The unconfigured default is wall-clock time
+ * (`Instance/Core.ts`'s `overlay`); this is the opt-in that makes `salt` alone
  * the reproducibility unit, at the cost of an implausible "now". A throwaway
- * two-element encoding (`JSON.stringify([seed, "clock"])`), _not_ routed
+ * two-element encoding (`JSON.stringify([salt, "clock"])`), _not_ routed
  * through `RandomSource`/`Trace`: after the clock is folded into stream
  * derivation, a forked source's own stream derivation requires a clock, so
  * deriving the clock from a fork would be circular. Kept below that layer,
@@ -61,30 +63,36 @@ export function randomSeed(): string {
  */
 export function deriveClock(
   algorithm: Algorithm,
-  seed: ReadonlyArray<string>,
+  salt: ReadonlyArray<string>,
 ): number {
-  const stream = toStream(algorithm, JSON.stringify([seed, "clock"]));
+  const stream = toStream(algorithm, JSON.stringify([salt, "clock"]));
   return Math.trunc((stream.next() * 2 - 1) * MAX_TIME);
 }
 
 /**
- * Optional mixer from the environment when `initialize()` was given no `seed`.
- * Never a generated value: an omitted seed with none of these set is empty, and
- * wall-clock `clock` is the run's entropy. `FABRICATOR_SEED` takes priority as
- * this library's own override, then the conventional `SEED`/`RANDOM_SEED`
- * names.
+ * Optional salt from the environment when `initialize()` was given no `salt`.
+ * Never a generated value: an omitted salt with this unset is empty, and
+ * wall-clock `clock` is the run's entropy.
+ *
+ * One variable, and a namespaced one. The conventional `SEED`/`RANDOM_SEED`
+ * names are deliberately _not_ read: whoever sets those is asking for a stable
+ * run, and a salt alone cannot deliver one — `clock` still varies per process,
+ * so the run would move anyway. Honoring them would answer that request with
+ * something that looks like it worked and didn't. Pinning the salt is a
+ * decision about _this_ library, so it takes this library's own name, and the
+ * docs can state the `clock` caveat next to it.
  */
-function envSeed(): string | undefined {
+function envSalt(): string | undefined {
   const env = typeof process === "object" ? process.env : undefined;
 
-  return env?.["FABRICATOR_SEED"] ?? env?.["SEED"] ?? env?.["RANDOM_SEED"];
+  return env?.["FABRICATOR_SALT"];
 }
 
 /**
  * Collapse a {@link Trace} into one string to hash — and, since
  * `toStreamFromTrace` hashes exactly this output, the _definition_ of that
  * leaf's stream seed. Concatenating fields with a delimiter would collide when
- * a path/kind/seed part contains that delimiter (`file="a b", kind="c"` vs
+ * a path/kind/salt part contains that delimiter (`file="a b", kind="c"` vs
  * `file="a", kind="b c"`) — silently: two leaves that should draw independently
  * would share one stream. `JSON.stringify` as an array makes every field's and
  * slot's boundaries unambiguous regardless of content or nesting depth.
@@ -95,7 +103,7 @@ function envSeed(): string | undefined {
  */
 export function encode(trace: Trace): string {
   return JSON.stringify([
-    trace.seed,
+    trace.salt,
     trace.clock,
     trace.root,
     trace.file,
@@ -106,28 +114,28 @@ export function encode(trace: Trace): string {
 }
 
 /**
- * Normalize a caller-supplied {@link Seed} to its parts: a single string becomes
- * a one-element array, an array passes through unchanged, and a missing seed is
- * empty — unless {@link envSeed} supplies one. No generated fallback: an omitted
- * seed is not a second source of entropy beside the instance clock.
+ * Normalize a caller-supplied {@link Salt} to its parts: a single string becomes
+ * a one-element array, an array passes through unchanged, and a missing salt is
+ * empty — unless {@link envSalt} supplies one. No generated fallback: an omitted
+ * salt is not a second source of entropy beside the instance clock.
  */
-export function normalizeSeed(seed: Seed | undefined): ReadonlyArray<string> {
-  if (typeof seed === "undefined") {
-    const fromEnv = envSeed();
+export function normalizeSalt(salt: Salt | undefined): ReadonlyArray<string> {
+  if (typeof salt === "undefined") {
+    const fromEnv = envSalt();
     return typeof fromEnv === "undefined" ? [] : [fromEnv];
   }
-  return typeof seed === "string" ? [seed] : [...seed];
+  return typeof salt === "string" ? [salt] : [...salt];
 }
 
 /**
- * Tag a seed as composing onto whatever base is in effect, rather than
- * replacing it — the reading a bare `seed` has everywhere else in this library.
+ * Tag a salt as composing onto whatever base is in effect, rather than
+ * replacing it — the reading a bare `salt` has everywhere else in this library.
  * Mirrors `replace()`'s `[Replace]` tagging: the `[Layer]` directive is read
- * (and, at every level that accepts one, consumed) by whoever resolves the seed
+ * (and, at every level that accepts one, consumed) by whoever resolves the salt
  * against its base, so a caller never names the symbol.
  */
-export function layer(seed: Seed): Layered {
-  return { [Layer]: seed };
+export function layer(salt: Salt): Layered {
+  return { [Layer]: salt };
 }
 
 export function isLayered(value: unknown): value is Layered {
@@ -229,13 +237,13 @@ export function toStreamFromTrace(algorithm: Algorithm, trace: Trace): Stream {
 /**
  * Create a fresh, self-contained {@link RandomSource} — the randomness state a
  * single `initialize()` instance owns for its lifetime. `options.clock` is
- * baked in here, once, as a plain number — the `"seeded"` policy is already
+ * baked in here, once, as a plain number — the `"derived"` policy is already
  * resolved by the caller (`Instance/Core.ts`'s `resolveClock`) before a source
  * is ever built, so every root this source resolves carries the identical
  * instant, and `fork` threads it forward unchanged.
  */
 export function toRandomSource(options: Options): RandomSource {
-  let seed: ReadonlyArray<string> = normalizeSeed(options.seed);
+  let salt: ReadonlyArray<string> = normalizeSalt(options.salt);
   let algorithm: Algorithm = options.algorithm ?? defaultAlgorithm;
   let attribution: ResolvedAttribution = resolveAttribution(
     options.attribution,
@@ -285,7 +293,7 @@ export function toRandomSource(options: Options): RandomSource {
       return nextConstructionOrdinal(file);
     });
 
-    return { seed, clock: pins.clock ?? clock, root, file, ordinal };
+    return { salt, clock: pins.clock ?? clock, root, file, ordinal };
   }
 
   function resolveRootFile(kind: RootKind): string | undefined {
@@ -306,21 +314,21 @@ export function toRandomSource(options: Options): RandomSource {
    * private to each `toRandomSource` call), so nothing here is shared with the
    * parent. Passes the already-_resolved_ `attribution`, not the caller-facing
    * form that produced it: re-resolving `"call site"` here would read the live
-   * stack at whatever moment the fork actually runs (an explicitly seeded
+   * stack at whatever moment the fork actually runs (an explicitly salted
    * build, a recursive schema's lazy expansion, an enumeration rebuild) and
    * root the child source somewhere unrelated to the instance that spawned it.
-   * `T.recursive`'s private source and `new Fabricator(schema, { seed })`'s own
+   * `T.recursive`'s private source and `new Fabricator(schema, { salt })`'s own
    * fork both inherit the instance's attribution policy for free, with no new
    * parameter on `RandomSource`. `clock` is threaded through unchanged for the
-   * same reason: a fork is a statement about seed identity, not about "now," so
-   * `T.recursive`'s private source and an explicitly seeded build both resolve
+   * same reason: a fork is a statement about salt identity, not about "now," so
+   * `T.recursive`'s private source and an explicitly salted build both resolve
    * "now" exactly as their parent does (see `Fabricator/Constructor.ts`'s
    * `toConstructionContext`, which reads a construction's clock straight off
    * its resolved root rather than threading a separate value).
    */
-  function fork(childSeed: Seed): RandomSource {
-    return toRandomSource({ seed: childSeed, algorithm, attribution, clock });
+  function fork(childSalt: Salt): RandomSource {
+    return toRandomSource({ salt: childSalt, algorithm, attribution, clock });
   }
 
-  return { toRoot, algorithm, seed, fork };
+  return { toRoot, algorithm, salt, fork };
 }

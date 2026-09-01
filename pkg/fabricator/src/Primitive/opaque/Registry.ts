@@ -8,7 +8,7 @@ import { Schema } from "./Schema";
  * `T.opaque((random) => new Map<string, number>())` needs no annotation.
  *
  * `produce` receives this schema's own seeded stream, so an opaque value still
- * replays from a seed; see `Types.ts`'s `Produce`. No bare form and no `.as()`
+ * replays from a salt; see `Types.ts`'s `Produce`. No bare form and no `.as()`
  * — `produce` is the whole schema.
  */
 export default function <$T>(produce: Produce<$T>): Schema<$T> {

@@ -24,13 +24,13 @@ import {
  */
 test("rooted attribution reproduces the same seed across different absolute checkouts", () => {
   const instanceA = initialize({
-    seed: "cross-checkout",
-    clock: "seeded",
+    salt: "cross-checkout",
+    clock: "derived",
     attribution: { kind: "rooted", root: checkoutA.here },
   });
   const instanceB = initialize({
-    seed: "cross-checkout",
-    clock: "seeded",
+    salt: "cross-checkout",
+    clock: "derived",
     attribution: { kind: "rooted", root: checkoutB.here },
   });
 
@@ -43,13 +43,13 @@ test("rooted attribution reproduces the same seed across different absolute chec
 
 test("rooted attribution still diverges when the relative path actually differs", () => {
   const instanceA = initialize({
-    seed: "cross-checkout",
-    clock: "seeded",
+    salt: "cross-checkout",
+    clock: "derived",
     attribution: { kind: "rooted", root: checkoutA.here },
   });
   const instanceB = initialize({
-    seed: "cross-checkout",
-    clock: "seeded",
+    salt: "cross-checkout",
+    clock: "derived",
     // Rooted one directory higher than `checkout-b`'s own, so its `leaf.ts`
     // resolves as `checkout-b/leaf.ts` rather than bare `leaf.ts` — the same
     // file name, a genuinely different relative path.
@@ -65,7 +65,7 @@ test("rooted attribution still diverges when the relative path actually differs"
 
 test("fork() propagates the resolved attribution policy, not the caller-facing form", () => {
   const parent = toRandomSourceHere("fork-attribution");
-  const child = parent.fork("child-seed");
+  const child = parent.fork("child-salt");
 
   const root = child.toRoot("attributed");
   toStreamFromTrace(child.algorithm, { ...root, path: [], kind: "number" });
@@ -74,7 +74,7 @@ test("fork() propagates the resolved attribution policy, not the caller-facing f
 });
 
 test("the default attribution policy is call site, relativized to this file", () => {
-  const { T, Fabricator } = initialize({ seed: "default-attribution" });
+  const { T, Fabricator } = initialize({ salt: "default-attribution" });
   const built = new Fabricator(T.string.whereby({ length: { max: 8 } }));
 
   expect(built.trace.file).toBe("Attribution.test.ts");
@@ -82,7 +82,7 @@ test("the default attribution policy is call site, relativized to this file", ()
 
 test("a rooted policy accepts a file:// URL root and decodes it", () => {
   const { T, Fabricator } = initialize({
-    seed: "rooted-url",
+    salt: "rooted-url",
     attribution: { kind: "rooted", root: new URL("..", import.meta.url).href },
   });
   const built = new Fabricator(T.string.whereby({ length: { max: 8 } }));
@@ -91,7 +91,7 @@ test("a rooted policy accepts a file:// URL root and decodes it", () => {
 });
 
 test("a construction in another file relativizes under this file's default call-site root", () => {
-  const { Fabricator } = initialize({ seed: "ascent-here" });
+  const { Fabricator } = initialize({ salt: "ascent-here" });
 
   expect(traceSharedSchemaHere(Fabricator)?.file).toBe(
     "fixtures/sharedSchema.ts",
@@ -112,17 +112,17 @@ test("a construction outside the resolved root ascends with .. rather than stayi
   expect(built.trace.file).toBe("../Attribution.test.ts");
 });
 
-test("none attributes nothing, so two independent instances draw identical data from a shared seed", () => {
+test("none attributes nothing, so two independent instances draw identical data from a shared salt", () => {
   const instanceA = initialize({
-    seed: "none-mode",
-    clock: "seeded",
+    salt: "none-mode",
+    clock: "derived",
     attribution: { kind: "none" },
   });
   const hereA = fabricateSharedSchemaHere(instanceA.Fabricator);
 
   const instanceB = initialize({
-    seed: "none-mode",
-    clock: "seeded",
+    salt: "none-mode",
+    clock: "derived",
     attribution: { kind: "none" },
   });
   const thereB = new instanceB.Fabricator(sharedSchema()).fabricate();
@@ -132,7 +132,7 @@ test("none attributes nothing, so two independent instances draw identical data 
 
 test("none produces a trace with no file", () => {
   const { T, Fabricator } = initialize({
-    seed: "none-trace",
+    salt: "none-trace",
     attribution: { kind: "none" },
   });
   const built = new Fabricator(T.string.whereby({ length: { max: 8 } }));
@@ -144,14 +144,14 @@ test("none produces a trace with no file", () => {
  * Under `{ kind: "none" }`, every construction shares one file-less bucket — so
  * unlike a real file's counter, the _n_th construction anywhere in the instance
  * gets the _n_th index. Distinct constructions must still diverge (never draw
- * identical data), and an explicitly seeded `new Fabricator(schema, { seed })`
+ * identical data), and an explicitly salted `new Fabricator(schema, { salt })`
  * — which forks away from that shared bucket entirely — must still reproduce
- * exactly regardless of how many ordinary, unseeded constructions ran before or
- * between the two seeded calls.
+ * exactly regardless of how many ordinary, unsalted constructions ran before or
+ * between the two salted calls.
  */
-test("none + an explicitly seeded Fabricator still reproduces amid unseeded builds", () => {
+test("none + an explicitly salted Fabricator still reproduces amid unsalted builds", () => {
   const { T, Fabricator } = initialize({
-    seed: "none-interleave",
+    salt: "none-interleave",
     attribution: { kind: "none" },
   });
 
@@ -159,21 +159,21 @@ test("none + an explicitly seeded Fabricator still reproduces amid unseeded buil
   new Fabricator(T.number).fabricate();
 
   const a = new Fabricator(T.object({ x: T.number }), {
-    seed: "pinned",
+    salt: "pinned",
   }).fabricate();
 
   new Fabricator(T.number).fabricate();
 
   const b = new Fabricator(T.object({ x: T.number }), {
-    seed: "pinned",
+    salt: "pinned",
   }).fabricate();
 
   expect(a).toEqual(b);
 });
 
-test("none still diverges between two ordinary, unseeded constructions", () => {
+test("none still diverges between two ordinary, unsalted constructions", () => {
   const { T, Fabricator } = initialize({
-    seed: "none-diverge",
+    salt: "none-diverge",
     attribution: { kind: "none" },
   });
 
@@ -192,7 +192,7 @@ test("none still diverges between two ordinary, unseeded constructions", () => {
  */
 test("T.recursive's own dispatch is relativized under a rooted policy", () => {
   const { T, Fabricator } = initialize({
-    seed: "recursive-attribution",
+    salt: "recursive-attribution",
     attribution: { kind: "rooted", root: new URL("..", import.meta.url).href },
   });
 
@@ -216,7 +216,7 @@ test("a relative rooted root throws InvalidAttributionRootError", () => {
  * silently handing back identical data.
  */
 test("two constructions in the same file diverge from each other by default", () => {
-  const { T, Fabricator } = initialize({ seed: "same-file-diverge" });
+  const { T, Fabricator } = initialize({ salt: "same-file-diverge" });
 
   const a = new Fabricator(T.number).fabricate();
   const b = new Fabricator(T.number).fabricate();
@@ -235,8 +235,8 @@ test("two constructions in the same file diverge from each other by default", ()
 test("a file's data is unaffected by unrelated constructions in another file", () => {
   const alone = () => {
     const { T, Fabricator } = initialize({
-      seed: "invocation-independence",
-      clock: "seeded",
+      salt: "invocation-independence",
+      clock: "derived",
     });
     return [
       new Fabricator(T.number).fabricate(),
@@ -246,8 +246,8 @@ test("a file's data is unaffected by unrelated constructions in another file", (
 
   const interleaved = () => {
     const { T, Fabricator } = initialize({
-      seed: "invocation-independence",
-      clock: "seeded",
+      salt: "invocation-independence",
+      clock: "derived",
     });
     const first = new Fabricator(T.number).fabricate();
     fabricateSharedSchemaHere(Fabricator);
@@ -259,86 +259,86 @@ test("a file's data is unaffected by unrelated constructions in another file", (
 });
 
 /**
- * `options.seed` forks an entirely fresh source from exactly that value,
- * ignoring the instance's own seed — the same seed reproduces the same result
+ * `options.salt` forks an entirely fresh source from exactly that value,
+ * ignoring the instance's own salt — the same salt reproduces the same result
  * regardless of which file it's called from, or which instance built it, _given
- * the same clock_ — a per-call seed forks the source but keeps whichever clock
+ * the same clock_ — a per-call salt forks the source but keeps whichever clock
  * the source it forks from already carries (see `Fabricator/Constructor.ts`'s
  * `toConstructionContext`), so two instances must also agree on their clock for
  * this to hold. Pinned explicitly here so the two instances'
  * otherwise-independent default wall-clock instants don't introduce a second,
- * unrelated source of divergence. `"seeded"` would do the same job here; a
+ * unrelated source of divergence. `"derived"` would do the same job here; a
  * pinned Date makes the shared "now" obvious.
  */
-test("new Fabricator(schema, { seed }) reproduces regardless of the instance's own seed, given the same clock", () => {
+test("new Fabricator(schema, { salt }) reproduces regardless of the instance's own salt, given the same clock", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
-  const a = initialize({ seed: "instance-a", clock });
-  const b = initialize({ seed: "instance-b", clock });
+  const a = initialize({ salt: "instance-a", clock });
+  const b = initialize({ salt: "instance-b", clock });
 
-  const one = new a.Fabricator(a.T.number, { seed: "shared" }).fabricate();
-  const two = new b.Fabricator(b.T.number, { seed: "shared" }).fabricate();
+  const one = new a.Fabricator(a.T.number, { salt: "shared" }).fabricate();
+  const two = new b.Fabricator(b.T.number, { salt: "shared" }).fabricate();
 
   expect(one).toBe(two);
 });
 
 /**
- * `seed: layer(...)` composes onto the instance's own seed rather than
- * replacing it — equivalent to a bare `{ seed }` fork of exactly
- * `[...instance.seed, ...given]`, not of `given` alone.
+ * `salt: layer(...)` composes onto the instance's own salt rather than
+ * replacing it — equivalent to a bare `{ salt }` fork of exactly
+ * `[...instance.salt, ...given]`, not of `given` alone.
  */
-test("new Fabricator(schema, { seed: layer(...) }) composes onto the instance's seed", () => {
-  const { T, Fabricator, seed } = initialize({ seed: "composing-base" });
+test("new Fabricator(schema, { salt: layer(...) }) composes onto the instance's salt", () => {
+  const { T, Fabricator, salt } = initialize({ salt: "composing-base" });
 
-  const layered = new Fabricator(T.number, { seed: layer("x") }).fabricate();
+  const layered = new Fabricator(T.number, { salt: layer("x") }).fabricate();
   const equivalent = new Fabricator(T.number, {
-    seed: [...seed, "x"],
+    salt: [...salt, "x"],
   }).fabricate();
 
   expect(layered).toBe(equivalent);
 });
 
 /**
- * The whole reason the layered form exists: unlike a bare `{ seed }`, which
- * ignores the instance entirely, a layered seed still varies when the instance
- * itself is reseeded.
+ * The whole reason the layered form exists: unlike a bare `{ salt }`, which
+ * ignores the instance entirely, a layered salt still varies when the instance
+ * itself is re-salted.
  */
-test("new Fabricator(schema, { seed: layer(...) }) still varies when the instance is reseeded", () => {
+test("new Fabricator(schema, { salt: layer(...) }) still varies when the instance is re-salted", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
-  const a = initialize({ seed: "instance-a", clock });
-  const b = initialize({ seed: "instance-b", clock });
+  const a = initialize({ salt: "instance-a", clock });
+  const b = initialize({ salt: "instance-b", clock });
 
-  const one = new a.Fabricator(a.T.number, { seed: layer("x") }).fabricate();
-  const two = new b.Fabricator(b.T.number, { seed: layer("x") }).fabricate();
+  const one = new a.Fabricator(a.T.number, { salt: layer("x") }).fabricate();
+  const two = new b.Fabricator(b.T.number, { salt: layer("x") }).fabricate();
 
   expect(one).not.toBe(two);
 });
 
 /**
- * A layered seed still forks a fully isolated source, exactly like a bare one —
+ * A layered salt still forks a fully isolated source, exactly like a bare one —
  * so it reproduces across files/instances given the same effective (instance
- * seed + layered seed) pair, and differs from the bare form given the same
+ * salt + layered salt) pair, and differs from the bare form given the same
  * layered value alone.
  */
-test("new Fabricator(schema, { seed: layer(...) }) reproduces given the same instance and layer", () => {
-  const a = initialize({ seed: "shared-instance-seed", clock: "seeded" });
-  const b = initialize({ seed: "shared-instance-seed", clock: "seeded" });
+test("new Fabricator(schema, { salt: layer(...) }) reproduces given the same instance and layer", () => {
+  const a = initialize({ salt: "shared-instance-salt", clock: "derived" });
+  const b = initialize({ salt: "shared-instance-salt", clock: "derived" });
 
-  const one = new a.Fabricator(a.T.number, { seed: layer("x") }).fabricate();
-  const two = new b.Fabricator(b.T.number, { seed: layer("x") }).fabricate();
-  const bare = new a.Fabricator(a.T.number, { seed: "x" }).fabricate();
+  const one = new a.Fabricator(a.T.number, { salt: layer("x") }).fabricate();
+  const two = new b.Fabricator(b.T.number, { salt: layer("x") }).fabricate();
+  const bare = new a.Fabricator(a.T.number, { salt: "x" }).fabricate();
 
   expect(one).toBe(two);
   expect(one).not.toBe(bare);
 });
 
 /**
- * Both seeded forms open an `"unattributed"` scope on their fork — a
+ * Both salted forms open an `"unattributed"` scope on their fork — a
  * caller-chosen root replaces a resolved file whether or not it composes.
  */
-test("new Fabricator(schema, { seed: layer(...) }) reports no file from .trace", () => {
-  const { T, Fabricator } = initialize({ seed: "layer-trace" });
+test("new Fabricator(schema, { salt: layer(...) }) reports no file from .trace", () => {
+  const { T, Fabricator } = initialize({ salt: "layer-trace" });
   const built = new Fabricator(T.string.whereby({ length: { max: 8 } }), {
-    seed: layer("x"),
+    salt: layer("x"),
   });
 
   expect(built.trace.file).toBeUndefined();

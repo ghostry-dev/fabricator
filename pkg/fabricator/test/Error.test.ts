@@ -12,7 +12,7 @@ import { initialize, FabricatorError } from "@ghostry/fabricator";
  */
 
 test("a validation failure is an instance of FabricatorError", () => {
-  const { T } = initialize({ seed: "error-instanceof" });
+  const { T } = initialize({ salt: "error-instanceof" });
 
   const schema = T.object({ name: T.always("x") });
 
@@ -28,7 +28,7 @@ test("a validation failure is an instance of FabricatorError", () => {
 });
 
 test("an unknown-field override exposes the field name and available fields", () => {
-  const { T } = initialize({ seed: "error-fields" });
+  const { T } = initialize({ salt: "error-fields" });
 
   const schema = T.object({ name: T.always("x"), age: T.always(1) });
 
@@ -45,7 +45,7 @@ test("an unknown-field override exposes the field name and available fields", ()
 });
 
 test("an invalid override value exposes the field, kind, and rejected value", () => {
-  const { T } = initialize({ seed: "error-invalid-value" });
+  const { T } = initialize({ salt: "error-invalid-value" });
 
   const schema = T.object({ name: T.string.whereby({ length: { max: 3 } }) });
 

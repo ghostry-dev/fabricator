@@ -9,7 +9,7 @@ import { expect, test } from "bun:test";
  * tests actually mean, and it's exact.
  */
 test("T.date.past always lands at or before now", () => {
-  const { T, Fabricator, context } = initialize({ seed: "date-past" });
+  const { T, Fabricator, context } = initialize({ salt: "date-past" });
 
   const built = new Fabricator(T.date.past);
   const now = context.clock;
@@ -20,7 +20,7 @@ test("T.date.past always lands at or before now", () => {
 });
 
 test("T.date.future always lands at or after now", () => {
-  const { T, Fabricator, context } = initialize({ seed: "date-future" });
+  const { T, Fabricator, context } = initialize({ salt: "date-future" });
 
   const built = new Fabricator(T.date.future);
   const now = context.clock;
@@ -40,7 +40,7 @@ test("T.date.past.whereby({ min }) stays within [min, now]", () => {
   const min = new Date("2020-01-01T00:00:00.000Z");
   const now = new Date("2025-01-01T00:00:00.000Z");
   const { T, Fabricator } = initialize({
-    seed: "date-past-whereby",
+    salt: "date-past-whereby",
     clock: now,
   });
 
@@ -57,7 +57,7 @@ test("T.date.future.whereby({ max }) stays within [now, max]", () => {
   const now = new Date("2025-01-01T00:00:00.000Z");
   const max = new Date("2030-01-01T00:00:00.000Z");
   const { T, Fabricator } = initialize({
-    seed: "date-future-whereby",
+    salt: "date-future-whereby",
     clock: now,
   });
 
@@ -79,7 +79,7 @@ test("T.date.future.whereby({ max }) stays within [now, max]", () => {
  * otherwise land back on the excluded instant).
  */
 test("T.date.whereby({ min, max }) stays within [min, max] and approaches both ends", () => {
-  const { T, Fabricator } = initialize({ seed: "date-whereby-bounds" });
+  const { T, Fabricator } = initialize({ salt: "date-whereby-bounds" });
 
   const min = new Date("2000-01-01T00:00:00.000Z");
   const max = new Date("2000-01-01T00:16:40.000Z"); // 1,000,000ms span
@@ -103,7 +103,7 @@ test("T.date.whereby({ min, max }) stays within [min, max] and approaches both e
 });
 
 test("an exclusive date min is never produced", () => {
-  const { T, Fabricator } = initialize({ seed: "date-exclusive-min" });
+  const { T, Fabricator } = initialize({ salt: "date-exclusive-min" });
   const min = new Date("2000-01-01T00:00:00.000Z");
   const max = new Date("2000-01-01T00:00:01.000Z");
   const built = new Fabricator(
@@ -118,7 +118,7 @@ test("an exclusive date min is never produced", () => {
 });
 
 test("an empty date range throws at whereby", () => {
-  const { T } = initialize({ seed: "date-empty" });
+  const { T } = initialize({ salt: "date-empty" });
   const at = new Date("2000-01-01T00:00:00.000Z");
   expect(() =>
     T.date.whereby({ min: at, max: { value: at, exclusive: true } }),
@@ -127,7 +127,7 @@ test("an empty date range throws at whereby", () => {
 
 /** A bare `T.date` spans the entire representable range, both sides of now. */
 test("a bare T.date spans both past and future", () => {
-  const { T, Fabricator } = initialize({ seed: "date-bare" });
+  const { T, Fabricator } = initialize({ salt: "date-bare" });
 
   const built = new Fabricator(T.date);
   const now = Date.now();

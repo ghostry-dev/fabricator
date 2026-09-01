@@ -4,7 +4,7 @@ import type {
   Constructor,
   ConstructorOptions,
   Enumerable,
-  Seed,
+  Salt,
 } from "@ghostry/fabricator/internal";
 import { toRandomSource } from "@ghostry/fabricator/internal";
 
@@ -25,8 +25,8 @@ export function sharedSchema() {
 /**
  * Constructs and fabricates `new Fabricator(sharedSchema(), options)` from
  * _this_ file — used opposite a same-shaped call from `random.test.ts` to prove
- * `options.seed` reproduces regardless of which file `new Fabricator(...)` is
- * written in, contrasted with an omitted `options.seed`, where the two call
+ * `options.salt` reproduces regardless of which file `new Fabricator(...)` is
+ * written in, contrasted with an omitted `options.salt`, where the two call
  * sites must diverge (ordinary call-site attribution).
  */
 export function fabricateSharedSchemaHere(
@@ -83,13 +83,13 @@ export function initializeHere(config?: { attribution?: Attribution }) {
   return {
     T: instance.T,
     Fabricator: instance.Fabricator,
-    seed: instance.seed,
+    salt: instance.salt,
     fork: instance.fork,
   };
 }
 
 /**
- * Calls `toRandomSource({ seed })` from _this_ file (`test/fixtures/`) under
+ * Calls `toRandomSource({ salt })` from _this_ file (`test/fixtures/`) under
  * the default `{ kind: "call site" }` policy, so a test in a sibling directory
  * can fork the result and prove the fork inherits _this_ resolved root rather
  * than re-resolving `"call site"` at the moment `.fork()`/ `.toRoot()` is
@@ -100,9 +100,9 @@ export function initializeHere(config?: { attribution?: Attribution }) {
  * `initializeHere` does, immediately above — a function this trivial otherwise
  * risks having its own frame elided under `bun test`.
  */
-export function toRandomSourceHere(seed: Seed) {
-  const source = toRandomSource({ seed, clock: 0 });
-  return { seed: source.seed, toRoot: source.toRoot, fork: source.fork };
+export function toRandomSourceHere(salt: Salt) {
+  const source = toRandomSource({ salt, clock: 0 });
+  return { salt: source.salt, toRoot: source.toRoot, fork: source.fork };
 }
 
 /**

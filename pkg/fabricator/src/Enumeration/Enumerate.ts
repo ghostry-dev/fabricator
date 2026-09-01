@@ -3,7 +3,7 @@ import { FabricatorError } from "../Error";
 import { Constructor } from "../Fabricator/Constructor";
 import type { Stack } from "../Instance/Types";
 import { toStreamFromTrace } from "../Random";
-import type { RandomSource, Seed } from "../Random/Types";
+import type { RandomSource, Salt } from "../Random/Types";
 import type { AnySchema, ValueOf } from "../Schema/Types";
 import { plan, resolve } from "./Plan";
 import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
@@ -19,18 +19,18 @@ import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
  * `construct` split.
  *
  * Two derived seeds — one per API — each an independent, deterministic fork off
- * the _effective_ source's seed (`effectiveSource()` below — the active `wrap`
+ * the _effective_ source's salt (`effectiveSource()` below — the active `wrap`
  * frame's, or this instance's `source`; read fresh on every
  * `combinatorial(...)`/`coverage(...)` call, not once when `enumerables()` was
  * built, so the same `combinatorial` reference behaves differently inside an
- * active `wrap`). `new Fabricator(schema, { seed })` (see `Constructor.ts`'s
+ * active `wrap`). `new Fabricator(schema, { salt })` (see `Constructor.ts`'s
  * `construct()`) forks a fully isolated `RandomSource` and opens an
  * `"unattributed"` scope, so `resolveCallerFile()` is never called — the
  * lazy-generator attribution hazard a plain `function*` would invite simply
  * doesn't arise — the instance's construction counters are never touched, and
- * the same seed reproduces regardless of which file
+ * the same salt reproduces regardless of which file
  * `combinatorial(...)`/`coverage(...)` is called from. Each `fork()` starts
- * from a fresh source, so reusing one seed across many builds (different
+ * from a fresh source, so reusing one salt across many builds (different
  * schemas, or the same schema rebuilt per iteration) never lets one build's
  * draws leak into another's.
  */
@@ -100,7 +100,7 @@ export function enumerables(
   function combinatorial<const $Schema extends AnySchema>(
     schema: $Schema,
   ): Iterable<ValueOf<$Schema>> {
-    const combinatorialSeed = [...effectiveSource().seed, "combinatorial"];
+    const combinatorialSalt = [...effectiveSource().salt, "combinatorial"];
 
     /**
      * Only used to read the axis width — building is otherwise free of side
@@ -108,7 +108,7 @@ export function enumerables(
      * `iterable`'s `rebuild()` for actual iteration.
      */
     const probe: Axis = plan(
-      new Fabricator(schema, { seed: combinatorialSeed }) as Resolvable,
+      new Fabricator(schema, { salt: combinatorialSalt }) as Resolvable,
       { strategy: "product" },
     );
 
@@ -121,7 +121,7 @@ export function enumerables(
 
     return iterable(() => {
       const built = new Fabricator(schema, {
-        seed: combinatorialSeed,
+        salt: combinatorialSalt,
       }) as Resolvable;
 
       return { built, axis: plan(built, { strategy: "product" }) };
@@ -138,26 +138,26 @@ export function enumerables(
     schema: $Schema,
   ): Iterable<ValueOf<$Schema>> {
     const base = effectiveSource();
-    const coverageSeed = [...base.seed, "coverage"];
+    const coverageSalt = [...base.salt, "coverage"];
 
     /**
      * Independent fork purely for `coverage`'s per-axis permutations (see
-     * `Orderer`'s doc comment) — kept separate from `coverageSeed` above only
-     * for legibility; two builds forked from unrelated seeds can never
+     * `Orderer`'s doc comment) — kept separate from `coverageSalt` above only
+     * for legibility; two builds forked from unrelated salts can never
      * interfere regardless.
      */
-    const orderSeed = [...base.seed, "coverage", "order"];
+    const orderSalt = [...base.salt, "coverage", "order"];
 
     return iterable(() => {
       const built = new Fabricator(schema, {
-        seed: coverageSeed,
+        salt: coverageSalt,
       }) as Resolvable;
 
       return {
         built,
         axis: plan(built, {
           strategy: "cycle",
-          orderer: orderer(base, orderSeed),
+          orderer: orderer(base, orderSalt),
         }),
       };
     });
@@ -167,16 +167,16 @@ export function enumerables(
 }
 
 /**
- * An `Orderer`: forks an isolated `RandomSource` from `seed` once, draws a
+ * An `Orderer`: forks an isolated `RandomSource` from `salt` once, draws a
  * single private `Stream`, and `shuffle`s a fresh `0..width-1` array
  * (`Distribution/index.ts`) on every call, consuming that same stream further
  * each time. Sequential draws off one stream is what makes the _order in which
  * `plan()` visits nodes_ the only thing that determines which permutation each
  * node gets — deterministic given a fixed schema shape, reproducible given a
- * fixed `seed`.
+ * fixed `salt`.
  */
-function orderer(source: RandomSource, seed: Seed): Orderer {
-  const forked = source.fork(seed);
+function orderer(source: RandomSource, salt: Salt): Orderer {
+  const forked = source.fork(salt);
   const root = forked.toRoot("unattributed");
   const stream = toStreamFromTrace(forked.algorithm, {
     ...root,

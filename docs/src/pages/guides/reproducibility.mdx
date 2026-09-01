@@ -1,10 +1,10 @@
 # Reproducibility
 
-Every `initialize()` instance has a [clock](#what-now-means) and an optional [seed](#seeds-are-optional-mixers). The same seed, clock, and [attribution policy](#where-a-stream-is-attributed) always produce the same data. By default `clock` is the wall-clock instant of that `initialize()` call and `seed` is empty, so an unconfigured instance varies by run, has realistic dates, and replays from `context.clock` alone. Pass `clock: "seeded"` when `seed` itself should be the reproducibility unit (at the cost of an implausible "now").
+Every `initialize()` instance has a [clock](#what-now-means) and an optional [salt](#salt-is-optional). The same salt, clock, and [attribution policy](#where-a-stream-is-attributed) always produce the same data. By default `clock` is the wall-clock instant of that `initialize()` call and `salt` is empty, so an unconfigured instance varies by run, has realistic dates, and replays from `context.clock` alone. Pass `clock: "derived"` when `salt` itself should be the reproducibility unit (at the cost of an implausible "now").
 
-## Seeds are optional mixers
+## Salt is optional
 
-**Most instances don't need a seed at all.**
+**Most instances don't need a salt at all.**
 
 ```ts
 const { T, Fabricator } = initialize();
@@ -12,39 +12,41 @@ const { T, Fabricator } = initialize();
 
 `clock` — the wall-clock instant captured at this `initialize()` call — is the run's entropy on its own. Every run starts at a different instant, so every run produces different data, and a single number replays it: log `context.clock` after fabricating, then pass it back as `clock: new Date(logged)`.
 
-Adding a seed does not make a run any more varied. It adds a _second_ value that has to be captured and passed back alongside the clock before anything can be reproduced, so reach for one only when something specific wants it:
+Salt does not generate anything; it differentiates. Adding one does not make a run any more varied — it adds a _second_ value that has to be captured and passed back alongside the clock before anything can be reproduced. So reach for one only when something specific wants it:
 
 ```ts
-const { T, Fabricator, seed } = initialize({ seed: "1234" });
+const { T, Fabricator, salt } = initialize({ salt: "1234" });
 ```
 
-`seed` is a mixer composed into every stream beside `clock`. Omit it and the seed is empty. The cases that genuinely want one:
+Omit it and the salt is empty. The cases that genuinely want one:
 
-- **Replay that doesn't depend on wall-clock time.** Pair the seed with [`clock: "seeded"`](#what-now-means) and the seed becomes the entire reproducibility unit — one value to record instead of two. The cost is an implausible "now", drawn across the whole representable `Date` range.
-- **A fixture that must never move**, no matter how the rest of the run is seeded — that's a [per-construction seed](#overriding-a-seed-per-construction), not an instance-wide one.
-- **Injecting a mixer from outside**, without hardcoding it — that's what [env-var seeding](#env-var-seeding) below is for. It pins the seed only; an unpinned `clock` still varies, so replay still needs `context.clock`.
+- **Replay that doesn't depend on wall-clock time.** Pair the salt with [`clock: "derived"`](#what-now-means) and the salt becomes the entire reproducibility unit — one value to record instead of two. The cost is an implausible "now", drawn across the whole representable `Date` range.
+- **A fixture that must never move**, no matter how the rest of the run is salted — that's a [per-construction salt](#overriding-a-salt-per-construction), not an instance-wide one.
+- **Injecting a mixer from outside**, without hardcoding it — that's what [env-var salting](#env-var-salting) below is for. It pins the salt only; an unpinned `clock` still varies, so replay still needs `context.clock`.
 
 :::tip
-Seeds are strings, not numbers — `seed: "1234"`, not `seed: 1234`.
+Salts are strings, not numbers — `salt: "1234"`, not `salt: 1234`.
 :::
 
-## Env-var seeding
+## Env-var salting
 
-If no `seed` is passed to `initialize()`, these environment variables are checked, in order. None of them generate a value: if all are unset, the seed stays empty.
-
-1. `FABRICATOR_SEED` — this library's own override
-2. `SEED` — a more generic, informally-conventional name
-3. `RANDOM_SEED` — likewise
-
-Useful for pinning a mixer across a test run without touching any call site. It does **not** pin `clock`: an unconfigured instance still captures wall-clock time, so replay still needs `context.clock` (or an explicit `clock` / `clock: "seeded"`).
+If no `salt` is passed to `initialize()`, `FABRICATOR_SALT` supplies one. It never generates a value: unset, the salt stays empty.
 
 ```bash
-FABRICATOR_SEED=repro-1234 bun test
+FABRICATOR_SALT=repro-1234 bun test
 ```
+
+Useful for pinning a salt across a test run without touching any call site.
+
+:::warning
+**This does not make the run reproducible on its own.** It pins the salt; `clock` still captures wall-clock time at each `initialize()`, so the data still moves between runs. To actually hold a run still you need the clock too — `clock: "derived"` at the call site, an explicit `Date`, or replaying the `context.clock` you logged.
+:::
+
+That caveat is why the conventional `SEED` and `RANDOM_SEED` names are **not** read. Someone exporting those is asking for a stable run, and a salt alone can't give them one — honoring the variable would look like it worked while the data kept moving underneath. Pinning fabricator's salt is a decision about fabricator, so it takes fabricator's own variable, right next to the caveat that comes with it.
 
 ## Isolation between instances
 
-Each `initialize()` call captures its own seeded generator and its own internal stream state. Independently initialized instances never interfere with each other — safe for parallel tests that each pick their own seed, and safe to run two unrelated fabricators in the same process without one perturbing the other's output.
+Each `initialize()` call captures its own seeded generator and its own internal stream state. Independently initialized instances never interfere with each other — safe for parallel tests that each pick their own salt, and safe to run two unrelated fabricators in the same process without one perturbing the other's output.
 
 ## Where a stream is attributed
 
@@ -60,75 +62,75 @@ attribution?:
 ```
 
 - **`{ kind: "rooted", root }`** expresses every file relative to `root` — an absolute path, or a `file://` URL like `new URL("..", import.meta.url).href` (no `node:path` needed). `root` is a normalization detail, never entropy: moving it without moving the files underneath changes nothing about the data produced.
-- **`{ kind: "call site" }`**, the default, is `"rooted"` at the directory of whichever file called `initialize()`. Reach for an explicit `"rooted"` root instead when multiple `initialize()` calls across a monorepo might resolve to the same relative path from their own call sites (two packages each with a `test/index.test.ts`, say) and share a seed — that's the one way two unrelated files' roots can collide under `"call site"`.
-- **`{ kind: "none" }`** drops file attribution entirely: every construction, anywhere in the instance, draws its root from one shared counter. Maximally portable — nothing about a file path can ever influence a seed — but every construction now depends on every other: adding, removing, or reordering a _construction_ anywhere in the instance shifts every later one. Fields within one construction are unaffected either way, since they're keyed by their own position, not by dispatch order.
+- **`{ kind: "call site" }`**, the default, is `"rooted"` at the directory of whichever file called `initialize()`. Reach for an explicit `"rooted"` root instead when multiple `initialize()` calls across a monorepo might resolve to the same relative path from their own call sites (two packages each with a `test/index.test.ts`, say) and share a salt — that's the one way two unrelated files' roots can collide under `"call site"`.
+- **`{ kind: "none" }`** drops file attribution entirely: every construction, anywhere in the instance, draws its root from one shared counter. Maximally portable — nothing about a file path can ever influence the data — but every construction now depends on every other: adding, removing, or reordering a _construction_ anywhere in the instance shifts every later one. Fields within one construction are unaffected either way, since they're keyed by their own position, not by dispatch order.
 
 A file that falls outside the resolved root (above it, or in an unrelated directory) is expressed with a leading `..` rather than left as an absolute path, so it stays stable as long as both locations move together under the same checkout. The one case nothing can smooth over is a file genuinely outside the checkout — there, the `..` count itself depends on where the checkout happens to sit, and no attribution scheme changes that.
 
 Two constructions of the same schema from the same file, by default, still get different data — each is assigned the next available index for that file, so calling `new Fabricator(schema)` twice in a row never silently hands back identical results.
 
-## Overriding a seed per construction
+## Overriding a salt per construction
 
 ```ts
-new Fabricator(schema, { seed: "fixed-user" });
+new Fabricator(schema, { salt: "fixed-user" });
 ```
 
-A per-construction `seed` forks a brand-new, fully isolated source from exactly that value — the same seed reproduces the same result no matter which file it's constructed from, which instance built it, or how that instance was itself seeded. Reach for this when you want one exact fixture, always, regardless of everything else about the run — reseeding the whole suite for a wider fuzz pass won't touch it. It keeps the instance's own `clock`, though — a construction asking for its own seed isn't asking for a different "now" — so a fixture built this way from two instances only matches if those instances also agree on their clock (both captured the same wall-clock instant, both `"seeded"` from the same seed, or both given the same explicit `clock`); see [What "now" means](#what-now-means) below.
+A per-construction `salt` forks a brand-new, fully isolated source from exactly that value — the same salt reproduces the same result no matter which file it's constructed from, which instance built it, or how that instance was itself salted. Reach for this when you want one exact fixture, always, regardless of everything else about the run — re-salting the whole suite for a wider fuzz pass won't touch it. It keeps the instance's own `clock`, though — a construction asking for its own salt isn't asking for a different "now" — so a fixture built this way from two instances only matches if those instances also agree on their clock (both captured the same wall-clock instant, both `"derived"` from the same salt, or both given the same explicit `clock`); see [What "now" means](#what-now-means) below.
 
-That last part is also the limit of what a _bare_ seed can express: a fixture that should stay exactly the same no matter how the run is reseeded. For an identity that should instead keep moving when the instance is reseeded — a schema's registered name, a test's own id — wrap the seed in `layer(...)` instead:
+That last part is also the limit of what a _bare_ salt can express: a fixture that should stay exactly the same no matter how the run is re-salted. For an identity that should instead keep moving when the instance is re-salted — a schema's registered name, a test's own id — wrap the salt in `layer(...)` instead:
 
 ```ts
 import { layer } from "@ghostry/fabricator";
 
-new Fabricator(schema, { seed: layer("some-identity") });
+new Fabricator(schema, { salt: layer("some-identity") });
 ```
 
-This still forks an isolated source, but composes `"some-identity"` onto the instance's own seed (`[...instance.seed, "some-identity"]`) rather than replacing it outright — so the construction still varies when the instance is reseeded, the one thing a bare seed deliberately can't do. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below for the full mechanism, and [Deriving a related instance: fork](#deriving-a-related-instance-fork) for the same idea one level up — applied to a whole derived instance, rather than one construction at a time.
+This still forks an isolated source, but composes `"some-identity"` onto the instance's own salt (`[...instance.salt, "some-identity"]`) rather than replacing it outright — so the construction still varies when the instance is re-salted, the one thing a bare salt deliberately can't do. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below for the full mechanism, and [Deriving a related instance: fork](#deriving-a-related-instance-fork) for the same idea one level up — applied to a whole derived instance, rather than one construction at a time.
 
 ## Deriving a related instance: fork
 
 `initialize()` mints one instance. `fork` mints a related one, laid over the instance it was called on:
 
 ```ts
-const base = initialize({ seed: "base" });
+const base = initialize({ salt: "base" });
 
-const tenant = base.fork({ seed: "tenant-7" });
-tenant.seed; // ["tenant-7"] — replaced
+const tenant = base.fork({ salt: "tenant-7" });
+tenant.salt; // ["tenant-7"] — replaced
 ```
 
-Anything the overlay names overrides; anything it omits inherits — `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the seed composes. The exception is an explicit `clock: "seeded"`: that sentinel re-derives from whatever seed the fork ends up with (see [What "now" means](#what-now-means) below), so `fork({ seed: layer(...) })` without also overriding `clock` gets a _different_ `"seeded"` clock than its base.
+Anything the overlay names overrides; anything it omits inherits — `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the salt composes. The exception is an explicit `clock: "derived"`: that sentinel re-derives from whatever salt the fork ends up with (see [What "now" means](#what-now-means) below), so `fork({ salt: layer(...) })` without also overriding `clock` gets a _different_ `"derived"` clock than its base.
 
-By default a fork's `seed` _replaces_ the base's outright — the ordinary meaning `seed` has everywhere in this library. To compose onto the base's seed instead, reach for `layer(...)`:
+By default a fork's `salt` _replaces_ the base's outright — the ordinary meaning `salt` has everywhere in this library. To compose onto the base's salt instead, reach for `layer(...)`:
 
 ```ts
-const tenant = base.fork({ seed: layer("tenant-7") });
-tenant.seed; // ["base", "tenant-7"] — composed
+const tenant = base.fork({ salt: layer("tenant-7") });
+tenant.salt; // ["base", "tenant-7"] — composed
 ```
 
-See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below — the same helper works identically at three levels: `fork`, `wrap` ([below](#making-a-fork-ambient-wrap)), and a single `new Fabricator(schema, { seed })` call.
+See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below — the same helper works identically at three levels: `fork`, `wrap` ([below](#making-a-fork-ambient-wrap)), and a single `new Fabricator(schema, { salt })` call.
 
 `attribution` is resolved once, when `fork()` itself is called — not deferred to whenever the derived instance first constructs. So a fork inherits its base's _already-resolved_ root even when called from an entirely different file, and a fork given `{ attribution: { kind: "call site" } }` explicitly re-roots at `fork()`'s own call site, not the base's.
 
 ## Composing instead of replacing: layer(...)
 
-A bare `seed` always means the same thing in this library: replace whatever seed applied before, entirely. `layer(seed)` marks the opposite intent at the call site — append onto whatever seed is already in effect, rather than discard it:
+A bare `salt` always means the same thing in this library: replace whatever salt applied before, entirely. `layer(salt)` marks the opposite intent at the call site — append onto whatever salt is already in effect, rather than discard it:
 
 ```ts
 import { initialize, layer } from "@ghostry/fabricator";
 
-const base = initialize({ seed: "base" });
+const base = initialize({ salt: "base" });
 
-base.fork({ seed: "a" }).seed; // ["a"]         — replaced
-base.fork({ seed: layer("a") }).seed; // ["base", "a"] — composed
+base.fork({ salt: "a" }).salt; // ["a"]         — replaced
+base.fork({ salt: layer("a") }).salt; // ["base", "a"] — composed
 ```
 
-`layer` works identically everywhere a `seed` is accepted against some base:
+`layer` works identically everywhere a `salt` is accepted against some base:
 
-- **`fork({ seed: layer(...) })`** — composes onto the instance's own seed.
-- **`wrap({ seed: layer(...) })`** — composes onto whichever `wrap` frame is currently active ([below](#making-a-fork-ambient-wrap)) — so nested `wrap`s accumulate.
-- **`new Fabricator(schema, { seed: layer(...) })`** — composes onto the instance's seed (or the active `wrap` frame's, if the construction happens inside one), for a single construction rather than a whole derived instance.
+- **`fork({ salt: layer(...) })`** — composes onto the instance's own salt.
+- **`wrap({ salt: layer(...) })`** — composes onto whichever `wrap` frame is currently active ([below](#making-a-fork-ambient-wrap)) — so nested `wrap`s accumulate.
+- **`new Fabricator(schema, { salt: layer(...) })`** — composes onto the instance's salt (or the active `wrap` frame's, if the construction happens inside one), for a single construction rather than a whole derived instance.
 
-Reach for `layer(...)` any time an identity — a tenant id, a test's own name, a schema's registered name — should still vary when the surrounding run is reseeded. A bare seed is for the opposite case: a fixture that must stay exactly the same no matter what.
+Reach for `layer(...)` any time an identity — a tenant id, a test's own name, a schema's registered name — should still vary when the surrounding run is re-salted. A bare salt is for the opposite case: a fixture that must stay exactly the same no matter what.
 
 ## Making a fork ambient: wrap
 
@@ -136,10 +138,10 @@ Reach for `layer(...)` any time an identity — a tenant id, a test's own name, 
 
 ```ts
 const { T, Fabricator, combinatorial, wrap, context } = initialize({
-  seed: "base",
+  salt: "base",
 });
 
-wrap({ seed: layer("a") }, (scope) => {
+wrap({ salt: layer("a") }, (scope) => {
   new Fabricator(T.number).fabricate(); // picks up the wrap automatically
   new scope.Fabricator(T.number).fabricate(); // identical source, used explicitly
   [...combinatorial(T.boolean)]; // also picks up the wrap
@@ -151,21 +153,21 @@ wrap({ seed: layer("a") }, (scope) => {
 Nested `wrap`s compose the same way `layer(...)` composes anywhere else — each lays its overlay over whichever `wrap` is _currently_ active, not over the instance it was called on:
 
 ```ts
-wrap({ seed: layer("a") }, () => {
-  wrap({ seed: layer("b") }, (inner) => {
-    inner.seed; // [...base.seed, "a", "b"]
+wrap({ salt: layer("a") }, () => {
+  wrap({ salt: layer("b") }, (inner) => {
+    inner.salt; // [...base.salt, "a", "b"]
   });
 });
 ```
 
-A bare (non-layered) `seed` at any nesting depth still replaces outright, discarding every enclosing layer.
+A bare (non-layered) `salt` at any nesting depth still replaces outright, discarding every enclosing layer.
 
 ### Async blocks
 
 `block` may be `async`, and the ambient frame survives `await`:
 
 ```ts
-await wrap({ seed: layer("a") }, async (scope) => {
+await wrap({ salt: layer("a") }, async (scope) => {
   new Fabricator(T.number).fabricate(); // wrapped
   await something();
   new Fabricator(T.number).fabricate(); // still wrapped
@@ -173,7 +175,7 @@ await wrap({ seed: layer("a") }, async (scope) => {
 });
 ```
 
-Two `wrap`s running concurrently stay isolated from each other too — neither sees the other's seed, and neither leaks past its own block.
+Two `wrap`s running concurrently stay isolated from each other too — neither sees the other's salt, and neither leaks past its own block.
 
 This works because the ambient frame is carried by [`AsyncLocalStorage`](https://nodejs.org/api/async_context.html) wherever `node:async_hooks` exists, which covers Node, Bun, and Deno. Nothing needs configuring; the right carrier is chosen when the package is imported.
 
@@ -182,7 +184,7 @@ This works because the ambient frame is carried by [`AsyncLocalStorage`](https:/
 A runtime without `node:async_hooks` — a browser bundle, most likely — falls back to a synchronous carrier whose frame _cannot_ outlive the block's first `await`. Rather than silently resolving a later build against the base instance, `wrap` rejects the block outright:
 
 ```ts
-wrap({ seed: layer("a") }, async () => {}); // throws SynchronousStackError
+wrap({ salt: layer("a") }, async () => {}); // throws SynchronousStackError
 ```
 
 It throws on any `async` block, including one that only ever uses `scope` — `wrap` has no way to know whether something later will read the ambient frame. `scope` is still the escape hatch there: it's an ordinary `Instance`, unaffected by whether a frame is on the stack, so a synchronous block that hands `scope` to async work keeps the wrap's configuration with no time limit.
@@ -190,7 +192,7 @@ It throws on any `async` block, including one that only ever uses `scope` — `w
 If you need async blocks on such a runtime, supply a carrier yourself:
 
 ```ts
-initialize({ seed: "base", stack: myAsyncCarrier });
+initialize({ salt: "base", stack: myAsyncCarrier });
 ```
 
 ### `context`
@@ -198,8 +200,8 @@ initialize({ seed: "base", stack: myAsyncCarrier });
 `instance.context` reads whatever configuration is in effect _right now_ — the active `wrap` frame's, or the instance's own outside any `wrap`:
 
 ```ts
-wrap({ seed: layer("a") }, () => {
-  context.seed; // [...base.seed, "a"] — same as scope.seed, read ambiently
+wrap({ salt: layer("a") }, () => {
+  context.salt; // [...base.salt, "a"] — same as scope.salt, read ambiently
 });
 ```
 
@@ -224,10 +226,10 @@ const NameField = new Fabricator(T.string.whereby({ length: { max: 20 } }));
 NameField.fabricate();
 
 NameField.trace;
-// { seed: ["default-seed"], clock: 1234567890000, root: "attributed", file: "tests/user.test.ts", path: [], kind: "string", ordinal: 0 }
+// { salt: ["default-salt"], clock: 1234567890000, root: "attributed", file: "tests/user.test.ts", path: [], kind: "string", ordinal: 0 }
 ```
 
-The result is the fixed tuple that field's stream was hashed from — `seed` is the _instance's_ seed (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [What "now" means](#what-now-means) below — every field's stream depends on it, not just a `T.date` field's), `root` is how `file` and `ordinal` were resolved (`"attributed"` under a default instance and under `{ kind: "none" }`, `"unattributed"` under `new Fabricator(s, { seed })`, `"counted"` inside a `T.recursive` expansion), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction, among those sharing `file`, this one is. `file` is relative to the instance's attribution root under `"rooted"`/`"call site"` (see [Where a stream is attributed](#where-a-stream-is-attributed)), and `undefined` under an explicitly seeded construction, under `{ kind: "none" }`, or inside a recursive expansion — `root` says which.
+The result is the fixed tuple that field's stream was hashed from — `salt` is the _instance's_ salt (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [What "now" means](#what-now-means) below — every field's stream depends on it, not just a `T.date` field's), `root` is how `file` and `ordinal` were resolved (`"attributed"` under a default instance and under `{ kind: "none" }`, `"unattributed"` under `new Fabricator(s, { salt })`, `"counted"` inside a `T.recursive` expansion), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction, among those sharing `file`, this one is. `file` is relative to the instance's attribution root under `"rooted"`/`"call site"` (see [Where a stream is attributed](#where-a-stream-is-attributed)), and `undefined` under an explicitly salted construction, under `{ kind: "none" }`, or inside a recursive expansion — `root` says which.
 
 `new Fabricator(schema, trace)` reproduces exactly what that schema produced as a nested node of a larger construction: pass the node's own schema plus `node.trace`. The same sequence of `.fabricate()` calls yields the same values; the trace does not jump to a later draw.
 
@@ -244,17 +246,19 @@ Three values are not a function of the node's own stream. Replay the parent inst
 ```ts
 initialize(); // wall-clock instant of this call — the default
 initialize({ clock: new Date("2024-06-01") }); // pinned to that instant
-initialize({ seed: "abc", clock: "seeded" }); // derived from the seed
+initialize({ salt: "abc", clock: "derived" }); // derived from the salt
 ```
 
-The default is the wall-clock instant captured at `initialize()` — realistic dates, a varied run each process, and one number (`context.clock`) to log for replay. Pass a fixed `Date` to freeze "now" (and, because `clock` sits in every leaf's trace, the rest of the run unless `seed` also differs). Pass `"seeded"` to derive a fixed instant from the instance seed instead — drawn across the _entire_ representable `Date` range, so a wildly implausible date is the expected outcome of that policy, not a bug. `"seeded"` is what makes `seed` alone the reproducibility unit, with no dependence on wall-clock time.
+The default is the wall-clock instant captured at `initialize()` — realistic dates, a varied run each process, and one number (`context.clock`) to log for replay. Pass a fixed `Date` to freeze "now" (and, because `clock` sits in every leaf's trace, the rest of the run unless `salt` also differs). Pass `"derived"` to derive a fixed instant from the instance salt instead — drawn across the _entire_ representable `Date` range, so a wildly implausible date is the expected outcome of that policy, not a bug. `"derived"` is what makes `salt` alone the reproducibility unit, with no dependence on wall-clock time.
 
-`clock` composes with `seed` the same way `fork`/`wrap` already do: a captured or explicit instant is inherited as-is by a `fork`/`wrap` that doesn't override it. An explicit `"seeded"` clock is the exception — `fork({ seed: layer(...) })` without also overriding `clock` re-derives "now" from the composed seed.
+`clock` composes with `salt` the same way `fork`/`wrap` already do: a captured or explicit instant is inherited as-is by a `fork`/`wrap` that doesn't override it. An explicit `"derived"` clock is the exception — `fork({ salt: layer(...) })` without also overriding `clock` re-derives "now" from the composed salt.
 
 ## Bring your own PRNG
 
 ```ts
-initialize({ seed: "1234", algorithm: (seed) => myPrng(seed) });
+initialize({ salt: "1234", algorithm: (seed) => myPrng(seed) });
 ```
 
-`algorithm` is a factory: given the seed, it returns a `() => number` in `[0, 1)` — a drop-in replacement for `Math.random`. It's seeded the same way the built-in generator is, so output stays reproducible. Defaults to a built-in `sfc32` generator.
+`algorithm` is a factory: given a seed, it returns a `() => number` in `[0, 1)` — a drop-in replacement for `Math.random`. Defaults to a built-in `sfc32` generator.
+
+The seed it receives is not your `salt`. It's the full encoded description of one leaf — salt, clock, attribution root, file, structural path, kind, and ordinal — of which the salt is a single slot. That's why every field in every construction gets its own independent stream from one instance, and why a custom algorithm inherits that isolation for free: it's called once per leaf, with a different seed each time.

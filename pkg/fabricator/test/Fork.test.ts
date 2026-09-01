@@ -7,35 +7,35 @@ import {
 import { expect, test } from "bun:test";
 import { initializeHere } from "./fixtures/sharedSchema";
 
-test("fork() with no overlay inherits the seed unchanged", () => {
-  const instance = initialize({ seed: "fork-base" });
+test("fork() with no overlay inherits the salt unchanged", () => {
+  const instance = initialize({ salt: "fork-base" });
   const forked = instance.fork();
 
-  expect(forked.seed).toEqual(instance.seed);
+  expect(forked.salt).toEqual(instance.salt);
 });
 
-test("fork({ seed }) replaces the instance's seed outright", () => {
-  const instance = initialize({ seed: "fork-base" });
-  const forked = instance.fork({ seed: "a" });
+test("fork({ salt }) replaces the instance's salt outright", () => {
+  const instance = initialize({ salt: "fork-base" });
+  const forked = instance.fork({ salt: "a" });
 
-  expect(forked.seed).toEqual(["a"]);
+  expect(forked.salt).toEqual(["a"]);
 });
 
-test("fork({ seed: layer(...) }) composes onto the instance's seed", () => {
-  const instance = initialize({ seed: "fork-base" });
-  const forked = instance.fork({ seed: layer("a") });
+test("fork({ salt: layer(...) }) composes onto the instance's salt", () => {
+  const instance = initialize({ salt: "fork-base" });
+  const forked = instance.fork({ salt: layer("a") });
 
-  expect(forked.seed).toEqual([...instance.seed, "a"]);
+  expect(forked.salt).toEqual([...instance.salt, "a"]);
 });
 
-test("layer() accepts the full Seed surface — a single string or several", () => {
-  const instance = initialize({ seed: "fork-base" });
+test("layer() accepts the full Salt surface — a single string or several", () => {
+  const instance = initialize({ salt: "fork-base" });
 
-  const single = instance.fork({ seed: layer("a") });
-  const multi = instance.fork({ seed: layer(["a", "b"]) });
+  const single = instance.fork({ salt: layer("a") });
+  const multi = instance.fork({ salt: layer(["a", "b"]) });
 
-  expect(single.seed).toEqual([...instance.seed, "a"]);
-  expect(multi.seed).toEqual([...instance.seed, "a", "b"]);
+  expect(single.salt).toEqual([...instance.salt, "a"]);
+  expect(multi.salt).toEqual([...instance.salt, "a", "b"]);
 });
 
 test("fork inherits algorithm/attribution/types/limits when unspecified", () => {
@@ -43,7 +43,7 @@ test("fork inherits algorithm/attribution/types/limits when unspecified", () => 
   const customTypes = registry.extend(({ T }) => ({ number: T.always(999) }));
 
   const instance = initialize({
-    seed: "fork-inherit",
+    salt: "fork-inherit",
     algorithm: customAlgorithm,
     types: customTypes,
     limits: { combinatorial: 4 },
@@ -63,7 +63,7 @@ test("fork inherits algorithm/attribution/types/limits when unspecified", () => 
 });
 
 test("fork overrides algorithm/types/limits when given", () => {
-  const instance = initialize({ seed: "fork-override" });
+  const instance = initialize({ salt: "fork-override" });
 
   const customTypes = registry.extend(({ T }) => ({ number: T.always(7) }));
   const forked = instance.fork({
@@ -110,7 +110,7 @@ test("fork({ attribution: { kind: 'call site' } }) re-roots at fork()'s own call
 });
 
 test("fork({ attribution: { kind: 'rooted', root } }) throws InvalidAttributionRootError for a relative root", () => {
-  const instance = initialize({ seed: "fork-bad-root" });
+  const instance = initialize({ salt: "fork-bad-root" });
 
   expect(() =>
     instance.fork({ attribution: { kind: "rooted", root: "relative/path" } }),
@@ -118,7 +118,7 @@ test("fork({ attribution: { kind: 'rooted', root } }) throws InvalidAttributionR
 });
 
 test("fork({ limits: { combinatorial } }) throws InvalidCombinatorialLimitError at fork() time", () => {
-  const instance = initialize({ seed: "fork-bad-limit" });
+  const instance = initialize({ salt: "fork-bad-limit" });
 
   expect(() => instance.fork({ limits: { combinatorial: 0 } })).toThrow(
     FabricatorError.InvalidCombinatorialLimitError,
@@ -127,16 +127,16 @@ test("fork({ limits: { combinatorial } }) throws InvalidCombinatorialLimitError 
 
 /**
  * The composition formula `layer(...)` follows, spelled out explicitly: a
- * fork's layered seed for a construction at a given call site reproduces
- * exactly what a bare `initialize({ seed: [...instance.seed, "a"] })` gives for
+ * fork's layered salt for a construction at a given call site reproduces
+ * exactly what a bare `initialize({ salt: [...instance.salt, "a"] })` gives for
  * an equivalent call site under the same root.
  */
-test("fork({ seed: layer('a') }) reproduces initialize({ seed: [...instance.seed, 'a'] })", () => {
+test("fork({ salt: layer('a') }) reproduces initialize({ salt: [...instance.salt, 'a'] })", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
-  const instance = initialize({ seed: "fork-equivalence", clock });
+  const instance = initialize({ salt: "fork-equivalence", clock });
 
-  const viaFork = instance.fork({ seed: layer("a") });
-  const viaInitialize = initialize({ seed: [...instance.seed, "a"], clock });
+  const viaFork = instance.fork({ salt: layer("a") });
+  const viaInitialize = initialize({ salt: [...instance.salt, "a"], clock });
 
   const a = new viaFork.Fabricator(viaFork.T.number).fabricate();
   const b = new viaInitialize.Fabricator(viaInitialize.T.number).fabricate();
@@ -144,43 +144,43 @@ test("fork({ seed: layer('a') }) reproduces initialize({ seed: [...instance.seed
   expect(a).toBe(b);
 });
 
-test("chained fork({ seed: layer(...) }) calls compose left to right", () => {
-  const instance = initialize({ seed: "fork-chain" });
+test("chained fork({ salt: layer(...) }) calls compose left to right", () => {
+  const instance = initialize({ salt: "fork-chain" });
 
   const chained = instance
-    .fork({ seed: layer("a") })
-    .fork({ seed: layer("b") });
-  const flat = instance.fork({ seed: layer(["a", "b"]) });
+    .fork({ salt: layer("a") })
+    .fork({ salt: layer("b") });
+  const flat = instance.fork({ salt: layer(["a", "b"]) });
 
-  expect(chained.seed).toEqual(flat.seed);
+  expect(chained.salt).toEqual(flat.salt);
 });
 
-test("a bare seed in a chained fork() call replaces, discarding every prior layer", () => {
-  const instance = initialize({ seed: "fork-chain-replace" });
+test("a bare salt in a chained fork() call replaces, discarding every prior layer", () => {
+  const instance = initialize({ salt: "fork-chain-replace" });
 
-  const chained = instance.fork({ seed: layer("a") }).fork({ seed: "b" });
-  const flat = instance.fork({ seed: "b" });
+  const chained = instance.fork({ salt: layer("a") }).fork({ salt: "b" });
+  const flat = instance.fork({ salt: "b" });
 
-  expect(chained.seed).toEqual(flat.seed);
+  expect(chained.salt).toEqual(flat.salt);
 });
 
 test("two forks of one instance are mutually isolated and neither perturbs the parent", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
-  const instance = initialize({ seed: "fork-isolation", clock });
+  const instance = initialize({ salt: "fork-isolation", clock });
 
-  const a = instance.fork({ seed: layer("a") });
-  const b = instance.fork({ seed: layer("b") });
+  const a = instance.fork({ salt: layer("a") });
+  const b = instance.fork({ salt: layer("b") });
 
   new a.Fabricator(a.T.number).fabricate();
   const bValue = new b.Fabricator(b.T.number).fabricate();
 
-  const freshB = initialize({ seed: instance.seed, clock }).fork({
-    seed: layer("b"),
+  const freshB = initialize({ salt: instance.salt, clock }).fork({
+    salt: layer("b"),
   });
   expect(new freshB.Fabricator(freshB.T.number).fabricate()).toBe(bValue);
 
   const parentOnce = new instance.Fabricator(instance.T.number).fabricate();
-  const freshParent = initialize({ seed: instance.seed, clock });
+  const freshParent = initialize({ salt: instance.salt, clock });
   const parentAgain = new freshParent.Fabricator(
     freshParent.T.number,
   ).fabricate();
@@ -188,10 +188,10 @@ test("two forks of one instance are mutually isolated and neither perturbs the p
 });
 
 test("fork() alone has no ambient effect on ordinary construction", () => {
-  const instance = initialize({ seed: "fork-no-ambient", clock: "seeded" });
-  const other = initialize({ seed: "fork-no-ambient", clock: "seeded" });
+  const instance = initialize({ salt: "fork-no-ambient", clock: "derived" });
+  const other = initialize({ salt: "fork-no-ambient", clock: "derived" });
 
-  instance.fork({ seed: layer("a") });
+  instance.fork({ salt: layer("a") });
 
   const a = new instance.Fabricator(instance.T.number).fabricate();
   const b = new other.Fabricator(other.T.number).fabricate();

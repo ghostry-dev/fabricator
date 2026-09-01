@@ -17,8 +17,8 @@ const types = () => registry.extend(fakerExtension({ locale: en }));
 test("draining the global faker singleton between two identical builds does not perturb fabricator's own output", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "isolation",
-      clock: "seeded",
+      salt: "isolation",
+      clock: "derived",
       types: types(),
     });
     return new Fabricator(
@@ -39,14 +39,14 @@ test("draining the global faker singleton between two identical builds does not 
 test("two initialize() calls sharing one namespace don't perturb each other", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
   const { T: T1, Fabricator: F1 } = initialize({
-    seed: "instance-a",
+    salt: "instance-a",
     clock,
     types: types(),
   });
   const built1 = new F1(T1.object({ name: T1.faker.person.fullName() }));
 
   const { T: T2, Fabricator: F2 } = initialize({
-    seed: "instance-b",
+    salt: "instance-b",
     clock,
     types: types(),
   });
@@ -65,15 +65,15 @@ test("two initialize() calls sharing one namespace don't perturb each other", ()
 test("a nested initialize()/fabricate() reached from an ordinary field's producer leaves the enclosing object's own faker fields unaffected", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "nested",
-      clock: "seeded",
+      salt: "nested",
+      clock: "derived",
       types: types(),
     });
 
     const nested = T.string.as(() => {
       const { T: innerT, Fabricator: InnerFabricator } = initialize({
-        seed: "nested-inner",
-        clock: "seeded",
+        salt: "nested-inner",
+        clock: "derived",
         types: types(),
       });
       return new InnerFabricator(innerT.faker.person.fullName()).fabricate();

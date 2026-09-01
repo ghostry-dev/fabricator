@@ -20,7 +20,7 @@ const key = (T: Registry) =>
 const value = (T: Registry) => T.number.integer.whereby({ min: 0, max: 1000 });
 
 test("T.record fabricates a plain object keyed by its key schema", () => {
-  const { T, Fabricator } = initialize({ seed: "record-basic" });
+  const { T, Fabricator } = initialize({ salt: "record-basic" });
 
   const built = new Fabricator(
     T.record(key(T), value(T)).whereby({ size: { max: 4, minTried: 2 } }),
@@ -38,7 +38,7 @@ test("T.record fabricates a plain object keyed by its key schema", () => {
 });
 
 test("size stays within max and is actually fuzzed across draws", () => {
-  const { T, Fabricator } = initialize({ seed: "record-size" });
+  const { T, Fabricator } = initialize({ salt: "record-size" });
 
   const built = new Fabricator(
     T.record(key(T), value(T)).whereby({ size: { max: 5, minTried: 1 } }),
@@ -66,7 +66,7 @@ test("size stays within max and is actually fuzzed across draws", () => {
  * fixed to use the same inclusive draw; see `test/Array.test.ts`.
  */
 test("minTried is honored as a lower bound when collisions are unlikely", () => {
-  const { T, Fabricator } = initialize({ seed: "record-min-tried" });
+  const { T, Fabricator } = initialize({ salt: "record-min-tried" });
 
   const built = new Fabricator(
     T.record(
@@ -89,7 +89,7 @@ test("minTried is honored as a lower bound when collisions are unlikely", () => 
  * for real — here it is pinned so the case is deterministic.
  */
 test("a __proto__ key becomes an own property and does not pollute", () => {
-  const { T, Fabricator } = initialize({ seed: "record-pollution" });
+  const { T, Fabricator } = initialize({ salt: "record-pollution" });
 
   const built = new Fabricator(
     T.record(T.always("__proto__"), value(T)).whereby({
@@ -118,7 +118,7 @@ test("a __proto__ key becomes an own property and does not pollute", () => {
  * This is exactly what `minTried`'s name exists to communicate.
  */
 test("colliding keys collapse instead of throwing", () => {
-  const { T, Fabricator } = initialize({ seed: "record-collisions" });
+  const { T, Fabricator } = initialize({ salt: "record-collisions" });
 
   const built = new Fabricator(
     T.record(
@@ -141,7 +141,7 @@ test("colliding keys collapse instead of throwing", () => {
 });
 
 test("symbol keys fabricate, invisible to Object.keys", () => {
-  const { T, Fabricator } = initialize({ seed: "record-symbol" });
+  const { T, Fabricator } = initialize({ salt: "record-symbol" });
 
   const built = new Fabricator(
     T.record(T.symbol, value(T)).whereby({ size: { max: 3, minTried: 3 } }),
@@ -161,7 +161,7 @@ test("symbol keys fabricate, invisible to Object.keys", () => {
  * docs implicitly promise.
  */
 test("README's T.record example builds, typechecks, and fabricates", () => {
-  const { T, Fabricator } = initialize({ seed: "record-readme" });
+  const { T, Fabricator } = initialize({ salt: "record-readme" });
 
   const built = new Fabricator(
     T.object({
@@ -184,11 +184,11 @@ test("README's T.record example builds, typechecks, and fabricates", () => {
   }
 });
 
-test("the same seed reproduces the same record", () => {
+test("the same salt reproduces the same record", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "record-reproducible",
-      clock: "seeded",
+      salt: "record-reproducible",
+      clock: "derived",
     });
     return new Fabricator(
       T.record(key(T), value(T)).whereby({ size: { max: 5, minTried: 1 } }),

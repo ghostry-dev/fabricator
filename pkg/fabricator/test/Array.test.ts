@@ -10,7 +10,7 @@ import { FabricatorError, initialize } from "@ghostry/fabricator";
  */
 
 test("length.min is honored as a lower bound", () => {
-  const { T, Fabricator } = initialize({ seed: "array-min" });
+  const { T, Fabricator } = initialize({ salt: "array-min" });
 
   const built = new Fabricator(
     T.array(T.always("x")).whereby({ length: { min: 5, max: 10 } }),
@@ -30,7 +30,7 @@ test("length.min is honored as a lower bound", () => {
 });
 
 test("exclusive length.min never yields the excluded length", () => {
-  const { T, Fabricator } = initialize({ seed: "array-exclusive-min" });
+  const { T, Fabricator } = initialize({ salt: "array-exclusive-min" });
   const built = new Fabricator(
     T.array(T.always("x")).whereby({
       length: { min: { value: 0, exclusive: true }, max: 3 },
@@ -44,7 +44,7 @@ test("exclusive length.min never yields the excluded length", () => {
 });
 
 test("an empty array length range throws at whereby", () => {
-  const { T } = initialize({ seed: "array-empty-length" });
+  const { T } = initialize({ salt: "array-empty-length" });
   expect(() =>
     T.array(T.always("x")).whereby({
       length: { min: 5, max: { value: 5, exclusive: true } },
@@ -58,7 +58,7 @@ test("an empty array length range throws at whereby", () => {
  * returned exactly 0, making the documented default effectively 1.
  */
 test("length.min defaults to 0, so empty arrays occur", () => {
-  const { T, Fabricator } = initialize({ seed: "array-default-min" });
+  const { T, Fabricator } = initialize({ salt: "array-default-min" });
 
   const built = new Fabricator(
     T.array(T.always("x")).whereby({ length: { max: 3 } }),
@@ -71,7 +71,7 @@ test("length.min defaults to 0, so empty arrays occur", () => {
 });
 
 test("a fixed numeric length is exact", () => {
-  const { T, Fabricator } = initialize({ seed: "array-fixed" });
+  const { T, Fabricator } = initialize({ salt: "array-fixed" });
 
   const built = new Fabricator(T.array(T.always("x")).whereby({ length: 3 }));
 
@@ -81,7 +81,7 @@ test("a fixed numeric length is exact", () => {
 });
 
 test("min equal to max pins the length", () => {
-  const { T, Fabricator } = initialize({ seed: "array-pinned" });
+  const { T, Fabricator } = initialize({ salt: "array-pinned" });
 
   const built = new Fabricator(
     T.array(T.always("x")).whereby({ length: { min: 4, max: 4 } }),
@@ -92,11 +92,11 @@ test("min equal to max pins the length", () => {
   }
 });
 
-test("the same seed reproduces the same arrays", () => {
+test("the same salt reproduces the same arrays", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "array-reproducible",
-      clock: "seeded",
+      salt: "array-reproducible",
+      clock: "derived",
     });
     return new Fabricator(
       T.array(T.number.integer.whereby({ min: 0, max: 9 })).whereby({

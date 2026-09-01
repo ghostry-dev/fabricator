@@ -3,7 +3,7 @@ import { initialize } from "@ghostry/fabricator";
 import { Meta } from "@ghostry/fabricator/internal";
 
 test("`.as(f1).as(f2)` keeps fabricating with the last producer, for every non-`always` primitive", () => {
-  const { T, Fabricator } = initialize({ seed: "as-chaining" });
+  const { T, Fabricator } = initialize({ salt: "as-chaining" });
 
   const cases: ReadonlyArray<[string, any, any]> = [
     ["bigint", T.bigint, BigInt(2)],
@@ -32,11 +32,11 @@ test("`.as(f1).as(f2)` keeps fabricating with the last producer, for every non-`
   }
 });
 
-test("`.as(produce)` seeds `produce` with this leaf's own stream, replaying identically across two builds sharing a seed", () => {
+test("`.as(produce)` salts `produce` with this leaf's own stream, replaying identically across two builds sharing a salt", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "as-seeded",
-      clock: "seeded",
+      salt: "as-salted",
+      clock: "derived",
     });
 
     return {
@@ -63,14 +63,14 @@ test("`.as(produce)` seeds `produce` with this leaf's own stream, replaying iden
 });
 
 test("a zero-argument `.as(() => ...)` producer still compiles and runs unchanged", () => {
-  const { T, Fabricator } = initialize({ seed: "as-zero-arg" });
+  const { T, Fabricator } = initialize({ salt: "as-zero-arg" });
 
   const built = new Fabricator(T.boolean.as(() => true));
   expect(built.fabricate()).toBe(true);
 });
 
 test("`.as(...)` preserves prior scoping metadata instead of discarding it", () => {
-  const { T } = initialize({ seed: "as-metadata" });
+  const { T } = initialize({ salt: "as-metadata" });
 
   const past = T.date.past.as(() => new Date(0));
   expect(past[Meta]).toMatchObject({ mode: "past" });
@@ -105,7 +105,7 @@ test("`.as(...)` preserves prior scoping metadata instead of discarding it", () 
 });
 
 test("a built Fabricator's `.schema.as(...)` is genuinely usable, not just type-checkable", () => {
-  const { T, Fabricator } = initialize({ seed: "as-schema-rehydrate" });
+  const { T, Fabricator } = initialize({ salt: "as-schema-rehydrate" });
 
   const built = new Fabricator(
     T.date.whereby({ min: new Date(0), max: new Date(1) }),
@@ -117,7 +117,7 @@ test("a built Fabricator's `.schema.as(...)` is genuinely usable, not just type-
 });
 
 test("`object`: `.extend()`/`.refine()`/`.override()` after `.as(...)` fall back to definition-based fabrication", () => {
-  const { T, Fabricator } = initialize({ seed: "as-object-reset" });
+  const { T, Fabricator } = initialize({ salt: "as-object-reset" });
 
   const produced = T.object({ x: T.number }).as(() => ({ x: 999 }));
 
@@ -132,7 +132,7 @@ test("`object`: `.extend()`/`.refine()`/`.override()` after `.as(...)` fall back
 });
 
 test("`object`: `.fabricate(overrides)` on a produce-based schema applies overrides on top of `produce()`'s result", () => {
-  const { T, Fabricator } = initialize({ seed: "as-object-overrides" });
+  const { T, Fabricator } = initialize({ salt: "as-object-overrides" });
 
   const schema = T.object({ x: T.number, y: T.number }).as(() => ({
     x: 1,

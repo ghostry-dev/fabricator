@@ -48,7 +48,7 @@ const schema = T.faker.person.fullName();
 // T.string using faker values when fabricated
 ```
 
-Faker's generators draw from fabricator's own seed parameters, so those fields replay like every other one. See [the Faker guide](/guides/faker) for the full surface.
+Faker's generators draw from fabricator's own randomness, so those fields replay like every other one. See [the Faker guide](/guides/faker) for the full surface.
 
 You can also reach any data library by hand through `.as(...)` or `T.opaque` — see [`T.opaque`](/reference/primitives/opaque), including what it takes to keep such fields reproducible.
 

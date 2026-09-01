@@ -8,11 +8,11 @@ export const Replace = Symbol.for("fabricator:replace");
 export const Fixed = Symbol.for("fabricator:fixed");
 
 /**
- * Tags a `Seed` as composing onto whatever base is in effect, rather than
- * replacing it — the reading a bare `seed` has everywhere else in this library.
+ * Tags a `Salt` as composing onto whatever base is in effect, rather than
+ * replacing it — the reading a bare `salt` has everywhere else in this library.
  * `layer()` (`Random/index.ts`) is the only producer; a caller never names this
  * symbol, mirroring `[Replace]`. Unlike every other symbol in this file, it
- * tags a config value (a `Seed`), not a Schema or Fabricator — see
+ * tags a config value (a `Salt`), not a Schema or Fabricator — see
  * `Random/Types.ts`'s `Layered`.
  */
 export const Layer = Symbol.for("fabricator:layer");

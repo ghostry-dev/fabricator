@@ -4,8 +4,8 @@ import type {
   FabricatorContext,
   NaiveFabricator,
 } from "../../Fabricator/Types";
-import type { Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
+import type { Trace } from "../../Random/Types";
 import { Kind, Meta, type Adaptation } from "../../Types";
 import { Schema } from "./Schema";
 import type { Fabricated, Meta as ThisMeta } from "./Types";

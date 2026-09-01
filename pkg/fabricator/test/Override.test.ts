@@ -2,14 +2,14 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("an overridden field's fixed value never disturbs its object's other randomness", () => {
-  const seed = "from-skip-test";
+  const salt = "from-skip-test";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const base = new Fabricator1(T1.object({ a: T1.number, b: T1.number }));
@@ -37,7 +37,7 @@ test("an overridden field's fixed value never disturbs its object's other random
 });
 
 test("a computed field resolves against an overridden upstream value", () => {
-  const { T, Fabricator } = initialize({ seed: "compute-consistency" });
+  const { T, Fabricator } = initialize({ salt: "compute-consistency" });
 
   const schema = T.object({
     name: T.string.whereby({ length: { max: 10 } }),
@@ -56,7 +56,7 @@ test("a computed field resolves against an overridden upstream value", () => {
 });
 
 test("overriding a nested object field deep-merges; overriding an array field replaces it wholesale", () => {
-  const { T, Fabricator } = initialize({ seed: "nested-merge" });
+  const { T, Fabricator } = initialize({ salt: "nested-merge" });
 
   const schema = T.object({
     pricing: T.object({
@@ -79,7 +79,7 @@ test("overriding a nested object field deep-merges; overriding an array field re
 });
 
 test("overriding a computed field directly uses it verbatim when it matches the source kind", () => {
-  const { T, Fabricator } = initialize({ seed: "compute-override-ok" });
+  const { T, Fabricator } = initialize({ salt: "compute-override-ok" });
 
   const schema = T.object({ createdAt: T.date }).refine(({ compute }) => ({
     day: compute(T.date).as(({ fabricated }) => fabricated.createdAt),
@@ -92,7 +92,7 @@ test("overriding a computed field directly uses it verbatim when it matches the 
 });
 
 test("overriding a computed field with a value that violates its source kind throws", () => {
-  const { T } = initialize({ seed: "compute-override-bad" });
+  const { T } = initialize({ salt: "compute-override-bad" });
 
   const schema = T.object({ createdAt: T.date }).refine(({ compute }) => ({
     day: compute(T.date).as(({ fabricated }) => fabricated.createdAt),
@@ -104,7 +104,7 @@ test("overriding a computed field with a value that violates its source kind thr
 });
 
 test("an unknown override key throws immediately at .override()", () => {
-  const { T } = initialize({ seed: "unknown-key" });
+  const { T } = initialize({ salt: "unknown-key" });
 
   const schema = T.object({ name: T.string.whereby({ length: { max: 5 } }) });
 
@@ -114,7 +114,7 @@ test("an unknown override key throws immediately at .override()", () => {
 });
 
 test("an override value that violates its field's kind throws immediately at .override()", () => {
-  const { T } = initialize({ seed: "kind-violation" });
+  const { T } = initialize({ salt: "kind-violation" });
 
   const schema = T.object({
     pricing: T.object({ currency: T.string.whereby({ length: { max: 5 } }) }),
@@ -131,7 +131,7 @@ test("an override value that violates its field's kind throws immediately at .ov
 });
 
 test(".override(a).override(b) deep-merges, with b winning on conflicts", () => {
-  const { T, Fabricator } = initialize({ seed: "chain-merge" });
+  const { T, Fabricator } = initialize({ salt: "chain-merge" });
 
   const schema = T.object({
     pricing: T.object({
@@ -153,14 +153,14 @@ test(".override(a).override(b) deep-merges, with b winning on conflicts", () => 
 });
 
 test("fabricate(overrides) uses this Fabricator's own randomness, never a fresh draw", () => {
-  const seed = "fabricate-override";
+  const salt = "fabricate-override";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ a: T1.number, b: T1.number }));
@@ -189,7 +189,7 @@ test("fabricate(overrides) uses this Fabricator's own randomness, never a fresh 
 });
 
 test("fabricate(overrides) is a one-off — it never mutates the Fabricator", () => {
-  const { T, Fabricator } = initialize({ seed: "fabricate-override-oneoff" });
+  const { T, Fabricator } = initialize({ salt: "fabricate-override-oneoff" });
 
   const built = new Fabricator(
     T.object({ name: T.string.whereby({ length: { max: 10 } }) }),
@@ -202,7 +202,7 @@ test("fabricate(overrides) is a one-off — it never mutates the Fabricator", ()
 });
 
 test("fabricate(overrides) deep-merges a nested object override directly, no .schema needed", () => {
-  const { T, Fabricator } = initialize({ seed: "fabricate-nested" });
+  const { T, Fabricator } = initialize({ salt: "fabricate-nested" });
 
   const built = new Fabricator(
     T.object({
@@ -220,7 +220,7 @@ test("fabricate(overrides) deep-merges a nested object override directly, no .sc
 });
 
 test("fabricate(overrides) resolves a computed field against an overridden upstream value", () => {
-  const { T, Fabricator } = initialize({ seed: "fabricate-compute-upstream" });
+  const { T, Fabricator } = initialize({ salt: "fabricate-compute-upstream" });
 
   const built = new Fabricator(
     T.object({ name: T.string.whereby({ length: { max: 10 } }) }).refine(
@@ -239,7 +239,7 @@ test("fabricate(overrides) resolves a computed field against an overridden upstr
 });
 
 test("fabricate(overrides) uses an overridden computed field verbatim", () => {
-  const { T, Fabricator } = initialize({ seed: "fabricate-compute-direct" });
+  const { T, Fabricator } = initialize({ salt: "fabricate-compute-direct" });
 
   const built = new Fabricator(
     T.object({ createdAt: T.date }).refine(({ compute }) => ({
@@ -254,7 +254,7 @@ test("fabricate(overrides) uses an overridden computed field verbatim", () => {
 });
 
 test("fabricate(overrides) throws immediately on an unknown key or a kind-violating value", () => {
-  const { T, Fabricator } = initialize({ seed: "fabricate-throws" });
+  const { T, Fabricator } = initialize({ salt: "fabricate-throws" });
 
   const built = new Fabricator(
     T.object({ name: T.string.whereby({ length: { max: 5 } }) }),
@@ -268,7 +268,7 @@ test("fabricate(overrides) throws immediately on an unknown key or a kind-violat
 });
 
 test("fabricate(overrides, { validate: false }) skips validation", () => {
-  const { T, Fabricator } = initialize({ seed: "fabricate-skip-validate" });
+  const { T, Fabricator } = initialize({ salt: "fabricate-skip-validate" });
 
   const built = new Fabricator(
     T.object({ name: T.string.whereby({ length: { max: 5 } }) }),

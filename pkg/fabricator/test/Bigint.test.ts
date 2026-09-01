@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
 test("T.bigint.whereby is inclusive at both bounds", () => {
-  const { T, Fabricator } = initialize({ seed: "bigint-bounds" });
+  const { T, Fabricator } = initialize({ salt: "bigint-bounds" });
 
   const built = new Fabricator(
     T.bigint.whereby({ min: BigInt(3), max: BigInt(6) }),
@@ -20,7 +20,7 @@ test("T.bigint.whereby is inclusive at both bounds", () => {
 });
 
 test("min defaults to the negation of max", () => {
-  const { T, Fabricator } = initialize({ seed: "bigint-default-min" });
+  const { T, Fabricator } = initialize({ salt: "bigint-default-min" });
 
   const built = new Fabricator(T.bigint.whereby({ max: BigInt(4) }));
 
@@ -37,7 +37,7 @@ test("min defaults to the negation of max", () => {
 });
 
 test("exclusive bigint ends drop the excluded values", () => {
-  const { T, Fabricator } = initialize({ seed: "bigint-exclusive" });
+  const { T, Fabricator } = initialize({ salt: "bigint-exclusive" });
   const built = new Fabricator(
     T.bigint.whereby({
       min: { value: BigInt(3), exclusive: true },
@@ -51,14 +51,14 @@ test("exclusive bigint ends drop the excluded values", () => {
 });
 
 test("an empty bigint range throws at whereby", () => {
-  const { T } = initialize({ seed: "bigint-empty" });
+  const { T } = initialize({ salt: "bigint-empty" });
   expect(() => T.bigint.whereby({ min: BigInt(5), max: BigInt(4) })).toThrow(
     FabricatorError.EmptyRangeError,
   );
 });
 
 test("a single-value range always fabricates that value", () => {
-  const { T, Fabricator } = initialize({ seed: "bigint-single" });
+  const { T, Fabricator } = initialize({ salt: "bigint-single" });
 
   const built = new Fabricator(
     T.bigint.whereby({ min: BigInt(9), max: BigInt(9) }),
@@ -75,7 +75,7 @@ test("a single-value range always fabricates that value", () => {
  * staying reproducible and in range.
  */
 test("a range spanning multiple bytes stays within bounds", () => {
-  const { T, Fabricator } = initialize({ seed: "bigint-multibyte" });
+  const { T, Fabricator } = initialize({ salt: "bigint-multibyte" });
 
   const min = BigInt(0);
   const max = BigInt("340282366920938463463374607431768211455"); // 2^128 - 1
@@ -90,7 +90,7 @@ test("a range spanning multiple bytes stays within bounds", () => {
 
 /** Every value returned is a genuine `bigint`, never a `number`. */
 test("fabricated values are bigints", () => {
-  const { T, Fabricator } = initialize({ seed: "bigint-typeof" });
+  const { T, Fabricator } = initialize({ salt: "bigint-typeof" });
 
   const built = new Fabricator(
     T.bigint.whereby({ min: BigInt(0), max: BigInt(1000) }),

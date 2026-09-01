@@ -38,7 +38,7 @@ const user = User.fabricate();
 
 ## One instance, one isolated world
 
-`initialize({ seed, algorithm, types, clock })` mints a single self-contained instance: its own source of randomness, its own `T`, its own `Fabricator` constructor. Nothing here is shared module-level state — two `initialize()` calls never perturb each other, which is what makes it safe to seed independently in parallel tests. See [Reproducibility](/guides/reproducibility) for how that isolation actually works, including what `clock` controls for `T.date`.
+`initialize({ salt, algorithm, types, clock })` mints a single self-contained instance: its own source of randomness, its own `T`, its own `Fabricator` constructor. Nothing here is shared module-level state — two `initialize()` calls never perturb each other, which is what makes it safe to salt independently in parallel tests. See [Reproducibility](/guides/reproducibility) for how that isolation actually works, including what `clock` controls for `T.date`.
 
 ## Why the split matters
 

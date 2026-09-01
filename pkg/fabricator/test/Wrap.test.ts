@@ -11,17 +11,17 @@ import { expect, test } from "bun:test";
  * what would break if the `wrap`'s `Frame` stashed the wrong source.
  */
 test("implicit (ambient) and explicit (scope.Fabricator) construction inside a wrap share one source", () => {
-  const instance = initialize({ seed: "wrap-shared-source" });
+  const instance = initialize({ salt: "wrap-shared-source" });
 
   const interleaved: number[] = [];
-  instance.wrap({ seed: layer("x") }, (scope) => {
+  instance.wrap({ salt: layer("x") }, (scope) => {
     interleaved.push(new instance.Fabricator(instance.T.number).fabricate());
     interleaved.push(new scope.Fabricator(scope.T.number).fabricate());
     interleaved.push(new instance.Fabricator(instance.T.number).fabricate());
   });
 
   const allViaScope: number[] = [];
-  instance.wrap({ seed: layer("x") }, (scope) => {
+  instance.wrap({ salt: layer("x") }, (scope) => {
     allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
     allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
     allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
@@ -31,15 +31,15 @@ test("implicit (ambient) and explicit (scope.Fabricator) construction inside a w
 });
 
 test("two builds inside one wrap reproduce what the equivalent fork gives for the same call sites in the same order", () => {
-  const instance = initialize({ seed: "wrap-fork-equivalence" });
+  const instance = initialize({ salt: "wrap-fork-equivalence" });
 
   const viaWrap: number[] = [];
-  instance.wrap({ seed: layer("x") }, () => {
+  instance.wrap({ salt: layer("x") }, () => {
     viaWrap.push(new instance.Fabricator(instance.T.number).fabricate());
     viaWrap.push(new instance.Fabricator(instance.T.number).fabricate());
   });
 
-  const forked = instance.fork({ seed: layer("x") });
+  const forked = instance.fork({ salt: layer("x") });
   const viaFork = [
     new forked.Fabricator(forked.T.number).fabricate(),
     new forked.Fabricator(forked.T.number).fabricate(),
@@ -49,12 +49,12 @@ test("two builds inside one wrap reproduce what the equivalent fork gives for th
 });
 
 test("two sequential identical wraps reproduce each other", () => {
-  const instance = initialize({ seed: "wrap-repeat" });
+  const instance = initialize({ salt: "wrap-repeat" });
 
-  const first = instance.wrap({ seed: layer("x") }, () =>
+  const first = instance.wrap({ salt: layer("x") }, () =>
     new instance.Fabricator(instance.T.number).fabricate(),
   );
-  const second = instance.wrap({ seed: layer("x") }, () =>
+  const second = instance.wrap({ salt: layer("x") }, () =>
     new instance.Fabricator(instance.T.number).fabricate(),
   );
 
@@ -62,37 +62,37 @@ test("two sequential identical wraps reproduce each other", () => {
 });
 
 test("wrap returns the block's own return value", () => {
-  const instance = initialize({ seed: "wrap-return" });
+  const instance = initialize({ salt: "wrap-return" });
 
-  expect(instance.wrap({ seed: layer("x") }, () => 42)).toBe(42);
+  expect(instance.wrap({ salt: layer("x") }, () => 42)).toBe(42);
 });
 
-test("a nested wrap({ seed: layer(...) }) composes onto the active frame, equal to one flat wrap with the combined layer", () => {
-  const instance = initialize({ seed: "wrap-nest" });
+test("a nested wrap({ salt: layer(...) }) composes onto the active frame, equal to one flat wrap with the combined layer", () => {
+  const instance = initialize({ salt: "wrap-nest" });
 
-  const nested = instance.wrap({ seed: layer("a") }, () =>
-    instance.wrap({ seed: layer("b") }, () =>
+  const nested = instance.wrap({ salt: layer("a") }, () =>
+    instance.wrap({ salt: layer("b") }, () =>
       new instance.Fabricator(instance.T.number).fabricate(),
     ),
   );
 
-  const flat = instance.wrap({ seed: layer(["a", "b"]) }, () =>
+  const flat = instance.wrap({ salt: layer(["a", "b"]) }, () =>
     new instance.Fabricator(instance.T.number).fabricate(),
   );
 
   expect(nested).toBe(flat);
 });
 
-test("a bare seed in a nested wrap replaces, ignoring the enclosing frame", () => {
-  const instance = initialize({ seed: "wrap-nest-replace" });
+test("a bare salt in a nested wrap replaces, ignoring the enclosing frame", () => {
+  const instance = initialize({ salt: "wrap-nest-replace" });
 
-  const nested = instance.wrap({ seed: layer("a") }, () =>
-    instance.wrap({ seed: "b" }, () =>
+  const nested = instance.wrap({ salt: layer("a") }, () =>
+    instance.wrap({ salt: "b" }, () =>
       new instance.Fabricator(instance.T.number).fabricate(),
     ),
   );
 
-  const flat = instance.wrap({ seed: "b" }, () =>
+  const flat = instance.wrap({ salt: "b" }, () =>
     new instance.Fabricator(instance.T.number).fabricate(),
   );
 
@@ -103,19 +103,19 @@ test("a bare seed in a nested wrap replaces, ignoring the enclosing frame", () =
  * `wrap` lays its overlay over the _active frame_, not over the instance it was
  * called on — so calling `sibling.wrap(...)` while `instance`'s own wrap is
  * active composes onto `instance`'s frame, completely ignoring `sibling`'s own
- * base seed.
+ * base salt.
  */
 test("wrap() called on a forked instance while another wrap is active lays over the active frame, not the fork's own base", () => {
-  const instance = initialize({ seed: "wrap-fork-nesting" });
-  const sibling = instance.fork({ seed: layer("sibling") });
+  const instance = initialize({ salt: "wrap-fork-nesting" });
+  const sibling = instance.fork({ salt: layer("sibling") });
 
-  const nested = instance.wrap({ seed: layer("a") }, () =>
-    sibling.wrap({ seed: layer("b") }, () =>
+  const nested = instance.wrap({ salt: layer("a") }, () =>
+    sibling.wrap({ salt: layer("b") }, () =>
       new instance.Fabricator(instance.T.number).fabricate(),
     ),
   );
 
-  const flat = instance.wrap({ seed: layer(["a", "b"]) }, () =>
+  const flat = instance.wrap({ salt: layer(["a", "b"]) }, () =>
     new instance.Fabricator(instance.T.number).fabricate(),
   );
 
@@ -128,20 +128,20 @@ test("wrap() called on a forked instance while another wrap is active lays over 
  * is still overridden _inside_ one, for both `Fabricator` and `combinatorial`.
  */
 test("a sibling fork created outside a wrap is overridden inside it — both Fabricator and combinatorial", () => {
-  const instance = initialize({ seed: "wrap-lineage-reach" });
-  const sibling = instance.fork({ seed: layer("sibling") });
+  const instance = initialize({ salt: "wrap-lineage-reach" });
+  const sibling = instance.fork({ salt: layer("sibling") });
 
   let siblingBuildInWrap: number | undefined;
   let siblingCombinatorialInWrap: unknown[] | undefined;
 
-  instance.wrap({ seed: layer("a") }, () => {
+  instance.wrap({ salt: layer("a") }, () => {
     siblingBuildInWrap = new sibling.Fabricator(sibling.T.number).fabricate();
     siblingCombinatorialInWrap = [
       ...sibling.combinatorial(sibling.T.enum.uniform(["1", "2", "3"])),
     ];
   });
 
-  const expected = instance.fork({ seed: layer("a") });
+  const expected = instance.fork({ salt: layer("a") });
   const expectedBuild = new expected.Fabricator(expected.T.number).fabricate();
   const expectedCombinatorial = [
     ...expected.combinatorial(expected.T.enum.uniform(["1", "2", "3"])),
@@ -153,15 +153,15 @@ test("a sibling fork created outside a wrap is overridden inside it — both Fab
 
 /**
  * A bare enumerable axis enumerates its members deterministically — index
- * order, not seed-dependent (only `coverage`'s `"cycle"` strategy permutes by
- * seed; see `Plan.ts`). So the schema here pairs the enumerable field with an
+ * order, not salt-dependent (only `coverage`'s `"cycle"` strategy permutes by
+ * salt; see `Plan.ts`). So the schema here pairs the enumerable field with an
  * ordinary fuzzed one (`n`), whose _value_ within each enumerated combination
- * does vary by seed, which is what actually exercises the ambient-frame
+ * does vary by salt, which is what actually exercises the ambient-frame
  * override for `combinatorial`.
  */
 test("combinatorial inside a wrap differs from outside it and matches the wrapped instance's own", () => {
   const instance = initialize({
-    seed: "wrap-combinatorial",
+    salt: "wrap-combinatorial",
     clock: new Date("2020-01-01T00:00:00.000Z"),
   });
   const schema = () =>
@@ -173,7 +173,7 @@ test("combinatorial inside a wrap differs from outside it and matches the wrappe
   const outside = [...instance.combinatorial(schema())];
 
   let inside: unknown[] = [];
-  const scope = instance.wrap({ seed: layer("x") }, (scoped) => {
+  const scope = instance.wrap({ salt: layer("x") }, (scoped) => {
     inside = [...instance.combinatorial(schema())];
     return scoped;
   });
@@ -185,13 +185,13 @@ test("combinatorial inside a wrap differs from outside it and matches the wrappe
 });
 
 /**
- * Coverage's `"cycle"` strategy _does_ permute by seed, but a 3-member enum is
- * only 6 schedules — two seeds can land on the same one. Pair the enumerable
+ * Coverage's `"cycle"` strategy _does_ permute by salt, but a 3-member enum is
+ * only 6 schedules — two salts can land on the same one. Pair the enumerable
  * axis with a fuzzed `n`, same as the combinatorial sibling.
  */
 test("coverage inside a wrap differs from outside it and matches the wrapped instance's own", () => {
   const instance = initialize({
-    seed: "wrap-coverage",
+    salt: "wrap-coverage",
     clock: new Date("2020-01-01T00:00:00.000Z"),
   });
   const schema = () =>
@@ -203,7 +203,7 @@ test("coverage inside a wrap differs from outside it and matches the wrapped ins
   const outside = [...instance.coverage(schema())];
 
   let inside: unknown[] = [];
-  const scope = instance.wrap({ seed: layer("x") }, (scoped) => {
+  const scope = instance.wrap({ salt: layer("x") }, (scoped) => {
     inside = [...instance.coverage(schema())];
     return scoped;
   });
@@ -215,37 +215,37 @@ test("coverage inside a wrap differs from outside it and matches the wrapped ins
 });
 
 test("context reflects the instance's own config outside any wrap, the active frame's inside one, and reverts after", () => {
-  const instance = initialize({ seed: "wrap-context" });
+  const instance = initialize({ salt: "wrap-context" });
 
-  const outsideBefore = instance.context.seed;
+  const outsideBefore = instance.context.salt;
   let insideSeed: readonly string[] | undefined;
 
-  instance.wrap({ seed: layer("x") }, () => {
-    insideSeed = instance.context.seed;
+  instance.wrap({ salt: layer("x") }, () => {
+    insideSeed = instance.context.salt;
   });
 
-  const outsideAfter = instance.context.seed;
+  const outsideAfter = instance.context.salt;
 
-  expect(outsideBefore).toEqual(instance.seed);
-  expect(insideSeed).toEqual([...instance.seed, "x"]);
-  expect(outsideAfter).toEqual(instance.seed);
+  expect(outsideBefore).toEqual(instance.salt);
+  expect(insideSeed).toEqual([...instance.salt, "x"]);
+  expect(outsideAfter).toEqual(instance.salt);
 });
 
 test("a context reference captured before a wrap reflects the wrap live, since it's a getter, not a snapshot", () => {
-  const instance = initialize({ seed: "wrap-context-live" });
+  const instance = initialize({ salt: "wrap-context-live" });
   const context = instance.context;
 
-  expect(context.seed).toEqual(instance.seed);
+  expect(context.salt).toEqual(instance.salt);
 
-  instance.wrap({ seed: layer("x") }, () => {
-    expect(context.seed).toEqual([...instance.seed, "x"]);
+  instance.wrap({ salt: layer("x") }, () => {
+    expect(context.salt).toEqual([...instance.salt, "x"]);
   });
 
-  expect(context.seed).toEqual(instance.seed);
+  expect(context.salt).toEqual(instance.salt);
 });
 
 test("context.algorithm and .attribution reflect the active frame's overrides", () => {
-  const instance = initialize({ seed: "wrap-context-fields" });
+  const instance = initialize({ salt: "wrap-context-fields" });
   const customAlgorithm = () => () => 0.5;
 
   instance.wrap(
@@ -260,15 +260,15 @@ test("context.algorithm and .attribution reflect the active frame's overrides", 
 });
 
 test("the frame unwinds correctly when the wrap block throws", () => {
-  const instance = initialize({ seed: "wrap-throw" });
+  const instance = initialize({ salt: "wrap-throw" });
 
   expect(() => {
-    instance.wrap({ seed: layer("x") }, () => {
+    instance.wrap({ salt: layer("x") }, () => {
       throw new Error("boom");
     });
   }).toThrow("boom");
 
-  expect(instance.context.seed).toEqual(instance.seed);
+  expect(instance.context.salt).toEqual(instance.salt);
 });
 
 /**
@@ -280,7 +280,7 @@ test("the frame unwinds correctly when the wrap block throws", () => {
  * suppresses file attribution, and none of them escape it.
  */
 test("the ambient frame survives an await inside the wrap block", async () => {
-  const instance = initialize({ seed: "wrap-async" });
+  const instance = initialize({ salt: "wrap-async" });
 
   let duringSyncFile: string | undefined;
   let afterAwaitFile: string | undefined;
@@ -308,10 +308,10 @@ test("the ambient frame survives an await inside the wrap block", async () => {
  * test above still passed.
  */
 test("ambient and scope.Fabricator share one source across an await", async () => {
-  const instance = initialize({ seed: "wrap-shared-source-async" });
+  const instance = initialize({ salt: "wrap-shared-source-async" });
 
   const interleaved: number[] = [];
-  await instance.wrap({ seed: layer("x") }, async (scope) => {
+  await instance.wrap({ salt: layer("x") }, async (scope) => {
     interleaved.push(new instance.Fabricator(instance.T.number).fabricate());
     await Promise.resolve();
     interleaved.push(new scope.Fabricator(scope.T.number).fabricate());
@@ -320,7 +320,7 @@ test("ambient and scope.Fabricator share one source across an await", async () =
   });
 
   const allViaScope: number[] = [];
-  await instance.wrap({ seed: layer("x") }, async (scope) => {
+  await instance.wrap({ salt: layer("x") }, async (scope) => {
     allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
     allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
     allViaScope.push(new scope.Fabricator(scope.T.number).fabricate());
@@ -333,26 +333,26 @@ test("ambient and scope.Fabricator share one source across an await", async () =
  * Two overlapping `wrap`s on one lineage each keep their own frame. A LIFO
  * array could never satisfy this even if it awaited: interleaved pushes and
  * pops mean `current()` returns whichever frame was stacked last globally, so
- * both blocks would read the other's seed (or none at all). Staggered
+ * both blocks would read the other's salt (or none at all). Staggered
  * deliberately, so the two blocks are genuinely in flight together.
  */
 test("concurrent wraps on one lineage stay isolated", async () => {
-  const instance = initialize({ seed: "wrap-concurrent" });
+  const instance = initialize({ salt: "wrap-concurrent" });
 
-  const seedDuring = async (
+  const saltDuring = async (
     tag: string,
     delay: number,
   ): Promise<ReadonlyArray<string>> =>
-    instance.wrap({ seed: layer(tag) }, async () => {
+    instance.wrap({ salt: layer(tag) }, async () => {
       await new Promise((resolve) => setTimeout(resolve, delay));
-      return instance.context.seed;
+      return instance.context.salt;
     });
 
-  const [a, b] = await Promise.all([seedDuring("a", 10), seedDuring("b", 1)]);
+  const [a, b] = await Promise.all([saltDuring("a", 10), saltDuring("b", 1)]);
 
-  expect(a).toEqual([...instance.seed, "a"]);
-  expect(b).toEqual([...instance.seed, "b"]);
-  expect(instance.context.seed).toEqual(instance.seed);
+  expect(a).toEqual([...instance.salt, "a"]);
+  expect(b).toEqual([...instance.salt, "b"]);
+  expect(instance.context.salt).toEqual(instance.salt);
 });
 
 /**
@@ -368,11 +368,11 @@ test("concurrent wraps on one lineage stay isolated", async () => {
  */
 test("wrap rejects an async block under a synchronous stack", () => {
   const instance = initialize({
-    seed: "wrap-sync-stack",
+    salt: "wrap-sync-stack",
     stack: toSynchronousStack(),
   });
 
-  expect(() => instance.wrap({ seed: layer("x") }, async () => {})).toThrow(
+  expect(() => instance.wrap({ salt: layer("x") }, async () => {})).toThrow(
     FabricatorError.SynchronousStackError,
   );
 });
@@ -383,55 +383,55 @@ test("wrap rejects an async block under a synchronous stack", () => {
  */
 test("a synchronous stack still carries a synchronous wrap", () => {
   const instance = initialize({
-    seed: "wrap-sync-stack-ok",
+    salt: "wrap-sync-stack-ok",
     stack: toSynchronousStack(),
   });
 
-  let seedDuring: ReadonlyArray<string> | undefined;
-  instance.wrap({ seed: layer("x") }, () => {
-    seedDuring = instance.context.seed;
+  let saltDuring: ReadonlyArray<string> | undefined;
+  instance.wrap({ salt: layer("x") }, () => {
+    saltDuring = instance.context.salt;
   });
 
-  expect(seedDuring).toEqual([...instance.seed, "x"]);
-  expect(instance.context.seed).toEqual(instance.seed);
+  expect(saltDuring).toEqual([...instance.salt, "x"]);
+  expect(instance.context.salt).toEqual(instance.salt);
 });
 
 test("a wrap on one lineage has no effect on an unrelated initialize() instance", () => {
-  const a = initialize({ seed: "wrap-isolation-a" });
-  const b = initialize({ seed: "wrap-isolation-b" });
+  const a = initialize({ salt: "wrap-isolation-a" });
+  const b = initialize({ salt: "wrap-isolation-b" });
 
   let bSeedDuringA: readonly string[] | undefined;
 
-  a.wrap({ seed: layer("x") }, () => {
-    bSeedDuringA = b.context.seed;
+  a.wrap({ salt: layer("x") }, () => {
+    bSeedDuringA = b.context.salt;
   });
 
-  expect(bSeedDuringA).toEqual(b.seed);
+  expect(bSeedDuringA).toEqual(b.salt);
 });
 
 /**
- * Pins an explicit `clock` on the instance: `wrap({ seed: layer("x") })`
- * composes onto the instance's own seed. A wall-clock default is inherited as a
- * number, so this pin is for `"seeded"` instances (and for making the shared
- * "now" obvious); an inherited `"seeded"` clock would re-derive whenever the
- * seed it composes changes (see `Instance/Types.ts`'s `Config.clock`) — so
- * without an explicit clock here, a `"seeded"` wrap's own scoped source would
+ * Pins an explicit `clock` on the instance: `wrap({ salt: layer("x") })`
+ * composes onto the instance's own salt. A wall-clock default is inherited as a
+ * number, so this pin is for `"derived"` instances (and for making the shared
+ * "now" obvious); an inherited `"derived"` clock would re-derive whenever the
+ * salt it composes changes (see `Instance/Types.ts`'s `Config.clock`) — so
+ * without an explicit clock here, a `"derived"` wrap's own scoped source would
  * carry a different "now" than the instance's own.
  */
-test("a bare per-call seed inside a wrap reproduces what the same call gives outside one", () => {
+test("a bare per-call salt inside a wrap reproduces what the same call gives outside one", () => {
   const instance = initialize({
-    seed: "wrap-bare-seed",
+    salt: "wrap-bare-salt",
     clock: new Date("2020-01-01T00:00:00.000Z"),
   });
 
   const outside = new instance.Fabricator(instance.T.number, {
-    seed: "pinned",
+    salt: "pinned",
   }).fabricate();
 
   let inside: number | undefined;
-  instance.wrap({ seed: layer("x") }, () => {
+  instance.wrap({ salt: layer("x") }, () => {
     inside = new instance.Fabricator(instance.T.number, {
-      seed: "pinned",
+      salt: "pinned",
     }).fabricate();
   });
 
@@ -439,41 +439,41 @@ test("a bare per-call seed inside a wrap reproduces what the same call gives out
 });
 
 /**
- * The one place `layer` and `wrap` genuinely interact: a per-call layered seed
- * composes onto the _frame's_ effective seed, not the instance's own —
+ * The one place `layer` and `wrap` genuinely interact: a per-call layered salt
+ * composes onto the _frame's_ effective salt, not the instance's own —
  * differing from the same call made outside the wrap.
  */
 /**
  * Same reason as the test above: an explicit clock keeps the wrap's own
- * `layer("frame")` seed composition from also silently re-deriving a different
+ * `layer("frame")` salt composition from also silently re-deriving a different
  * default clock, which would otherwise perturb this assertion for a reason
- * unrelated to what it's testing (seed composition, not "now").
+ * unrelated to what it's testing (salt composition, not "now").
  */
-test("a per-call layer(...) seed inside a wrap composes onto the frame's seed, not the instance's", () => {
+test("a per-call layer(...) salt inside a wrap composes onto the frame's salt, not the instance's", () => {
   const instance = initialize({
-    seed: "wrap-layer-seed",
+    salt: "wrap-layer-salt",
     clock: new Date("2020-01-01T00:00:00.000Z"),
   });
 
   let inside: number | undefined;
-  instance.wrap({ seed: layer("frame") }, () => {
+  instance.wrap({ salt: layer("frame") }, () => {
     inside = new instance.Fabricator(instance.T.number, {
-      seed: layer("x"),
+      salt: layer("x"),
     }).fabricate();
   });
 
   const expected = new instance.Fabricator(instance.T.number, {
-    seed: [...instance.seed, "frame", "x"],
+    salt: [...instance.salt, "frame", "x"],
   }).fabricate();
 
   expect(inside).toBe(expected);
 });
 
 test(".trace inside a wrap reports a real file under the default attribution", () => {
-  const instance = initialize({ seed: "wrap-trace-file" });
+  const instance = initialize({ salt: "wrap-trace-file" });
 
   let file: string | undefined;
-  instance.wrap({ seed: layer("x") }, () => {
+  instance.wrap({ salt: layer("x") }, () => {
     file = new instance.Fabricator(
       instance.T.string.whereby({ length: { max: 8 } }),
     ).trace.file;
@@ -483,7 +483,7 @@ test(".trace inside a wrap reports a real file under the default attribution", (
 });
 
 test(".trace inside a wrap overriding attribution to none reports no file", () => {
-  const instance = initialize({ seed: "wrap-trace-none" });
+  const instance = initialize({ salt: "wrap-trace-none" });
 
   let file: string | undefined;
   instance.wrap({ attribution: { kind: "none" } }, () => {
@@ -496,9 +496,9 @@ test(".trace inside a wrap overriding attribution to none reports no file", () =
 });
 
 test("structural keying survives a wrap — inserting a sibling field doesn't shift another field's value", () => {
-  const instance = initialize({ seed: "wrap-structural-keying" });
+  const instance = initialize({ salt: "wrap-structural-keying" });
 
-  const before = instance.wrap({ seed: layer("x") }, (scope) =>
+  const before = instance.wrap({ salt: layer("x") }, (scope) =>
     new scope.Fabricator(
       scope.T.object({
         name: scope.T.string.whereby({ length: { max: 8 } }),
@@ -507,7 +507,7 @@ test("structural keying survives a wrap — inserting a sibling field doesn't sh
     ).fabricate(),
   );
 
-  const after = instance.wrap({ seed: layer("x") }, (scope) =>
+  const after = instance.wrap({ salt: layer("x") }, (scope) =>
     new scope.Fabricator(
       scope.T.object({
         id: scope.T.string.whereby({ length: { max: 8 } }),

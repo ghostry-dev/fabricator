@@ -9,9 +9,9 @@ import { expect, test } from "bun:test";
  */
 
 test("inserting a field leaves every existing sibling's value unchanged", () => {
-  const seed = "insert-field";
+  const salt = "insert-field";
 
-  const { T: T1, Fabricator: F1 } = initialize({ seed, clock: "seeded" });
+  const { T: T1, Fabricator: F1 } = initialize({ salt, clock: "derived" });
   const before = new F1(
     T1.object({
       name: T1.string.whereby({ length: { max: 8 } }),
@@ -19,7 +19,7 @@ test("inserting a field leaves every existing sibling's value unchanged", () => 
     }),
   ).fabricate();
 
-  const { T: T2, Fabricator: F2 } = initialize({ seed, clock: "seeded" });
+  const { T: T2, Fabricator: F2 } = initialize({ salt, clock: "derived" });
   const after = new F2(
     T2.object({
       id: T2.string.whereby({ length: { max: 8 } }),
@@ -33,9 +33,9 @@ test("inserting a field leaves every existing sibling's value unchanged", () => 
 });
 
 test("reordering fields leaves every field's own value unchanged", () => {
-  const seed = "reorder-fields";
+  const salt = "reorder-fields";
 
-  const { T: T1, Fabricator: F1 } = initialize({ seed, clock: "seeded" });
+  const { T: T1, Fabricator: F1 } = initialize({ salt, clock: "derived" });
   const forward = new F1(
     T1.object({
       name: T1.string.whereby({ length: { max: 8 } }),
@@ -43,7 +43,7 @@ test("reordering fields leaves every field's own value unchanged", () => {
     }),
   ).fabricate();
 
-  const { T: T2, Fabricator: F2 } = initialize({ seed, clock: "seeded" });
+  const { T: T2, Fabricator: F2 } = initialize({ salt, clock: "derived" });
   const reversed = new F2(
     T2.object({
       age: T2.number,
@@ -56,9 +56,9 @@ test("reordering fields leaves every field's own value unchanged", () => {
 });
 
 test("renaming a field changes only that field's own value, not its siblings'", () => {
-  const seed = "rename-field";
+  const salt = "rename-field";
 
-  const { T: T1, Fabricator: F1 } = initialize({ seed, clock: "seeded" });
+  const { T: T1, Fabricator: F1 } = initialize({ salt, clock: "derived" });
   const original = new F1(
     T1.object({
       name: T1.string.whereby({ length: { max: 8 } }),
@@ -66,7 +66,7 @@ test("renaming a field changes only that field's own value, not its siblings'", 
     }),
   ).fabricate();
 
-  const { T: T2, Fabricator: F2 } = initialize({ seed, clock: "seeded" });
+  const { T: T2, Fabricator: F2 } = initialize({ salt, clock: "derived" });
   const renamed = new F2(
     T2.object({
       fullName: T2.string.whereby({ length: { max: 8 } }),
@@ -90,9 +90,9 @@ test("renaming a field changes only that field's own value, not its siblings'", 
  * (`object`, `tuple`) is held to.
  */
 test("adding a choice option leaves an unrelated sibling field's draws unchanged", () => {
-  const seed = "choice-add-option";
+  const salt = "choice-add-option";
 
-  const { T: T1, Fabricator: F1 } = initialize({ seed, clock: "seeded" });
+  const { T: T1, Fabricator: F1 } = initialize({ salt, clock: "derived" });
   const before = new F1(
     T1.object({
       pick: T1.choice.uniform([
@@ -103,7 +103,7 @@ test("adding a choice option leaves an unrelated sibling field's draws unchanged
     }),
   );
 
-  const { T: T2, Fabricator: F2 } = initialize({ seed, clock: "seeded" });
+  const { T: T2, Fabricator: F2 } = initialize({ salt, clock: "derived" });
   const after = new F2(
     T2.object({
       pick: T2.choice.uniform([

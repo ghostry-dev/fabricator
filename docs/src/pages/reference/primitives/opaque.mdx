@@ -14,7 +14,7 @@ T.opaque(
 
 The field's type is whatever `produce` returns — `T.opaque(({ random }) => new Map<string, number>())` needs no annotation.
 
-`produce` is handed `{ random, clock }` — this schema's own seeded stream, and the instance's resolved "now" (see [What "now" means](/guides/reproducibility#what-now-means)) — and that's the detail worth not skipping: draw from `random.next()` and the field stays reproducible from the seed, exactly like every other primitive. Reach for `Math.random()` instead and you opt that one field out of reproducibility, silently.
+`produce` is handed `{ random, clock }` — this schema's own seeded stream, and the instance's resolved "now" (see [What "now" means](/guides/reproducibility#what-now-means)). Draw from `random.next()` and the field stays reproducible from the salt, exactly like every other primitive; reach for `Math.random()` instead and you silently opt that one field out of reproducibility.
 
 Why this exists given [`T.always`](/reference/primitives/always) / [`T.enum`](/reference/primitives/enum) already hold arbitrary values: `T.always(someMap)` types correctly but hands back the _same reference_ every call, with no `.as()`. `T.opaque` is the direct way to express "fabricate a fresh value of a kind this library doesn't model."
 

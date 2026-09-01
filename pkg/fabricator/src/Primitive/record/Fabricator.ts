@@ -84,7 +84,7 @@ export function Fabricator<$Key extends Key, $Value extends Value>(
        *
        * Not `object/Fabricator.ts`'s `isPollutionKey` throw: that guard
        * protects developer-written keys, where throwing is actionable. A throw
-       * on a _drawn_ key would fire on a seed-dependent schedule — the
+       * on a _drawn_ key would fire on a salt-dependent schedule — the
        * pseudo-flakiness the testing notes warn about. Removing the hazard
        * beats reporting it here.
        *

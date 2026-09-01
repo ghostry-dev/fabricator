@@ -26,7 +26,7 @@ const value = (T: Registry) => T.number.integer.whereby({ min: 0, max: 1000 });
  * assertion that would catch a regression back to that.
  */
 test("toTypeBox throws on a symbol-keyed record rather than emitting TNever", () => {
-  const { T } = initialize({ seed: "record-symbol-typebox" });
+  const { T } = initialize({ salt: "record-symbol-typebox" });
 
   const schema = T.record(T.symbol, value(T)).whereby({ size: { max: 3 } });
 
@@ -35,7 +35,7 @@ test("toTypeBox throws on a symbol-keyed record rather than emitting TNever", ()
 });
 
 test("toTypeBox maps a string-keyed record to patternProperties", () => {
-  const { T } = initialize({ seed: "record-typebox" });
+  const { T } = initialize({ salt: "record-typebox" });
 
   const schema = toTypeBox(
     T.record(key(T), value(T)).whereby({ size: { max: 3 } }),
@@ -48,7 +48,7 @@ test("toTypeBox maps a string-keyed record to patternProperties", () => {
 
 /** A literal-union key collapses to a `TObject` of those properties. */
 test("toTypeBox collapses a literal-union key to an object", () => {
-  const { T } = initialize({ seed: "record-typebox-enum" });
+  const { T } = initialize({ salt: "record-typebox-enum" });
 
   const schema = toTypeBox(
     T.record(T.enum.uniform(["a", "b"]), value(T)).whereby({

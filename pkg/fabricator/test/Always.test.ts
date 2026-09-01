@@ -8,7 +8,7 @@ import { initialize } from "@ghostry/fabricator";
  */
 
 test("T.always fabricates values the old string|number|boolean cap excluded", () => {
-  const { T, Fabricator } = initialize({ seed: "always-widened" });
+  const { T, Fabricator } = initialize({ salt: "always-widened" });
 
   expect(new Fabricator(T.always(null)).fabricate()).toBe(null);
   expect(new Fabricator(T.always(undefined)).fabricate()).toBe(undefined);
@@ -27,7 +27,7 @@ test("T.always fabricates values the old string|number|boolean cap excluded", ()
  * apart again.
  */
 test("README's T.always(null) union example builds and fabricates", () => {
-  const { T, Fabricator } = initialize({ seed: "always-readme" });
+  const { T, Fabricator } = initialize({ salt: "always-readme" });
 
   const built = new Fabricator(
     T.object({
@@ -48,7 +48,7 @@ test("README's T.always(null) union example builds and fabricates", () => {
 });
 
 test("T.enum draws from members the old cap excluded", () => {
-  const { T, Fabricator } = initialize({ seed: "enum-widened" });
+  const { T, Fabricator } = initialize({ salt: "enum-widened" });
 
   const built = new Fabricator(T.enum.uniform([null, BigInt(5)]));
 

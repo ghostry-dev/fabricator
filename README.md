@@ -41,7 +41,7 @@ npm install @ghostry/fabricator
 ```ts
 import { initialize } from "@ghostry/fabricator";
 
-const { T, Fabricator } = initialize({ seed: "1234" });
+const { T, Fabricator } = initialize({ salt: "1234" });
 
 const ProductSchema = T.object({
   name: T.string.whereby({ length: { min: 1, max: 25 } }),

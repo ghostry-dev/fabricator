@@ -89,7 +89,7 @@ There's no second definition to keep in sync and no type annotation to write. Ch
 
 ### Every value can be replayed
 
-An instance's data is a function of its [clock](/guides/reproducibility#what-now-means) — the instant captured when `initialize()` ran — and of a [seed](/guides/reproducibility#seeds-are-optional-mixers), if one was given. No seed is required: the clock differs on every run, which is what makes runs vary, and it's readable afterwards, so a failing run can be turned back into a repeatable one:
+An instance's data is a function of its [clock](/guides/reproducibility#what-now-means) — the instant captured when `initialize()` ran — and of a [salt](/guides/reproducibility#salt-is-optional), if one was given. No salt is required: the clock differs on every run, which is what makes runs vary, and it's readable afterwards, so a failing run can be turned back into a repeatable one:
 
 ```ts twoslash
 import { initialize } from "@ghostry/fabricator";
@@ -103,13 +103,13 @@ context.clock; // the instant this run resolved "now" against
 Name.trace; // where this specific fabricator's randomness came from
 ```
 
-For an unseeded instance that one number is the whole reproducibility unit: log `context.clock` and the run replays. Adding a seed doesn't buy more variation, only a second value to record and pass back, so it's worth doing when something specific asks for it — pairing it with `clock: "seeded"` to drop the wall-clock dependency entirely, or `FABRICATOR_SEED=repro-1234 bun test` to pin a mixer for a suite from outside — and worth skipping otherwise.
+For an unsalted instance that one number is the whole reproducibility unit: log `context.clock` and the run replays. Adding a salt doesn't buy more variation, only a second value to record and pass back, so it's only worth doing when something specific asks for it, such as pairing it with `clock: "derived"` and `FABRICATOR_SALT=repro-1234 bun test` to drop the wall-clock dependency entirely and pin a salt for a suite from outside. It's worth skipping otherwise.
 
 `.trace` goes finer than the run: it's the exact tuple one field's stream was hashed from, and passing it back to `new Fabricator(schema, trace)` replays that field alone — useful when the thing you want to re-examine is one leaf inside a large fabricated object. See [`.trace`](/guides/reproducibility#trace).
 
 Replay also survives the way suites are actually run. A construction is rooted at the file that made it, and each file counts its own constructions, so which _other_ files ran — a filtered run, a different order, one shard of a parallel build — changes nothing about the data any given file produces. Running the failing file on its own reproduces what CI saw.
 
-Position still counts _within_ a file: a construction added or skipped ahead of another shifts it, so narrowing past a whole file, down to a single test inside it, can move the data again. A fixture that should hold still regardless of where it sits can say so with `new Fabricator(schema, { seed })`, which is keyed by that seed alone — no file, no position. See [Where a stream is attributed](/guides/reproducibility#where-a-stream-is-attributed) and [Overriding a seed per construction](/guides/reproducibility#overriding-a-seed-per-construction).
+Position still counts _within_ a file: a construction added or skipped ahead of another shifts it, so narrowing past a whole file, down to a single test inside it, can move the data again. A fixture that should hold still regardless of where it sits can say so with `new Fabricator(schema, { salt })`, which is keyed by that salt rather than by where it sits — no file, no position. See [Where a stream is attributed](/guides/reproducibility#where-a-stream-is-attributed) and [Overriding a salt per construction](/guides/reproducibility#overriding-a-salt-per-construction).
 
 ### A test depends on what it pins, and nothing else
 
@@ -134,7 +134,7 @@ const admin = User.fabricate({ role: "admin" });
 
 The override list is the test's stated dependency, and it is the whole of it. A test that had quietly leaned on the name being `"Jane Doe"` fails the first time it runs — which is the point. The coupling was already there; varying the rest is what makes it visible now, in the test that has it, rather than months later in an unrelated diff.
 
-The usual objection to varying everything is flakiness, and it's a fair objection to unseeded randomness. It doesn't apply here: a failing run is [replayable](#every-value-can-be-replayed) from its seed and clock, so a surfaced coupling arrives as a reproducible failure rather than a red build nobody can explain.
+The usual objection to varying everything is flakiness, and it's a fair objection to unseeded randomness. It doesn't apply here: a failing run is [replayable](#every-value-can-be-replayed) from its salt and clock, so a surfaced coupling arrives as a reproducible failure rather than a red build nobody can explain.
 
 ### A schema edit doesn't disturb unrelated data
 

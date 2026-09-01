@@ -16,7 +16,7 @@
 
 </div>
 
-[`@faker-js/faker`](https://fakerjs.dev) integration for [`@ghostry/fabricator`](https://www.npmjs.com/package/@ghostry/fabricator). Faker's generators draw from the same seed as every other builder in a schema, so `T.faker.person.fullName()` replays exactly like `T.string` does — no second seed to track, no drift between runs.
+[`@faker-js/faker`](https://fakerjs.dev) integration for [`@ghostry/fabricator`](https://www.npmjs.com/package/@ghostry/fabricator). Faker's generators draw from the same stream as every other builder in a schema, so `T.faker.person.fullName()` replays exactly like `T.string` does — nothing additional to track, no drift between runs.
 
 Targets `@faker-js/faker` 10.x specifically — hence the `-v10` suffix, matching the adapter packages' convention. A future faker major is a sibling package with its own peer range, not a version bump of this one.
 
@@ -110,7 +110,7 @@ T.faker.use.opaque((f) => f.helpers.arrayElement(["free", "pro"] as const));
 
 ## Notes
 
-`faker.seed(...)` is inert here, by design: fabricator's seed governs, and a second one competing for control of the same output is the bug this package exists to remove. Pass a different `seed` to `initialize()` instead.
+`faker.seed(...)` is inert here, by design: fabricator's seeding governs, and a second one competing for control of the same output is the bug this package exists to remove. Pass a different `salt` to `initialize()` instead.
 
 A builder called outside `fabricate()` throws `FakerExtensionError.NoActiveScopeError` — there is no active fabrication to draw from. `FakerExtensionError` extends core's `FabricatorError`, so one `catch` still covers both packages.
 

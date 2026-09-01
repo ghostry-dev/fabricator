@@ -18,7 +18,7 @@ import { Card, Cards, HomePage } from "vocs";
   </HomePage.Tagline>
   <HomePage.Description>
     Define a shape once, get fully typed, randomized, probabilistic test data,
-    perfectly reproducible from seed parameters.
+    perfectly reproducible from a recorded clock and salt.
   </HomePage.Description>
   <HomePage.Buttons>
     <HomePage.Button href="/start/quick-start" variant="accent">
@@ -39,7 +39,7 @@ import { initialize } from "@ghostry/fabricator";
 
 const { T, Fabricator } = initialize({
   clock: new Date(), // default source of entropy
-  seed: "1234", // optional additional entropy
+  salt: "1234", // optional additional entropy
 });
 
 const ProductSchema = T.object({
@@ -76,7 +76,7 @@ const widget = Product.fabricate({ name: "Widget", inStock: true });
     <Card
       icon="route"
       title="Reproducible by trace"
-      description="Every value is drawn from a stream keyed by seed, clock, file, and structural path. `.trace` describes exactly where a value came from and facilitates replay."
+      description="Every value is drawn from a stream keyed by salt, clock, file, and structural path. `.trace` describes exactly where a value came from and facilitates replay."
       to="/guides/reproducibility"
     />
     <Card

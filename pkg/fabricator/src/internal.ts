@@ -64,7 +64,7 @@ export { plan, resolve } from "./Enumeration/Plan";
 export type { Axis, Enumerable, Pin, Resolvable } from "./Enumeration/Types";
 
 /**
- * The randomness layer underneath `initialize({ seed, algorithm, attribution
+ * The randomness layer underneath `initialize({ salt, algorithm, attribution
  * })` and a Fabricator's `.trace` — needed by tests exercising stream
  * attribution and construction directly, beneath the level `initialize()`
  * itself exposes.
@@ -72,7 +72,7 @@ export type { Axis, Enumerable, Pin, Resolvable } from "./Enumeration/Types";
 export {
   defaultAlgorithm,
   encode,
-  randomSeed,
+  randomSalt,
   toRandomSource,
   toStream,
   toStreamFromTrace,
@@ -84,7 +84,7 @@ export type {
   ResolvedAttribution,
   RootKind,
   RootPins,
-  Seed,
+  Salt,
   Trace,
 } from "./Random/Types";
 

@@ -5,7 +5,7 @@ import { initialize } from "@ghostry/fabricator";
 import { toTypeBox, typebox } from "@ghostry/fabricator-adapter-typebox-v0";
 
 test("toTypeBox maps an opaque schema to Unknown", () => {
-  const { T } = initialize({ seed: "opaque-typebox" });
+  const { T } = initialize({ salt: "opaque-typebox" });
 
   /**
    * `Unknown` rather than a throw: the adapter genuinely cannot constrain the
@@ -26,7 +26,7 @@ test("toTypeBox maps an opaque schema to Unknown", () => {
 });
 
 test("an adaptation overrides the Unknown mapping", () => {
-  const { T } = initialize({ seed: "opaque-adapt" });
+  const { T } = initialize({ salt: "opaque-adapt" });
 
   const adapted: any = toTypeBox(
     T.opaque(() => new Map<string, number>()).adapt(typebox, () =>

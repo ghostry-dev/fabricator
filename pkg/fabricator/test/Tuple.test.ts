@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("a tuple fabricates exactly its declared arity, each slot matching its own schema", () => {
-  const { T, Fabricator } = initialize({ seed: "tuple-arity" });
+  const { T, Fabricator } = initialize({ salt: "tuple-arity" });
 
   const built = new Fabricator(
     T.tuple([T.string.whereby({ length: { max: 5 } }), T.number, T.date]),
@@ -17,16 +17,16 @@ test("a tuple fabricates exactly its declared arity, each slot matching its own 
 });
 
 test("T.tuple([]) fabricates an empty array", () => {
-  const { T, Fabricator } = initialize({ seed: "tuple-empty" });
+  const { T, Fabricator } = initialize({ salt: "tuple-empty" });
 
   expect(new Fabricator(T.tuple([])).fabricate()).toEqual([]);
 });
 
-test("the same seed reproduces the identical tuple", () => {
+test("the same salt reproduces the identical tuple", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "tuple-repro",
-      clock: "seeded",
+      salt: "tuple-repro",
+      clock: "derived",
     });
     return new Fabricator(
       T.tuple([T.string.whereby({ length: { max: 5 } }), T.number]),
@@ -46,7 +46,7 @@ test("a tuple's slots each draw from their own independent stream, unlike array'
    * builds, rather than the correlated sequence a single shared stream would
    * produce.
    */
-  const { T, Fabricator } = initialize({ seed: "tuple-independent-slots" });
+  const { T, Fabricator } = initialize({ salt: "tuple-independent-slots" });
 
   const built = new Fabricator(T.tuple([T.number, T.number]));
 
@@ -62,14 +62,14 @@ test("a tuple's slots each draw from their own independent stream, unlike array'
 });
 
 test("a tuple field's slots never disturb a sibling field's own randomness", () => {
-  const seed = "tuple-no-disturb";
+  const salt = "tuple-no-disturb";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -86,7 +86,7 @@ test("a tuple field's slots never disturb a sibling field's own randomness", () 
 });
 
 test(".override({ key: value }) replaces a tuple field wholesale", () => {
-  const { T, Fabricator } = initialize({ seed: "tuple-override" });
+  const { T, Fabricator } = initialize({ salt: "tuple-override" });
 
   const schema = T.object({ pair: T.tuple([T.number, T.number]) });
 
@@ -96,7 +96,7 @@ test(".override({ key: value }) replaces a tuple field wholesale", () => {
 });
 
 test("an override value that isn't an array for a tuple field throws", () => {
-  const { T } = initialize({ seed: "tuple-override-kind-violation" });
+  const { T } = initialize({ salt: "tuple-override-kind-violation" });
 
   const schema = T.object({ pair: T.tuple([T.number, T.number]) });
 
@@ -106,7 +106,7 @@ test("an override value that isn't an array for a tuple field throws", () => {
 });
 
 test("a tuple field nested in an array of objects resolves independently per element", () => {
-  const { T, Fabricator } = initialize({ seed: "tuple-in-array" });
+  const { T, Fabricator } = initialize({ salt: "tuple-in-array" });
 
   const built = new Fabricator(
     T.array(T.object({ pair: T.tuple([T.number, T.number]) })).whereby({
@@ -121,7 +121,7 @@ test("a tuple field nested in an array of objects resolves independently per ele
 });
 
 test(".as(...) replaces the whole tuple's production with an opaque producer", () => {
-  const { T, Fabricator } = initialize({ seed: "tuple-as" });
+  const { T, Fabricator } = initialize({ salt: "tuple-as" });
 
   const built = new Fabricator(T.tuple([T.number, T.number]).as(() => [7, 8]));
 

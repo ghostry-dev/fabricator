@@ -6,7 +6,7 @@ import {
 } from "./fixtures/sharedSchema";
 
 test("an enum and a boolean field multiply: 3 x 2 = 6 instances", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-basic" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-basic" });
 
   const schema = T.object({ e: T.enum.uniform(["a", "b", "c"]), b: T.boolean });
 
@@ -18,7 +18,7 @@ test("an enum and a boolean field multiply: 3 x 2 = 6 instances", () => {
 });
 
 test("tuple slots multiply: two booleans give 4 combinations", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-tuple" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-tuple" });
 
   const results = [...combinatorial(T.tuple([T.boolean, T.boolean]))];
 
@@ -28,7 +28,7 @@ test("tuple slots multiply: two booleans give 4 combinations", () => {
 });
 
 test("choice sums its options' widths rather than multiplying them", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-choice-sum" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-choice-sum" });
 
   const results = [
     ...combinatorial(
@@ -41,7 +41,7 @@ test("choice sums its options' widths rather than multiplying them", () => {
 });
 
 test("T.omittable is a 2-wide axis: absent and present", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-omittable" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-omittable" });
 
   const results = [
     ...combinatorial(T.object({ a: T.omittable(T.always("x")) })),
@@ -53,7 +53,7 @@ test("T.omittable is a 2-wide axis: absent and present", () => {
 });
 
 test("T.optional is a 3-wide axis: absent, present-as-undefined, present", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-optional" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-optional" });
 
   const results = [
     ...combinatorial(T.object({ a: T.optional(T.always("x")) })),
@@ -66,7 +66,7 @@ test("T.optional is a 3-wide axis: absent, present-as-undefined, present", () =>
 });
 
 test("T.nullable/T.nullish/T.undefinable enumerate 2/3/2 instances", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-wrappers" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-wrappers" });
 
   expect([...combinatorial(T.nullable(T.always("x")))]).toHaveLength(2);
   expect([...combinatorial(T.nullish(T.always("x")))]).toHaveLength(3);
@@ -78,7 +78,7 @@ test("T.nullable/T.nullish/T.undefinable enumerate 2/3/2 instances", () => {
 
 test(".as(...) collapses enum/boolean/choice/tuple/object to a single instance", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-as-collapses",
+    salt: "combinatorial-as-collapses",
   });
 
   expect([
@@ -99,7 +99,7 @@ test(".as(...) collapses enum/boolean/choice/tuple/object to a single instance",
 });
 
 test("[Fixed] from .override() pins a field to a single instance, including an omittable pinned to Omitted", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-fixed" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-fixed" });
 
   const overridden = T.object({ a: T.enum.uniform(["x", "y"]) }).override({
     a: "y",
@@ -117,7 +117,7 @@ test("[Fixed] from .override() pins a field to a single instance, including an o
 });
 
 test("a .refine()-computed field adds no axis, and still resolves correctly against each pinned instance", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-compute" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-compute" });
 
   const schema = T.object({ e: T.enum.uniform(["a", "b"]) }).refine(
     ({ compute }) => ({
@@ -134,7 +134,7 @@ test("a .refine()-computed field adds no axis, and still resolves correctly agai
 
 test("non-enumerable kinds stay a single axis — array/record don't enumerate their contents", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-non-enumerable",
+    salt: "combinatorial-non-enumerable",
   });
 
   const schema = T.object({
@@ -150,7 +150,7 @@ test("non-enumerable kinds stay a single axis — array/record don't enumerate t
 
 test("non-enumerated fields are still fuzzed across enumerated instances", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-still-fuzzed",
+    salt: "combinatorial-still-fuzzed",
   });
 
   const results = [
@@ -170,7 +170,7 @@ test("non-enumerated fields are still fuzzed across enumerated instances", () =>
 
 test("the limit throws on a bare call, before any iteration happens", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-limit-eager",
+    salt: "combinatorial-limit-eager",
     limits: { combinatorial: 4 },
   });
 
@@ -185,7 +185,7 @@ test("the limit throws on a bare call, before any iteration happens", () => {
 
 test("a schema exactly at the limit does not throw", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-limit-exact",
+    salt: "combinatorial-limit-exact",
     limits: { combinatorial: 6 },
   });
 
@@ -199,7 +199,7 @@ test("a schema exactly at the limit does not throw", () => {
 
 test("the limit's error message states the exact count, not a lower bound or Infinity", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-limit-exact-count",
+    salt: "combinatorial-limit-exact-count",
     limits: { combinatorial: 10 },
   });
 
@@ -222,7 +222,7 @@ test("initialize() rejects a non-positive or non-integer combinatorial limit eag
 });
 
 test("calling combinatorial(schema) twice on the same instance reproduces identically", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-repeat" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-repeat" });
 
   const schema = T.object({
     e: T.enum.uniform(["a", "b", "c"]),
@@ -233,7 +233,7 @@ test("calling combinatorial(schema) twice on the same instance reproduces identi
 });
 
 test("iterating the same returned Iterable twice reproduces identically", () => {
-  const { T, combinatorial } = initialize({ seed: "combinatorial-reiterate" });
+  const { T, combinatorial } = initialize({ salt: "combinatorial-reiterate" });
 
   const schema = T.object({
     e: T.enum.uniform(["a", "b", "c"]),
@@ -247,7 +247,7 @@ test("iterating the same returned Iterable twice reproduces identically", () => 
 
 test("Array.from(...) doesn't misattribute randomness relative to a plain for...of", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-native-frame",
+    salt: "combinatorial-native-frame",
   });
 
   const schema = T.object({
@@ -266,8 +266,8 @@ test("Array.from(...) doesn't misattribute randomness relative to a plain for...
 test("combinatorial(...) never perturbs an unrelated Fabricator built from the same instance", () => {
   function unrelatedAfter(combinatorialCalls: number) {
     const { T, Fabricator, combinatorial } = initialize({
-      seed: "combinatorial-isolation",
-      clock: "seeded",
+      salt: "combinatorial-isolation",
+      clock: "derived",
     });
 
     const schema = T.object({ e: T.enum.uniform(["a", "b", "c"]) });
@@ -283,7 +283,7 @@ test("combinatorial(...) never perturbs an unrelated Fabricator built from the s
 
 test("combinatorial(...) reproduces regardless of which file it's called from", () => {
   const { combinatorial } = initialize({
-    seed: "combinatorial-file-independence",
+    salt: "combinatorial-file-independence",
   });
 
   const here = combinatorialFromHere(combinatorial);
@@ -292,7 +292,7 @@ test("combinatorial(...) reproduces regardless of which file it's called from", 
   expect(here).toEqual(there);
 });
 
-test("two instances with the same seed enumerate identically; different seeds diverge", () => {
+test("two instances with the same salt enumerate identically; different salts diverge", () => {
   const shape = (T: typeof registry) =>
     T.object({
       e: T.enum.uniform(["a", "b", "c"]),
@@ -300,9 +300,9 @@ test("two instances with the same seed enumerate identically; different seeds di
     });
 
   const clock = new Date("2020-01-01T00:00:00.000Z");
-  const a = initialize({ seed: "combinatorial-seed-a", clock });
-  const b = initialize({ seed: "combinatorial-seed-a", clock });
-  const c = initialize({ seed: "combinatorial-seed-c", clock });
+  const a = initialize({ salt: "combinatorial-salt-a", clock });
+  const b = initialize({ salt: "combinatorial-salt-a", clock });
+  const c = initialize({ salt: "combinatorial-salt-c", clock });
 
   expect([...a.combinatorial(shape(a.T))]).toEqual([
     ...b.combinatorial(shape(b.T)),
@@ -314,7 +314,7 @@ test("two instances with the same seed enumerate identically; different seeds di
 
 test("combinatorial() width shrinks when an enum member is zeroed", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-zero-weight-width",
+    salt: "combinatorial-zero-weight-width",
   });
 
   const results = [
@@ -336,7 +336,7 @@ test("combinatorial() width shrinks when an enum member is zeroed", () => {
 
 test("a zero-weighted first choice option is not selected by compacted index", () => {
   const { T, combinatorial } = initialize({
-    seed: "combinatorial-choice-original-index",
+    salt: "combinatorial-choice-original-index",
   });
 
   const results = [

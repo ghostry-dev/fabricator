@@ -10,7 +10,7 @@ import { FabricatorError, initialize } from "@ghostry/fabricator";
  */
 
 test("an explicitly-undefined weight means unspecified and is allowed", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-undefined-key" });
+  const { T, Fabricator } = initialize({ salt: "weights-undefined-key" });
 
   const built = new Fabricator(
     T.nullable(T.always("v")).weighted({ null: 2, value: undefined }),
@@ -23,7 +23,7 @@ test("an explicitly-undefined weight means unspecified and is allowed", () => {
 });
 
 test("a valid fractional weight still constructs and reweights", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-fractional" });
+  const { T, Fabricator } = initialize({ salt: "weights-fractional" });
 
   const built = new Fabricator(
     T.nullable(T.always("v")).weighted({ null: 0.1 }),
@@ -36,14 +36,14 @@ test("a valid fractional weight still constructs and reweights", () => {
 });
 
 test("T.boolean.weighted({ true: 0 }) is always false", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-boolean-zero-true" });
+  const { T, Fabricator } = initialize({ salt: "weights-boolean-zero-true" });
   const built = new Fabricator(T.boolean.weighted({ true: 0 }));
 
   for (let i = 0; i < 50; i++) expect(built.fabricate()).toBe(false);
 });
 
 test("T.nullable.weighted({ null: 0 }) is always the inner value", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-nullable-zero-null" });
+  const { T, Fabricator } = initialize({ salt: "weights-nullable-zero-null" });
   const built = new Fabricator(T.nullable(T.always("v")).weighted({ null: 0 }));
 
   for (let i = 0; i < 50; i++) expect(built.fabricate()).toBe("v");
@@ -51,7 +51,7 @@ test("T.nullable.weighted({ null: 0 }) is always the inner value", () => {
 
 test("T.undefinable.weighted({ undefined: 0 }) is always the inner value", () => {
   const { T, Fabricator } = initialize({
-    seed: "weights-undefinable-zero-undefined",
+    salt: "weights-undefinable-zero-undefined",
   });
   const built = new Fabricator(
     T.undefinable(T.always("v")).weighted({ undefined: 0 }),
@@ -61,7 +61,7 @@ test("T.undefinable.weighted({ undefined: 0 }) is always the inner value", () =>
 });
 
 test("T.nullish.weighted({ null: 0 }) never yields null", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-nullish-zero-null" });
+  const { T, Fabricator } = initialize({ salt: "weights-nullish-zero-null" });
   const built = new Fabricator(T.nullish(T.always("v")).weighted({ null: 0 }));
 
   const seen = new Set<unknown>();
@@ -73,7 +73,7 @@ test("T.nullish.weighted({ null: 0 }) never yields null", () => {
 });
 
 test("T.omittable.weighted({ omitted: 0 }) always writes the key", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-omittable-zero" });
+  const { T, Fabricator } = initialize({ salt: "weights-omittable-zero" });
   const built = new Fabricator(
     T.object({ a: T.omittable(T.always("v")).weighted({ omitted: 0 }) }),
   );
@@ -82,7 +82,7 @@ test("T.omittable.weighted({ omitted: 0 }) always writes the key", () => {
 });
 
 test("T.optional.weighted({ omitted: 0 }) never omits the key", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-optional-zero" });
+  const { T, Fabricator } = initialize({ salt: "weights-optional-zero" });
   const built = new Fabricator(
     T.object({ a: T.optional(T.always("v")).weighted({ omitted: 0 }) }),
   );
@@ -102,7 +102,7 @@ test("T.optional.weighted({ omitted: 0 }) never omits the key", () => {
 });
 
 test("T.enum.weighted with a zeroed member never draws it", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-enum-zero" });
+  const { T, Fabricator } = initialize({ salt: "weights-enum-zero" });
   const built = new Fabricator(
     T.enum.weighted([
       [0, "a"],
@@ -114,7 +114,7 @@ test("T.enum.weighted with a zeroed member never draws it", () => {
 });
 
 test("T.choice.weighted with a zeroed option never fabricates it", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-choice-zero" });
+  const { T, Fabricator } = initialize({ salt: "weights-choice-zero" });
   const built = new Fabricator(
     T.choice.weighted([
       [0, T.always("a")],
@@ -126,7 +126,7 @@ test("T.choice.weighted with a zeroed option never fabricates it", () => {
 });
 
 test("all-zero weights throw NoDrawableOutcomesError, per kind", () => {
-  const { T } = initialize({ seed: "weights-all-zero" });
+  const { T } = initialize({ salt: "weights-all-zero" });
 
   expect(() => T.boolean.weighted({ true: 0, false: 0 })).toThrow(
     FabricatorError.NoDrawableOutcomesError,
@@ -161,7 +161,7 @@ test("all-zero weights throw NoDrawableOutcomesError, per kind", () => {
 });
 
 test("accumulation across two .weighted() calls throws when the merge is all-zero", () => {
-  const { T } = initialize({ seed: "weights-accumulate-all-zero" });
+  const { T } = initialize({ salt: "weights-accumulate-all-zero" });
 
   expect(() => T.boolean.weighted({ true: 0 }).weighted({ false: 0 })).toThrow(
     FabricatorError.NoDrawableOutcomesError,
@@ -169,7 +169,7 @@ test("accumulation across two .weighted() calls throws when the merge is all-zer
 });
 
 test("a negative weight still throws InvalidWeightError", () => {
-  const { T } = initialize({ seed: "weights-negative" });
+  const { T } = initialize({ salt: "weights-negative" });
 
   expect(() => T.boolean.weighted({ false: -1 })).toThrow(
     FabricatorError.InvalidWeightError,
@@ -183,7 +183,7 @@ test("a negative weight still throws InvalidWeightError", () => {
  * than an independent `<= 0`.
  */
 test("a NaN weight is rejected, not silently dropped", () => {
-  const { T } = initialize({ seed: "weights-nan" });
+  const { T } = initialize({ salt: "weights-nan" });
 
   expect(() => T.boolean.weighted({ true: NaN })).toThrow(
     FabricatorError.InvalidWeightError,
@@ -191,7 +191,7 @@ test("a NaN weight is rejected, not silently dropped", () => {
 });
 
 test("an Infinity weight throws InvalidWeightError at construction", () => {
-  const { T } = initialize({ seed: "weights-infinity" });
+  const { T } = initialize({ salt: "weights-infinity" });
 
   expect(() => T.boolean.weighted({ true: Infinity })).toThrow(
     FabricatorError.InvalidWeightError,
@@ -199,7 +199,7 @@ test("an Infinity weight throws InvalidWeightError at construction", () => {
 });
 
 test("Distribution.multi with all-zero components throws a FabricatorError", () => {
-  const { T, Fabricator } = initialize({ seed: "weights-multi-all-zero" });
+  const { T, Fabricator } = initialize({ salt: "weights-multi-all-zero" });
 
   expect(
     () =>
@@ -221,7 +221,7 @@ test("Distribution.multi with all-zero components throws a FabricatorError", () 
 
 test("a string composition with every class zeroed throws a FabricatorError", () => {
   const { T, Fabricator } = initialize({
-    seed: "weights-composition-all-zero",
+    salt: "weights-composition-all-zero",
   });
 
   expect(

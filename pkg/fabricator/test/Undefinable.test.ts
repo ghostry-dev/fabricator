@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("an undefinable field's key is always present, its value sometimes undefined", () => {
-  const { T, Fabricator } = initialize({ seed: "undefinable-value" });
+  const { T, Fabricator } = initialize({ salt: "undefinable-value" });
 
   const built = new Fabricator(
     T.object({ a: T.undefinable(T.string.whereby({ length: { max: 5 } })) }),
@@ -26,14 +26,14 @@ test("an undefinable field's key is always present, its value sometimes undefine
 });
 
 test("an undefinable field's roll never disturbs its object's other randomness", () => {
-  const seed = "undefinable-no-disturb";
+  const salt = "undefinable-no-disturb";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -50,7 +50,7 @@ test("an undefinable field's roll never disturbs its object's other randomness",
 });
 
 test("unlike T.omittable, T.undefinable builds and fabricates standalone, outside any object", () => {
-  const { T, Fabricator } = initialize({ seed: "undefinable-standalone" });
+  const { T, Fabricator } = initialize({ salt: "undefinable-standalone" });
 
   const built = new Fabricator(T.string.whereby({ length: { max: 5 } }));
   const undefinableBuilt = new Fabricator(
@@ -63,7 +63,7 @@ test("unlike T.omittable, T.undefinable builds and fabricates standalone, outsid
 });
 
 test(".override({ key: value }) forces an undefinable field to that value", () => {
-  const { T, Fabricator } = initialize({ seed: "undefinable-override-value" });
+  const { T, Fabricator } = initialize({ salt: "undefinable-override-value" });
 
   const schema = T.object({
     a: T.undefinable(T.string.whereby({ length: { max: 5 } })),
@@ -74,7 +74,7 @@ test(".override({ key: value }) forces an undefinable field to that value", () =
 
 test(".override({ key: undefined }) forces an undefinable field to undefined", () => {
   const { T, Fabricator } = initialize({
-    seed: "undefinable-override-undefined",
+    salt: "undefinable-override-undefined",
   });
 
   const schema = T.object({
@@ -88,7 +88,7 @@ test(".override({ key: undefined }) forces an undefinable field to undefined", (
 
 test("fabricate({ key: undefined }) forces an undefinable field to undefined for that call only", () => {
   const { T, Fabricator } = initialize({
-    seed: "undefinable-fabricate-undefined",
+    salt: "undefinable-fabricate-undefined",
   });
 
   const built = new Fabricator(
@@ -108,7 +108,7 @@ test("fabricate({ key: undefined }) forces an undefinable field to undefined for
 });
 
 test("an override value that violates an undefinable field's inner kind throws", () => {
-  const { T } = initialize({ seed: "undefinable-kind-violation" });
+  const { T } = initialize({ salt: "undefinable-kind-violation" });
 
   const schema = T.object({
     a: T.undefinable(T.string.whereby({ length: { max: 5 } })),
@@ -118,7 +118,7 @@ test("an override value that violates an undefinable field's inner kind throws",
 });
 
 test(".weighted(...) reweights relative to a fixed baseline of 1 for the unspecified outcome", () => {
-  const { T, Fabricator } = initialize({ seed: "undefinable-weighted" });
+  const { T, Fabricator } = initialize({ salt: "undefinable-weighted" });
 
   const built = new Fabricator(
     T.undefinable(T.string.whereby({ length: { max: 5 } })).weighted({
@@ -144,7 +144,7 @@ test(".weighted(...) reweights relative to a fixed baseline of 1 for the unspeci
 });
 
 test(".as(...) replaces the roll with an opaque producer, which may itself return undefined", () => {
-  const { T, Fabricator } = initialize({ seed: "undefinable-as" });
+  const { T, Fabricator } = initialize({ salt: "undefinable-as" });
 
   const alwaysValue = new Fabricator(
     T.object({
@@ -167,7 +167,7 @@ test(".as(...) replaces the roll with an opaque producer, which may itself retur
 });
 
 test("an undefinable field nested in an array of objects resolves independently per element", () => {
-  const { T, Fabricator } = initialize({ seed: "undefinable-in-array" });
+  const { T, Fabricator } = initialize({ salt: "undefinable-in-array" });
 
   const built = new Fabricator(
     T.array(

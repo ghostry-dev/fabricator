@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { Omitted, initialize } from "@ghostry/fabricator";
 
 test("an omittable field's key is genuinely omitted on the roll that comes up empty, not present-as-undefined", () => {
-  const { T, Fabricator } = initialize({ seed: "omittable-omission" });
+  const { T, Fabricator } = initialize({ salt: "omittable-omission" });
 
   const built = new Fabricator(
     T.object({ a: T.omittable(T.string.whereby({ length: { max: 5 } })) }),
@@ -27,14 +27,14 @@ test("an omittable field's key is genuinely omitted on the roll that comes up em
 });
 
 test("an omittable field's presence roll never disturbs its object's other randomness", () => {
-  const seed = "omittable-no-disturb";
+  const salt = "omittable-no-disturb";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -51,7 +51,7 @@ test("an omittable field's presence roll never disturbs its object's other rando
 });
 
 test(".override({ key: Omitted }) bakes the field omitted into the schema", () => {
-  const { T, Fabricator } = initialize({ seed: "omittable-override-omitted" });
+  const { T, Fabricator } = initialize({ salt: "omittable-override-omitted" });
 
   const schema = T.object({
     a: T.omittable(T.string.whereby({ length: { max: 5 } })),
@@ -63,7 +63,7 @@ test(".override({ key: Omitted }) bakes the field omitted into the schema", () =
 });
 
 test(".override({ key: value }) forces an omittable field present with that value", () => {
-  const { T, Fabricator } = initialize({ seed: "omittable-override-present" });
+  const { T, Fabricator } = initialize({ salt: "omittable-override-present" });
 
   const schema = T.object({
     a: T.omittable(T.string.whereby({ length: { max: 5 } })),
@@ -75,7 +75,7 @@ test(".override({ key: value }) forces an omittable field present with that valu
 });
 
 test("fabricate({ key: Omitted }) forces an omittable field omitted for that call only", () => {
-  const { T, Fabricator } = initialize({ seed: "omittable-fabricate-omitted" });
+  const { T, Fabricator } = initialize({ salt: "omittable-fabricate-omitted" });
 
   const built = new Fabricator(
     T.object({ a: T.omittable(T.string.whereby({ length: { max: 5 } })) }),
@@ -94,7 +94,7 @@ test("fabricate({ key: Omitted }) forces an omittable field omitted for that cal
 
 test("Omitted against a non-omittable field throws, both via .override() and .fabricate(overrides)", () => {
   const { T, Fabricator } = initialize({
-    seed: "omittable-omitted-non-omittable",
+    salt: "omittable-omitted-non-omittable",
   });
 
   const schema = T.object({ b: T.number });
@@ -106,7 +106,7 @@ test("Omitted against a non-omittable field throws, both via .override() and .fa
 });
 
 test("an override value that violates an omittable field's inner kind throws", () => {
-  const { T } = initialize({ seed: "omittable-kind-violation" });
+  const { T } = initialize({ salt: "omittable-kind-violation" });
 
   const schema = T.object({
     a: T.omittable(T.string.whereby({ length: { max: 5 } })),
@@ -116,7 +116,7 @@ test("an override value that violates an omittable field's inner kind throws", (
 });
 
 test(".as(...) replaces the presence roll with an opaque producer, which may itself return Omitted", () => {
-  const { T, Fabricator } = initialize({ seed: "omittable-as" });
+  const { T, Fabricator } = initialize({ salt: "omittable-as" });
 
   const alwaysPresent = new Fabricator(
     T.object({
@@ -140,7 +140,7 @@ test(".as(...) replaces the presence roll with an opaque producer, which may its
 });
 
 test("an omittable field nested in an array of objects resolves independently per element", () => {
-  const { T, Fabricator } = initialize({ seed: "omittable-in-array" });
+  const { T, Fabricator } = initialize({ salt: "omittable-in-array" });
 
   const built = new Fabricator(
     T.array(
@@ -156,7 +156,7 @@ test("an omittable field nested in an array of objects resolves independently pe
 });
 
 test(".weighted(...) reweights relative to a fixed baseline of 1 for the unspecified outcome", () => {
-  const { T, Fabricator } = initialize({ seed: "omittable-weighted" });
+  const { T, Fabricator } = initialize({ salt: "omittable-weighted" });
 
   const built = new Fabricator(
     T.object({

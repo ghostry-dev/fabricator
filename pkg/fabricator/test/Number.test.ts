@@ -10,7 +10,7 @@ import { Meta } from "@ghostry/fabricator/internal";
 const skewToward = (exponent: number) => ({ kind: "skew" as const, exponent });
 
 test("T.number.whereby is inclusive at both bounds", () => {
-  const { T, Fabricator } = initialize({ seed: "number-bounds" });
+  const { T, Fabricator } = initialize({ salt: "number-bounds" });
 
   const built = new Fabricator(T.number.whereby({ min: 0, max: 1 }));
 
@@ -31,7 +31,7 @@ test("T.number.whereby is inclusive at both bounds", () => {
 });
 
 test("T.number.integer.whereby reaches both endpoints exactly, and nothing outside them", () => {
-  const { T, Fabricator } = initialize({ seed: "number-integer-bounds" });
+  const { T, Fabricator } = initialize({ salt: "number-integer-bounds" });
 
   const built = new Fabricator(T.number.integer.whereby({ min: 3, max: 6 }));
 
@@ -47,7 +47,7 @@ test("T.number.integer.whereby reaches both endpoints exactly, and nothing outsi
 });
 
 test("a single-value integer range always fabricates that value", () => {
-  const { T, Fabricator } = initialize({ seed: "number-integer-single" });
+  const { T, Fabricator } = initialize({ salt: "number-integer-single" });
 
   const built = new Fabricator(T.number.integer.whereby({ min: 7, max: 7 }));
 
@@ -62,7 +62,7 @@ test("a single-value integer range always fabricates that value", () => {
  * an exact one, since it's still a random draw.
  */
 test("an unshaped range distributes roughly uniformly across its buckets", () => {
-  const { T, Fabricator } = initialize({ seed: "number-uniform" });
+  const { T, Fabricator } = initialize({ salt: "number-uniform" });
 
   const built = new Fabricator(T.number.integer.whereby({ min: 0, max: 3 }));
 
@@ -86,7 +86,7 @@ test("an unshaped range distributes roughly uniformly across its buckets", () =>
  * pinning an exact ratio.
  */
 test("a skewed distribution visibly biases the draw", () => {
-  const { T, Fabricator } = initialize({ seed: "number-skewed" });
+  const { T, Fabricator } = initialize({ salt: "number-skewed" });
 
   const built = new Fabricator(
     T.number.integer.whereby({ min: 0, max: 99, distribution: skewToward(5) }),
@@ -104,7 +104,7 @@ test("a skewed distribution visibly biases the draw", () => {
 });
 
 test("whereby stores min/max as Bound, never a scalar", () => {
-  const { T } = initialize({ seed: "number-bound-shape" });
+  const { T } = initialize({ salt: "number-bound-shape" });
   const schema = T.number.whereby({
     min: 0,
     max: { value: 1, exclusive: true },
@@ -117,7 +117,7 @@ test("whereby stores min/max as Bound, never a scalar", () => {
 });
 
 test("an exclusive continuous end is never produced", () => {
-  const { T, Fabricator } = initialize({ seed: "number-exclusive" });
+  const { T, Fabricator } = initialize({ salt: "number-exclusive" });
   const built = new Fabricator(
     T.number.whereby({
       min: { value: 0, exclusive: true },
@@ -133,7 +133,7 @@ test("an exclusive continuous end is never produced", () => {
 });
 
 test("an omitted number end is not stored", () => {
-  const { T, Fabricator } = initialize({ seed: "number-one-sided" });
+  const { T, Fabricator } = initialize({ salt: "number-one-sided" });
 
   expect(T.number[Meta]).toEqual({});
   expect(T.number.integer[Meta]).toEqual({ integer: true });
@@ -162,7 +162,7 @@ test("an omitted number end is not stored", () => {
 });
 
 test("a span that overflows max - min still fabricates a finite value in range", () => {
-  const { T, Fabricator } = initialize({ seed: "number-overflow-span" });
+  const { T, Fabricator } = initialize({ salt: "number-overflow-span" });
 
   const full = new Fabricator(T.number);
   for (let i = 0; i < 2000; i++) {
@@ -184,7 +184,7 @@ test("a span that overflows max - min still fabricates a finite value in range",
 });
 
 test("an empty number range throws at whereby", () => {
-  const { T } = initialize({ seed: "number-empty" });
+  const { T } = initialize({ salt: "number-empty" });
   expect(() => T.number.whereby({ min: 5, max: 3 })).toThrow(
     FabricatorError.EmptyRangeError,
   );

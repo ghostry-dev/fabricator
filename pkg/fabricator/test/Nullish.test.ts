@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("a nullish field's key is always present, its value sometimes null or undefined", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-value" });
+  const { T, Fabricator } = initialize({ salt: "nullish-value" });
 
   const built = new Fabricator(
     T.object({ a: T.nullish(T.string.whereby({ length: { max: 5 } })) }),
@@ -29,7 +29,7 @@ test("a nullish field's key is always present, its value sometimes null or undef
 });
 
 test("a nullish field's roll is a uniform 1/3 split, not the 50/25/25 that composing nullable+undefinable would give", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-distribution" });
+  const { T, Fabricator } = initialize({ salt: "nullish-distribution" });
 
   const built = new Fabricator(
     T.object({ a: T.nullish(T.string.whereby({ length: { max: 5 } })) }),
@@ -59,14 +59,14 @@ test("a nullish field's roll is a uniform 1/3 split, not the 50/25/25 that compo
 });
 
 test("a nullish field's roll never disturbs its object's other randomness", () => {
-  const seed = "nullish-no-disturb";
+  const salt = "nullish-no-disturb";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -83,7 +83,7 @@ test("a nullish field's roll never disturbs its object's other randomness", () =
 });
 
 test("unlike T.optional, T.nullish builds and fabricates standalone, outside any object", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-standalone" });
+  const { T, Fabricator } = initialize({ salt: "nullish-standalone" });
 
   const built = new Fabricator(T.string.whereby({ length: { max: 5 } }));
   const nullishBuilt = new Fabricator(
@@ -98,7 +98,7 @@ test("unlike T.optional, T.nullish builds and fabricates standalone, outside any
 });
 
 test(".override({ key: value }) forces a nullish field to that value", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-override-value" });
+  const { T, Fabricator } = initialize({ salt: "nullish-override-value" });
 
   const schema = T.object({
     a: T.nullish(T.string.whereby({ length: { max: 5 } })),
@@ -108,7 +108,7 @@ test(".override({ key: value }) forces a nullish field to that value", () => {
 });
 
 test(".override({ key: null }) forces a nullish field to null", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-override-null" });
+  const { T, Fabricator } = initialize({ salt: "nullish-override-null" });
 
   const schema = T.object({
     a: T.nullish(T.string.whereby({ length: { max: 5 } })),
@@ -119,7 +119,7 @@ test(".override({ key: null }) forces a nullish field to null", () => {
 });
 
 test(".override({ key: undefined }) forces a nullish field to undefined", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-override-undefined" });
+  const { T, Fabricator } = initialize({ salt: "nullish-override-undefined" });
 
   const schema = T.object({
     a: T.nullish(T.string.whereby({ length: { max: 5 } })),
@@ -131,7 +131,7 @@ test(".override({ key: undefined }) forces a nullish field to undefined", () => 
 });
 
 test("an override value that violates a nullish field's inner kind throws", () => {
-  const { T } = initialize({ seed: "nullish-kind-violation" });
+  const { T } = initialize({ salt: "nullish-kind-violation" });
 
   const schema = T.object({
     a: T.nullish(T.string.whereby({ length: { max: 5 } })),
@@ -141,7 +141,7 @@ test("an override value that violates a nullish field's inner kind throws", () =
 });
 
 test(".as(...) replaces the three-way roll with an opaque producer, which may itself return null or undefined", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-as" });
+  const { T, Fabricator } = initialize({ salt: "nullish-as" });
 
   const alwaysValue = new Fabricator(
     T.object({
@@ -168,7 +168,7 @@ test(".as(...) replaces the three-way roll with an opaque producer, which may it
 });
 
 test("a nullish field nested in an array of objects resolves independently per element", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-in-array" });
+  const { T, Fabricator } = initialize({ salt: "nullish-in-array" });
 
   const built = new Fabricator(
     T.array(
@@ -189,7 +189,7 @@ test("a nullish field nested in an array of objects resolves independently per e
 });
 
 test(".weighted(...) reweights relative to a fixed baseline of 1 for unspecified outcomes, shifting every outcome's share, not just the one named", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-weighted" });
+  const { T, Fabricator } = initialize({ salt: "nullish-weighted" });
 
   const built = new Fabricator(
     T.nullish(T.string.whereby({ length: { max: 5 } })).weighted({ null: 0.1 }),
@@ -219,7 +219,7 @@ test(".weighted(...) reweights relative to a fixed baseline of 1 for unspecified
 });
 
 test("chained .weighted(...) calls merge into previous weights rather than replacing them wholesale", () => {
-  const { T, Fabricator } = initialize({ seed: "nullish-weighted-chain" });
+  const { T, Fabricator } = initialize({ salt: "nullish-weighted-chain" });
 
   const built = new Fabricator(
     T.nullish(T.string.whereby({ length: { max: 5 } }))

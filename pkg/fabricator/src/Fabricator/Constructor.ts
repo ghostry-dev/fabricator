@@ -1,7 +1,7 @@
 import { FabricatorError } from "../Error";
 import type { Stack } from "../Instance/Types";
 import { Primitive } from "../Primitive";
-import { isLayered, normalizeSeed } from "../Random";
+import { isLayered, normalizeSalt } from "../Random";
 import type {
   ConstructionTrace,
   ConstructorOptions,
@@ -26,9 +26,9 @@ import {
  * `function` that explicitly returns an object, so `new construct(schema)`
  * behaves identically to `construct(schema)` — a `new` call's returned object
  * always replaces the freshly-created `this`. The construct signature lets
- * callers spell `new T.Fabricator(schema)` — or `new Fabricator(schema, { seed
- * })` to pin this one build to an explicit seed, independent of the file it's
- * constructed in (see `construct()` for what `options.seed` does).
+ * callers spell `new T.Fabricator(schema)` — or `new Fabricator(schema, { salt
+ * })` to pin this one build to an explicit salt, independent of the file it's
+ * constructed in (see `construct()` for what `options.salt` does).
  */
 export type Constructor = {
   new <const $Schema extends Buildable>(
@@ -42,7 +42,7 @@ export type Constructor = {
  * internal `convert(schema: any)` — and the precisely-typed `construct()`
  * boundary around it, both closed over a single instance's `source` so every
  * fabricator this `construct()` produces draws from that instance's own
- * seed/streams and never another instance's.
+ * salt/streams and never another instance's.
  *
  * `stack` is the instance's own lineage-wide ambient stack
  * (`Instance/Core.ts`'s `toStack()`) — passed straight through to
@@ -209,7 +209,7 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
       /**
        * The one kind that dispatches _itself_ lazily rather than eagerly — see
        * `recursive/Fabricator.ts`. `forkSource` mints a brand new, fully
-       * isolated `RandomSource` seeded from this node's own draw, so however
+       * isolated `RandomSource` salted from this node's own draw, so however
        * many times (or however deeply) later `fabricate()` calls end up
        * dispatching `body`/`terminal`, none of it ever touches — or is touched
        * by — this `Constructor()` call's shared, global `source`. Each lazy
@@ -372,17 +372,17 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
    * recursive work; this is the one precisely-typed boundary, exactly how
    * `toTypeBox()` relates to its own internal `convert()`.
    *
-   * A bare `options.seed` is a statement about _attribution_: it forks a fresh,
+   * A bare `options.salt` is a statement about _attribution_: it forks a fresh,
    * isolated source from exactly that value, sidestepping both the default
-   * call-site logic _and_ the instance's own seed — the same seed reproduces
+   * call-site logic _and_ the instance's own salt — the same salt reproduces
    * the same result no matter which file `new Fabricator(...)` is written in or
-   * how the instance itself was seeded — and opens an `"unattributed"` scope on
+   * how the instance itself was salted — and opens an `"unattributed"` scope on
    * that fork (see `RandomSource.fork` in `Random/index.ts`, and `resolveScope`
-   * below). `options.seed: layer(...)` forks the same way but composes onto the
-   * instance's own seed first, so the construction still varies when the
-   * instance is reseeded — see `ConstructorOptions` (`Random/Types.ts`).
+   * below). `options.salt: layer(...)` forks the same way but composes onto the
+   * instance's own salt first, so the construction still varies when the
+   * instance is re-salted — see `ConstructorOptions` (`Random/Types.ts`).
    *
-   * No per-build algorithm override alongside `seed`: a different PRNG says
+   * No per-build algorithm override alongside `salt`: a different PRNG says
    * nothing about wanting to abandon file attribution, so it doesn't fit the
    * same "sidestep call-site logic" story — and instance-wide `initialize({
    * algorithm })` already covers bringing your own PRNG. See
@@ -433,11 +433,11 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
  * node's `trace.clock` _is_ `construction.clock`. `resolveScope`'s resolved
  * `ConstructionTrace` already carries whichever source's clock this
  * construction should resolve "now" against (the active `wrap` frame's, this
- * instance's own, an explicitly seeded fork of one of those, or a pin from a
+ * instance's own, an explicitly salted fork of one of those, or a pin from a
  * replayed {@link Trace}). No separate resolution needed here: a
  * `RandomSource`'s clock is baked in, as a concrete number, the moment it's
  * built (`Random/index.ts`'s `toRandomSource`), so `construction.clock` is
- * never the unresolved `"seeded"` sentinel by the time it reaches this point.
+ * never the unresolved `"derived"` sentinel by the time it reaches this point.
  * `algorithm` is read off `rooted`, not `config.algorithm`: an active `wrap`
  * frame's source may carry a different one.
  */
@@ -461,7 +461,7 @@ function toConstructionContext(
 /**
  * Resolve the root one `new Fabricator(...)` call's leaves are dispatched
  * against — both the `RandomSource` to draw from (the active `wrap` frame's,
- * the instance's own, or an explicitly seeded fork of one of those) and that
+ * the instance's own, or an explicitly salted fork of one of those) and that
  * source's resolved `ConstructionTrace`, since a fork's stream derivation is
  * only reachable through the fork itself. `construct()` calls this exactly once
  * and reuses both across every leaf, rather than re-resolving per leaf.
@@ -470,8 +470,8 @@ function toConstructionContext(
  * this instance's own `source` — is resolved first, since every branch below is
  * relative to it:
  *
- * - **Unseeded, no active frame**: `source`, `"attributed"`.
- * - **Unseeded, inside a `wrap`**: `frame.source`, still `"attributed"` — the
+ * - **Unsalted, no active frame**: `source`, `"attributed"`.
+ * - **Unsalted, inside a `wrap`**: `frame.source`, still `"attributed"` — the
  *   frame's own source carries the frame's own resolved attribution policy, so
  *   a build inside a `wrap` keeps ordinary file attribution and ordinary
  *   per-file ordinals, exactly as it would under a separately `initialize()`d
@@ -479,14 +479,14 @@ function toConstructionContext(
  *   _own_ `scope.Fabricator` (`frame.source` already _is_ that instance's
  *   `source`) — which is the point, not an accident: it's what makes the
  *   implicit and explicit routes resolve identically.
- * - **A bare seed, either way**: `base.fork(seed)`, `"unattributed"` — a
+ * - **A bare salt, either way**: `base.fork(salt)`, `"unattributed"` — a
  *   caller-chosen root replaces a resolved file regardless of an active frame
  *   (`base === source` whenever no frame is active).
- * - **A layered seed (`layer(...)`), either way**: `base.fork([...base.seed,
+ * - **A layered salt (`layer(...)`), either way**: `base.fork([...base.salt,
  *   ...layered])`, `"unattributed"` — composes onto _whichever_ base is in
- *   effect: the instance's own seed with no active frame, or the frame's
- *   effective seed inside a `wrap`. Forking from `base` rather than always
- *   `source` matters only here — a bare seed ignores its base's seed entirely,
+ *   effect: the instance's own salt with no active frame, or the frame's
+ *   effective salt inside a `wrap`. Forking from `base` rather than always
+ *   `source` matters only here — a bare salt ignores its base's salt entirely,
  *   so it can't tell the difference.
  *
  * Pins from `options` (`clock`/`root`/`file`/`ordinal`) are threaded into both
@@ -507,15 +507,15 @@ function resolveScope(
     ordinal: options.ordinal,
   };
 
-  if (!options.seed) {
+  if (!options.salt) {
     return { source: base, root: base.toRoot("attributed", pins) };
   }
 
-  const seed = isLayered(options.seed)
-    ? [...base.seed, ...normalizeSeed(options.seed[Layer])]
-    : options.seed;
+  const salt = isLayered(options.salt)
+    ? [...base.salt, ...normalizeSalt(options.salt[Layer])]
+    : options.salt;
 
-  const forked = base.fork(seed);
+  const forked = base.fork(salt);
 
   return { source: forked, root: forked.toRoot("unattributed", pins) };
 }

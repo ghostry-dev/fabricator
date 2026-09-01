@@ -7,7 +7,7 @@ import { FabricatorError, initialize } from "@ghostry/fabricator";
  * (see `string/Fabricator.ts`'s top-up path).
  */
 test("T.string.whereby length is exact, not just bounded", () => {
-  const { T, Fabricator } = initialize({ seed: "string-length-exact" });
+  const { T, Fabricator } = initialize({ salt: "string-length-exact" });
 
   const built = new Fabricator(
     T.string.whereby({ length: { min: 5, max: 5 } }),
@@ -19,7 +19,7 @@ test("T.string.whereby length is exact, not just bounded", () => {
 });
 
 test("T.string.whereby length spans the full [min, max] range, inclusive", () => {
-  const { T, Fabricator } = initialize({ seed: "string-length-range" });
+  const { T, Fabricator } = initialize({ salt: "string-length-range" });
 
   const built = new Fabricator(
     T.string.whereby({ length: { min: 2, max: 4 } }),
@@ -37,7 +37,7 @@ test("T.string.whereby length spans the full [min, max] range, inclusive", () =>
 });
 
 test("exclusive string length.min never yields the excluded length", () => {
-  const { T, Fabricator } = initialize({ seed: "string-exclusive-min" });
+  const { T, Fabricator } = initialize({ salt: "string-exclusive-min" });
   const built = new Fabricator(
     T.string.whereby({
       length: { min: { value: 0, exclusive: true }, max: 2 },
@@ -51,7 +51,7 @@ test("exclusive string length.min never yields the excluded length", () => {
 });
 
 test("an empty string length range throws at whereby", () => {
-  const { T } = initialize({ seed: "string-empty-length" });
+  const { T } = initialize({ salt: "string-empty-length" });
   expect(() =>
     T.string.whereby({
       length: { min: { value: 3, exclusive: true }, max: 3 },
@@ -60,7 +60,7 @@ test("an empty string length range throws at whereby", () => {
 });
 
 test("length.min defaults to 0, so an empty string is reachable", () => {
-  const { T, Fabricator } = initialize({ seed: "string-length-default-min" });
+  const { T, Fabricator } = initialize({ salt: "string-length-default-min" });
 
   const built = new Fabricator(T.string.whereby({ length: { max: 2 } }));
 
@@ -79,7 +79,7 @@ test("length.min defaults to 0, so an empty string is reachable", () => {
  * filler character.
  */
 test("the default composition never produces lone surrogates", () => {
-  const { T, Fabricator } = initialize({ seed: "string-well-formed" });
+  const { T, Fabricator } = initialize({ salt: "string-well-formed" });
 
   const built = new Fabricator(
     T.string.whereby({ length: { min: 1, max: 9 } }),
@@ -106,7 +106,7 @@ test("the default composition never produces lone surrogates", () => {
  * overshooting or landing on an ill-formed pair.
  */
 test("an all-astral composition still hits every requested length exactly", () => {
-  const { T, Fabricator } = initialize({ seed: "string-topup" });
+  const { T, Fabricator } = initialize({ salt: "string-topup" });
 
   // U+10000-U+10FFFF: entirely astral, i.e. every drawn character is 2 code units.
   const built = new Fabricator(
@@ -138,7 +138,7 @@ test("an all-astral composition still hits every requested length exactly", () =
  * weight. A heavily skewed weighting should still visibly skew the output.
  */
 test("composition proportions are honored", () => {
-  const { T, Fabricator } = initialize({ seed: "string-composition" });
+  const { T, Fabricator } = initialize({ salt: "string-composition" });
 
   const built = new Fabricator(
     T.string.whereby({
@@ -174,7 +174,7 @@ test("composition proportions are honored", () => {
  * composition.
  */
 test("a single named class composition only draws from that class", () => {
-  const { T, Fabricator } = initialize({ seed: "string-single-class" });
+  const { T, Fabricator } = initialize({ salt: "string-single-class" });
 
   const built = new Fabricator(
     T.string.whereby({

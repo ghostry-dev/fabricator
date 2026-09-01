@@ -5,7 +5,7 @@ import type {
   Attribution,
   Layered,
   RandomSource,
-  Seed,
+  Salt,
 } from "../Random/Types";
 import type { PlainObject } from "../Utility/Types";
 
@@ -15,52 +15,52 @@ import type { PlainObject } from "../Utility/Types";
  * (`Instance/Core.ts`) is the only thing producing a complete `Config`.
  *
  * Two fields are declared at their caller-facing type but always hold their
- * resolved form once `overlay()` has run: `seed` is `Seed` because that is what
- * a caller may supply, but always holds the normalized array (`Instance.seed`
+ * resolved form once `overlay()` has run: `salt` is `Salt` because that is what
+ * a caller may supply, but always holds the normalized array (`Instance.salt`
  * is the authoritative read); `attribution` is `Attribution` for the same
  * reason but always holds a `ResolvedAttribution`, a subtype. `clock` is
- * different from both: unlike `seed`/`attribution`, it holds _either_ a
- * resolved instant (epoch milliseconds) or the unresolved `"seeded"` policy —
- * never collapsed to a number by `overlay()` when `"seeded"`, because that
- * policy must re-derive whenever the seed it composes changes (a `fork({ seed:
+ * different from both: unlike `salt`/`attribution`, it holds _either_ a
+ * resolved instant (epoch milliseconds) or the unresolved `"derived"` policy —
+ * never collapsed to a number by `overlay()` when `"derived"`, because that
+ * policy must re-derive whenever the salt it composes changes (a `fork({ salt:
  * layer(...) })`). The unconfigured default is a wall- clock number, inherited
  * as-is like an explicit `Date`. `resolveClock` (`Instance/Core.ts`) is the one
- * place that resolves `"seeded"` to a number, called fresh wherever the clock
+ * place that resolves `"derived"` to a number, called fresh wherever the clock
  * actually matters (`instantiate`, the `context.clock` getter) rather than once
  * here.
  */
 export type Config<$Registry extends PlainObject> = {
-  readonly seed: Seed;
+  readonly salt: Salt;
   readonly algorithm: Algorithm;
   readonly attribution: Attribution;
   readonly types: $Registry;
   readonly limits: Limits;
-  readonly clock: number | "seeded";
+  readonly clock: number | "derived";
 };
 
 /**
  * What `fork` accepts — a `Config` to lay over a base, every field optional.
- * Identical to `Partial<Config>` but for `seed`, which additionally accepts a
- * {@link Layered}: a bare `Seed` replaces the base's seed outright (what `seed`
- * means everywhere else in this library), `layer(seed)` appends onto it
- * (`[...base.seed, ...seed]`) — the shape a wrapping integration wants, and
+ * Identical to `Partial<Config>` but for `salt`, which additionally accepts a
+ * {@link Layered}: a bare `Salt` replaces the base's salt outright (what `salt`
+ * means everywhere else in this library), `layer(salt)` appends onto it
+ * (`[...base.salt, ...salt]`) — the shape a wrapping integration wants, and
  * what `ConstructorOptions`' layered form is for a single construction.
- * Omitting `seed` inherits the base's unchanged. `clock` similarly accepts the
- * caller-facing `Date | "seeded"` rather than `Config`'s own resolved `number |
- * "seeded"`, so a caller can hand in a literal instant without converting it to
- * epoch milliseconds themselves. `"seeded"` is the explicit opt-in that derives
- * "now" from the instance seed; omitting `clock` at the root captures
+ * Omitting `salt` inherits the base's unchanged. `clock` similarly accepts the
+ * caller-facing `Date | "derived"` rather than `Config`'s own resolved `number
+ * | "derived"`, so a caller can hand in a literal instant without converting it
+ * to epoch milliseconds themselves. `"derived"` is the explicit opt-in that
+ * derives "now" from the instance salt; omitting `clock` at the root captures
  * wall-clock time instead.
  *
- * `initialize`'s own parameter keeps a plain `seed?: Seed`, so passing
+ * `initialize`'s own parameter keeps a plain `salt?: Salt`, so passing
  * `layer(...)` there is a compile error: there is no base to layer onto at the
  * root.
  */
 export type Overlay<$Registry extends PlainObject> = Partial<
-  Omit<Config<$Registry>, "seed" | "clock">
+  Omit<Config<$Registry>, "salt" | "clock">
 > & {
-  readonly seed?: Seed | Layered;
-  readonly clock?: Date | "seeded" | undefined;
+  readonly salt?: Salt | Layered;
+  readonly clock?: Date | "derived" | undefined;
 };
 
 /**
@@ -115,7 +115,7 @@ export type Stack = {
  * in effect."
  */
 export type Context = {
-  readonly seed: ReadonlyArray<string>;
+  readonly salt: ReadonlyArray<string>;
   readonly algorithm: Algorithm;
   readonly attribution: Attribution;
   readonly clock: number;
@@ -123,21 +123,21 @@ export type Context = {
 
 /**
  * A single initialized library instance: the registry it was given, and a
- * `construct()` bound to its own isolated randomness — its own seed, builder,
+ * `construct()` bound to its own isolated randomness — its own salt, builder,
  * and per-file overrides/streams, held internally and never shared with any
  * other `initialize()` call. Independently initialized instances (e.g. parallel
  * tests) can never perturb each other.
  */
 export interface Instance<$Registry extends PlainObject> extends Pick<
   RandomSource,
-  "seed"
+  "salt"
 > {
   /** The registry of type definers this instance was initialized with. */
   readonly T: $Registry;
 
   /**
    * Turn a Schema built from `T` into a live Fabricator, deriving fresh
-   * randomness from this instance's own seed for whichever leaves actually need
+   * randomness from this instance's own salt for whichever leaves actually need
    * it.
    */
   Fabricator: Constructor;
@@ -161,8 +161,8 @@ export interface Instance<$Registry extends PlainObject> extends Pick<
 
   /**
    * Derive a new instance laid over this one: anything the overlay names
-   * overrides, anything it omits inherits. A bare `seed` replaces this
-   * instance's seed; `seed: layer(...)` appends onto it. A peer of an
+   * overrides, anything it omits inherits. A bare `salt` replaces this
+   * instance's salt; `salt: layer(...)` appends onto it. A peer of an
    * `initialize()` return value in every respect, including its own `fork`.
    */
   fork<const $ForkRegistry extends PlainObject = $Registry>(
@@ -180,8 +180,8 @@ export interface Instance<$Registry extends PlainObject> extends Pick<
    * configuration again, not the wrap's.
    *
    * A nested `wrap` lays over whichever frame is currently active, not over the
-   * instance it was called on — so `overlay.seed: layer(...)` accumulates with
-   * nesting depth while a bare `seed` still replaces outright, discarding every
+   * instance it was called on — so `overlay.salt: layer(...)` accumulates with
+   * nesting depth while a bare `salt` still replaces outright, discarding every
    * enclosing layer.
    */
   wrap<$Return, const $WrapRegistry extends PlainObject = $Registry>(

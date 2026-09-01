@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("a nullable field's key is always present, its value sometimes null", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-value" });
+  const { T, Fabricator } = initialize({ salt: "nullable-value" });
 
   const built = new Fabricator(
     T.object({ a: T.nullable(T.string.whereby({ length: { max: 5 } })) }),
@@ -26,14 +26,14 @@ test("a nullable field's key is always present, its value sometimes null", () =>
 });
 
 test("a nullable field's roll never disturbs its object's other randomness", () => {
-  const seed = "nullable-no-disturb";
+  const salt = "nullable-no-disturb";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -50,7 +50,7 @@ test("a nullable field's roll never disturbs its object's other randomness", () 
 });
 
 test("unlike T.omittable, T.nullable builds and fabricates standalone, outside any object", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-standalone" });
+  const { T, Fabricator } = initialize({ salt: "nullable-standalone" });
 
   const built = new Fabricator(T.string.whereby({ length: { max: 5 } }));
   const nullableBuilt = new Fabricator(
@@ -63,7 +63,7 @@ test("unlike T.omittable, T.nullable builds and fabricates standalone, outside a
 });
 
 test(".override({ key: value }) forces a nullable field to that value", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-override-value" });
+  const { T, Fabricator } = initialize({ salt: "nullable-override-value" });
 
   const schema = T.object({
     a: T.nullable(T.string.whereby({ length: { max: 5 } })),
@@ -73,7 +73,7 @@ test(".override({ key: value }) forces a nullable field to that value", () => {
 });
 
 test(".override({ key: null }) forces a nullable field to null", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-override-null" });
+  const { T, Fabricator } = initialize({ salt: "nullable-override-null" });
 
   const schema = T.object({
     a: T.nullable(T.string.whereby({ length: { max: 5 } })),
@@ -85,7 +85,7 @@ test(".override({ key: null }) forces a nullable field to null", () => {
 });
 
 test("fabricate({ key: null }) forces a nullable field to null for that call only", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-fabricate-null" });
+  const { T, Fabricator } = initialize({ salt: "nullable-fabricate-null" });
 
   const built = new Fabricator(
     T.object({ a: T.nullable(T.string.whereby({ length: { max: 5 } })) }),
@@ -104,7 +104,7 @@ test("fabricate({ key: null }) forces a nullable field to null for that call onl
 });
 
 test("an override value that violates a nullable field's inner kind throws", () => {
-  const { T } = initialize({ seed: "nullable-kind-violation" });
+  const { T } = initialize({ salt: "nullable-kind-violation" });
 
   const schema = T.object({
     a: T.nullable(T.string.whereby({ length: { max: 5 } })),
@@ -114,7 +114,7 @@ test("an override value that violates a nullable field's inner kind throws", () 
 });
 
 test(".as(...) replaces the roll with an opaque producer, which may itself return null", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-as" });
+  const { T, Fabricator } = initialize({ salt: "nullable-as" });
 
   const alwaysValue = new Fabricator(
     T.object({
@@ -133,7 +133,7 @@ test(".as(...) replaces the roll with an opaque producer, which may itself retur
 });
 
 test("a nullable field nested in an array of objects resolves independently per element", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-in-array" });
+  const { T, Fabricator } = initialize({ salt: "nullable-in-array" });
 
   const built = new Fabricator(
     T.array(
@@ -149,7 +149,7 @@ test("a nullable field nested in an array of objects resolves independently per 
 });
 
 test(".weighted(...) reweights relative to a fixed baseline of 1 for the unspecified outcome", () => {
-  const { T, Fabricator } = initialize({ seed: "nullable-weighted" });
+  const { T, Fabricator } = initialize({ salt: "nullable-weighted" });
 
   const built = new Fabricator(
     T.nullable(T.string.whereby({ length: { max: 5 } })).weighted({

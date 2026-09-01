@@ -11,11 +11,11 @@ import { expect, test } from "bun:test";
 
 const types = () => registry.extend(fakerExtension({ locale: en }));
 
-test('faker\'s date builder is pinned by clock: "seeded", and replays across two initialize() calls', () => {
+test('faker\'s date builder is pinned by clock: "derived", and replays across two initialize() calls', () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "faker-clock",
-      clock: "seeded",
+      salt: "faker-clock",
+      clock: "derived",
       types: types(),
     });
     return new Fabricator(T.object({ past: T.faker.date.past() })).fabricate();
@@ -26,7 +26,7 @@ test('faker\'s date builder is pinned by clock: "seeded", and replays across two
 
 test("T.faker.date.past() and core's T.date.past agree on 'now' within the same schema", () => {
   const { T, Fabricator, context } = initialize({
-    seed: "shared-now",
+    salt: "shared-now",
     types: types(),
   });
 
@@ -46,7 +46,7 @@ test("initialize({ clock }) pins faker's reference date to that explicit instant
 
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "pinned-clock",
+      salt: "pinned-clock",
       clock,
       types: types(),
     });
@@ -64,7 +64,7 @@ test("initialize({ clock }) pins faker's reference date to that explicit instant
 
 test("wrap({ clock }, ...) makes the override reach faker builders for the extent of the block", () => {
   const { T, Fabricator, wrap, context } = initialize({
-    seed: "wrap-clock",
+    salt: "wrap-clock",
     types: types(),
   });
   const built = new Fabricator(

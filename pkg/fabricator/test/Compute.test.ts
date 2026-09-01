@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("a computed field's resolver returning a value matching its source's kind fabricates normally", () => {
-  const { T, Fabricator } = initialize({ seed: "compute-valid" });
+  const { T, Fabricator } = initialize({ salt: "compute-valid" });
 
   const schema = T.object({ createdAt: T.date }).refine(({ compute }) => ({
     day: compute(T.date).as(({ fabricated }) => fabricated.createdAt),
@@ -14,7 +14,7 @@ test("a computed field's resolver returning a value matching its source's kind f
 });
 
 test("a computed field's resolver returning a value that violates its source's declared kind throws at fabricate() time", () => {
-  const { T, Fabricator } = initialize({ seed: "compute-invalid" });
+  const { T, Fabricator } = initialize({ salt: "compute-invalid" });
 
   const schema = T.object({ createdAt: T.date }).refine(({ compute }) => ({
     // A bug: declares a `date` source but the resolver actually returns a

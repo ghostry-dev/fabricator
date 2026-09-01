@@ -1,8 +1,8 @@
 # faker
 
-fabricator generates values, not human-plausible-looking ones. [`@faker-js/faker`](https://fakerjs.dev) generates plausible ones, but from its own separate randomness — so a schema mixing the two has two seeds to track and only one of them replays.
+fabricator generates raw values, not human-plausible-looking ones. [`@faker-js/faker`](https://fakerjs.dev) generates plausible ones, but from its own separate randomness — so a schema mixing the two would have two sources of randomness to track, and only one of them is replayable.
 
-The extension removes the second seed. Faker's generators draw from the leaf's own seeded stream, so `T.faker.person.fullName()` replays exactly like `T.string` does.
+The extension removes the second source: faker's generators draw from the leaf's own seeded stream, so `T.faker.person.fullName()` replays exactly like `T.string` does.
 
 ```ts
 import { en } from "@faker-js/faker";
@@ -10,7 +10,7 @@ import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
 
 const { T, Fabricator } = initialize({
-  seed: "checkout",
+  salt: "checkout",
   types: registry.extend(fakerExtension({ locale: en })),
 });
 
@@ -158,11 +158,11 @@ There is deliberately no reference-date option on `fakerExtension`. A second, in
 
 ## Reproducibility
 
-Everything on [Reproducibility](/guides/reproducibility) applies unchanged: the same seed and clock produce the same faker output, and a field's stream is keyed by its structural position, so inserting or reordering a sibling leaves the others untouched.
+Everything on [Reproducibility](/guides/reproducibility) applies unchanged: the same salt and clock produce the same faker output, and a field's stream is keyed by its structural position, so inserting or reordering a sibling leaves the others untouched.
 
 Two consequences worth stating outright:
 
-**`faker.seed(...)` is inert.** Seeding is fabricator's job here, and a second seed competing for control of the same output is the problem this package exists to remove. Change `initialize({ seed })` instead.
+**`faker.seed(...)` is inert.** Seeding is fabricator's job here, and a second seed competing for control of the same output is the problem this package exists to remove. Change `initialize({ salt })` instead.
 
 **The global `faker` singleton is untouched.** The extension builds its own `Faker` on its own randomizer, so seeding or draining the singleton elsewhere in your test suite cannot perturb fabricated output — and vice versa.
 

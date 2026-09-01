@@ -5,16 +5,16 @@ import { expect, test } from "bun:test";
 
 /**
  * The whole premise of the bridge: a faker builder draws through the same
- * seeded stream every other kind does, so it is exactly as reproducible.
+ * salted stream every other kind does, so it is exactly as reproducible.
  */
 
 const types = () => registry.extend(fakerExtension({ locale: en }));
 
-test("identical seed produces identical output over many iterations", () => {
+test("identical salt produces identical output over many iterations", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "reproducibility",
-      clock: "seeded",
+      salt: "reproducibility",
+      clock: "derived",
       types: types(),
     });
     return new Fabricator(
@@ -35,17 +35,17 @@ test("identical seed produces identical output over many iterations", () => {
   }
 });
 
-test("different seeds produce different output", () => {
+test("different salts produce different output", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
   const { T: T1, Fabricator: F1 } = initialize({
-    seed: "seed-a",
+    salt: "salt-a",
     clock,
     types: types(),
   });
   const a = new F1(T1.object({ name: T1.faker.person.fullName() })).fabricate();
 
   const { T: T2, Fabricator: F2 } = initialize({
-    seed: "seed-b",
+    salt: "salt-b",
     clock,
     types: types(),
   });
@@ -55,11 +55,11 @@ test("different seeds produce different output", () => {
 });
 
 test("one built Fabricator's repeated fabricate() advances the stream, but a rebuild replays it", () => {
-  const seed = "advance-and-replay";
+  const salt = "advance-and-replay";
 
   const { T: T1, Fabricator: F1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const built1 = new F1(T1.object({ name: T1.faker.person.fullName() }));
@@ -68,8 +68,8 @@ test("one built Fabricator's repeated fabricate() advances the stream, but a reb
   expect(second.name).not.toBe(first.name);
 
   const { T: T2, Fabricator: F2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
     types: types(),
   });
   const built2 = new F2(T2.object({ name: T2.faker.person.fullName() }));

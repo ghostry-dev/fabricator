@@ -43,7 +43,7 @@ test("each color.* split method exposes text() and channels(), and neither node 
 });
 
 test("color.rgb.text() fabricates a string; color.rgb.channels() fabricates a numeric array", () => {
-  const { T, Fabricator } = initialize({ seed: "color-split", types: types() });
+  const { T, Fabricator } = initialize({ salt: "color-split", types: types() });
 
   const { text, channels } = new Fabricator(
     T.object({

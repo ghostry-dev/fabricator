@@ -6,7 +6,7 @@ import {
 } from "./fixtures/sharedSchema";
 
 test("count is the widest single axis, not the product", () => {
-  const { T, coverage } = initialize({ seed: "coverage-widest-axis" });
+  const { T, coverage } = initialize({ salt: "coverage-widest-axis" });
 
   const results = [
     ...coverage(
@@ -23,7 +23,7 @@ test("count is the widest single axis, not the product", () => {
 });
 
 test("every option of every axis appears at least once", () => {
-  const { T, coverage } = initialize({ seed: "coverage-every-option" });
+  const { T, coverage } = initialize({ salt: "coverage-every-option" });
 
   const results = [
     ...coverage(
@@ -39,7 +39,7 @@ test("every option of every axis appears at least once", () => {
 });
 
 test("a narrower product-node axis reuses an option to fill the schedule", () => {
-  const { T, coverage } = initialize({ seed: "coverage-cycle-reuse" });
+  const { T, coverage } = initialize({ salt: "coverage-cycle-reuse" });
 
   const results = [
     ...coverage(
@@ -59,7 +59,7 @@ test("a narrower product-node axis reuses an option to fill the schedule", () =>
 });
 
 test("sum widths participate in the max, not just product-node widths", () => {
-  const { T, coverage } = initialize({ seed: "coverage-sum-participates" });
+  const { T, coverage } = initialize({ salt: "coverage-sum-participates" });
 
   const results = [
     ...coverage(
@@ -79,7 +79,7 @@ test("sum widths participate in the max, not just product-node widths", () => {
 
 test("the combinatorial limit does not apply to coverage", () => {
   const { T, coverage } = initialize({
-    seed: "coverage-no-limit",
+    salt: "coverage-no-limit",
     limits: { combinatorial: 4 },
   });
 
@@ -91,13 +91,13 @@ test("the combinatorial limit does not apply to coverage", () => {
   expect([...coverage(schema)]).toHaveLength(2);
 });
 
-test("the coverage guarantee holds regardless of which permutation seed produced it", () => {
-  for (const seed of [
+test("the coverage guarantee holds regardless of which permutation salt produced it", () => {
+  for (const salt of [
     "coverage-guard-1",
     "coverage-guard-2",
     "coverage-guard-3",
   ]) {
-    const { T, coverage } = initialize({ seed, clock: "seeded" });
+    const { T, coverage } = initialize({ salt, clock: "derived" });
 
     const results = [
       ...coverage(
@@ -113,11 +113,11 @@ test("the coverage guarantee holds regardless of which permutation seed produced
   }
 });
 
-test("equal-width axes are decorrelated across seeds, not locked to a fixed diagonal", () => {
+test("equal-width axes are decorrelated across salts, not locked to a fixed diagonal", () => {
   const pairsSeen = new Set<string>();
 
   for (let i = 0; i < 20; i++) {
-    const { T, coverage } = initialize({ seed: `coverage-decorrelate-${i}` });
+    const { T, coverage } = initialize({ salt: `coverage-decorrelate-${i}` });
 
     const results = [
       ...coverage(
@@ -133,7 +133,7 @@ test("equal-width axes are decorrelated across seeds, not locked to a fixed diag
 
   // A naive `i % width` schedule can only ever produce the pairs
   // (a0,b0), (a1,b1), (a2,b0) — three of the six possible pairs. Across many
-  // seeds, a real permutation must eventually land outside that set.
+  // salts, a real permutation must eventually land outside that set.
   const fixedDiagonal = new Set(["a0:b0", "a1:b1", "a2:b0"]);
   const sawOutsideDiagonal = [...pairsSeen].some(
     (pair) => !fixedDiagonal.has(pair),
@@ -141,12 +141,12 @@ test("equal-width axes are decorrelated across seeds, not locked to a fixed diag
   expect(sawOutsideDiagonal).toBe(true);
 });
 
-test("two boolean fields of the same width are not locked in lockstep across seeds", () => {
+test("two boolean fields of the same width are not locked in lockstep across salts", () => {
   let sawEqual = false;
   let sawUnequal = false;
 
   for (let i = 0; i < 20 && !(sawEqual && sawUnequal); i++) {
-    const { T, coverage } = initialize({ seed: `coverage-lockstep-${i}` });
+    const { T, coverage } = initialize({ salt: `coverage-lockstep-${i}` });
 
     const results = [...coverage(T.object({ x: T.boolean, y: T.boolean }))];
 
@@ -162,8 +162,8 @@ test("two boolean fields of the same width are not locked in lockstep across see
   expect(sawUnequal).toBe(true);
 });
 
-test("coverage(schema) reproduces identically for the same instance seed", () => {
-  const { T, coverage } = initialize({ seed: "coverage-reproducible" });
+test("coverage(schema) reproduces identically for the same instance salt", () => {
+  const { T, coverage } = initialize({ salt: "coverage-reproducible" });
 
   const schema = () =>
     T.object({
@@ -175,7 +175,7 @@ test("coverage(schema) reproduces identically for the same instance seed", () =>
 });
 
 test("iterating the same returned Iterable twice reproduces identically", () => {
-  const { T, coverage } = initialize({ seed: "coverage-reiterate" });
+  const { T, coverage } = initialize({ salt: "coverage-reiterate" });
 
   const iterable = coverage(
     T.object({
@@ -188,7 +188,7 @@ test("iterating the same returned Iterable twice reproduces identically", () => 
 });
 
 test("Array.from(...) doesn't misattribute randomness relative to a plain for...of", () => {
-  const { T, coverage } = initialize({ seed: "coverage-native-frame" });
+  const { T, coverage } = initialize({ salt: "coverage-native-frame" });
 
   const schema = T.object({
     e: T.enum.uniform(["a", "b", "c"]),
@@ -206,8 +206,8 @@ test("Array.from(...) doesn't misattribute randomness relative to a plain for...
 test("coverage(...) never perturbs an unrelated Fabricator built from the same instance", () => {
   function unrelatedAfter(coverageCalls: number) {
     const { T, Fabricator, coverage } = initialize({
-      seed: "coverage-isolation",
-      clock: "seeded",
+      salt: "coverage-isolation",
+      clock: "derived",
     });
 
     const schema = T.object({ e: T.enum.uniform(["a", "b", "c"]) });
@@ -222,7 +222,7 @@ test("coverage(...) never perturbs an unrelated Fabricator built from the same i
 });
 
 test("coverage(...) reproduces regardless of which file it's called from", () => {
-  const { coverage } = initialize({ seed: "coverage-file-independence" });
+  const { coverage } = initialize({ salt: "coverage-file-independence" });
 
   const here = coverageFromHere(coverage);
   const there = [...coverage(enumerableSharedSchema())];
@@ -230,7 +230,7 @@ test("coverage(...) reproduces regardless of which file it's called from", () =>
   expect(here).toEqual(there);
 });
 
-test("two instances with the same seed cover identically; different seeds diverge", () => {
+test("two instances with the same salt cover identically; different salts diverge", () => {
   const shape = (T: typeof registry) =>
     T.object({
       e: T.enum.uniform(["a", "b", "c"]),
@@ -238,16 +238,16 @@ test("two instances with the same seed cover identically; different seeds diverg
     });
 
   const clock = new Date("2020-01-01T00:00:00.000Z");
-  const a = initialize({ seed: "coverage-seed-a", clock });
-  const b = initialize({ seed: "coverage-seed-a", clock });
-  const c = initialize({ seed: "coverage-seed-c", clock });
+  const a = initialize({ salt: "coverage-salt-a", clock });
+  const b = initialize({ salt: "coverage-salt-a", clock });
+  const c = initialize({ salt: "coverage-salt-c", clock });
 
   expect([...a.coverage(shape(a.T))]).toEqual([...b.coverage(shape(b.T))]);
   expect([...a.coverage(shape(a.T))]).not.toEqual([...c.coverage(shape(c.T))]);
 });
 
 test("coverage() never yields a zero-weighted outcome", () => {
-  const { T, coverage } = initialize({ seed: "coverage-zero-weight" });
+  const { T, coverage } = initialize({ salt: "coverage-zero-weight" });
 
   const results = [
     ...coverage(
@@ -265,7 +265,7 @@ test("coverage() never yields a zero-weighted outcome", () => {
 
 test("a zero-weighted first choice option is not selected by compacted index", () => {
   const { T, coverage } = initialize({
-    seed: "coverage-choice-original-index",
+    salt: "coverage-choice-original-index",
   });
 
   const results = [

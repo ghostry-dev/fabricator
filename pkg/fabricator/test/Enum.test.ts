@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { initialize } from "@ghostry/fabricator";
 
 test("T.enum.uniform builds and fabricates standalone, drawing every member across enough draws", () => {
-  const { T, Fabricator } = initialize({ seed: "enum-uniform-standalone" });
+  const { T, Fabricator } = initialize({ salt: "enum-uniform-standalone" });
 
   const built = new Fabricator(T.enum.uniform(["a", "b", "c"]));
 
@@ -13,7 +13,7 @@ test("T.enum.uniform builds and fabricates standalone, drawing every member acro
 });
 
 test("T.enum.uniform is roughly an equal split across members", () => {
-  const { T, Fabricator } = initialize({ seed: "enum-uniform-distribution" });
+  const { T, Fabricator } = initialize({ salt: "enum-uniform-distribution" });
 
   const built = new Fabricator(T.enum.uniform(["a", "b", "c"]));
 
@@ -29,7 +29,7 @@ test("T.enum.uniform is roughly an equal split across members", () => {
 });
 
 test("T.enum.weighted draws relative to the given [weight, item] pairs, not an equal split", () => {
-  const { T, Fabricator } = initialize({ seed: "enum-weighted-distribution" });
+  const { T, Fabricator } = initialize({ salt: "enum-weighted-distribution" });
 
   const built = new Fabricator(
     T.enum.weighted([
@@ -53,14 +53,14 @@ test("T.enum.weighted draws relative to the given [weight, item] pairs, not an e
 });
 
 test("T.enum's roll never disturbs its object's other randomness", () => {
-  const seed = "enum-no-disturb";
+  const salt = "enum-no-disturb";
   const { T: T1, Fabricator: Fabricator1 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
   const { T: T2, Fabricator: Fabricator2 } = initialize({
-    seed,
-    clock: "seeded",
+    salt,
+    clock: "derived",
   });
 
   const plain = new Fabricator1(T1.object({ b: T1.number }));
@@ -74,7 +74,7 @@ test("T.enum's roll never disturbs its object's other randomness", () => {
 });
 
 test(".override({ key: value }) forces an enum field to that value", () => {
-  const { T, Fabricator } = initialize({ seed: "enum-override" });
+  const { T, Fabricator } = initialize({ salt: "enum-override" });
 
   const schema = T.object({ a: T.enum.uniform(["x", "y", "z"]) }).override({
     a: "y",
@@ -84,7 +84,7 @@ test(".override({ key: value }) forces an enum field to that value", () => {
 });
 
 test(".as(...) replaces the roll with an opaque producer", () => {
-  const { T, Fabricator } = initialize({ seed: "enum-as" });
+  const { T, Fabricator } = initialize({ salt: "enum-as" });
 
   const built = new Fabricator(
     T.object({ a: T.enum.uniform(["x", "y", "z"]).as(() => "y") }),
@@ -95,7 +95,7 @@ test(".as(...) replaces the roll with an opaque producer", () => {
 });
 
 test("T.enum.uniform/.weighted throw on an empty member list", () => {
-  const { T } = initialize({ seed: "enum-empty" });
+  const { T } = initialize({ salt: "enum-empty" });
 
   // @ts-expect-error — `uniform` requires at least one member.
   expect(() => T.enum.uniform([])).toThrow();
@@ -104,7 +104,7 @@ test("T.enum.uniform/.weighted throw on an empty member list", () => {
 });
 
 test("T.enum.weighted throws on a negative weight", () => {
-  const { T } = initialize({ seed: "enum-negative-weight" });
+  const { T } = initialize({ salt: "enum-negative-weight" });
 
   expect(() =>
     T.enum.weighted([
@@ -115,7 +115,7 @@ test("T.enum.weighted throws on a negative weight", () => {
 });
 
 test("T.enum.weighted still constructs and fabricates when every weight is positive", () => {
-  const { T, Fabricator } = initialize({ seed: "enum-all-positive-weights" });
+  const { T, Fabricator } = initialize({ salt: "enum-all-positive-weights" });
 
   const built = new Fabricator(
     T.enum.weighted([

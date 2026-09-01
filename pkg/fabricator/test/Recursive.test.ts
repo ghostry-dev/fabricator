@@ -18,7 +18,7 @@ type Registry = ReturnType<typeof initialize<typeof registry>>["T"];
  * had no children).
  *
  * These tests lean on the same tree shape throughout so the interesting
- * differences (depth, seed, isolation) stay the only variable.
+ * differences (depth, salt, isolation) stay the only variable.
  */
 
 type Node = { value: number; children: Node[] };
@@ -38,7 +38,7 @@ function depthOf(node: Node): number {
 }
 
 test("fabricates a tree, never exceeding the configured max depth", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-depth" });
+  const { T, Fabricator } = initialize({ salt: "recursive-depth" });
 
   const built = new Fabricator(makeTree(T, 3));
 
@@ -57,7 +57,7 @@ test("fabricates a tree, never exceeding the configured max depth", () => {
 });
 
 test("depth.max = 0 degenerates to the terminal alone", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-zero-depth" });
+  const { T, Fabricator } = initialize({ salt: "recursive-zero-depth" });
 
   const built = new Fabricator(makeTree(T, 0));
 
@@ -68,7 +68,7 @@ test("depth.max = 0 degenerates to the terminal alone", () => {
 });
 
 test("a JSON-value shape (choice body) fabricates and varies", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-json" });
+  const { T, Fabricator } = initialize({ salt: "recursive-json" });
 
   const Json = T.recursive((self) =>
     T.choice.uniform([
@@ -90,7 +90,7 @@ test("a JSON-value shape (choice body) fabricates and varies", () => {
 });
 
 test("the terminal appears only once depth.max is reached, and never recurses further", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-terminal" });
+  const { T, Fabricator } = initialize({ salt: "recursive-terminal" });
 
   /**
    * A terminal deliberately shaped differently from `body` (a negative value,
@@ -123,11 +123,11 @@ test("the terminal appears only once depth.max is reached, and never recurses fu
   }
 });
 
-test("the same seed replays exactly, across any number of prior fabricate() calls", () => {
+test("the same salt replays exactly, across any number of prior fabricate() calls", () => {
   const build = () => {
     const { T, Fabricator } = initialize({
-      seed: "recursive-reproducible",
-      clock: "seeded",
+      salt: "recursive-reproducible",
+      clock: "derived",
     });
     return new Fabricator(makeTree(T, 3));
   };
@@ -150,8 +150,8 @@ test("the same seed replays exactly, across any number of prior fabricate() call
 test("an unrelated Fabricator is unaffected by how many times a recursive schema fabricated before it", () => {
   function unrelatedAfter(recursiveCalls: number) {
     const { T, Fabricator } = initialize({
-      seed: "recursive-isolation",
-      clock: "seeded",
+      salt: "recursive-isolation",
+      clock: "derived",
     });
     const tree = new Fabricator(makeTree(T, 3));
     for (let i = 0; i < recursiveCalls; i++) tree.fabricate();
@@ -166,7 +166,7 @@ test("an unrelated Fabricator is unaffected by how many times a recursive schema
 });
 
 test("two unrelated recursive schemas from the same instance don't perturb each other", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-two-trees" });
+  const { T, Fabricator } = initialize({ salt: "recursive-two-trees" });
 
   const a = new Fabricator(makeTree(T, 3));
   const b = new Fabricator(makeTree(T, 3));
@@ -188,7 +188,7 @@ test("two unrelated recursive schemas from the same instance don't perturb each 
  * that happened to terminate in the same `fabricate()`.
  */
 test("leaves that terminate do not share a collection reference", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-no-shared-refs" });
+  const { T, Fabricator } = initialize({ salt: "recursive-no-shared-refs" });
 
   const built = new Fabricator(makeTree(T, 3));
 
@@ -215,7 +215,7 @@ test("leaves that terminate do not share a collection reference", () => {
  * and using it in an unrelated schema afterward.
  */
 test("using a captured self reference outside any active recursion throws", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-misuse" });
+  const { T, Fabricator } = initialize({ salt: "recursive-misuse" });
 
   let escaped: unknown;
   T.recursive((self) => {
@@ -237,7 +237,7 @@ test("using a captured self reference outside any active recursion throws", () =
  * docs implicitly promise.
  */
 test("README's T.recursive category tree example builds, typechecks, and fabricates", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-readme" });
+  const { T, Fabricator } = initialize({ salt: "recursive-readme" });
 
   const CategorySchema = T.recursive((self) =>
     T.object({
@@ -264,7 +264,7 @@ test("README's T.recursive category tree example builds, typechecks, and fabrica
 });
 
 test("composes as an object field alongside ordinary fields", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-composes" });
+  const { T, Fabricator } = initialize({ salt: "recursive-composes" });
 
   const built = new Fabricator(
     T.object({ id: T.always(1), tree: makeTree(T, 2) }),
@@ -276,7 +276,7 @@ test("composes as an object field alongside ordinary fields", () => {
 });
 
 test("a derived JSON terminal at depth.max = 0 is the non-self choice arms", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-json-derived" });
+  const { T, Fabricator } = initialize({ salt: "recursive-json-derived" });
 
   const Json = T.recursive((self) =>
     T.choice.uniform([
@@ -300,7 +300,7 @@ test("a derived JSON terminal at depth.max = 0 is the non-self choice arms", () 
 });
 
 test("a derived terminal empties an array even when body set length.min > 0", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-min-length" });
+  const { T, Fabricator } = initialize({ salt: "recursive-min-length" });
 
   const Chain = T.recursive((self) =>
     T.object({
@@ -317,7 +317,7 @@ test("a derived terminal empties an array even when body set length.min > 0", ()
 });
 
 test("a derived terminal omits an omittable self field", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-omittable" });
+  const { T, Fabricator } = initialize({ salt: "recursive-omittable" });
 
   const List = T.recursive((self) =>
     T.object({ value: T.always(1), next: T.omittable(self) }),
@@ -328,7 +328,7 @@ test("a derived terminal omits an omittable self field", () => {
 });
 
 test("a derived terminal nulls a nullable self field", () => {
-  const { T, Fabricator } = initialize({ seed: "recursive-nullable" });
+  const { T, Fabricator } = initialize({ salt: "recursive-nullable" });
 
   const List = T.recursive((self) =>
     T.object({ value: T.always(1), next: T.nullable(self) }),
@@ -339,7 +339,7 @@ test("a derived terminal nulls a nullable self field", () => {
 });
 
 test("a required self field cannot derive a terminal", () => {
-  const { T } = initialize({ seed: "recursive-unterminable-field" });
+  const { T } = initialize({ salt: "recursive-unterminable-field" });
 
   try {
     T.recursive((self) => T.object({ next: self })).whereby({
@@ -355,7 +355,7 @@ test("a required self field cannot derive a terminal", () => {
 });
 
 test("a tuple slot that is self cannot derive a terminal", () => {
-  const { T } = initialize({ seed: "recursive-unterminable-tuple" });
+  const { T } = initialize({ salt: "recursive-unterminable-tuple" });
 
   expect(() =>
     T.recursive((self) => T.tuple([self])).whereby({ depth: { max: 1 } }),
@@ -363,7 +363,7 @@ test("a tuple slot that is self cannot derive a terminal", () => {
 });
 
 test("a choice whose every option contains self cannot derive a terminal", () => {
-  const { T } = initialize({ seed: "recursive-unterminable-choice" });
+  const { T } = initialize({ salt: "recursive-unterminable-choice" });
 
   expect(() =>
     T.recursive((self) => T.choice.uniform([self])).whereby({
@@ -373,7 +373,7 @@ test("a choice whose every option contains self cannot derive a terminal", () =>
 });
 
 test("a naked self body cannot derive a terminal", () => {
-  const { T } = initialize({ seed: "recursive-unterminable-root" });
+  const { T } = initialize({ salt: "recursive-unterminable-root" });
 
   try {
     T.recursive((self) => self).whereby({ depth: { max: 1 } });
