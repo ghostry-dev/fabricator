@@ -293,7 +293,13 @@ export function toRandomSource(options: Options): RandomSource {
       return nextConstructionOrdinal(file);
     });
 
-    return { salt, clock: pins.clock ?? clock, root, file, ordinal };
+    return {
+      salt: pins.salt ?? salt,
+      clock: pins.clock ?? clock,
+      root,
+      file,
+      ordinal,
+    };
   }
 
   function resolveRootFile(kind: RootKind): string | undefined {

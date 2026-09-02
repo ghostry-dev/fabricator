@@ -143,32 +143,39 @@ test("none produces a trace with no file", () => {
 /**
  * Under `{ kind: "none" }`, every construction shares one file-less bucket — so
  * unlike a real file's counter, the _n_th construction anywhere in the instance
- * gets the _n_th index. Distinct constructions must still diverge (never draw
- * identical data), and an explicitly salted `new Fabricator(schema, { salt })`
- * — which forks away from that shared bucket entirely — must still reproduce
- * exactly regardless of how many ordinary, unsalted constructions ran before or
- * between the two salted calls.
+ * gets the _n_th index. A salt does not opt out of that bucket: it pins the
+ * salt slot and leaves the counter alone, so two same-salt builds separated by
+ * other work take different ordinals and diverge.
+ *
+ * Opting out of the shared bucket is `fork`'s job — an isolated source brings
+ * its own counter, which is why the forked pair below matches while the inline
+ * pair does not.
  */
-test("none + an explicitly salted Fabricator still reproduces amid unsalted builds", () => {
-  const { T, Fabricator } = initialize({
+test("none + a salted Fabricator still shares the one counter, but a fork doesn't", () => {
+  const instance = initialize({
     salt: "none-interleave",
     attribution: { kind: "none" },
   });
-
-  new Fabricator(T.number).fabricate();
-  new Fabricator(T.number).fabricate();
-
-  const a = new Fabricator(T.object({ x: T.number }), {
-    salt: "pinned",
-  }).fabricate();
+  const { T, Fabricator } = instance;
+  const schema = () => T.object({ x: T.number });
 
   new Fabricator(T.number).fabricate();
 
-  const b = new Fabricator(T.object({ x: T.number }), {
-    salt: "pinned",
-  }).fabricate();
+  const a = new Fabricator(schema(), { salt: "pinned" }).fabricate();
+  new Fabricator(T.number).fabricate();
+  const b = new Fabricator(schema(), { salt: "pinned" }).fabricate();
 
-  expect(a).toEqual(b);
+  expect(a).not.toEqual(b);
+
+  const forkedA = new (instance.fork({ salt: "pinned" }).Fabricator)(
+    schema(),
+  ).fabricate();
+  new Fabricator(T.number).fabricate();
+  const forkedB = new (instance.fork({ salt: "pinned" }).Fabricator)(
+    schema(),
+  ).fabricate();
+
+  expect(forkedA).toEqual(forkedB);
 });
 
 test("none still diverges between two ordinary, unsalted constructions", () => {
@@ -259,16 +266,17 @@ test("a file's data is unaffected by unrelated constructions in another file", (
 });
 
 /**
- * `options.salt` forks an entirely fresh source from exactly that value,
- * ignoring the instance's own salt — the same salt reproduces the same result
- * regardless of which file it's called from, or which instance built it, _given
- * the same clock_ — a per-call salt forks the source but keeps whichever clock
- * the source it forks from already carries (see `Fabricator/Constructor.ts`'s
- * `toConstructionContext`), so two instances must also agree on their clock for
- * this to hold. Pinned explicitly here so the two instances'
- * otherwise-independent default wall-clock instants don't introduce a second,
- * unrelated source of divergence. `"derived"` would do the same job here; a
- * pinned Date makes the shared "now" obvious.
+ * A bare `options.salt` replaces the instance's own salt outright, exactly as
+ * `fork({ salt })` does, so two differently-salted instances agree — but only
+ * once everything _else_ in the trace agrees too. Both builds are written in
+ * this file, one after the other, and each forks fresh (drawing ordinal 0 from
+ * its own empty counter), so file and ordinal match.
+ *
+ * The clock has to be pinned, and pinned to a literal `Date` specifically. A
+ * shared `clock: "derived"` would _not_ work here: `deriveClock` derives from
+ * each instance's own salt, and these two differ by construction, so the two
+ * builds would inherit different instants and diverge for a reason that has
+ * nothing to do with what this test is checking.
  */
 test("new Fabricator(schema, { salt }) reproduces regardless of the instance's own salt, given the same clock", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
@@ -283,18 +291,21 @@ test("new Fabricator(schema, { salt }) reproduces regardless of the instance's o
 
 /**
  * `salt: layer(...)` composes onto the instance's own salt rather than
- * replacing it — equivalent to a bare `{ salt }` fork of exactly
- * `[...instance.salt, ...given]`, not of `given` alone.
+ * replacing it — the pinned slot holds exactly `[...instance.salt, ...given]`,
+ * not `given` alone.
+ *
+ * Asserted on the trace rather than on fabricated values: both forms pin only
+ * the salt, so two builds written here would also differ by ordinal, and
+ * comparing their output would conflate the two slots.
  */
 test("new Fabricator(schema, { salt: layer(...) }) composes onto the instance's salt", () => {
   const { T, Fabricator, salt } = initialize({ salt: "composing-base" });
 
-  const layered = new Fabricator(T.number, { salt: layer("x") }).fabricate();
-  const equivalent = new Fabricator(T.number, {
-    salt: [...salt, "x"],
-  }).fabricate();
+  const layered = new Fabricator(T.number, { salt: layer("x") });
+  const replaced = new Fabricator(T.number, { salt: "x" });
 
-  expect(layered).toBe(equivalent);
+  expect(layered.trace.salt).toEqual([...salt, "x"]);
+  expect(replaced.trace.salt).toEqual(["x"]);
 });
 
 /**
@@ -332,14 +343,16 @@ test("new Fabricator(schema, { salt: layer(...) }) reproduces given the same ins
 });
 
 /**
- * Both salted forms open an `"unattributed"` scope on their fork — a
- * caller-chosen root replaces a resolved file whether or not it composes.
+ * Neither salted form says anything about rooting: both fork and then attribute
+ * to their own file, exactly as an unsalted build does. Naming a salt is a
+ * statement about the salt alone.
  */
-test("new Fabricator(schema, { salt: layer(...) }) reports no file from .trace", () => {
+test("new Fabricator(schema, { salt: layer(...) }) reports its own file from .trace", () => {
   const { T, Fabricator } = initialize({ salt: "layer-trace" });
   const built = new Fabricator(T.string.whereby({ length: { max: 8 } }), {
     salt: layer("x"),
   });
 
-  expect(built.trace.file).toBeUndefined();
+  expect(built.trace.file).toBeDefined();
+  expect(built.trace.root).toBe("attributed");
 });

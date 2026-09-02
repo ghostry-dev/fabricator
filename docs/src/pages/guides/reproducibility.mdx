@@ -40,7 +40,7 @@ const { T, Fabricator, salt } = initialize({ salt: "1234" });
 Omit it and the salt is empty. The cases that genuinely want one:
 
 - **Replay that doesn't depend on wall-clock time.** Pair the salt with [`clock: "derived"`](#the-clock-is-the-entropy) and the salt becomes the entire reproducibility unit — one value to record instead of two. The cost is an implausible "now", drawn across the whole representable `Date` range.
-- **A fixture that must never move**, no matter how the rest of the run is salted — that's a [per-construction salt](#overriding-a-salt-per-construction), not an instance-wide one.
+- **One construction drawing from a different universe** than the rest of the instance — that's a [per-construction salt](#salting-one-construction), not an instance-wide one.
 - **Injecting a mixer from outside**, without hardcoding it — that's what [env-var salting](#env-var-salting) below is for. It pins the salt only; an unpinned `clock` still varies, so replay still needs `context.clock`.
 
 :::tip
@@ -86,17 +86,29 @@ attribution?:
 
 A file that falls outside the resolved root (above it, or in an unrelated directory) is expressed with a leading `..` rather than left as an absolute path, so it stays stable as long as both locations move together under the same checkout. The one case nothing can smooth over is a file genuinely outside the checkout — there, the `..` count itself depends on where the checkout happens to sit, and no attribution scheme changes that.
 
-Two constructions of the same schema from the same file, by default, still get different data — each is assigned the next available index for that file, so calling `new Fabricator(schema)` twice in a row never silently hands back identical results.
+Two constructions of the same schema from the same file, by default, still get different data — each is assigned the next available index for that file, so calling `new Fabricator(schema)` twice in a row never silently hands back identical results. That holds whether or not a `salt` is named — salting substitutes one trace slot, it does not restart the counter.
 
-## Overriding a salt per construction
+## Salting one construction
 
 ```ts
 new Fabricator(schema, { salt: "fixed-user" });
 ```
 
-A per-construction `salt` forks a brand-new, fully isolated source from exactly that value — the same salt reproduces the same result no matter which file it's constructed from, which instance built it, or how that instance was itself salted. Reach for this when you want one exact fixture, always, regardless of everything else about the run — re-salting the whole suite for a wider fuzz pass won't touch it. It keeps the instance's own `clock`, though — a construction asking for its own salt isn't asking for a different "now" — so a fixture built this way from two instances only matches if those instances also agree on their clock (both captured the same wall-clock instant, both `"derived"` from the same salt, or both given the same explicit `clock`); see [The clock is the entropy](#the-clock-is-the-entropy) below.
+This overrides the salt for one build and changes nothing else. The construction still attributes to its own file, still takes the next ordinal for it, still inherits the instance's clock — everything an unsalted build does.
 
-That last part is also the limit of what a _bare_ salt can express: a fixture that should stay exactly the same no matter how the run is re-salted. For an identity that should instead keep moving when the instance is re-salted — a schema's registered name, a test's own id — wrap the salt in `layer(...)` instead:
+`salt` is not special here. `new Fabricator(schema, options)` accepts every slot of a [`.trace`](#trace), and each one you name simply substitutes into that slot; `salt` is one of them. So a salted build is an ordinary build that happens to draw from a different universe than its neighbors — not a build that has stepped outside the instance.
+
+That means it is _not_ a way to hold one construction still. It shifts, and is shifted by, the constructions around it exactly as any other does, and moving it to another file changes its data. When you want a build that is genuinely insulated — its own counters, unaffected by whatever else the instance builds — that is what [`fork`](#deriving-a-related-instance-fork) is for, one line away:
+
+```ts
+const held = instance.fork({ salt: "fixed-user" });
+
+new held.Fabricator(schema); // its own counters, its own universe
+```
+
+And when you want independence from _where_ a construction sits, say that directly with [`attribution: { kind: "none" }`](#where-a-stream-is-attributed) on the instance.
+
+A bare salt _replaces_ the instance's salt, so a construction written this way no longer varies when the surrounding run is re-salted. For an identity that should keep moving with the run — a schema's registered name, a test's own id — wrap it in `layer(...)` to compose instead:
 
 ```ts
 import { layer } from "@ghostry/fabricator";
@@ -104,7 +116,7 @@ import { layer } from "@ghostry/fabricator";
 new Fabricator(schema, { salt: layer("some-identity") });
 ```
 
-This still forks an isolated source, but composes `"some-identity"` onto the instance's own salt (`[...instance.salt, "some-identity"]`) rather than replacing it outright — so the construction still varies when the instance is re-salted, the one thing a bare salt deliberately can't do. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below for the full mechanism, and [Deriving a related instance: fork](#deriving-a-related-instance-fork) for the same idea one level up — applied to a whole derived instance, rather than one construction at a time.
+This composes `"some-identity"` onto the instance's own salt (`[...instance.salt, "some-identity"]`) rather than replacing it outright — so the construction still varies when the instance is re-salted, the one thing a bare salt deliberately can't do. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below for the full mechanism, and [Deriving a related instance: fork](#deriving-a-related-instance-fork) for the same idea one level up — applied to a whole derived instance, rather than one construction at a time.
 
 ## Deriving a related instance: fork
 

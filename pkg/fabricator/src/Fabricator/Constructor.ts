@@ -27,8 +27,8 @@ import {
  * behaves identically to `construct(schema)` — a `new` call's returned object
  * always replaces the freshly-created `this`. The construct signature lets
  * callers spell `new T.Fabricator(schema)` — or `new Fabricator(schema, { salt
- * })` to pin this one build to an explicit salt, independent of the file it's
- * constructed in (see `construct()` for what `options.salt` does).
+ * })` to pin this one build's salt slot, leaving every other slot to resolve as
+ * usual (see `construct()` for what `options.salt` does).
  */
 export type Constructor = {
   new <const $Schema extends Buildable>(
@@ -372,20 +372,29 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
    * recursive work; this is the one precisely-typed boundary, exactly how
    * `toTypeBox()` relates to its own internal `convert()`.
    *
-   * A bare `options.salt` is a statement about _attribution_: it forks a fresh,
-   * isolated source from exactly that value, sidestepping both the default
-   * call-site logic _and_ the instance's own salt — the same salt reproduces
-   * the same result no matter which file `new Fabricator(...)` is written in or
-   * how the instance itself was salted — and opens an `"unattributed"` scope on
-   * that fork (see `RandomSource.fork` in `Random/index.ts`, and `resolveScope`
-   * below). `options.salt: layer(...)` forks the same way but composes onto the
-   * instance's own salt first, so the construction still varies when the
-   * instance is re-salted — see `ConstructorOptions` (`Random/Types.ts`).
+   * `options.salt` is a pin on the {@link Trace}'s salt slot, no different in
+   * kind from `clock`/`root`/`file`/`ordinal`: it substitutes a value and does
+   * nothing else. A bare salt replaces the instance's own, `layer(...)`
+   * composes onto whichever base is in effect — the same parity `fork`'s
+   * `Overlay.salt` has — and every remaining slot resolves exactly as it would
+   * have without it (`resolveScope` below).
    *
-   * No per-build algorithm override alongside `salt`: a different PRNG says
-   * nothing about wanting to abandon file attribution, so it doesn't fit the
-   * same "sidestep call-site logic" story — and instance-wide `initialize({
-   * algorithm })` already covers bringing your own PRNG. See
+   * In particular it does _not_ fork. A salted build draws the next ordinal for
+   * its file from this source's ordinary counters, so it shifts, and is shifted
+   * by, its neighbours like any other construction. Naming a salt is not a way
+   * to hold one build still, nor to escape file attribution.
+   *
+   * Anything that needs an isolated source — its own counters, immune to
+   * whatever else the instance builds — forks: `fork`/`wrap`
+   * (`Instance/Core.ts`) exist for precisely that, and are one line away.
+   * Sidestepping attribution is likewise said outright, via `initialize({
+   * attribution: { kind: "none" } })` or an `options.root` pin, which is how
+   * `combinatorial`/`coverage` reach `"unattributed"`
+   * (`Enumeration/Enumerate.ts`).
+   *
+   * No per-build algorithm override alongside these: `algorithm` is not a
+   * {@link Trace} slot, so there is nothing for it to pin — and instance-wide
+   * `initialize({ algorithm })` already covers bringing your own. See
    * `ConstructorOptions` (`Random/Types.ts`).
    */
   function construct<const $Schema extends Buildable>(
@@ -433,13 +442,13 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
  * node's `trace.clock` _is_ `construction.clock`. `resolveScope`'s resolved
  * `ConstructionTrace` already carries whichever source's clock this
  * construction should resolve "now" against (the active `wrap` frame's, this
- * instance's own, an explicitly salted fork of one of those, or a pin from a
- * replayed {@link Trace}). No separate resolution needed here: a
- * `RandomSource`'s clock is baked in, as a concrete number, the moment it's
- * built (`Random/index.ts`'s `toRandomSource`), so `construction.clock` is
- * never the unresolved `"derived"` sentinel by the time it reaches this point.
- * `algorithm` is read off `rooted`, not `config.algorithm`: an active `wrap`
- * frame's source may carry a different one.
+ * instance's own, or a pin from a replayed {@link Trace}). No separate
+ * resolution needed here: a `RandomSource`'s clock is baked in, as a concrete
+ * number, the moment it's built (`Random/index.ts`'s `toRandomSource`), so
+ * `construction.clock` is never the unresolved `"derived"` sentinel by the time
+ * it reaches this point. `algorithm` is read off `rooted`, not
+ * `config.algorithm`: an active `wrap` frame's source may carry a different
+ * one.
  */
 function toConstructionContext(
   source: RandomSource,
@@ -460,38 +469,38 @@ function toConstructionContext(
 
 /**
  * Resolve the root one `new Fabricator(...)` call's leaves are dispatched
- * against — both the `RandomSource` to draw from (the active `wrap` frame's,
- * the instance's own, or an explicitly salted fork of one of those) and that
- * source's resolved `ConstructionTrace`, since a fork's stream derivation is
- * only reachable through the fork itself. `construct()` calls this exactly once
- * and reuses both across every leaf, rather than re-resolving per leaf.
+ * against — both the `RandomSource` to draw from and that source's resolved
+ * `ConstructionTrace`. `construct()` calls this exactly once and reuses both
+ * across every leaf, rather than re-resolving per leaf.
  *
- * `base` — the active frame's source if `stack.current()` finds one, otherwise
- * this instance's own `source` — is resolved first, since every branch below is
- * relative to it:
+ * There is only one source to choose between, and `options` never changes it:
+ * `base` is the active `wrap` frame's source if `stack.current()` finds one,
+ * otherwise this instance's own. A build inside a `wrap` therefore keeps
+ * ordinary file attribution and ordinary per-file ordinals, exactly as it would
+ * under a separately `initialize()`d instance sharing that config — and the
+ * branch is a no-op for the wrap's _own_ `scope.Fabricator` (`frame.source`
+ * already _is_ that instance's `source`), which is the point, not an accident:
+ * it makes the implicit and explicit routes resolve identically.
  *
- * - **Unsalted, no active frame**: `source`, `"attributed"`.
- * - **Unsalted, inside a `wrap`**: `frame.source`, still `"attributed"` — the
- *   frame's own source carries the frame's own resolved attribution policy, so
- *   a build inside a `wrap` keeps ordinary file attribution and ordinary
- *   per-file ordinals, exactly as it would under a separately `initialize()`d
- *   instance sharing that same config. This branch is a no-op for the wrap's
- *   _own_ `scope.Fabricator` (`frame.source` already _is_ that instance's
- *   `source`) — which is the point, not an accident: it's what makes the
- *   implicit and explicit routes resolve identically.
- * - **A bare salt, either way**: `base.fork(salt)`, `"unattributed"` — a
- *   caller-chosen root replaces a resolved file regardless of an active frame
- *   (`base === source` whenever no frame is active).
- * - **A layered salt (`layer(...)`), either way**: `base.fork([...base.salt,
- *   ...layered])`, `"unattributed"` — composes onto _whichever_ base is in
- *   effect: the instance's own salt with no active frame, or the frame's
- *   effective salt inside a `wrap`. Forking from `base` rather than always
- *   `source` matters only here — a bare salt ignores its base's salt entirely,
- *   so it can't tell the difference.
+ * Everything `options` can say is a pin, `salt` included, and pins only ever
+ * substitute values into the {@link ConstructionTrace} this source resolves.
+ * Nothing here forks. That is what keeps the model flat: a salted build is an
+ * ordinary build of this source that happens to carry a different salt, so it
+ * takes the next ordinal for its file and shifts its neighbours just as any
+ * other construction does. Callers wanting an isolated source ask for one with
+ * `fork`/`wrap` (`Instance/Core.ts`).
  *
- * Pins from `options` (`clock`/`root`/`file`/`ordinal`) are threaded into both
- * `toRoot` calls and win over an active `wrap` frame — they are the more
- * specific statement, including a full replayed {@link Trace}.
+ * `salt` is the one pin `options` does not hand over verbatim, because
+ * `layer(...)` is relative: a bare salt normalizes to its own parts, while a
+ * layered one resolves against `base.salt` — the instance's own with no active
+ * frame, or the frame's effective salt inside a `wrap`. Reading `base` rather
+ * than always `source` matters only for that composition; a bare salt ignores
+ * its base's salt entirely, so it can't tell the difference.
+ *
+ * Pins win over an active `wrap` frame — they are the more specific statement,
+ * including a full replayed {@link Trace}. `root` is what `combinatorial`/
+ * `coverage` use to ask for `"unattributed"` outright, so their lazy rebuilds
+ * never resolve a caller file (`Enumeration/Enumerate.ts`).
  */
 function resolveScope(
   source: RandomSource,
@@ -500,22 +509,21 @@ function resolveScope(
 ): { source: RandomSource; root: ConstructionTrace } {
   const frame = stack.current();
   const base = frame?.source ?? source;
+
+  const salt = inline((): ReadonlyArray<string> | undefined => {
+    if (!options.salt) return undefined;
+    if (isLayered(options.salt))
+      return [...base.salt, ...normalizeSalt(options.salt[Layer])];
+    return normalizeSalt(options.salt);
+  });
+
   const pins: RootPins = {
+    salt,
     clock: options.clock,
     root: options.root,
     file: options.file,
     ordinal: options.ordinal,
   };
 
-  if (!options.salt) {
-    return { source: base, root: base.toRoot("attributed", pins) };
-  }
-
-  const salt = isLayered(options.salt)
-    ? [...base.salt, ...normalizeSalt(options.salt[Layer])]
-    : options.salt;
-
-  const forked = base.fork(salt);
-
-  return { source: forked, root: forked.toRoot("unattributed", pins) };
+  return { source: base, root: base.toRoot("attributed", pins) };
 }

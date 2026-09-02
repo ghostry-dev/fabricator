@@ -24,15 +24,18 @@ import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
  * `combinatorial(...)`/`coverage(...)` call, not once when `enumerables()` was
  * built, so the same `combinatorial` reference behaves differently inside an
  * active `wrap`). `new Fabricator(schema, { salt })` (see `Constructor.ts`'s
- * `construct()`) forks a fully isolated `RandomSource` and opens an
- * `"unattributed"` scope, so `resolveCallerFile()` is never called — the
- * lazy-generator attribution hazard a plain `function*` would invite simply
- * doesn't arise — the instance's construction counters are never touched, and
- * the same salt reproduces regardless of which file
- * `combinatorial(...)`/`coverage(...)` is called from. Each `fork()` starts
- * from a fresh source, so reusing one salt across many builds (different
- * schemas, or the same schema rebuilt per iteration) never lets one build's
- * draws leak into another's.
+ * `construct()`) forks a fully isolated `RandomSource` from that salt, so
+ * reusing one salt across many builds — different schemas, or the same schema
+ * rebuilt per iteration — never lets one build's draws leak into another's.
+ *
+ * `root: "unattributed"` is passed alongside it, and is not incidental: a salt
+ * says nothing about rooting, so without this pin each build would resolve a
+ * caller file. These builds happen inside `iterable`'s `rebuild()`, which runs
+ * lazily on `[Symbol.iterator]()` — so the "caller" would be whatever code
+ * drained the `Iterable`, not the `combinatorial(...)`/`coverage(...)` call
+ * site. Pinning the root keeps `resolveCallerFile()` out of that path entirely,
+ * leaves the instance's construction counters untouched, and lets the same salt
+ * reproduce regardless of which file the enumeration was requested from.
  */
 export function enumerables(
   source: RandomSource,
@@ -108,7 +111,10 @@ export function enumerables(
      * `iterable`'s `rebuild()` for actual iteration.
      */
     const probe: Axis = plan(
-      new Fabricator(schema, { salt: combinatorialSalt }) as Resolvable,
+      new Fabricator(schema, {
+        salt: combinatorialSalt,
+        root: "unattributed",
+      }) as Resolvable,
       { strategy: "product" },
     );
 
@@ -122,6 +128,7 @@ export function enumerables(
     return iterable(() => {
       const built = new Fabricator(schema, {
         salt: combinatorialSalt,
+        root: "unattributed",
       }) as Resolvable;
 
       return { built, axis: plan(built, { strategy: "product" }) };
@@ -151,6 +158,7 @@ export function enumerables(
     return iterable(() => {
       const built = new Fabricator(schema, {
         salt: coverageSalt,
+        root: "unattributed",
       }) as Resolvable;
 
       return {

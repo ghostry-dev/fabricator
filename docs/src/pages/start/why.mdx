@@ -109,7 +109,7 @@ For an unsalted instance that one number is the whole reproducibility unit: log 
 
 Replay also survives the way suites are actually run. A construction is rooted at the file that made it, and each file counts its own constructions, so which _other_ files ran — a filtered run, a different order, one shard of a parallel build — changes nothing about the data any given file produces. Running the failing file on its own reproduces what CI saw.
 
-Position still counts _within_ a file: a construction added or skipped ahead of another shifts it, so narrowing past a whole file, down to a single test inside it, can move the data again. A fixture that should hold still regardless of where it sits can say so with `new Fabricator(schema, { salt })`, which is keyed by that salt rather than by where it sits — no file, no position. See [Where a stream is attributed](/guides/reproducibility#where-a-stream-is-attributed) and [Overriding a salt per construction](/guides/reproducibility#overriding-a-salt-per-construction).
+Position still counts _within_ a file: a construction added or skipped ahead of another shifts it, so narrowing past a whole file, down to a single test inside it, can move the data again. An instance whose data shouldn't depend on position at all can say so with `initialize({ attribution: { kind: "none" } })`, trading file-keying for a single shared counter. See [Where a stream is attributed](/guides/reproducibility#where-a-stream-is-attributed).
 
 ### A test depends on what it pins, and nothing else
 

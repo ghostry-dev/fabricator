@@ -130,10 +130,9 @@ test("a custom random factory composes with a salt and replays", () => {
 });
 
 /**
- * `new Fabricator(schema, { salt })` — naming an explicit salt sidesteps
- * `construct()`'s default call-site attribution entirely (see
- * `Constructor.ts`'s `construct()` doc comment), unlike `options.algorithm`
- * below, which leaves attribution untouched.
+ * Naming a salt changes only which universe the construction draws from — every
+ * field within it is still keyed by its own structural path, so same-kind
+ * siblings must not collide.
  */
 test("new Fabricator(schema, { salt }) gives every same-kind field its own draw", () => {
   /**
@@ -151,33 +150,55 @@ test("new Fabricator(schema, { salt }) gives every same-kind field its own draw"
   expect(new Set([built.a, built.b, built.c]).size).toBe(3);
 });
 
-test("new Fabricator(schema, { salt }) reproduces regardless of which file it's called from", () => {
+/**
+ * `salt` pins one trace slot and leaves rooting alone, so a salted build
+ * attributes to its own file exactly like an unsalted one, and two call sites
+ * in different files diverge whether or not a salt is named. Anything genuinely
+ * file-independent has to say so — `initialize({ attribution: { kind: "none" }
+ * })` instance-wide, or an explicit `root: "unattributed"` pin, which is what
+ * `combinatorial`/`coverage` use.
+ */
+test("new Fabricator(schema, { salt }) still attributes to its own file", () => {
   const { Fabricator } = initialize({ salt: "instance" });
 
   const here = fabricateSharedSchemaHere(Fabricator, { salt: "cross-file" });
   const there = new Fabricator(sharedSchema(), {
     salt: "cross-file",
   }).fabricate();
-  expect(here).toEqual(there);
 
-  /**
-   * Without an explicit salt, the same two call sites fall back to ordinary
-   * per-(relative file, kind) attribution and must diverge — otherwise the
-   * assertion above wouldn't actually be exercising file-independence.
-   */
-  const hereUnseeded = fabricateSharedSchemaHere(Fabricator);
-  const thereUnseeded = new Fabricator(sharedSchema()).fabricate();
-  expect(hereUnseeded).not.toEqual(thereUnseeded);
+  expect(here).not.toEqual(there);
 });
 
 /**
- * Pinned to the same explicit `clock` on both instances: a per-call salt forks
- * the source but keeps whichever clock the forked-from source already carries
- * (`Fabricator/Constructor.ts`'s `toConstructionContext`), so two instances
- * must also agree on their clock, not just the per-call salt, for this
- * independence to hold — otherwise each instance's own distinct default
- * `"derived"` clock (derived from "instance-a"/"instance-b" respectively) would
- * introduce a second, unrelated source of divergence.
+ * The rule `salt` follows: it pins the salt slot, exactly as `file` pins the
+ * file slot, and touches nothing else. Every other slot resolves as it would
+ * have without it — same root, same file, and an ordinal taken in sequence from
+ * the same counter rather than restarting at zero.
+ */
+test("new Fabricator(schema, { salt }) pins the salt slot and nothing else", () => {
+  const { T, Fabricator } = initialize({ salt: "instance" });
+
+  const unsalted = new Fabricator(T.number).trace;
+  const salted = new Fabricator(T.number, { salt: "x" }).trace;
+
+  expect(unsalted.salt).toEqual(["instance"]);
+  expect(salted.salt).toEqual(["x"]);
+
+  expect(salted.root).toBe(unsalted.root);
+  expect(salted.file).toBe(unsalted.file);
+  expect(salted.ordinal).toBe(unsalted.ordinal! + 1);
+});
+
+/**
+ * Pinned to the same explicit `clock` on both instances: `salt` pins only the
+ * salt, so the clock each build inherits is still its own instance's, and two
+ * instances must agree on it for the salt alone to decide the result.
+ *
+ * The `Date` is load-bearing and cannot be swapped for a shared `clock:
+ * "derived"`: that derives from each instance's own salt, and these two differ
+ * by construction, so the builds would diverge for a reason unrelated to what
+ * is being checked. Both builds also sit in this one file with nothing between
+ * them, so they take matching ordinals from the same counter.
  */
 test("new Fabricator(schema, { salt }) is independent of the instance's own salt, given the same clock", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
@@ -190,23 +211,42 @@ test("new Fabricator(schema, { salt }) is independent of the instance's own salt
   expect(one).toEqual(two);
 });
 
-test("new Fabricator(schema, { salt }) doesn't accumulate state across builds from the same instance", () => {
+/**
+ * `salt` pins the salt slot and nothing else, so it draws from the file's
+ * ordinary construction counter like every other build. Two same-salt builds
+ * therefore take successive ordinals and diverge, and builds in between shift
+ * whatever follows them — no different from unsalted work.
+ *
+ * Holding a construction still against its neighbours is what `fork` is for
+ * (below): an isolated source owns its own counters.
+ */
+test("new Fabricator(schema, { salt }) draws from the ordinary construction counter", () => {
   const { Fabricator } = initialize({ salt: "instance" });
 
   const first = new Fabricator(schema(), { salt: "repeat" }).fabricate();
 
-  /**
-   * Interleave unrelated salted and unsalted builds between the two draws that
-   * must match — if the unattributed stream cache ever migrated off its
-   * per-build fork onto the shared instance source, this would perturb the
-   * second draw below.
-   */
   new Fabricator(schema(), { salt: "unrelated" }).fabricate();
   new Fabricator(schema()).fabricate();
 
   const second = new Fabricator(schema(), { salt: "repeat" }).fabricate();
 
-  expect(first).toEqual(second);
+  expect(first).not.toEqual(second);
+});
+
+test("a fork owns its counters, so its first build is stable against the instance's", () => {
+  const instance = initialize({ salt: "instance" });
+
+  new instance.Fabricator(schema()).fabricate();
+  const before = new (instance.fork({ salt: "held" }).Fabricator)(
+    schema(),
+  ).fabricate();
+
+  new instance.Fabricator(schema()).fabricate();
+  const after = new (instance.fork({ salt: "held" }).Fabricator)(
+    schema(),
+  ).fabricate();
+
+  expect(before).toEqual(after);
 });
 
 test("bigint generation is reproducible under a salt", () => {

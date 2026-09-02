@@ -83,14 +83,35 @@ test("traces are self-describing: root distinguishes the three file: undefined c
   ).toBe(noneBuilt.fabricate());
 
   const salted = initialize({ salt: "trace-root-salted", clock: "derived" });
+
+  /**
+   * A per-construction salt no longer implies anything about rooting — it is a
+   * one-build `fork`, so it attributes to its file and draws an ordinal like
+   * any other construction.
+   */
   const saltedBuilt = new salted.Fabricator(salted.T.number, {
     salt: "explicit",
   });
-  expect(saltedBuilt.trace.root).toBe("unattributed");
-  expect(saltedBuilt.trace.file).toBeUndefined();
+  expect(saltedBuilt.trace.root).toBe("attributed");
+  expect(saltedBuilt.trace.file).toBeDefined();
   expect(
     new salted.Fabricator(salted.T.number, saltedBuilt.trace).fabricate(),
   ).toBe(saltedBuilt.fabricate());
+
+  /**
+   * `"unattributed"` is now only ever an explicit pin — what
+   * `combinatorial`/`coverage` ask for so their lazy rebuilds never resolve a
+   * caller file (`Enumeration/Enumerate.ts`).
+   */
+  const unattributed = new salted.Fabricator(salted.T.number, {
+    salt: "explicit",
+    root: "unattributed",
+  });
+  expect(unattributed.trace.root).toBe("unattributed");
+  expect(unattributed.trace.file).toBeUndefined();
+  expect(
+    new salted.Fabricator(salted.T.number, unattributed.trace).fabricate(),
+  ).toBe(unattributed.fabricate());
 
   const defaulted = initialize({
     salt: "trace-root-default",

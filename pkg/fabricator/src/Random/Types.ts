@@ -55,7 +55,7 @@ export type Algorithm = (seed: string) => NumberGenerator;
  * - `root` — how `file` and `ordinal` were resolved ({@link RootKind}). Sits
  *   immediately before `file` because that is what it explains. Distinguishes
  *   the three situations that all produce `file: undefined` (`{ kind: "none" }`
- *   attributed, an unattributed salted construction, a counted recursive
+ *   attributed, an unattributed enumeration build, a counted recursive
  *   expansion), so a captured trace can be replayed faithfully via `new
  *   Fabricator(schema, trace)`.
  * - `file` — the file this node's _construction_ (not the node) was attributed
@@ -70,8 +70,8 @@ export type Algorithm = (seed: string) => NumberGenerator;
  * - `kind` — schema kind the node was constructed as. Redundant given a unique
  *   `path`, but changing a field's kind must change its data.
  * - `ordinal` — which construction among those sharing this `file` this node
- *   belongs to. `undefined` for `"unattributed"`, already unique by its forked
- *   salt.
+ *   belongs to. `undefined` for `"unattributed"`, whose builds are already
+ *   distinguished by the salt they pin.
  */
 export type Trace = {
   readonly salt: ReadonlyArray<string>;
@@ -85,15 +85,22 @@ export type Trace = {
 
 /**
  * Caller-supplied overrides for the construction-owned {@link Trace} slots
- * {@link RandomSource.toRoot} resolves. `salt` is not among them: it is the
- * {@link RandomSource}'s own identity (forked via {@link ConstructorOptions.salt}
- * when replaying), not something `toRoot` substitutes. `path`/`kind` are
- * per-node and applied in `construct()`, not here.
+ * {@link RandomSource.toRoot} resolves. `path`/`kind` are the only slots absent:
+ * they are per-node and applied in `construct()`, not here.
+ *
+ * `salt` is a pin like the rest — it substitutes into that trace slot and does
+ * nothing else. It does not fork, so it neither resets nor sidesteps this
+ * source's construction-ordinal counters: a salted build takes the next ordinal
+ * for its file exactly as an unsalted one does. A caller who wants an isolated
+ * source, with its own counters, forks — that is what `fork`/`wrap` are for.
+ * Already normalized to parts here, since {@link Trace} carries the array
+ * form.
  *
  * Definedness, not `in`: `root` is present exactly when a trace is being
  * replayed and is never `undefined` on a real {@link Trace}.
  */
 export type RootPins = {
+  salt?: ReadonlyArray<string> | undefined;
   clock?: number | undefined;
   root?: RootKind | undefined;
   file?: string | undefined;
@@ -180,12 +187,14 @@ export type Produce<$T> = (context: ProduceContext) => $T;
  * `ConstructorOptions.salt`'s layered form (`{@link Layered}`, via
  * `layer(...)`) — see `ConstructorOptions`.
  *
- * `"unattributed"` fixes neither slot — used only by a source already isolated
- * for one construction (an explicitly salted `new Fabricator(schema, { salt
- * })`, which forks a new `RandomSource` for that one build). A layered salt
- * (`{@link Layered}`, via `layer(...)`) still opens this same scope: composing
- * onto a base salt is a statement about _what_ the fork's salt is, not how the
- * fork itself should be rooted.
+ * `"unattributed"` fixes neither slot. Like `"counted"`, it is not something a
+ * build falls into: nothing about naming a `ConstructorOptions.salt` opens it,
+ * because salting and rooting are orthogonal — a salted construction is an
+ * ordinary `"attributed"` one built on a forked source. It is reached only by
+ * pinning `ConstructorOptions.root` outright, which `combinatorial`/`coverage`
+ * do (`Enumeration/Enumerate.ts`) so that their rebuilds — which run lazily,
+ * inside the returned `Iterable`'s iterator — never call `resolveCallerFile()`
+ * and pick up whatever frame happens to be driving iteration.
  *
  * A plain string union, not a discriminant object: none of the three variants
  * carries data of its own. Caller-supplied overrides go through
@@ -281,20 +290,19 @@ export type Options = {
  * typechecks under `exactOptionalPropertyTypes`), which is what makes `new
  * Fabricator(schema, trace)` a legal replay.
  *
- * A bare `salt` is a statement about _attribution_: it forks an isolated
- * `RandomSource` from exactly that value, sidestepping both the default
- * call-site logic and the instance's own salt. The same salt reproduces the
- * same result regardless of which file it's constructed from, which instance
- * built it, or how that instance was itself salted — useful for a fixture that
- * should never change no matter how the surrounding run is re-salted.
+ * Every field here pins one {@link Trace} slot, `salt` included — it is not a
+ * special case, and it does not fork. A bare `salt` replaces the instance's own
+ * for this build; `salt: layer(...)` (via `layer()`, `Random/index.ts`)
+ * composes onto whichever base is in effect (`[...instance.salt, ...salt]`), so
+ * the construction still varies when the instance is re-salted, which the bare
+ * form does not. That is `fork`/`wrap`'s own `Overlay.salt` parity, one level
+ * down.
  *
- * `salt: layer(...)` (via `layer()`, `Random/index.ts`) is the same fork, but
- * composed onto the instance's own salt (`[...instance.salt, ...salt]`) instead
- * of replacing it — the construction still varies when the instance is
- * re-salted, which the bare form does not (see {@link RootKind}'s `"counted"`
- * paragraph). This is `fork`/`wrap`'s own `Overlay.salt` mechanism one level
- * down: the instance itself is the base, so no separate instance is needed just
- * to pin an identity that should still track the instance's salt.
+ * Pinning a salt says nothing about anything else. The build attributes to its
+ * call site, takes the next ordinal for that file, and inherits the instance's
+ * clock, exactly as an unsalted build does — so it shifts, and is shifted by,
+ * neighbouring constructions like any other. Two same-salt builds in one file
+ * therefore diverge, because their ordinals do.
  *
  * `clock` / `root` / `file` / `ordinal` pin the construction-owned
  * {@link Trace} slots {@link RandomSource.toRoot} would otherwise resolve.

@@ -25,9 +25,10 @@ export function sharedSchema() {
 /**
  * Constructs and fabricates `new Fabricator(sharedSchema(), options)` from
  * _this_ file — used opposite a same-shaped call from `random.test.ts` to prove
- * `options.salt` reproduces regardless of which file `new Fabricator(...)` is
- * written in, contrasted with an omitted `options.salt`, where the two call
- * sites must diverge (ordinary call-site attribution).
+ * that ordinary call-site attribution keeps two files' builds apart, with or
+ * without an `options.salt`. Naming a salt forks the source but says nothing
+ * about rooting, so both call sites still resolve their own file and must
+ * diverge.
  */
 export function fabricateSharedSchemaHere(
   Fabricator: Constructor,
