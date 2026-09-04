@@ -182,7 +182,7 @@ function layer(
  * previous one into the argument. Splitting the two across packages is how they
  * drift.
  */
-export function drive<$Context, $Returnable>(
+export function walk<$Context, $Returnable>(
   adapter: Adapter<string, $Context, $Returnable>,
   schema: { [Adaptation]?: Adaptations },
   context: $Context,
@@ -192,7 +192,7 @@ export function drive<$Context, $Returnable>(
 
   return adapter.convert(
     schema,
-    (child, childContext) => drive(adapter, child, childContext),
+    (child, childContext) => walk(adapter, child, childContext),
     context,
   );
 }

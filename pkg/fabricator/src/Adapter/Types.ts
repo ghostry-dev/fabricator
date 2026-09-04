@@ -69,7 +69,7 @@ export type Patch = { readonly [key: string]: SchemaAdaptation | undefined };
 
 /**
  * How an adapter recurses into a nested schema — handed to
- * {@link Adapter.convert} by `Adapter/Core.ts`'s `drive` rather than being the
+ * {@link Adapter.convert} by `Adapter/Core.ts`'s `walk` rather than being the
  * adapter's own private recursion, so every nested node goes back through the
  * adaptation lookup, not only the outermost one.
  *

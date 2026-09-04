@@ -117,31 +117,6 @@ export type { Layered } from "./Random/Types";
  */
 export { FabricatorError } from "./Error";
 /**
- * The adapter contract, exported because an adapter is a separate package
- * rather than something registered here: `Adapter`/`Recurse` are what one
- * declares, `drive` is what its conversion entry point calls, and
- * `Adaptation`/`AdaptationsOf` are how it reads what a Schema declared —
- * `[Adaptation]` at runtime, `AdaptationsOf` at the type level, keyed by its
- * own `key` in both cases.
- *
- * This package names no external schema library and depends on none: every
- * mapping, and every dependency it needs, belongs to the adapter.
- *
- * `Adapting` is the odd one out, facing whoever _writes_ an adaptation rather
- * than whoever implements an adapter: it is the parameter type of every kind's
- * `.adapt(adapter, produce)` producer, so a caller writing that producer as a
- * named function can name it — the same reason `Stream` is exported below.
- */
-export { drive } from "./Adapter/Core";
-export type {
-  Adaptations,
-  AdaptationsOf,
-  Adapter,
-  Adapting,
-  Recurse,
-} from "./Adapter/Types";
-export { Adaptation } from "./Types";
-/**
  * The default registry of type definers, exported so it can be extended via
  * `registry.extend(({ T }) => ({ ... }))` before being passed to `initialize({
  * types })`.
@@ -168,6 +143,18 @@ export type { Stream } from "./Random/Types";
  * takes the same shape.
  */
 export type { ProduceContext } from "./Random/Types";
+/**
+ * What every kind's `.adapt(adapter, produce)` producer is called with — `{
+ * schema, meta }` — the same rationale as `Stream`/`ProduceContext` above: a
+ * caller writing the producer as a named function can name its parameter.
+ * `meta` is the kind's own config, reachable here without importing the `Meta`
+ * well-known symbol from `@ghostry/fabricator/internal` — that symbol stays off
+ * the path an ordinary caller writing an `.adapt()` call has to walk. The rest
+ * of the adapter contract (`walk`, `Adapter`, `Adaptation`, `Adaptations`,
+ * `AdaptationsOf`, `Recurse`) is exported from `@ghostry/fabricator/adapting`
+ * instead — surface for implementing an adapter, not for calling `.adapt()`.
+ */
+export type { Adapting } from "./Adapter/Types";
 /**
  * The shape `initialize({ salt })` and `new Fabricator(schema, { salt })` both
  * accept — a single string, or several — so a caller building one

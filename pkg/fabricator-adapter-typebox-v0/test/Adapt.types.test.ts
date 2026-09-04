@@ -8,12 +8,8 @@ import {
   type TUnion,
 } from "@sinclair/typebox";
 import { expect, test } from "bun:test";
-import {
-  initialize,
-  Adaptation,
-  registry,
-  type Adapter,
-} from "@ghostry/fabricator";
+import { initialize, registry } from "@ghostry/fabricator";
+import { Adaptation, type Adapter } from "@ghostry/fabricator/adapting";
 import {
   toTypeBox,
   typebox,

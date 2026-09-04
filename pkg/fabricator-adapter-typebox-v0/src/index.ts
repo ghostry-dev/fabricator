@@ -1,12 +1,14 @@
 import {
   FabricatorError,
-  drive,
   effectiveDiscrete,
+  type Bound,
+} from "@ghostry/fabricator";
+import {
+  walk,
   type AdaptationsOf,
   type Adapter,
-  type Bound,
   type Recurse,
-} from "@ghostry/fabricator";
+} from "@ghostry/fabricator/adapting";
 import {
   Kind,
   Meta,
@@ -333,12 +335,12 @@ export type ToTypeBox<$Schema> =
 export function toTypeBox<const $Schema extends Buildable>(
   schema: $Schema,
 ): ToTypeBox<$Schema> {
-  return drive(typebox, schema, {}) as ToTypeBox<$Schema>;
+  return walk(typebox, schema, {}) as ToTypeBox<$Schema>;
 }
 
 /**
  * This adapter as a value — what `schema.adapt(typebox, ...)` takes, and what
- * {@link toTypeBox} drives the walk with. The only two surfaces a caller needs:
+ * {@link toTypeBox} calls `walk` with. The only two surfaces a caller needs:
  * one to attach an adaptation, one to convert.
  *
  * Naming `Key` as the parameter is what keeps `key`'s literal type, which
@@ -363,10 +365,10 @@ type BuildContext = { self?: Returnable };
  * typing lives on {@link toTypeBox} and {@link ToTypeBox}.
  *
  * Recurses through `recurse` rather than calling itself, so every nested node
- * passes back through the adaptation lookup in `Adapter/Core.ts`'s `drive` — an
+ * passes back through the adaptation lookup in `Adapter/Core.ts`'s `walk` — an
  * `object` field, `array` element, or `choice` option is adapted exactly as the
  * root is. Nothing here reads `[Adaptation]`; by the time a schema reaches this
- * switch, `drive` has already established it carries no adaptation for this
+ * switch, `walk` has already established it carries no adaptation for this
  * adapter.
  */
 function convert(

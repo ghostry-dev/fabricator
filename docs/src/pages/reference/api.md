@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `RootKind`, `Omitted`, `FabricatorError`, `Stream`, `Attribution`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is the contract an external adapter package implements against (`drive`, `Adapter`, `Adapting`, `Adaptations`, `AdaptationsOf`, `Recurse`, `Adaptation`). See [Mental model](/start/mental-model) for why the split exists.
+The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `RootKind`, `Omitted`, `FabricatorError`, `Stream`, `Attribution`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/internal` for the structural tools an adapter needs. See [Mental model](/start/mental-model) for why the split exists.
 
 ## `initialize(config?)`
 
@@ -191,19 +191,28 @@ import type { ValueOf } from "@ghostry/fabricator";
 type ProductSchemaValue = ValueOf<typeof ProductSchema>;
 ```
 
-## The adapter contract
+## Calling `.adapt(adapter, produce)`
 
-`drive`, `Adapter`, `Adapting`, `Adaptations`, `AdaptationsOf`, `Recurse`, and `Adaptation` are what an external adapter package (e.g. [`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0)) is built from — exported here because an adapter is a separate package this one names and depends on nothing from, not something registered internally. Most schemas built with `T` never touch this surface directly; it matters when writing `.adapt(adapter, produce)` calls or authoring a new adapter:
+**`Adapting<$Schema>`** — `{ schema, meta }`, the parameter type of every kind's `.adapt(adapter, produce)` producer. Exported from `.`, not `./adapting`, despite the name overlap: calling `.adapt()` to override one schema's mapping is an ordinary caller's business, not an adapter author's — the same reason `Stream`/`ProduceContext` are exported from `.` for `.as(produce)`. `meta` is the kind's own config, reachable here without importing the `Meta` well-known symbol from `./internal`.
 
-- **`Adapter<$Key, $Context, $Returnable>`** — the shape an adapter itself is: `{ key, convert }`. `convert` is the per-kind dispatch a conversion entry point (e.g. `toTypeBox`) calls.
-- **`drive(schema, adapter, context)`** — walks a schema with an adapter, checking whether each node declared an adaptation for that adapter's `key` before falling back to the adapter's own `convert`.
-- **`Adapting<$Schema>`** — `{ schema, meta }`, the parameter type of every kind's `.adapt(adapter, produce)` producer. Exported so a producer written as a named function can name its parameter.
-- **`Recurse<$Context, $Returnable>`** — the callback `drive` hands an adapter's `convert` so nested schema nodes (an object field, an array element) get the same adaptation lookup as the root.
-- **`Adaptation`** — the well-known symbol a Schema stores its per-adapter overrides under.
-- **`Adaptations`** / **`AdaptationsOf<$Schema>`** — the runtime shape of that map, and the type-level read of what a given Schema declared.
+```ts
+const email = T.string.adapt(typebox, ({ meta }) =>
+  Type.String({ format: "email", maxLength: meta.whereby.length.max.value }),
+);
+```
 
 See [Adapting to an external schema library](/guides/typebox) for the full walkthrough.
 
+## `@ghostry/fabricator/adapting`
+
+A separate entry point for _authoring_ a schema adapter (e.g. [`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0)) — not re-exported from `.`, since ordinary schema composition never needs it. Named for the activity rather than the `Adapter` noun, the same pattern `@ghostry/fabricator/testing` follows for supplying a test-framework integration. This package names no external schema library and depends on none: every mapping, and every dependency it needs, belongs to the adapter.
+
+- **`Adapter<$Key, $Context, $Returnable>`** — the shape an adapter itself is: `{ key, convert }`. `convert` is the per-kind dispatch a conversion entry point (e.g. `toTypeBox`) calls.
+- **`walk(schema, adapter, context)`** — walks a schema with an adapter, checking whether each node declared an adaptation for that adapter's `key` before falling back to the adapter's own `convert`.
+- **`Recurse<$Context, $Returnable>`** — the callback `walk` hands an adapter's `convert` so nested schema nodes (an object field, an array element) get the same adaptation lookup as the root.
+- **`Adaptation`** — the well-known symbol a Schema stores its per-adapter overrides under; read only by an adapter.
+- **`Adaptations`** / **`AdaptationsOf<$Schema>`** — the runtime shape of that map, and the type-level read of what a given Schema declared.
+
 ## `@ghostry/fabricator/internal`
 
-A second, separate entry point — deliberately _not_ re-exported from `.` — for adapter authors who need to dispatch on a primitive kind's structural shape directly (`Kind`, `Meta`, `Buildable`, `Fabrication`, and each kind's own `Core` type). If you're writing an adapter like the TypeBox one, this is where its dispatch tables come from; ordinary schema authoring never needs it.
+A third entry point — deliberately _not_ re-exported from `.` — for adapter authors who need to dispatch on a primitive kind's structural shape directly (`Kind`, `Meta`, `Buildable`, `Fabrication`, and each kind's own `Core` type). If you're writing an adapter like the TypeBox one, this is where its dispatch tables come from; ordinary schema authoring never needs it.

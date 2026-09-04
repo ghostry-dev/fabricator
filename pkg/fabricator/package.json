@@ -48,6 +48,11 @@
       "types": "./dist/types/internal.d.ts",
       "import": "./dist/esm/internal.js",
       "default": "./dist/esm/internal.js"
+    },
+    "./adapting": {
+      "types": "./dist/types/adapting.d.ts",
+      "import": "./dist/esm/adapting.js",
+      "default": "./dist/esm/adapting.js"
     }
   },
   "publishConfig": {
