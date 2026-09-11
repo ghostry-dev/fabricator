@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/internal` for the structural tools an adapter needs. See [Mental model](/start/mental-model) for why the split exists.
+The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
 
 ## `initialize(config?)`
 
@@ -199,6 +199,18 @@ A separate entry point for _authoring_ a schema adapter (e.g. [`@ghostry/fabrica
 - **`Adaptation`** — the well-known symbol a Schema stores its per-adapter overrides under; read only by an adapter.
 - **`Adaptations`** / **`AdaptationsOf<$Schema>`** — the runtime shape of that map, and the type-level read of what a given Schema declared.
 
+## `@ghostry/fabricator/harnessing`
+
+The entry point [`@ghostry/harness`](https://github.com/ghostry-dev/harness) integrates through — not re-exported from `.`, since only a test setup module needs it. Neither package depends on the other: the types here are fabricator's own copy of the part of that contract it uses, satisfied structurally. See [Harness](/guides/harness) for the setup.
+
+- **`integration(instance)`** — decorates an existing instance as an integration; it never mints one, so the caller's `initialize(...)` owns the configuration, `clock` especially. Each test body runs inside `instance.wrap({ salt: layer(identity) }, ...)`, and no clock is ever set.
+- **`Integration<$Context>`** — `{ name, provides, around }`, what `integration(...)` returns. `around(identity, body)` returns the body's value unchanged.
+- **`Identity`** — `{ kind, path, name, row }`: `"test"` or `"suite"`, the enclosing `describe` names outer → inner, the test name (`""` for a suite hook), and the `.each` row index or `undefined`. It carries no file.
+- **`Provider<$Value>`** / **`Provides<$Context>`** — one `(identity) => value` per context key; `provides` is the only source of an integration's keys.
+- **`FabricatorTestContext<$Registry>`** — `{ fabricator }`, the per-test scoped `Instance` a test body receives.
+
+Reading `provides.fabricator` outside that integration's `around` throws a `FabricatorError` named `HarnessingProviderError`. Only a composer breaking the contract does that; `@ghostry/harness` never does.
+
 ## `@ghostry/fabricator/internal`
 
-A third entry point — deliberately _not_ re-exported from `.` — for adapter authors who need to dispatch on a primitive kind's structural shape directly (`Kind`, `Meta`, `Buildable`, `Fabrication`, and each kind's own `Core` type). If you're writing an adapter like the TypeBox one, this is where its dispatch tables come from; ordinary schema authoring never needs it.
+Another entry point — deliberately _not_ re-exported from `.` — for adapter authors who need to dispatch on a primitive kind's structural shape directly (`Kind`, `Meta`, `Buildable`, `Fabrication`, and each kind's own `Core` type). If you're writing an adapter like the TypeBox one, this is where its dispatch tables come from; ordinary schema authoring never needs it.

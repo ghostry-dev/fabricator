@@ -134,6 +134,7 @@ export default defineConfig({
         { text: "Distributions", link: "/guides/distributions" },
         { text: "TypeBox", link: "/guides/typebox" },
         { text: "Faker", link: "/guides/faker" },
+        { text: "Harness", link: "/guides/harness" },
         { text: "Custom types", link: "/guides/custom-types" },
       ],
     },

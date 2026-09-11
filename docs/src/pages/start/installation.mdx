@@ -75,3 +75,21 @@ const TProduct = toTypeBox(ProductSchema);
 ```
 
 It targets `@sinclair/typebox` (0.34.x) specifically — hence the `-v0`. See [the TypeBox guide](/guides/typebox) for the default-mapping table and how to override it per schema.
+
+## Optional: a test harness
+
+When fabricator feeds a test suite, `@ghostry/harness` wraps your runner's `describe`/`it` so each test draws data derived from its own name — reproducible, and independent of which other tests ran:
+
+:::code-group
+
+```bash [bun]
+bun add -d @ghostry/harness
+```
+
+```bash [npm]
+npm install --save-dev @ghostry/harness
+```
+
+:::
+
+See [the Harness guide](/guides/harness) for the setup module.

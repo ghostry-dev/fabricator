@@ -107,7 +107,7 @@ For an unsalted instance that one number is the whole reproducibility unit: log 
 
 `.trace` goes finer than the run: it's the exact tuple one field's stream was hashed from, and passing it back to `new Fabricator(schema, trace)` replays that field alone — useful when the thing you want to re-examine is one leaf inside a large fabricated object. See [`.trace`](/guides/reproducibility#trace).
 
-Construction order still counts: an instance has one construction counter, so a construction added or skipped ahead of another shifts it. `fork` and `wrap` create fresh counters, letting a test integration partition each test from its neighbors while preserving the same replay model. See [Construction order](/guides/reproducibility#construction-order).
+Construction order still counts: an instance has one construction counter, so a construction added or skipped ahead of another shifts it. `fork` and `wrap` create fresh counters, letting a [test integration](/guides/harness) partition each test from its neighbors while preserving the same replay model. See [Construction order](/guides/reproducibility#construction-order).
 
 ### A test depends on what it pins, and nothing else
 

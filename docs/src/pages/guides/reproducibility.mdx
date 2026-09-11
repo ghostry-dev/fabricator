@@ -142,7 +142,7 @@ base.fork({ salt: layer("a") }).salt; // ["base", "a"] — composed
 - **`wrap({ salt: layer(...) })`** — composes onto whichever `wrap` frame is currently active ([below](#making-a-fork-ambient-wrap)) — so nested `wrap`s accumulate.
 - **`new Fabricator(schema, { salt: layer(...) })`** — composes onto the instance's salt (or the active `wrap` frame's, if the construction happens inside one), for a single construction rather than a whole derived instance.
 
-Reach for `layer(...)` any time an identity — a tenant id, a test's own name, a schema's registered name — should still vary when the surrounding run is re-salted. A bare salt is for the opposite case: a fixture that must stay exactly the same no matter what.
+Reach for `layer(...)` any time an identity — a tenant id, a test's own name (which [the harness integration](/guides/harness) layers for you), a schema's registered name — should still vary when the surrounding run is re-salted. A bare salt is for the opposite case: a fixture that must stay exactly the same no matter what.
 
 ## Making a fork ambient: wrap
 

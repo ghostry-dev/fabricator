@@ -1,0 +1,136 @@
+# Harness
+
+[`@ghostry/harness`](https://github.com/ghostry-dev/harness) wraps a Jest-compatible test runner — bun, vitest, jest, mocha, `node:test` — so every Ghostry library can reach into each test the same way. fabricator's integration uses that for one thing: each test's data follows from the test's own identity — its `describe` names, its own name, its `.each` row — with nothing threaded through the body and no salt invented by hand.
+
+:::code-group
+
+```bash [bun]
+bun add -d @ghostry/harness
+```
+
+```bash [npm]
+npm install --save-dev @ghostry/harness
+```
+
+:::
+
+## Setup
+
+One shared module builds both, and every test file imports from it:
+
+```ts
+// test/setup.ts
+import { initialize as initializeFabricator } from "@ghostry/fabricator";
+import { integration as fabricatorIntegration } from "@ghostry/fabricator/harnessing";
+import { initialize as initializeHarness } from "@ghostry/harness";
+import * as framework from "bun:test";
+
+export const fabricator = initializeFabricator({
+  clock: new Date("2024-01-01T00:00:00Z"),
+});
+
+export const { describe, it, expect } = initializeHarness({
+  framework,
+  integrations: [fabricatorIntegration(fabricator)],
+});
+```
+
+```ts
+// test/user.test.ts
+import { describe, expect, fabricator, it } from "./setup";
+
+const { T, Fabricator } = fabricator;
+
+const User = T.object({
+  name: T.string.whereby({ length: { min: 1, max: 25 } }),
+  joined: T.date.past,
+});
+
+describe("users", () => {
+  it("has a name", () => {
+    const user = new Fabricator(User).fabricate();
+    expect(user.name.length).toBeGreaterThan(0);
+  });
+});
+```
+
+Nothing in the test mentions a salt. Running it twice draws the same user; renaming the test, or moving it under a different `describe`, draws a different one.
+
+## Pin a fixed `Date`
+
+The `clock` in the setup module is not decoration. Leave it out and the instance takes the wall-clock instant of the `initialize()` call, so every run of the suite draws different data and the only way back to a failing run is a `context.clock` someone happened to log. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+
+A pinned `Date` is inherited unchanged by every test, so the whole suite shares one plausible "now" and only each test's identity varies its data.
+
+`clock: "derived"` also removes the wall-clock dependency, but it is not a substitute here. It derives "now" from the salt, and every test has a different salt — so every test, and every `beforeAll`, gets its own "now," drawn from across the entire representable `Date` range. A `beforeAll` and the tests beneath it then disagree about the present. The integration leaves that alone on purpose: `"derived"` means the salt _is_ the reproducibility unit, and per-test clocks are that request honored. Pin a `Date` unless that is what you want.
+
+## What each test's salt is
+
+Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#making-a-fork-ambient-wrap) with its identity [layered](/guides/reproducibility#composing-instead-of-replacing-layer) onto the instance salt:
+
+```ts
+[...instanceSalt, "test", ...describeNames, testName]; // an ordinary test
+[...instanceSalt, "test", ...describeNames, testName, "2"]; // row 2 of an .each
+[...instanceSalt, "suite", ...describeNames, ""]; // beforeAll / afterAll
+```
+
+Because it layers rather than replaces, `initialize({ salt })` or [`FABRICATOR_SALT`](/guides/reproducibility#env-var-salting) still re-salts the whole suite at once.
+
+Each `wrap` also gets a fresh [construction counter](/guides/reproducibility#construction-order), so the first `new Fabricator(...)` in every test is that test's construction 0. What another test built, or whether it ran at all, never reaches it: `.only`, name filters, sharding, and `.concurrent` cannot shift a test's data.
+
+## Reaching the scope
+
+The integration contributes one key to the test context, `fabricator` — the per-test scoped instance. The same scope is also ambient for the body's duration, so both of these draw from it:
+
+```ts
+it("builds two users", ({ fabricator: scope }) => {
+  new Fabricator(User).fabricate(); // ambient
+  new scope.Fabricator(User).fabricate(); // explicit, same scope
+});
+```
+
+The two share one construction counter, so those are constructions 0 and 1 of the test, not two construction 0s. Reach for `context.fabricator` to hand the scope to a helper explicitly, or to read `scope.salt` for a log line.
+
+The ambient frame survives `await` on Node, Bun, and Deno. On a runtime without `node:async_hooks`, an `async` test body raises `SynchronousStackError` whichever of the two it uses — see [Runtime support](/guides/reproducibility#runtime-support).
+
+## Hooks
+
+`@ghostry/harness` runs `beforeEach`/`afterEach` inside the test itself, so they share the test's scope: the hook's `context.fabricator` is the body's, and data built in a `beforeEach` and in the body continue one construction sequence.
+
+`beforeAll`/`afterAll` get a suite scope instead — the `"suite"` salt above — which is stable and distinct from every test's beneath it. A `beforeAll` and an `afterAll` in the same `describe` share that scope deliberately; to give one its own, call `fabricator.wrap({ salt: layer("teardown") }, ...)` inside the hook.
+
+What running hooks inside the test costs — a hook failure reported against the test, hook time counted against its timeout — belongs to the harness; see [its README](https://github.com/ghostry-dev/harness#readme).
+
+## Potential surprises
+
+### Same path, same data
+
+Identity is the test's path, not its file. Two tests with the same `describe` names and test name draw the same data even in different files — most often a table-driven helper that registers identical names from several files. Each stays deterministic, so nothing breaks, but it is surprising if unexplained. Give them distinguishable names.
+
+The same applies to `describe.each`: put a placeholder from the row in its title (`describe.each(rows)("case $name", ...)`), or the tests inside two rows share one path.
+
+### A construction salt wants `layer(...)`
+
+A bare [construction salt](/guides/reproducibility#salting-one-construction) replaces the salt in effect — including the test's identity:
+
+```ts
+it("a", () => new Fabricator(User, { salt: "fixed" }).fabricate());
+it("b", () => new Fabricator(User, { salt: "fixed" }).fabricate()); // same user as "a"
+```
+
+Both pin the same salt, share the pinned clock, and — since ordinals restart per test — are each construction 0. That is an identical trace, and so an identical user. `{ salt: layer("fixed") }` composes onto the test's identity instead and keeps them apart.
+
+### Retries stop suppressing flakes
+
+A retried test re-runs the same path and draws the same data, so a failure caused by fabricated data fails identically on every attempt. A retry no longer papers over it; it keeps surfacing the real coupling. That is intended, but it changes what a retry buys you.
+
+## Checking your runner
+
+`@ghostry/harness/conformance` registers a suite that checks your runner behaves the way the harness assumes. Give it a test file of its own:
+
+```ts
+import { conformance } from "@ghostry/harness/conformance";
+import * as framework from "bun:test";
+
+conformance(framework);
+```
