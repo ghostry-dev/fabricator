@@ -81,8 +81,8 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
    * `context` belongs to — a field name, a slot/option index, and so on,
    * extended by exactly one segment per level of nesting (see each branch
    * below). It is what a leaf's own draw is keyed by, alongside `kind`, through
-   * `context.toTrace(path, kind)` — never re-resolved from the call stack here,
-   * since the construction's root was already resolved once, in `construct()`.
+   * `context.toTrace(path, kind)` after the construction's root was already
+   * resolved once, in `construct()`.
    */
   function make(
     schema: any,
@@ -373,24 +373,22 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
    * `toTypeBox()` relates to its own internal `convert()`.
    *
    * `options.salt` is a pin on the {@link Trace}'s salt slot, no different in
-   * kind from `clock`/`root`/`file`/`ordinal`: it substitutes a value and does
-   * nothing else. A bare salt replaces the instance's own, `layer(...)`
-   * composes onto whichever base is in effect — the same parity `fork`'s
-   * `Overlay.salt` has — and every remaining slot resolves exactly as it would
-   * have without it (`resolveScope` below).
+   * kind from `clock`/`ordinal`: it substitutes a value and does nothing else.
+   * A bare salt replaces the instance's own, `layer(...)` composes onto
+   * whichever base is in effect — the same parity `fork`'s `Overlay.salt` has —
+   * and every remaining slot resolves exactly as it would have without it
+   * (`resolveScope` below).
    *
-   * In particular it does _not_ fork. A salted build draws the next ordinal for
-   * its file from this source's ordinary counters, so it shifts, and is shifted
-   * by, its neighbours like any other construction. Naming a salt is not a way
-   * to hold one build still, nor to escape file attribution.
+   * In particular it does _not_ fork. A salted build draws the next ordinal
+   * from this source's ordinary counter, so it shifts, and is shifted by, its
+   * neighbours like any other construction. Naming a salt is not a way to hold
+   * one build still.
    *
    * Anything that needs an isolated source — its own counters, immune to
    * whatever else the instance builds — forks: `fork`/`wrap`
-   * (`Instance/Core.ts`) exist for precisely that, and are one line away.
-   * Sidestepping attribution is likewise said outright, via `initialize({
-   * attribution: { kind: "none" } })` or an `options.root` pin, which is how
-   * `combinatorial`/`coverage` reach `"unattributed"`
-   * (`Enumeration/Enumerate.ts`).
+   * (`Instance/Core.ts`) exist for precisely that, and are one line away. An
+   * `options.ordinal` pin is how `combinatorial`/`coverage` build without
+   * advancing that counter (`Enumeration/Enumerate.ts`).
    *
    * No per-build algorithm override alongside these: `algorithm` is not a
    * {@link Trace} slot, so there is nothing for it to pin — and instance-wide
@@ -475,19 +473,19 @@ function toConstructionContext(
  *
  * There is only one source to choose between, and `options` never changes it:
  * `base` is the active `wrap` frame's source if `stack.current()` finds one,
- * otherwise this instance's own. A build inside a `wrap` therefore keeps
- * ordinary file attribution and ordinary per-file ordinals, exactly as it would
- * under a separately `initialize()`d instance sharing that config — and the
- * branch is a no-op for the wrap's _own_ `scope.Fabricator` (`frame.source`
- * already _is_ that instance's `source`), which is the point, not an accident:
- * it makes the implicit and explicit routes resolve identically.
+ * otherwise this instance's own. A build inside a `wrap` therefore keeps its
+ * own construction counter, exactly as it would under a separately
+ * `initialize()`d instance sharing that config — and the branch is a no-op for
+ * the wrap's _own_ `scope.Fabricator` (`frame.source` already _is_ that
+ * instance's `source`), which makes the implicit and explicit routes resolve
+ * identically.
  *
  * Everything `options` can say is a pin, `salt` included, and pins only ever
  * substitute values into the {@link ConstructionTrace} this source resolves.
  * Nothing here forks. That is what keeps the model flat: a salted build is an
  * ordinary build of this source that happens to carry a different salt, so it
- * takes the next ordinal for its file and shifts its neighbours just as any
- * other construction does. Callers wanting an isolated source ask for one with
+ * takes the next ordinal and shifts its neighbours just as any other
+ * construction does. Callers wanting an isolated source ask for one with
  * `fork`/`wrap` (`Instance/Core.ts`).
  *
  * `salt` is the one pin `options` does not hand over verbatim, because
@@ -498,9 +496,9 @@ function toConstructionContext(
  * its base's salt entirely, so it can't tell the difference.
  *
  * Pins win over an active `wrap` frame — they are the more specific statement,
- * including a full replayed {@link Trace}. `root` is what `combinatorial`/
- * `coverage` use to ask for `"unattributed"` outright, so their lazy rebuilds
- * never resolve a caller file (`Enumeration/Enumerate.ts`).
+ * including a full replayed {@link Trace}. A pinned `ordinal` is what
+ * `combinatorial`/`coverage` use so their lazy rebuilds do not advance the
+ * instance counter (`Enumeration/Enumerate.ts`).
  */
 function resolveScope(
   source: RandomSource,
@@ -520,10 +518,8 @@ function resolveScope(
   const pins: RootPins = {
     salt,
     clock: options.clock,
-    root: options.root,
-    file: options.file,
     ordinal: options.ordinal,
   };
 
-  return { source: base, root: base.toRoot("attributed", pins) };
+  return { source: base, root: base.toRoot(pins) };
 }

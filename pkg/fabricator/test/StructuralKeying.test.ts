@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
  * The property structural (schema-path) keying exists for: a leaf's stream is
  * identified by its own position in the schema — a field name, a tuple slot
  * index, a choice option index — never by how many same-kind leaves were
- * dispatched before it in the same file.
+ * dispatched before it in the same construction.
  */
 
 test("inserting a field leaves every existing sibling's value unchanged", () => {

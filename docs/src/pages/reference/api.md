@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `RootKind`, `Omitted`, `FabricatorError`, `Stream`, `Attribution`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/internal` for the structural tools an adapter needs. See [Mental model](/start/mental-model) for why the split exists.
+The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/internal` for the structural tools an adapter needs. See [Mental model](/start/mental-model) for why the split exists.
 
 ## `initialize(config?)`
 
@@ -9,7 +9,6 @@ function initialize(config?: {
   types?: Registry;
   salt?: Salt;
   algorithm?: (seed: string) => () => number;
-  attribution?: Attribution;
   limits?: { combinatorial: number };
   clock?: Date | "derived";
   stack?: Stack;
@@ -18,17 +17,11 @@ function initialize(config?: {
 
 Mints one isolated instance. `types` defaults to the built-in `registry`; `salt` defaults to empty if omitted (unless `FABRICATOR_SALT` supplies one — which pins the salt only, not `clock`); `algorithm` defaults to a built-in `sfc32` generator. `limits.combinatorial` caps how many instances `combinatorial(...)` (below) may enumerate before throwing — defaults to `1024`, checked eagerly at `initialize()` time, not on first call. `clock` is what `T.date.past`/`T.date.future` (and any producer reading its `ProduceContext`) resolve "now" against, and the default entropy for the instance: it defaults to the wall-clock instant of this `initialize()` call. Pass a `Date` to pin "now" to a specific instant, or `clock: "derived"` to derive "now" from the instance salt (an instant drawn across the entire representable `Date` range). See [Reproducibility](/guides/reproducibility) and [Custom types](/guides/custom-types).
 
-`attribution` controls how each `new Fabricator(...)` construction is attributed to the file it was written in — resolved once per construction, not once per field:
-
-- `{ kind: "rooted", root }` expresses every file relative to `root` (an absolute path or a `file://` URL), so the same seed reproduces the same data on a checkout at a different absolute path.
-- `{ kind: "call site" }`, the default, is `"rooted"` at the directory of whichever file called `initialize()`.
-- `{ kind: "none" }` attributes nothing: every construction, anywhere in the instance, draws its root from one shared counter.
-
-`new Fabricator(schema, { salt })` overrides the salt for one construction. Like every other option here it pins a single `.trace` slot and changes nothing else: the build still attributes to its own file, still takes the next ordinal for it, and still inherits the instance's `clock` (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)). `new Fabricator(schema, { salt: layer(identity) })` pins the same slot but _composes_ `identity` onto the instance's own salt instead of replacing it, so the construction still varies when the instance is re-salted — see [`layer(salt)`](#layersalt) below.
+`new Fabricator(schema, { salt })` overrides the salt for one construction. Like every other option here it pins a single `.trace` slot and changes nothing else: the build still takes the next ordinal from the instance's construction counter and still inherits the instance's `clock` (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)). `new Fabricator(schema, { salt: layer(identity) })` pins the same slot but _composes_ `identity` onto the instance's own salt instead of replacing it, so the construction still varies when the instance is re-salted — see [`layer(salt)`](#layersalt) below.
 
 `stack` overrides the ambient carrier backing [`wrap`](#instancewrapoverlay-block), and is almost never worth setting. Left alone, the right one is chosen when the package is imported: every runtime with `node:async_hooks` gets an `AsyncLocalStorage` carrier whose frames survive `await`, and anything else gets a synchronous one. Supply your own — anything satisfying `Stack` — to bring async-capable `wrap` to a runtime that would otherwise fall back, or to force the synchronous carrier deliberately.
 
-`salt` is one of these; `new Fabricator(schema, options)` accepts every slot of a captured `Trace` — `salt`, `clock`, `root`, `file`, `path`, `kind`, `ordinal` — so `new Fabricator(schema, built.trace)` replays that node. `root` given means this is a replay (`file` and `ordinal` taken verbatim, including `undefined`). `file` given without `root` pins that file and draws the next ordinal for it. `kind` must match the schema or the constructor throws. A nested node's `path` is the base `make` extends for descendants, so replaying a nested `object` reproduces its subtree. See [Reproducibility](/guides/reproducibility) for the full trade-offs, including the cases that still need the parent (`.refine()` compute fields, `recursive.self`, `.override()` `[Fixed]` fields).
+`salt` is one of these; `new Fabricator(schema, options)` accepts every slot of a captured `Trace` — `salt`, `clock`, `path`, `kind`, `ordinal` — so `new Fabricator(schema, built.trace)` replays that node. A given `ordinal` — including `null`, which `combinatorial`/`coverage` builds record in place of one — is taken verbatim and does not advance the instance's construction counter, which is what makes the replay exact. `kind` must match the schema or the constructor throws. A nested node's `path` is the base `make` extends for descendants, so replaying a nested `object` reproduces its subtree. See [Reproducibility](/guides/reproducibility) for the full trade-offs, including the cases that still need the parent (`.refine()` compute fields, `recursive.self`, `.override()` `[Fixed]` fields).
 
 ## `Instance`
 
@@ -51,7 +44,7 @@ Both `combinatorial` and `coverage` return a lazy, re-iterable `Iterable` — sa
 function fork(overlay?: Overlay): Instance;
 ```
 
-Derives a new `Instance` laid over the one `fork` was called on: whatever `overlay` names overrides, whatever it omits inherits — `salt`, `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value in every respect, including its own `fork`/`wrap`. A captured wall-clock or explicit `Date` is inherited as-is; an inherited `"derived"` clock re-derives from whichever salt the fork ends up with — see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+Derives a new `Instance` laid over the one `fork` was called on: whatever `overlay` names overrides, whatever it omits inherits — `salt`, `algorithm`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value in every respect, including its own `fork`/`wrap`. A captured wall-clock or explicit `Date` is inherited as-is; an inherited `"derived"` clock re-derives from whichever salt the fork ends up with — see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
 
 ```ts
 const base = initialize({ salt: "base" });
@@ -62,8 +55,6 @@ tenant.salt; // ["tenant-7"] — replaced, the ordinary meaning of `salt`
 const layered = base.fork({ salt: layer("tenant-7") });
 layered.salt; // ["base", "tenant-7"] — composed instead
 ```
-
-`attribution` resolves once, at `fork()`'s own call, not deferred to whenever the derived instance first constructs — so a fork inherits its base's already-resolved root even when called from a different file, and `fork({ attribution: { kind: "call site" } })` re-roots at _that_ call specifically. See [Reproducibility](/guides/reproducibility) for the full mechanism, and [`layer(salt)`](#layersalt) below for what composing a salt means.
 
 ## `Instance.wrap(overlay, block)`
 
@@ -106,7 +97,6 @@ See [Making a fork ambient: wrap](/guides/reproducibility#making-a-fork-ambient-
 readonly context: {
   salt: readonly string[];
   algorithm: (seed: string) => () => number;
-  attribution: Attribution;
   clock: number;
 };
 ```
@@ -131,13 +121,9 @@ The default set of type builders, exported so it can be extended via `registry.e
 readonly trace: Trace;
 ```
 
-Every built Fabricator records how its stream is derived: the instance salt, the resolved clock this construction resolves "now" against (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)), `root` (how `file` and `ordinal` were resolved — `"attributed"`, `"unattributed"`, or `"counted"`), the file its construction was attributed to, its structural path within that construction, its kind, and which construction (among those sharing that file) it belongs to. `file` is relative to the instance's `attribution` root (absolute only if the construction falls outside it). Recording is unconditional — a bare `object` or `always` still has a `trace`, so a nested node can be rebuilt with `new Fabricator(schema, node.trace)`. Minting a stream from that trace is still paid only by nodes that draw. See [Reproducibility](/guides/reproducibility).
+Every built Fabricator records how its stream is derived: the instance salt, the resolved clock this construction resolves "now" against (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)), its structural path within that construction, its kind, and which construction on the source it belongs to. Recording is unconditional — a bare `object` or `always` still has a `trace`, so a nested node can be rebuilt with `new Fabricator(schema, node.trace)`. Minting a stream from that trace is still paid only by nodes that draw. See [Reproducibility](/guides/reproducibility).
 
 Three values are not a function of the node's own stream, so replaying the node standalone does not reproduce them: a `.refine()` compute field (throws without the parent object), a `recursive.self` node (throws without the enclosing `T.recursive`), and an `.override()` `[Fixed]` field (replays the drawn value the parent discarded). Replay the parent.
-
-## `RootKind` (type only)
-
-`"attributed" | "counted" | "unattributed"` — how `file` and `ordinal` on a `Trace` were resolved. Recorded so a captured trace is self-describing; `"counted"` is replayed for a node taken from inside a `T.recursive` expansion, not a variant you choose when building.
 
 ## `Omitted`
 

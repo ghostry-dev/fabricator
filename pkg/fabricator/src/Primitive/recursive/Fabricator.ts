@@ -37,12 +37,12 @@ export type Fabricator<
  * calls `fabricateAt` three times on one shared element Fabricator; the schema
  * does not tell them apart). Each expansion gets its own _root_: `forkSource`
  * mints an isolated `RandomSource` salted from this node's draw, and each
- * `fabricateAt` opens a `"counted"` scope on it (`Random/Types.ts`'s `RootKind`
- * — recorded on each expansion's `trace`, not chosen at `ConstructorOptions`).
- * The private source's construction counter orders expansions; nothing to
- * increment here. Isolation also keeps this node's data-dependent draws from
- * perturbing (or being perturbed by) an unrelated Fabricator from the same
- * `initialize()` instance.
+ * `fabricateAt` resolves an ordinary construction root on it
+ * (`RandomSource.toRoot`), recorded on each expansion's `trace`. The private
+ * source's construction counter orders expansions; nothing to increment here.
+ * Isolation also keeps this node's data-dependent draws from perturbing (or
+ * being perturbed by) an unrelated Fabricator from the same `initialize()`
+ * instance.
  *
  * Each `self` gets its own independently-dispatched expansion — calling
  * `context.self` twice (two array slots) is two `fabricateAt` calls, each with
@@ -70,7 +70,7 @@ export function Fabricator<$Body>(
     const atMax = depth >= meta.depth.max;
     const target = atMax ? meta.terminal : meta.body;
 
-    const construction = privateSource.toRoot("counted");
+    const construction = privateSource.toRoot();
 
     const context: ConstructionContext = {
       toTrace: (path, kind) => ({ ...construction, path, kind }),

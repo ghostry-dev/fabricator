@@ -6,7 +6,6 @@ import {
   deriveClock,
   isLayered,
   normalizeSalt,
-  resolveAttribution,
   toRandomSource,
 } from "../Random";
 import type { RandomSource, Salt } from "../Random/Types";
@@ -61,9 +60,8 @@ function resolveClock(config: Config<PlainObject>): number {
  * The single place a `Config` inherits from a base — `initialize` lays its own
  * config over an empty `{}` base (nothing to inherit, so every field falls
  * through to a hardcoded default: an empty salt, wall-clock `clock`, the
- * built-in algorithm, `resolveAttribution(undefined)`'s `"call site"`
- * resolution, the default registry, the default combinatorial limit), and
- * `fork` lays its overlay over the instance it was called on (a full,
+ * built-in algorithm, the default registry, the default combinatorial limit),
+ * and `fork` lays its overlay over the instance it was called on (a full,
  * already-resolved `Config`, so every field has a real value to fall back to).
  * `base` is typed `Partial<Config<PlainObject>>` rather than `Config`
  * specifically so both calls go through the same function.
@@ -74,22 +72,6 @@ function resolveClock(config: Config<PlainObject>): number {
  * `salt` inherits the base's unchanged (or, at the root, an empty mixer via
  * `normalizeSalt(undefined)`, unless an env var supplies one). Wall-clock
  * `clock` is the default entropy; `salt` is an optional mixer.
- *
- * `attribution` resolves through `resolveAttribution` at most once per call,
- * and only when it's actually needed:
- *
- * - an explicit `over.attribution` always wins (resolved fresh, so `fork({
- *   attribution: { kind: "call site" } })` roots at _that_ call);
- * - otherwise an already-resolved `base.attribution` is reused as-is — never
- *   re-resolved, which keeps a fork from silently re-rooting `"call site"` at
- *   wherever `fork()` itself happens to be called (`resolveCallerFile()` skips
- *   this library's own frames, so calling it from here still lands on the
- *   user's call site either way);
- * - only when neither is available (the root case, `base.attribution` absent)
- *   does this fall back to resolving the `"call site"` default. That also keeps
- *   `initialize({ attribution: { kind: "none" } })` — or any other explicit
- *   override — from paying for a stack walk whose result would be immediately
- *   discarded.
  *
  * `algorithm`/`types`: wholesale replacement when given, matching how
  * `initialize({ types })` already behaves — no deep merge;
@@ -127,9 +109,6 @@ export function overlay<$Registry extends PlainObject>(
     salt,
     clock,
     algorithm: over.algorithm ?? base.algorithm ?? defaultAlgorithm,
-    attribution: over.attribution
-      ? resolveAttribution(over.attribution)
-      : (base.attribution ?? resolveAttribution(undefined)),
     types: (over.types ?? base.types ?? registry) as $Registry,
     limits: {
       combinatorial: resolveCombinatorialLimit(
@@ -161,7 +140,6 @@ export function instantiate<$Registry extends PlainObject>(
   const source = toRandomSource({
     salt: config.salt,
     algorithm: config.algorithm,
-    attribution: config.attribution,
     clock: resolveClock(config),
   });
 
@@ -229,9 +207,6 @@ export function instantiate<$Registry extends PlainObject>(
     },
     get algorithm() {
       return (stack.current()?.config ?? config).algorithm;
-    },
-    get attribution() {
-      return (stack.current()?.config ?? config).attribution;
     },
     get clock() {
       return resolveClock(stack.current()?.config ?? config);

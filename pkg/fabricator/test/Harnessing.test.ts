@@ -1,9 +1,4 @@
-import {
-  FabricatorError,
-  initialize,
-  layer,
-  type Attribution,
-} from "@ghostry/fabricator";
+import { FabricatorError, initialize, layer } from "@ghostry/fabricator";
 import {
   integration,
   type FabricatorTestContext,
@@ -296,28 +291,6 @@ test('under clock: "derived", two identities resolve different clocks; under a p
     clock: "derived",
   });
   expect(clockOf(derived, idA)).not.toBe(clockOf(derived, idB));
-});
-
-/**
- * The integration reads nothing off `instance.context` — no attribution root,
- * no stack capture. Every attribution policy therefore derives the identical
- * salt, which is the observable form of "the file plays no part."
- */
-test("the salt is independent of the instance attribution policy", () => {
-  const saltUnder = (attribution: Attribution) =>
-    run(
-      integration(
-        initialize({ salt: "testing-attribution", clock: CLOCK, attribution }),
-      ),
-      idA,
-      ({ fabricator }) => fabricator.context.salt,
-    );
-
-  const expected = ["testing-attribution", "test", "suite", "a"];
-
-  expect(saltUnder({ kind: "none" })).toEqual(expected);
-  expect(saltUnder({ kind: "call site" })).toEqual(expected);
-  expect(saltUnder({ kind: "rooted", root: "/elsewhere/" })).toEqual(expected);
 });
 
 /**

@@ -2,7 +2,7 @@ import type { Limits } from "./Enumeration/Types";
 import { toStack } from "#stack";
 import { instantiate, overlay } from "./Instance/Core";
 import type { Instance, Stack } from "./Instance/Types";
-import type { Algorithm, Attribution, Salt } from "./Random/Types";
+import type { Algorithm, Salt } from "./Random/Types";
 import { registry } from "./Schema/Registry";
 import type { PlainObject } from "./Utility/Types";
 
@@ -34,24 +34,6 @@ export function initialize<
      * `salt` itself. Defaults to the built-in `sfc32` generator.
      */
     algorithm?: Algorithm;
-
-    /**
-     * How this instance attributes a construction's randomness to the file it
-     * was written in:
-     *
-     * - `{ kind: "rooted", root }` expresses every file relative to `root` (an
-     *   absolute path or a `file://` URL), so the same salt reproduces the same
-     *   data on a checkout at a different absolute path.
-     * - `{ kind: "call site" }`, the default, is `"rooted"` at the directory of
-     *   whichever file called `initialize()`.
-     * - `{ kind: "none" }` attributes nothing: every construction of a given kind
-     *   anywhere in the instance shares one stream, keyed by kind alone.
-     *
-     * See
-     * [Reproducibility](https://docs.ghostry.dev/fabricator/guides/reproducibility)
-     * for the trade-offs between the three.
-     */
-    attribution?: Attribution;
 
     /**
      * Instance-wide numeric ceilings. `combinatorial` bounds how many instances
@@ -107,7 +89,7 @@ export { Omitted } from "./Types";
 export { layer } from "./Random";
 /**
  * `layer(...)`'s return type, so a caller building one programmatically can
- * name it — the same rationale as the existing `Salt`/`Attribution` exports.
+ * name it — the same rationale as the existing `Salt` export.
  */
 export type { Layered } from "./Random/Types";
 /**
@@ -162,12 +144,6 @@ export type { Adapting } from "./Adapter/Types";
  */
 export type { Salt } from "./Random/Types";
 /**
- * The shape `initialize({ attribution })` accepts, so a caller building one
- * programmatically — a rooted policy derived from an env var, say — can name
- * the type.
- */
-export type { Attribution } from "./Random/Types";
-/**
  * Reads the value type a built Fabricator produces straight off its `fabricate`
  * signature — `Fabrication<typeof Product>` instead of `ReturnType<typeof
  * Product.fabricate>`.
@@ -185,18 +161,11 @@ export type { ValueOf } from "./Schema/Types";
  */
 export type { Trace } from "./Random/Types";
 /**
- * How `file` and `ordinal` on a {@link Trace} were resolved — recorded so a
- * captured trace is self-describing, including `"counted"` (replayed for a node
- * taken from inside a `T.recursive` expansion; not a variant you choose when
- * building).
- */
-export type { RootKind } from "./Random/Types";
-/**
  * `fork`/`wrap`'s own config shapes, so a caller building an overlay
  * programmatically (rather than as an inline literal) can name them — the same
- * rationale as the existing `Salt`/`Attribution` exports. `Config` is what
- * `initialize`'s own parameter is a `Partial` of; `Overlay` is what
- * `fork`/`wrap` accept; `Context` is `instance.context`'s own type, so a caller
- * writing a helper that reads it can name the parameter.
+ * rationale as the existing `Salt` export. `Config` is what `initialize`'s own
+ * parameter is a `Partial` of; `Overlay` is what `fork`/`wrap` accept;
+ * `Context` is `instance.context`'s own type, so a caller writing a helper that
+ * reads it can name the parameter.
  */
 export type { Config, Context, Overlay, Stack } from "./Instance/Types";

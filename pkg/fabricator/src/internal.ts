@@ -64,10 +64,9 @@ export { plan, resolve } from "./Enumeration/Plan";
 export type { Axis, Enumerable, Pin, Resolvable } from "./Enumeration/Types";
 
 /**
- * The randomness layer underneath `initialize({ salt, algorithm, attribution
- * })` and a Fabricator's `.trace` — needed by tests exercising stream
- * attribution and construction directly, beneath the level `initialize()`
- * itself exposes.
+ * The randomness layer underneath `initialize({ clock, salt, algorithm })` and
+ * a Fabricator's `.trace` — needed by tests exercising stream construction
+ * directly, beneath the level `initialize()` itself exposes.
  */
 export {
   defaultAlgorithm,
@@ -81,31 +80,10 @@ export type {
   Algorithm,
   ConstructionTrace,
   ConstructorOptions,
-  ResolvedAttribution,
-  RootKind,
   RootPins,
   Salt,
   Trace,
 } from "./Random/Types";
-
-/**
- * `Random/CallSite.ts`'s pure string helpers. Exported for this package's own
- * tests: the percent-encoded, `file://`-prefixed, and backslashed spellings
- * they exist to fold together cannot be produced by running the suite from an
- * ordinary POSIX checkout, so they have to be driven with synthetic frame
- * strings instead of real stack frames.
- */
-export { directoryOf, normalizeLocation, relativize } from "./Random/CallSite";
-
-/**
- * Resolves the file that triggered the current call. Exported here for a
- * library that wraps fabricator (e.g. `@ghostry/extern`'s testing scope) and
- * wants a construction attributed to _its own_ caller rather than to itself,
- * which is what the `skip` option is for. See `Random/CallSite.ts`'s doc
- * comment for the full contract, including why `skip` is a list of roots that
- * composes onto this library's own root rather than replacing it.
- */
-export { resolveCallerFile } from "./Random/CallSite";
 
 /**
  * The synchronous ambient carrier. `#stack` (`package.json`) selects it only

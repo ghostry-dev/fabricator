@@ -107,9 +107,7 @@ For an unsalted instance that one number is the whole reproducibility unit: log 
 
 `.trace` goes finer than the run: it's the exact tuple one field's stream was hashed from, and passing it back to `new Fabricator(schema, trace)` replays that field alone — useful when the thing you want to re-examine is one leaf inside a large fabricated object. See [`.trace`](/guides/reproducibility#trace).
 
-Replay also survives the way suites are actually run. A construction is rooted at the file that made it, and each file counts its own constructions, so which _other_ files ran — a filtered run, a different order, one shard of a parallel build — changes nothing about the data any given file produces. Running the failing file on its own reproduces what CI saw.
-
-Position still counts _within_ a file: a construction added or skipped ahead of another shifts it, so narrowing past a whole file, down to a single test inside it, can move the data again. An instance whose data shouldn't depend on position at all can say so with `initialize({ attribution: { kind: "none" } })`, trading file-keying for a single shared counter. See [Where a stream is attributed](/guides/reproducibility#where-a-stream-is-attributed).
+Construction order still counts: an instance has one construction counter, so a construction added or skipped ahead of another shifts it. `fork` and `wrap` create fresh counters, letting a test integration partition each test from its neighbors while preserving the same replay model. See [Construction order](/guides/reproducibility#construction-order).
 
 ### A test depends on what it pins, and nothing else
 

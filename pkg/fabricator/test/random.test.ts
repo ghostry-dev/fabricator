@@ -1,4 +1,4 @@
-import { initialize, registry } from "@ghostry/fabricator";
+import { initialize, layer, registry } from "@ghostry/fabricator";
 import {
   defaultAlgorithm,
   encode,
@@ -42,6 +42,18 @@ test("different salts diverge", () => {
   const b = new instanceB.Fabricator(schema()).fabricate();
 
   expect(a).not.toEqual(b);
+});
+
+test("two ordinary constructions diverge by default", () => {
+  const { T, Fabricator } = initialize({
+    salt: "ordinary-diverge",
+    clock: "derived",
+  });
+
+  const a = new Fabricator(T.number).fabricate();
+  const b = new Fabricator(T.number).fabricate();
+
+  expect(a).not.toBe(b);
 });
 
 test("a salted fabricator is reproducible across repeated draws", () => {
@@ -150,30 +162,42 @@ test("new Fabricator(schema, { salt }) gives every same-kind field its own draw"
   expect(new Set([built.a, built.b, built.c]).size).toBe(3);
 });
 
-/**
- * `salt` pins one trace slot and leaves rooting alone, so a salted build
- * attributes to its own file exactly like an unsalted one, and two call sites
- * in different files diverge whether or not a salt is named. Anything genuinely
- * file-independent has to say so — `initialize({ attribution: { kind: "none" }
- * })` instance-wide, or an explicit `root: "unattributed"` pin, which is what
- * `combinatorial`/`coverage` use.
- */
-test("new Fabricator(schema, { salt }) still attributes to its own file", () => {
-  const { Fabricator } = initialize({ salt: "instance" });
+test("module boundaries share one counter, while fork and wrap isolate theirs", () => {
+  const nextOrdinalAfter = (
+    interleave: (instance: ReturnType<typeof initialize>) => void,
+  ) => {
+    const instance = initialize({ salt: "module-counter", clock: "derived" });
+    new instance.Fabricator(instance.T.number);
+    interleave(instance);
+    return new instance.Fabricator(instance.T.number).trace.ordinal;
+  };
 
-  const here = fabricateSharedSchemaHere(Fabricator, { salt: "cross-file" });
-  const there = new Fabricator(sharedSchema(), {
-    salt: "cross-file",
-  }).fabricate();
-
-  expect(here).not.toEqual(there);
+  expect(nextOrdinalAfter(() => {})).toBe(1);
+  expect(
+    nextOrdinalAfter((instance) => {
+      fabricateSharedSchemaHere(instance.Fabricator);
+    }),
+  ).toBe(2);
+  expect(
+    nextOrdinalAfter((instance) => {
+      const forked = instance.fork();
+      fabricateSharedSchemaHere(forked.Fabricator);
+    }),
+  ).toBe(1);
+  expect(
+    nextOrdinalAfter((instance) => {
+      instance.wrap({}, () => {
+        fabricateSharedSchemaHere(instance.Fabricator);
+      });
+    }),
+  ).toBe(1);
 });
 
 /**
- * The rule `salt` follows: it pins the salt slot, exactly as `file` pins the
- * file slot, and touches nothing else. Every other slot resolves as it would
- * have without it — same root, same file, and an ordinal taken in sequence from
- * the same counter rather than restarting at zero.
+ * The rule `salt` follows: it pins the salt slot and touches nothing else.
+ * Every other slot resolves as it would have without it — the same clock, and
+ * an ordinal taken in sequence from the same counter rather than restarting at
+ * zero.
  */
 test("new Fabricator(schema, { salt }) pins the salt slot and nothing else", () => {
   const { T, Fabricator } = initialize({ salt: "instance" });
@@ -184,9 +208,9 @@ test("new Fabricator(schema, { salt }) pins the salt slot and nothing else", () 
   expect(unsalted.salt).toEqual(["instance"]);
   expect(salted.salt).toEqual(["x"]);
 
-  expect(salted.root).toBe(unsalted.root);
-  expect(salted.file).toBe(unsalted.file);
-  expect(salted.ordinal).toBe(unsalted.ordinal! + 1);
+  expect(salted.clock).toBe(unsalted.clock);
+  expect(unsalted.ordinal).toBe(0);
+  expect(salted.ordinal).toBe(1);
 });
 
 /**
@@ -197,8 +221,8 @@ test("new Fabricator(schema, { salt }) pins the salt slot and nothing else", () 
  * The `Date` is load-bearing and cannot be swapped for a shared `clock:
  * "derived"`: that derives from each instance's own salt, and these two differ
  * by construction, so the builds would diverge for a reason unrelated to what
- * is being checked. Both builds also sit in this one file with nothing between
- * them, so they take matching ordinals from the same counter.
+ * is being checked. Both builds are also the first construction on their
+ * independent sources, so their ordinals match.
  */
 test("new Fabricator(schema, { salt }) is independent of the instance's own salt, given the same clock", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
@@ -212,7 +236,7 @@ test("new Fabricator(schema, { salt }) is independent of the instance's own salt
 });
 
 /**
- * `salt` pins the salt slot and nothing else, so it draws from the file's
+ * `salt` pins the salt slot and nothing else, so it draws from the source's
  * ordinary construction counter like every other build. Two same-salt builds
  * therefore take successive ordinals and diverge, and builds in between shift
  * whatever follows them — no different from unsalted work.
@@ -249,6 +273,47 @@ test("a fork owns its counters, so its first build is stable against the instanc
   expect(before).toEqual(after);
 });
 
+test("new Fabricator(schema, { salt: layer(...) }) composes onto the instance's salt", () => {
+  const { T, Fabricator, salt } = initialize({ salt: "composing-base" });
+
+  const layered = new Fabricator(T.number, { salt: layer("x") });
+  const replaced = new Fabricator(T.number, { salt: "x" });
+
+  expect(layered.trace.salt).toEqual([...salt, "x"]);
+  expect(replaced.trace.salt).toEqual(["x"]);
+});
+
+test("new Fabricator(schema, { salt: layer(...) }) varies when the instance is re-salted", () => {
+  const clock = new Date("2020-01-01T00:00:00.000Z");
+  const a = initialize({ salt: "instance-a", clock });
+  const b = initialize({ salt: "instance-b", clock });
+
+  const one = new a.Fabricator(a.T.number, { salt: layer("x") }).fabricate();
+  const two = new b.Fabricator(b.T.number, { salt: layer("x") }).fabricate();
+
+  expect(one).not.toBe(two);
+});
+
+test("new Fabricator(schema, { salt: layer(...) }) reproduces given the same instance salt and layer", () => {
+  const a = initialize({ salt: "shared-instance-salt", clock: "derived" });
+  const b = initialize({ salt: "shared-instance-salt", clock: "derived" });
+
+  const one = new a.Fabricator(a.T.number, { salt: layer("x") }).fabricate();
+  const two = new b.Fabricator(b.T.number, { salt: layer("x") }).fabricate();
+  const bare = new a.Fabricator(a.T.number, { salt: "x" }).fabricate();
+
+  expect(one).toBe(two);
+  expect(one).not.toBe(bare);
+});
+
+test("new Fabricator(schema, { salt: layer(...) }) takes the next ordinal like any construction", () => {
+  const { T, Fabricator } = initialize({ salt: "layer-trace" });
+  new Fabricator(T.number);
+  const built = new Fabricator(T.number, { salt: layer("x") });
+
+  expect(built.trace.ordinal).toBe(1);
+});
+
 test("bigint generation is reproducible under a salt", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");
   const construct = (salt: string) => {
@@ -273,14 +338,11 @@ test("the built-in PRNG yields values in [0, 1)", () => {
   }
 });
 
-test("construct() attributes randomness to wherever it's called, not to the Schema's declaration file", () => {
+test("a Schema's declaration module does not affect construction randomness", () => {
   /**
    * `sharedSchema()` constructs its Schema in fixtures/sharedSchema.ts, but a
-   * Schema carries no construction-site information of its own — only
-   * `construct()` binds randomness, and only at the moment it runs. Building it
-   * from _this_ file, twice, from two fresh instances sharing a salt,
-   * reproduces exactly — the schema's declaration site is irrelevant, only
-   * construct()'s own call site matters.
+   * Schema carries no construction-order information of its own. Building it
+   * twice from fresh instances sharing a salt reproduces exactly.
    */
   const instanceA = initialize({ salt: "scoped", clock: "derived" });
   const sharedA = new instanceA.Fabricator(sharedSchema()).fabricate();
@@ -365,12 +427,12 @@ test("fork() produces an isolated source that replays from its own salt", () => 
   const b = parent.fork("fork-child");
 
   const streamA = toStreamFromTrace(a.algorithm, {
-    ...a.toRoot("unattributed"),
+    ...a.toRoot(),
     path: [],
     kind: "number",
   });
   const streamB = toStreamFromTrace(b.algorithm, {
-    ...b.toRoot("unattributed"),
+    ...b.toRoot(),
     path: [],
     kind: "number",
   });
@@ -382,40 +444,32 @@ test("fork() produces an isolated source that replays from its own salt", () => 
 });
 
 /**
- * A forked source's own per-file construction-ordinal counters must be entirely
- * private: heavy use of a child fork (many constructions, each bumping the
- * child's own counters) must never advance — or be advanced by — the parent's
- * counters, in either direction.
+ * A forked source's own construction counter must be entirely private: heavy
+ * use of a child fork (many constructions, each bumping the child's own
+ * counters) must never advance — or be advanced by — the parent's counters, in
+ * either direction.
  */
 test("fork() never perturbs, or is perturbed by, its parent's own streams", () => {
-  const parent = toRandomSource({
-    salt: "fork-isolation",
-    attribution: { kind: "none" },
-    clock: 0,
-  });
+  const parent = toRandomSource({ salt: "fork-isolation", clock: 0 });
 
   const child = parent.fork("unrelated-child-salt");
   for (let i = 0; i < 50; i++) {
     toStreamFromTrace(child.algorithm, {
-      ...child.toRoot("attributed"),
+      ...child.toRoot(),
       path: [],
       kind: "number",
     });
   }
 
   const afterForkUsage = toStreamFromTrace(parent.algorithm, {
-    ...parent.toRoot("attributed"),
+    ...parent.toRoot(),
     path: [],
     kind: "number",
   }).seed;
 
-  const control = toRandomSource({
-    salt: "fork-isolation",
-    attribution: { kind: "none" },
-    clock: 0,
-  });
+  const control = toRandomSource({ salt: "fork-isolation", clock: 0 });
   const untouched = toStreamFromTrace(control.algorithm, {
-    ...control.toRoot("attributed"),
+    ...control.toRoot(),
     path: [],
     kind: "number",
   }).seed;
@@ -431,7 +485,7 @@ test("fork() never perturbs, or is perturbed by, its parent's own streams", () =
  */
 test("a leaf's stream seed is exactly the encoding of its own trace", () => {
   const source = toRandomSource({ salt: "trace-is-the-key", clock: 12345 });
-  const root = source.toRoot("attributed");
+  const root = source.toRoot();
   const trace = { ...root, path: ["field"], kind: "number" };
   const stream = toStreamFromTrace(source.algorithm, trace);
 
@@ -476,10 +530,10 @@ test(".trace.clock is the resolved clock, and two instances differing only in cl
 /**
  * `deriveClock`'s own throwaway encoding (`Random/index.ts`) is a two-element
  * JSON array (`[salt, "clock"]`), structurally distinct from a leaf's own
- * seven-element `encode(trace)` — the two can never collide onto the same
- * stream regardless of content, which is what lets the `"derived"` clock be
- * derived below `RandomSource` without perturbing, or being perturbed by, any
- * leaf's own draws.
+ * six-element `encode(trace)` — the two can never collide onto the same stream
+ * regardless of content, which is what lets the `"derived"` clock be derived
+ * below `RandomSource` without perturbing, or being perturbed by, any leaf's
+ * own draws.
  */
 test('the "derived" clock is derived from a stream distinct from any leaf\'s own', () => {
   const { T, Fabricator, context } = initialize({

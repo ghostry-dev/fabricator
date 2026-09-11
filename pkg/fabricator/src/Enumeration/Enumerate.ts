@@ -18,24 +18,23 @@ import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
  * is the one precisely-typed layer, mirroring `Constructor.ts`'s `make`/
  * `construct` split.
  *
- * Two derived seeds — one per API — each an independent, deterministic fork off
- * the _effective_ source's salt (`effectiveSource()` below — the active `wrap`
- * frame's, or this instance's `source`; read fresh on every
- * `combinatorial(...)`/`coverage(...)` call, not once when `enumerables()` was
- * built, so the same `combinatorial` reference behaves differently inside an
- * active `wrap`). `new Fabricator(schema, { salt })` (see `Constructor.ts`'s
- * `construct()`) forks a fully isolated `RandomSource` from that salt, so
- * reusing one salt across many builds — different schemas, or the same schema
- * rebuilt per iteration — never lets one build's draws leak into another's.
+ * Two derived salts — one per API — each composed from the _effective_ source's
+ * salt (`effectiveSource()` below — the active `wrap` frame's, or this
+ * instance's `source`; read fresh on every `combinatorial(...)`/`coverage(...)`
+ * call, not once when `enumerables()` was built, so the same `combinatorial`
+ * reference behaves differently inside an active `wrap`). Each build pins that
+ * salt via `new Fabricator(schema, { salt })` (see `Constructor.ts`'s
+ * `construct()`) — a pin, not a fork — so every rebuild of one schema draws
+ * from the same universe, distinct from anything built under the instance's own
+ * salt.
  *
- * `root: "unattributed"` is passed alongside it, and is not incidental: a salt
- * says nothing about rooting, so without this pin each build would resolve a
- * caller file. These builds happen inside `iterable`'s `rebuild()`, which runs
- * lazily on `[Symbol.iterator]()` — so the "caller" would be whatever code
- * drained the `Iterable`, not the `combinatorial(...)`/`coverage(...)` call
- * site. Pinning the root keeps `resolveCallerFile()` out of that path entirely,
- * leaves the instance's construction counters untouched, and lets the same salt
- * reproduce regardless of which file the enumeration was requested from.
+ * `ordinal: null` is pinned alongside it, and is not incidental: a salt says
+ * nothing about ordering, so without this pin each lazy rebuild would take the
+ * next ordinal from the effective source's counter — advancing it for every
+ * later construction, and giving each pass over the `Iterable` a different
+ * ordinal. A pinned ordinal is taken verbatim, so the counter is untouched,
+ * every iteration rebuilds from the same explicit identity, and the `null` can
+ * never coincide with a counted construction.
  */
 export function enumerables(
   source: RandomSource,
@@ -113,7 +112,7 @@ export function enumerables(
     const probe: Axis = plan(
       new Fabricator(schema, {
         salt: combinatorialSalt,
-        root: "unattributed",
+        ordinal: null,
       }) as Resolvable,
       { strategy: "product" },
     );
@@ -128,7 +127,7 @@ export function enumerables(
     return iterable(() => {
       const built = new Fabricator(schema, {
         salt: combinatorialSalt,
-        root: "unattributed",
+        ordinal: null,
       }) as Resolvable;
 
       return { built, axis: plan(built, { strategy: "product" }) };
@@ -158,7 +157,7 @@ export function enumerables(
     return iterable(() => {
       const built = new Fabricator(schema, {
         salt: coverageSalt,
-        root: "unattributed",
+        ordinal: null,
       }) as Resolvable;
 
       return {
@@ -185,7 +184,7 @@ export function enumerables(
  */
 function orderer(source: RandomSource, salt: Salt): Orderer {
   const forked = source.fork(salt);
-  const root = forked.toRoot("unattributed");
+  const root = forked.toRoot();
   const stream = toStreamFromTrace(forked.algorithm, {
     ...root,
     path: [],

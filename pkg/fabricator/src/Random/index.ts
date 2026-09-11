@@ -1,24 +1,13 @@
-import { FabricatorError } from "../Error";
 import { Layer, MAX_TIME } from "../Types";
-import { inline } from "../Utility/Core";
 import { cyrb128 } from "../Utility/Digest";
-import {
-  directoryOf,
-  normalizeLocation,
-  relativize,
-  resolveCallerFile,
-} from "./CallSite";
 import { sfc32 } from "./Generator/sfc32";
 import type {
   Algorithm,
-  Attribution,
   ConstructionTrace,
   Layered,
   NumberGenerator,
   Options,
   RandomSource,
-  ResolvedAttribution,
-  RootKind,
   RootPins,
   Salt,
   Stream,
@@ -57,7 +46,7 @@ export function randomSalt(): string {
  * derivation, a forked source's own stream derivation requires a clock, so
  * deriving the clock from a fork would be circular. Kept below that layer,
  * which also keeps this collision-free with every leaf's `encode(trace)` — that
- * encoding is always seven elements, this is always two, and the two can never
+ * encoding is always five elements, this is always two, and the two can never
  * produce the same JSON array. `Math.trunc`ed because a `Date`'s precision is
  * whole milliseconds.
  */
@@ -92,21 +81,15 @@ function envSalt(): string | undefined {
  * Collapse a {@link Trace} into one string to hash — and, since
  * `toStreamFromTrace` hashes exactly this output, the _definition_ of that
  * leaf's stream seed. Concatenating fields with a delimiter would collide when
- * a path/kind/salt part contains that delimiter (`file="a b", kind="c"` vs
- * `file="a", kind="b c"`) — silently: two leaves that should draw independently
- * would share one stream. `JSON.stringify` as an array makes every field's and
- * slot's boundaries unambiguous regardless of content or nesting depth.
- * `undefined` (`file`, `ordinal`) is the right "this slot doesn't apply" rather
- * than a sentinel string: `JSON.stringify` writes it as `null` in an array
- * position, one unambiguous value, with no chance of colliding with a real file
- * path or index.
+ * a path/kind/salt part contains that delimiter — silently: two leaves that
+ * should draw independently would share one stream. `JSON.stringify` as an
+ * array makes every field's and slot's boundaries unambiguous regardless of
+ * content or nesting depth.
  */
 export function encode(trace: Trace): string {
   return JSON.stringify([
     trace.salt,
     trace.clock,
-    trace.root,
-    trace.file,
     trace.path,
     trace.kind,
     trace.ordinal,
@@ -142,64 +125,6 @@ export function isLayered(value: unknown): value is Layered {
   return typeof value === "object" && value !== null && Layer in value;
 }
 
-/**
- * Collapse a caller-facing {@link Attribution} to the
- * {@link ResolvedAttribution} the stream machinery uses. `"call site"` must
- * resolve _here_, and only here: `resolveCallerFile()` reads the live stack,
- * and `toRandomSource` runs synchronously inside `initialize()`, so this is the
- * one moment the first external frame genuinely is the file that called
- * `initialize()`. Resolving lazily — on first construction, or again inside
- * `fork` — would capture whichever file happened to call `new Fabricator(...)`,
- * or whichever internal mechanism happened to trigger a fork.
- *
- * A directory, not the file itself, becomes the root: rooting at the file would
- * relativize that one file to `""` while every sibling still carried a full
- * relative path from a directory one level up, an arbitrary asymmetry with no
- * reason to prefer it.
- */
-export function resolveAttribution(
-  attribution: Attribution | undefined,
-): ResolvedAttribution {
-  const policy: Attribution = attribution ?? { kind: "call site" };
-
-  switch (policy.kind) {
-    case "none": {
-      return policy;
-    }
-    case "rooted": {
-      const root = normalizeLocation(policy.root);
-
-      /**
-       * Only a caller-supplied root is validated. `"call site"`'s root is
-       * derived from a real stack frame's directory, which is absolute by
-       * construction on every path `resolveCallerFile()` can take (including
-       * its own raw-stack fallback, itself never relativizable — see
-       * `CallSite.ts`), so there is nothing a caller could get wrong here.
-       */
-      if (!root.startsWith("/")) {
-        throw new FabricatorError.InvalidAttributionRootError(policy.root);
-      }
-
-      return toRooted(root);
-    }
-    case "call site": {
-      /**
-       * No `normalizeLocation` here, unlike the `"rooted"` branch:
-       * `resolveCallerFile()` already returns a normalized location
-       * (`firstExternalFrame`, `CallSite.ts`), so `directoryOf` alone is
-       * enough.
-       */
-      const root = directoryOf(resolveCallerFile());
-
-      return toRooted(root);
-    }
-  }
-}
-
-function toRooted(root: string): { kind: "rooted"; root: string } {
-  return { kind: "rooted", root: root.endsWith("/") ? root : `${root}/` };
-}
-
 export function toStream(algorithm: Algorithm, seed: string): Stream {
   const generator = algorithm(seed);
 
@@ -228,7 +153,7 @@ export function toStream(algorithm: Algorithm, seed: string): Stream {
  * {@link deriveClock} cannot route through this: a {@link Trace} carries
  * `clock`, and `deriveClock` is what produces it. That circularity is why
  * `deriveClock` stays below the `RandomSource`/`Trace` layer, with a
- * two-element encoding that can never collide with `encode`'s seven.
+ * two-element encoding that can never collide with `encode`'s five.
  */
 export function toStreamFromTrace(algorithm: Algorithm, trace: Trace): Stream {
   return toStream(algorithm, encode(trace));
@@ -245,95 +170,51 @@ export function toStreamFromTrace(algorithm: Algorithm, trace: Trace): Stream {
 export function toRandomSource(options: Options): RandomSource {
   let salt: ReadonlyArray<string> = normalizeSalt(options.salt);
   let algorithm: Algorithm = options.algorithm ?? defaultAlgorithm;
-  let attribution: ResolvedAttribution = resolveAttribution(
-    options.attribution,
-  );
   const clock: number = options.clock;
 
   /**
-   * Per-file construction counters, lazily derived. Every `"attributed"`
-   * construction draws the next ordinal for its own resolved file (or, under `{
-   * kind: "none" }`, the shared `undefined` bucket every construction falls
-   * into) — never a shared counter spanning kinds or leaves within a
-   * construction, since leaves are already distinguished by structural path.
-   * Two constructions in the same file diverge by default; any single
-   * construction's leaves stay stable under insertion/reordering.
+   * One construction counter per source. Leaves within a construction are
+   * already distinguished by structural path, while `fork`/`wrap` create a
+   * fresh source and therefore a fresh counter.
    */
-  let constructionOrdinals = new Map<string | undefined, number>();
-
-  function nextConstructionOrdinal(file: string | undefined): number {
-    const ordinal = constructionOrdinals.get(file) ?? 0;
-    constructionOrdinals.set(file, ordinal + 1);
-    return ordinal;
-  }
+  let constructionOrdinal = 0;
 
   /**
    * Resolve one construction's root — the {@link ConstructionTrace} every node
-   * beneath it will complete into its own {@link Trace} — see {@link RootKind}
-   * for what each variant means. `clock` rides along unchanged unless
-   * `pins.clock` supplies one: it is this source's own fixed instant, not
-   * something a `RootKind` resolves, except a replay which pins the original
-   * construction's "now".
+   * beneath it will complete into its own {@link Trace}. `salt` and `clock` ride
+   * along unchanged unless pinned: they are this source's own, except in an
+   * explicitly salted build or a replay pinning the original construction's
+   * "now".
    *
-   * File resolves first and ordinal second. `pins.root` present means this is a
-   * replay: `file` and `ordinal` are taken verbatim (`undefined` included), and
-   * the construction-ordinal counter is not bumped. `pins.file` without
-   * `pins.root` pins that file and draws the next ordinal for it.
+   * A pinned `ordinal` is taken verbatim and the construction counter is not
+   * bumped — a replay, or an enumeration rebuild pinning `null`. Otherwise the
+   * construction takes the counter's next value.
+   *
+   * `!== undefined`, never `??`: `null` is a real pin meaning "no ordinal", and
+   * `??` would treat it as missing and bump the counter.
    */
-  function toRoot(kind: RootKind, pins: RootPins = {}): ConstructionTrace {
-    const replaying = pins.root !== undefined;
-    const root = pins.root ?? kind;
-
-    const file =
-      replaying || pins.file !== undefined ? pins.file : resolveRootFile(kind);
-
-    const ordinal = inline(() => {
-      if (replaying || pins.ordinal !== undefined) return pins.ordinal;
-      if (root === "unattributed") return undefined;
-      return nextConstructionOrdinal(file);
-    });
-
+  function toRoot(pins: RootPins = {}): ConstructionTrace {
     return {
       salt: pins.salt ?? salt,
       clock: pins.clock ?? clock,
-      root,
-      file,
-      ordinal,
+      ordinal:
+        pins.ordinal !== undefined ? pins.ordinal : constructionOrdinal++,
     };
-  }
-
-  function resolveRootFile(kind: RootKind): string | undefined {
-    if (kind !== "attributed") return undefined;
-    /**
-     * A mode whose entire point is not caring about files shouldn't pay for a
-     * stack capture it's about to discard — so this short-circuits _before_
-     * `resolveCallerFile()` runs, the only place in this function (and only on
-     * the `"attributed"` branch) that does.
-     */
-    if (attribution.kind === "none") return undefined;
-    return relativize(attribution.root, resolveCallerFile());
   }
 
   /**
    * Reuses this same factory, closing over the same `algorithm` — the new
-   * source's construction-ordinal map is a fresh, empty one (declared above,
-   * private to each `toRandomSource` call), so nothing here is shared with the
-   * parent. Passes the already-_resolved_ `attribution`, not the caller-facing
-   * form that produced it: re-resolving `"call site"` here would read the live
-   * stack at whatever moment the fork actually runs (an explicitly salted
-   * build, a recursive schema's lazy expansion, an enumeration rebuild) and
-   * root the child source somewhere unrelated to the instance that spawned it.
-   * `T.recursive`'s private source and `new Fabricator(schema, { salt })`'s own
-   * fork both inherit the instance's attribution policy for free, with no new
-   * parameter on `RandomSource`. `clock` is threaded through unchanged for the
-   * same reason: a fork is a statement about salt identity, not about "now," so
-   * `T.recursive`'s private source and an explicitly salted build both resolve
-   * "now" exactly as their parent does (see `Fabricator/Constructor.ts`'s
-   * `toConstructionContext`, which reads a construction's clock straight off
-   * its resolved root rather than threading a separate value).
+   * source's construction counter starts at zero (declared above, private to
+   * each `toRandomSource` call), so nothing here is shared with the parent.
+   * `clock` is threaded through unchanged: a fork is a statement about salt
+   * identity, not about "now," so `T.recursive`'s private source and an
+   * explicitly salted build both resolve "now" exactly as their parent does
+   * (see `Fabricator/Constructor.ts`'s `toConstructionContext`, which reads a
+   * construction's clock straight off its resolved root rather than threading a
+   * separate value).
    */
   function fork(childSalt: Salt): RandomSource {
-    return toRandomSource({ salt: childSalt, algorithm, attribution, clock });
+    return toRandomSource({ salt: childSalt, algorithm, clock });
   }
 
   return { toRoot, algorithm, salt, fork };

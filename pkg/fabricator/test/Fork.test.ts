@@ -5,7 +5,6 @@ import {
   registry,
 } from "@ghostry/fabricator";
 import { expect, test } from "bun:test";
-import { initializeHere } from "./fixtures/sharedSchema";
 
 test("fork() with no overlay inherits the salt unchanged", () => {
   const instance = initialize({ salt: "fork-base" });
@@ -38,7 +37,7 @@ test("layer() accepts the full Salt surface — a single string or several", () 
   expect(multi.salt).toEqual([...instance.salt, "a", "b"]);
 });
 
-test("fork inherits algorithm/attribution/types/limits when unspecified", () => {
+test("fork inherits algorithm/types/limits when unspecified", () => {
   const customAlgorithm = () => () => 0.5;
   const customTypes = registry.extend(({ T }) => ({ number: T.always(999) }));
 
@@ -79,44 +78,6 @@ test("fork overrides algorithm/types/limits when given", () => {
   ]).toThrow(FabricatorError.CombinatorialLimitExceededError);
 });
 
-/**
- * `fork()`'s own attribution inheritance must not re-resolve `"call site"` from
- * wherever `fork()` itself happens to be called — `overlay()` reuses the base's
- * already-resolved attribution unless the overlay explicitly supplies one.
- * `initializeHere()` resolves its root at `test/fixtures/`; forking from _this_
- * file must keep that root, not silently re-root at this file's own directory
- * (which would report `"Fork.test.ts"` with no ascent instead).
- */
-test("fork() inherits the resolved attribution root rather than re-resolving from its own call site", () => {
-  const instance = initializeHere();
-  const forked = instance.fork();
-
-  const built = new forked.Fabricator(
-    forked.T.string.whereby({ length: { max: 8 } }),
-  );
-
-  expect(built.trace.file).toBe("../Fork.test.ts");
-});
-
-test("fork({ attribution: { kind: 'call site' } }) re-roots at fork()'s own call site", () => {
-  const instance = initializeHere();
-  const forked = instance.fork({ attribution: { kind: "call site" } });
-
-  const built = new forked.Fabricator(
-    forked.T.string.whereby({ length: { max: 8 } }),
-  );
-
-  expect(built.trace.file).toBe("Fork.test.ts");
-});
-
-test("fork({ attribution: { kind: 'rooted', root } }) throws InvalidAttributionRootError for a relative root", () => {
-  const instance = initialize({ salt: "fork-bad-root" });
-
-  expect(() =>
-    instance.fork({ attribution: { kind: "rooted", root: "relative/path" } }),
-  ).toThrow(FabricatorError.InvalidAttributionRootError);
-});
-
 test("fork({ limits: { combinatorial } }) throws InvalidCombinatorialLimitError at fork() time", () => {
   const instance = initialize({ salt: "fork-bad-limit" });
 
@@ -127,9 +88,8 @@ test("fork({ limits: { combinatorial } }) throws InvalidCombinatorialLimitError 
 
 /**
  * The composition formula `layer(...)` follows, spelled out explicitly: a
- * fork's layered salt for a construction at a given call site reproduces
- * exactly what a bare `initialize({ salt: [...instance.salt, "a"] })` gives for
- * an equivalent call site under the same root.
+ * fork's layered salt reproduces exactly what a bare `initialize({ salt:
+ * [...instance.salt, "a"] })` gives.
  */
 test("fork({ salt: layer('a') }) reproduces initialize({ salt: [...instance.salt, 'a'] })", () => {
   const clock = new Date("2020-01-01T00:00:00.000Z");

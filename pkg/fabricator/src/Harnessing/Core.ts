@@ -36,14 +36,13 @@ import type { FabricatorTestContext, Identity, Integration } from "./Types";
  * `HarnessingProviderError` rather than quietly providing the base instance.
  *
  * Nothing here reads `instance.context`. The integration is a pure function of
- * the `Identity` it is handed and the instance it decorates: it never resolves
- * an attribution root, never captures a stack, and never sets `clock`. A pinned
- * `Date` (the recommended setup) and the wall-clock default are already
- * concrete numbers by the time `overlay()` sees them, so they inherit through
- * every `wrap` unchanged: salt varies per test, "now" does not. `clock:
- * "derived"` is left alone on purpose — that policy's documented meaning is
- * that the salt _is_ the reproducibility unit, so per-test clocks are the
- * request honored, not a bug to override.
+ * the `Identity` it is handed and the instance it decorates, and never sets
+ * `clock`. A pinned `Date` (the recommended setup) and the wall-clock default
+ * are already concrete numbers by the time `overlay()` sees them, so they
+ * inherit through every `wrap` unchanged: salt varies per test, "now" does not.
+ * `clock: "derived"` is left alone on purpose — that policy's documented
+ * meaning is that the salt _is_ the reproducibility unit, so per-test clocks
+ * are the request honored, not a bug to override.
  */
 export function integration<$Registry extends PlainObject>(
   instance: Instance<$Registry>,

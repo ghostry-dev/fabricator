@@ -1,6 +1,6 @@
 # Reproducibility
 
-An `initialize()` instance reproduces from one number: its [clock](#the-clock-is-the-entropy). That, the [attribution policy](#where-a-stream-is-attributed), and an optional [salt](#salt-is-optional) determine every value the instance produces. Configure nothing and the clock is the wall-clock instant of the `initialize()` call, so a run varies by process, has realistic dates, and replays from `context.clock` alone.
+An `initialize()` instance reproduces from one number: its [clock](#the-clock-is-the-entropy). That and an optional [salt](#salt-is-optional) determine every value the instance produces. Configure nothing and the clock is the wall-clock instant of the `initialize()` call, so a run varies by process, has realistic dates, and replays from `context.clock` alone.
 
 ## The clock is the entropy
 
@@ -67,26 +67,11 @@ That caveat is why the conventional `SEED` and `RANDOM_SEED` names are **not** r
 
 Each `initialize()` call captures its own seeded generator and its own internal stream state. Independently initialized instances never interfere with each other — safe for parallel tests that each pick their own salt, and safe to run two unrelated fabricators in the same process without one perturbing the other's output.
 
-## Where a stream is attributed
+## Construction order
 
-Randomness is assigned in two steps. First, once per `new Fabricator(...)` call, that _construction_ is rooted — by default, at the file that called it. Then every field inside it draws from a stream keyed by its own position in the schema (a field name, a tuple slot, a choice option) plus that root — this is why two `T.number` fields in two different files never collide, and why inserting, removing, or renaming a field never disturbs any of its siblings: a field's stream depends on where it sits, never on how many other fields were dispatched before it.
+Every `RandomSource` owns one construction counter. Each `new Fabricator(...)` takes the next ordinal from that counter, regardless of which module made the call, so two consecutive constructions never silently receive identical data.
 
-`initialize({ attribution })` controls how a construction's file gets normalized before it becomes part of that root:
-
-```ts
-attribution?:
-  | { kind: "rooted"; root: string }   // relative to an explicit root
-  | { kind: "call site" }              // relative to wherever initialize() was called — the default
-  | { kind: "none" }                   // no file at all
-```
-
-- **`{ kind: "rooted", root }`** expresses every file relative to `root` — an absolute path, or a `file://` URL like `new URL("..", import.meta.url).href` (no `node:path` needed). `root` is a normalization detail, never entropy: moving it without moving the files underneath changes nothing about the data produced.
-- **`{ kind: "call site" }`**, the default, is `"rooted"` at the directory of whichever file called `initialize()`. Reach for an explicit `"rooted"` root instead when multiple `initialize()` calls across a monorepo might resolve to the same relative path from their own call sites (two packages each with a `test/index.test.ts`, say) and share a salt — that's the one way two unrelated files' roots can collide under `"call site"`.
-- **`{ kind: "none" }`** drops file attribution entirely: every construction, anywhere in the instance, draws its root from one shared counter. Maximally portable — nothing about a file path can ever influence the data — but every construction now depends on every other: adding, removing, or reordering a _construction_ anywhere in the instance shifts every later one. Fields within one construction are unaffected either way, since they're keyed by their own position, not by dispatch order.
-
-A file that falls outside the resolved root (above it, or in an unrelated directory) is expressed with a leading `..` rather than left as an absolute path, so it stays stable as long as both locations move together under the same checkout. The one case nothing can smooth over is a file genuinely outside the checkout — there, the `..` count itself depends on where the checkout happens to sit, and no attribution scheme changes that.
-
-Two constructions of the same schema from the same file, by default, still get different data — each is assigned the next available index for that file, so calling `new Fabricator(schema)` twice in a row never silently hands back identical results. That holds whether or not a `salt` is named — salting substitutes one trace slot, it does not restart the counter.
+Adding, removing, or reordering a construction shifts later constructions on the same instance. `fork` and `wrap` each create a fresh source with a fresh counter, which is how an integration or test can partition work more finely. Fields _within_ one construction remain keyed by structural position, so schema edits do not shift their siblings.
 
 ## Salting one construction
 
@@ -94,19 +79,17 @@ Two constructions of the same schema from the same file, by default, still get d
 new Fabricator(schema, { salt: "fixed-user" });
 ```
 
-This overrides the salt for one build and changes nothing else. The construction still attributes to its own file, still takes the next ordinal for it, still inherits the instance's clock — everything an unsalted build does.
+This overrides the salt for one build and changes nothing else. The construction still takes the next ordinal from the instance's counter and still inherits the instance's clock — everything an unsalted build does.
 
 `salt` is not special here. `new Fabricator(schema, options)` accepts every slot of a [`.trace`](#trace), and each one you name simply substitutes into that slot; `salt` is one of them. So a salted build is an ordinary build that happens to draw from a different universe than its neighbors — not a build that has stepped outside the instance.
 
-That means it is _not_ a way to hold one construction still. It shifts, and is shifted by, the constructions around it exactly as any other does, and moving it to another file changes its data. When you want a build that is genuinely insulated — its own counters, unaffected by whatever else the instance builds — that is what [`fork`](#deriving-a-related-instance-fork) is for, one line away:
+That means it is _not_ a way to hold one construction still. It shifts, and is shifted by, the constructions around it exactly as any other does. When you want a build that is genuinely insulated — its own counter, unaffected by whatever else the instance builds — that is what [`fork`](#deriving-a-related-instance-fork) is for, one line away:
 
 ```ts
 const held = instance.fork({ salt: "fixed-user" });
 
 new held.Fabricator(schema); // its own counters, its own universe
 ```
-
-And when you want independence from _where_ a construction sits, say that directly with [`attribution: { kind: "none" }`](#where-a-stream-is-attributed) on the instance.
 
 A bare salt _replaces_ the instance's salt, so a construction written this way no longer varies when the surrounding run is re-salted. For an identity that should keep moving with the run — a schema's registered name, a test's own id — wrap it in `layer(...)` to compose instead:
 
@@ -129,7 +112,7 @@ const tenant = base.fork({ salt: "tenant-7" });
 tenant.salt; // ["tenant-7"] — replaced
 ```
 
-Anything the overlay names overrides; anything it omits inherits — `algorithm`, `attribution`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the salt composes. The exception is an explicit `clock: "derived"`: that sentinel re-derives from whatever salt the fork ends up with (see [The clock is the entropy](#the-clock-is-the-entropy) below), so `fork({ salt: layer(...) })` without also overriding `clock` gets a _different_ `"derived"` clock than its base.
+Anything the overlay names overrides; anything it omits inherits — `algorithm`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the salt composes. The exception is an explicit `clock: "derived"`: that sentinel re-derives from whatever salt the fork ends up with (see [The clock is the entropy](#the-clock-is-the-entropy) below), so `fork({ salt: layer(...) })` without also overriding `clock` gets a _different_ `"derived"` clock than its base.
 
 By default a fork's `salt` _replaces_ the base's outright — the ordinary meaning `salt` has everywhere in this library. To compose onto the base's salt instead, reach for `layer(...)`:
 
@@ -139,8 +122,6 @@ tenant.salt; // ["base", "tenant-7"] — composed
 ```
 
 See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below — the same helper works identically at three levels: `fork`, `wrap` ([below](#making-a-fork-ambient-wrap)), and a single `new Fabricator(schema, { salt })` call.
-
-`attribution` is resolved once, when `fork()` itself is called — not deferred to whenever the derived instance first constructs. So a fork inherits its base's _already-resolved_ root even when called from an entirely different file, and a fork given `{ attribution: { kind: "call site" } }` explicitly re-roots at `fork()`'s own call site, not the base's.
 
 ## Composing instead of replacing: layer(...)
 
@@ -257,10 +238,10 @@ const NameField = new Fabricator(T.string.whereby({ length: { max: 20 } }));
 NameField.fabricate();
 
 NameField.trace;
-// { salt: ["default-salt"], clock: 1234567890000, root: "attributed", file: "tests/user.test.ts", path: [], kind: "string", ordinal: 0 }
+// { salt: ["default-salt"], clock: 1234567890000, path: [], kind: "string", ordinal: 0 }
 ```
 
-The result is the fixed tuple that field's stream was hashed from — `salt` is the _instance's_ salt (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [The clock is the entropy](#the-clock-is-the-entropy) below — every field's stream depends on it, not just a `T.date` field's), `root` is how `file` and `ordinal` were resolved (`"attributed"` under a default instance and under `{ kind: "none" }`, `"unattributed"` under `new Fabricator(s, { salt })`, `"counted"` inside a `T.recursive` expansion), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction, among those sharing `file`, this one is. `file` is relative to the instance's attribution root under `"rooted"`/`"call site"` (see [Where a stream is attributed](#where-a-stream-is-attributed)), and `undefined` under an explicitly salted construction, under `{ kind: "none" }`, or inside a recursive expansion — `root` says which.
+The result is the fixed tuple that field's stream was hashed from — `salt` is the _instance's_ salt (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [The clock is the entropy](#the-clock-is-the-entropy) below — every field's stream depends on it, not just a `T.date` field's), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction on that source this one is (`null` for a `combinatorial`/`coverage` build, which takes no ordinal).
 
 `new Fabricator(schema, trace)` reproduces exactly what that schema produced as a nested node of a larger construction: pass the node's own schema plus `node.trace`. The same sequence of `.fabricate()` calls yields the same values; the trace does not jump to a later draw.
 
@@ -278,4 +259,4 @@ initialize({ salt: "1234", algorithm: (seed) => myPrng(seed) });
 
 `algorithm` is a factory: given a seed, it returns a `() => number` in `[0, 1)` — a drop-in replacement for `Math.random`. Defaults to a built-in `sfc32` generator.
 
-The seed it receives is not your `salt`. It's the full encoded description of one leaf — salt, clock, attribution root, file, structural path, kind, and ordinal — of which the salt is a single slot. That's why every field in every construction gets its own independent stream from one instance, and why a custom algorithm inherits that isolation for free: it's called once per leaf, with a different seed each time.
+The seed it receives is not your `salt`. It's the full encoded description of one leaf — salt, clock, structural path, kind, and ordinal — of which the salt is a single slot. That's why every field in every construction gets its own independent stream from one instance, and why a custom algorithm inherits that isolation for free: it's called once per leaf, with a different seed each time.

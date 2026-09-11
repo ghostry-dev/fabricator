@@ -5,19 +5,10 @@ import type { Identity } from "./Types";
  *
  *     [ <kind>, ...<describe names>, <name>, <row?> ]
  *
- * **No file, deliberately — and therefore no stack walking anywhere in this
- * integration.** An earlier design put the registering file first, to keep two
- * same-named tests in different files from drawing identical data. It was
- * redundant: every test body runs inside its own `instance.wrap`, which builds
- * a fresh `RandomSource` with an empty construction-ordinal map, so
- * constructions are already partitioned per test — strictly finer than per
- * file. Partitioning by file inside that only subdivided a partition whose
- * blast radius was already one test, and it cost the whole of
- * `Random/CallSite.ts`'s machinery: a stack capture per registration, frame
- * formats that differ across runtimes, `file://` and drive-letter
- * normalization, symlinks, and a `dist`-versus-`src` assumption that has no
- * answer. It also contradicted the principle this derivation is built on —
- * identity comes from a path, never from an execution counter or a location
+ * **No file, deliberately.** Every test body runs inside its own
+ * `instance.wrap`, which builds a fresh `RandomSource` with a fresh
+ * construction counter, so constructions are already partitioned per test.
+ * Identity comes from a path, never from an execution counter or a location
  * that moves when a file does.
  *
  * The accepted cost: two tests with the same `kind`, describe path, and name in

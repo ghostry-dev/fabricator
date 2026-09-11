@@ -66,87 +66,57 @@ test("a nested object subtree round-trips from the field's own schema plus its t
   expect(fromNested).toEqual(fromParent.profile);
 });
 
-test("traces are self-describing: root distinguishes the three file: undefined cases, and each round-trips", () => {
-  const attributedNone = initialize({
-    salt: "trace-root-none",
-    clock: "derived",
-    attribution: { kind: "none" },
-  });
-  const noneBuilt = new attributedNone.Fabricator(attributedNone.T.number);
-  expect(noneBuilt.trace.root).toBe("attributed");
-  expect(noneBuilt.trace.file).toBeUndefined();
-  expect(
-    new attributedNone.Fabricator(
-      attributedNone.T.number,
-      noneBuilt.trace,
-    ).fabricate(),
-  ).toBe(noneBuilt.fabricate());
-
-  const salted = initialize({ salt: "trace-root-salted", clock: "derived" });
-
-  /**
-   * A per-construction salt no longer implies anything about rooting — it is a
-   * one-build `fork`, so it attributes to its file and draws an ordinal like
-   * any other construction.
-   */
-  const saltedBuilt = new salted.Fabricator(salted.T.number, {
-    salt: "explicit",
-  });
-  expect(saltedBuilt.trace.root).toBe("attributed");
-  expect(saltedBuilt.trace.file).toBeDefined();
-  expect(
-    new salted.Fabricator(salted.T.number, saltedBuilt.trace).fabricate(),
-  ).toBe(saltedBuilt.fabricate());
-
-  /**
-   * `"unattributed"` is now only ever an explicit pin — what
-   * `combinatorial`/`coverage` ask for so their lazy rebuilds never resolve a
-   * caller file (`Enumeration/Enumerate.ts`).
-   */
-  const unattributed = new salted.Fabricator(salted.T.number, {
-    salt: "explicit",
-    root: "unattributed",
-  });
-  expect(unattributed.trace.root).toBe("unattributed");
-  expect(unattributed.trace.file).toBeUndefined();
-  expect(
-    new salted.Fabricator(salted.T.number, unattributed.trace).fabricate(),
-  ).toBe(unattributed.fabricate());
-
-  const defaulted = initialize({
-    salt: "trace-root-default",
+test("traces round-trip, including a pinned ordinal and a recursive expansion", () => {
+  const instance = initialize({
+    salt: "trace-roundtrip-ordinals",
     clock: "derived",
   });
-  expect(new defaulted.Fabricator(defaulted.T.number).trace.root).toBe(
-    "attributed",
-  );
+
+  const ordinary = new instance.Fabricator(instance.T.number);
+  expect(ordinary.trace.ordinal).toBe(0);
+  expect(
+    new instance.Fabricator(instance.T.number, ordinary.trace).fabricate(),
+  ).toBe(ordinary.fabricate());
 
   /**
-   * A recursive body's expansion opens `"counted"` on a private fork salted
-   * from `encode(parent.trace)`. Reconstructing that body's own Fabricator from
-   * those pins is how a node inside an expansion is observed — the expansion
-   * itself is throwaway.
+   * `ordinal: null` is what `combinatorial`/`coverage` pin so their lazy
+   * rebuilds never advance the instance counter (`Enumeration/Enumerate.ts`).
+   * The `null` is recorded on the trace and replays like any other value — it
+   * must not be mistaken for an absent pin, or the replay would bump the
+   * counter — so the next ordinary construction still takes ordinal 1.
    */
-  const body = defaulted.T.object({
-    n: defaulted.T.number,
-    flag: defaulted.T.boolean,
+  const pinned = new instance.Fabricator(instance.T.number, {
+    salt: "explicit",
+    ordinal: null,
   });
-  const recursive = defaulted.T.recursive(() => body).whereby({
+  expect(pinned.trace.ordinal).toBeNull();
+  expect(
+    new instance.Fabricator(instance.T.number, pinned.trace).fabricate(),
+  ).toBe(pinned.fabricate());
+  expect(new instance.Fabricator(instance.T.number).trace.ordinal).toBe(1);
+
+  /**
+   * A recursive body's expansion resolves an ordinary root on a private fork
+   * salted from `encode(parent.trace)`. Reconstructing that body's own
+   * Fabricator from those pins is how a node inside an expansion is observed —
+   * the expansion itself is throwaway.
+   */
+  const body = instance.T.object({
+    n: instance.T.number,
+    flag: instance.T.boolean,
+  });
+  const recursive = instance.T.recursive(() => body).whereby({
     depth: { max: 1 },
   });
-  const parent = new defaulted.Fabricator(recursive);
+  const parent = new instance.Fabricator(recursive);
   const fromParent = parent.fabricate();
-  const inner = new defaulted.Fabricator(body, {
+  const inner = new instance.Fabricator(body, {
     salt: encode(parent.trace),
-    root: "counted",
     clock: parent.trace.clock,
-    file: undefined,
     ordinal: 0,
     path: [],
     kind: "object",
   });
-  expect(inner.trace.root).toBe("counted");
-  expect(inner.trace.file).toBeUndefined();
   expect(inner.fabricate()).toEqual(fromParent);
 });
 
@@ -181,21 +151,6 @@ test("a pinned ordinal does not bump the construction counter", () => {
   new Fabricator(T.number, first.trace);
 
   const second = new Fabricator(T.number);
-  expect(second.trace.ordinal).toBe(1);
-});
-
-test("{ file } without root pins that file and draws from its counter", () => {
-  const { T, Fabricator } = initialize({
-    salt: "trace-file-pin",
-    clock: "derived",
-  });
-
-  const first = new Fabricator(T.number, { file: "fixtures/user" });
-  expect(first.trace.file).toBe("fixtures/user");
-  expect(first.trace.root).toBe("attributed");
-  expect(first.trace.ordinal).toBe(0);
-
-  const second = new Fabricator(T.number, { file: "fixtures/user" });
   expect(second.trace.ordinal).toBe(1);
 });
 

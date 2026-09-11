@@ -244,17 +244,13 @@ test("a context reference captured before a wrap reflects the wrap live, since i
   expect(context.salt).toEqual(instance.salt);
 });
 
-test("context.algorithm and .attribution reflect the active frame's overrides", () => {
+test("context.algorithm reflects the active frame's override", () => {
   const instance = initialize({ salt: "wrap-context-fields" });
   const customAlgorithm = () => () => 0.5;
 
-  instance.wrap(
-    { algorithm: customAlgorithm, attribution: { kind: "none" } },
-    () => {
-      expect(instance.context.algorithm).toBe(customAlgorithm);
-      expect(instance.context.attribution).toEqual({ kind: "none" });
-    },
-  );
+  instance.wrap({ algorithm: customAlgorithm }, () => {
+    expect(instance.context.algorithm).toBe(customAlgorithm);
+  });
 
   expect(instance.context.algorithm).not.toBe(customAlgorithm);
 });
@@ -275,27 +271,26 @@ test("the frame unwinds correctly when the wrap block throws", () => {
  * The ambient frame survives `await`. On every runtime with `node:async_hooks`
  * — Node, Bun, Deno — `#stack` resolves to the `AsyncLocalStorage` carrier
  * (`Instance/Stack/Async.ts`), so a build reached after an `await` still sees
- * the wrap's configuration rather than reverting to the instance's own. All
- * three reads are therefore `undefined`: the wrap set `{ kind: "none" }`, which
- * suppresses file attribution, and none of them escape it.
+ * the wrap's configuration rather than reverting to the instance's own.
  */
 test("the ambient frame survives an await inside the wrap block", async () => {
   const instance = initialize({ salt: "wrap-async" });
 
-  let duringSyncFile: string | undefined;
-  let afterAwaitFile: string | undefined;
-  let viaScopeFile: string | undefined;
+  let duringSyncSalt: ReadonlyArray<string> | undefined;
+  let afterAwaitSalt: ReadonlyArray<string> | undefined;
+  let viaScopeSalt: ReadonlyArray<string> | undefined;
 
-  await instance.wrap({ attribution: { kind: "none" } }, async (scope) => {
-    duringSyncFile = new instance.Fabricator(instance.T.number).trace.file;
+  await instance.wrap({ salt: layer("frame") }, async (scope) => {
+    duringSyncSalt = new instance.Fabricator(instance.T.number).trace.salt;
     await Promise.resolve();
-    afterAwaitFile = new instance.Fabricator(instance.T.number).trace.file;
-    viaScopeFile = new scope.Fabricator(scope.T.number).trace.file;
+    afterAwaitSalt = new instance.Fabricator(instance.T.number).trace.salt;
+    viaScopeSalt = new scope.Fabricator(scope.T.number).trace.salt;
   });
 
-  expect(duringSyncFile).toBeUndefined();
-  expect(afterAwaitFile).toBeUndefined();
-  expect(viaScopeFile).toBeUndefined();
+  const expected = [...instance.salt, "frame"];
+  expect(duringSyncSalt).toEqual(expected);
+  expect(afterAwaitSalt).toEqual(expected);
+  expect(viaScopeSalt).toEqual(expected);
 });
 
 /**
@@ -467,32 +462,6 @@ test("a per-call layer(...) salt inside a wrap composes onto the frame's salt, n
   }).fabricate();
 
   expect(inside).toBe(expected);
-});
-
-test(".trace inside a wrap reports a real file under the default attribution", () => {
-  const instance = initialize({ salt: "wrap-trace-file" });
-
-  let file: string | undefined;
-  instance.wrap({ salt: layer("x") }, () => {
-    file = new instance.Fabricator(
-      instance.T.string.whereby({ length: { max: 8 } }),
-    ).trace.file;
-  });
-
-  expect(file).toBe("Wrap.test.ts");
-});
-
-test(".trace inside a wrap overriding attribution to none reports no file", () => {
-  const instance = initialize({ salt: "wrap-trace-none" });
-
-  let file: string | undefined;
-  instance.wrap({ attribution: { kind: "none" } }, () => {
-    file = new instance.Fabricator(
-      instance.T.string.whereby({ length: { max: 8 } }),
-    ).trace.file;
-  });
-
-  expect(file).toBeUndefined();
 });
 
 test("structural keying survives a wrap — inserting a sibling field doesn't shift another field's value", () => {

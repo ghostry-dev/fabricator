@@ -1,12 +1,6 @@
 import type { Enumerable, Limits } from "../Enumeration/Types";
 import type { Constructor } from "../Fabricator/Constructor";
-import type {
-  Algorithm,
-  Attribution,
-  Layered,
-  RandomSource,
-  Salt,
-} from "../Random/Types";
+import type { Algorithm, Layered, RandomSource, Salt } from "../Random/Types";
 import type { PlainObject } from "../Utility/Types";
 
 /**
@@ -14,25 +8,20 @@ import type { PlainObject } from "../Utility/Types";
  * to default. `Overlay` is what `fork` accepts; `overlay()`
  * (`Instance/Core.ts`) is the only thing producing a complete `Config`.
  *
- * Two fields are declared at their caller-facing type but always hold their
- * resolved form once `overlay()` has run: `salt` is `Salt` because that is what
- * a caller may supply, but always holds the normalized array (`Instance.salt`
- * is the authoritative read); `attribution` is `Attribution` for the same
- * reason but always holds a `ResolvedAttribution`, a subtype. `clock` is
- * different from both: unlike `salt`/`attribution`, it holds _either_ a
- * resolved instant (epoch milliseconds) or the unresolved `"derived"` policy —
- * never collapsed to a number by `overlay()` when `"derived"`, because that
- * policy must re-derive whenever the salt it composes changes (a `fork({ salt:
- * layer(...) })`). The unconfigured default is a wall- clock number, inherited
- * as-is like an explicit `Date`. `resolveClock` (`Instance/Core.ts`) is the one
- * place that resolves `"derived"` to a number, called fresh wherever the clock
- * actually matters (`instantiate`, the `context.clock` getter) rather than once
- * here.
+ * `salt` is declared at its caller-facing `Salt` type but always holds the
+ * normalized array once `overlay()` has run (`Instance.salt` is the
+ * authoritative read). `clock` holds _either_ a resolved instant (epoch
+ * milliseconds) or the unresolved `"derived"` policy — never collapsed to a
+ * number by `overlay()` when `"derived"`, because that policy must re-derive
+ * whenever the salt it composes changes (a `fork({ salt: layer(...) })`). The
+ * unconfigured default is a wall- clock number, inherited as-is like an
+ * explicit `Date`. `resolveClock` (`Instance/Core.ts`) is the one place that
+ * resolves `"derived"` to a number, called fresh wherever the clock actually
+ * matters (`instantiate`, the `context.clock` getter) rather than once here.
  */
 export type Config<$Registry extends PlainObject> = {
   readonly salt: Salt;
   readonly algorithm: Algorithm;
-  readonly attribution: Attribution;
   readonly types: $Registry;
   readonly limits: Limits;
   readonly clock: number | "derived";
@@ -117,14 +106,13 @@ export type Stack = {
 export type Context = {
   readonly salt: ReadonlyArray<string>;
   readonly algorithm: Algorithm;
-  readonly attribution: Attribution;
   readonly clock: number;
 };
 
 /**
  * A single initialized library instance: the registry it was given, and a
  * `construct()` bound to its own isolated randomness — its own salt, builder,
- * and per-file overrides/streams, held internally and never shared with any
+ * and construction counter/streams, held internally and never shared with any
  * other `initialize()` call. Independently initialized instances (e.g. parallel
  * tests) can never perturb each other.
  */

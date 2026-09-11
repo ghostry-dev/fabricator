@@ -63,29 +63,6 @@ export namespace FabricatorError {
   }
 
   /**
-   * `initialize({ attribution: { kind: "rooted", root } })` when `root` is not
-   * an absolute path or a `file://` URL. A relative root can never prefix a
-   * resolved caller file, so `relativize` would leave every file unchanged —
-   * the option would look configured while silently doing nothing. Thrown
-   * eagerly at `initialize()`, not deferred to wherever that would first become
-   * observable.
-   */
-  export class InvalidAttributionRootError extends FabricatorError {
-    constructor(
-      /**
-       * The rejected root, as given.
-       */
-      public readonly root: string,
-    ) {
-      super();
-      this.name = "InvalidAttributionRootError";
-      this.message =
-        'initialize({ attribution: { kind: "rooted", root } }) requires an '
-        + `absolute path or a "file://" URL; received "${root}".`;
-    }
-  }
-
-  /**
    * A `self` placeholder resolved with no `T.recursive` expanding around it —
    * only reachable by holding a `self` reference outside the `T.recursive(...)`
    * callback it was handed to.
