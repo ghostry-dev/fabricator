@@ -2,8 +2,8 @@
  * The `@ghostry/fabricator/adapting` package export — what implementing a
  * schema adapter (e.g. `@ghostry/fabricator-adapter-typebox-v0`) is built from.
  * Named for the activity, not the noun (`Adapter` is one export among several
- * here) — the same pattern `@ghostry/fabricator/testing` follows for supplying
- * a test-framework integration.
+ * here) — the same pattern `@ghostry/fabricator/harnessing` follows for
+ * supplying a test-framework integration.
  *
  * Deliberately separate from the `.` export: `.` is for using fabricator,
  * `./internal` is the structural-walking tools an adapter needs (`Kind`,

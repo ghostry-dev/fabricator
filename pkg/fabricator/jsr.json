@@ -4,7 +4,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./internal": "./src/internal.ts",
-    "./adapting": "./src/adapting.ts"
+    "./adapting": "./src/adapting.ts",
+    "./harnessing": "./src/harnessing.ts"
   },
   "publish": { "exclude": ["test", "src/playground.ts"] }
 }

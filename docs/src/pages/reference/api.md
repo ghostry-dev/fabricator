@@ -205,7 +205,7 @@ See [Adapting to an external schema library](/guides/typebox) for the full walkt
 
 ## `@ghostry/fabricator/adapting`
 
-A separate entry point for _authoring_ a schema adapter (e.g. [`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0)) — not re-exported from `.`, since ordinary schema composition never needs it. Named for the activity rather than the `Adapter` noun, the same pattern `@ghostry/fabricator/testing` follows for supplying a test-framework integration. This package names no external schema library and depends on none: every mapping, and every dependency it needs, belongs to the adapter.
+A separate entry point for _authoring_ a schema adapter (e.g. [`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0)) — not re-exported from `.`, since ordinary schema composition never needs it. Named for the activity rather than the `Adapter` noun, the same pattern `@ghostry/fabricator/harnessing` follows for supplying a test-framework integration. This package names no external schema library and depends on none: every mapping, and every dependency it needs, belongs to the adapter.
 
 - **`Adapter<$Key, $Context, $Returnable>`** — the shape an adapter itself is: `{ key, convert }`. `convert` is the per-kind dispatch a conversion entry point (e.g. `toTypeBox`) calls.
 - **`walk(schema, adapter, context)`** — walks a schema with an adapter, checking whether each node declared an adaptation for that adapter's `key` before falling back to the adapter's own `convert`.

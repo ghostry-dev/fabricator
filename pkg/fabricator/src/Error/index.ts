@@ -626,4 +626,28 @@ export namespace FabricatorError {
         + "an async-capable carrier as `initialize({ stack })`.";
     }
   }
+
+  /**
+   * The `fabricator` provider of `integration(instance)`
+   * (`@ghostry/fabricator/harnessing`) was called outside that integration's
+   * own `around`.
+   *
+   * The provider hands back the per-test scope `around` just entered, so there
+   * is no scope for it to return anywhere else. `@ghostry/harness` never does
+   * this — it runs each provider inside its integration's `around` — so this
+   * means a composer that breaks the contract. Raised rather than returning the
+   * base instance, which would draw plausible data from the wrong configuration
+   * with no signal.
+   */
+  export class HarnessingProviderError extends FabricatorError {
+    constructor() {
+      super();
+      this.name = "HarnessingProviderError";
+      this.message =
+        "The `fabricator` provider was called outside its integration's "
+        + "`around`, so there is no per-test scope to provide. A composer "
+        + "must run each integration's providers inside that integration's "
+        + "`around` frame, as `@ghostry/harness` does.";
+    }
+  }
 }

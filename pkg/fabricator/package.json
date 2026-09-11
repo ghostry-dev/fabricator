@@ -53,6 +53,11 @@
       "types": "./dist/types/adapting.d.ts",
       "import": "./dist/esm/adapting.js",
       "default": "./dist/esm/adapting.js"
+    },
+    "./harnessing": {
+      "types": "./dist/types/harnessing.d.ts",
+      "import": "./dist/esm/harnessing.js",
+      "default": "./dist/esm/harnessing.js"
     }
   },
   "publishConfig": {
