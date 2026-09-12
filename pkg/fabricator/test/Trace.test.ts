@@ -96,10 +96,10 @@ test("traces round-trip, including a pinned ordinal and a recursive expansion", 
   expect(new instance.Fabricator(instance.T.number).trace.ordinal).toBe(1);
 
   /**
-   * A recursive body's expansion resolves an ordinary root on a private fork
-   * salted from `encode(parent.trace)`. Reconstructing that body's own
-   * Fabricator from those pins is how a node inside an expansion is observed —
-   * the expansion itself is throwaway.
+   * A recursive body's expansion resolves an ordinary construction trace on a
+   * private fork salted from `encode(parent.trace)`. Reconstructing that body's
+   * own Fabricator from those pins is how a node inside an expansion is
+   * observed — the expansion itself is throwaway.
    */
   const body = instance.T.object({
     n: instance.T.number,

@@ -13,10 +13,10 @@ import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
  * `source` and its already-validated `limits` — same shape as
  * `Constructor(source, stack)`. No separate `clock`: `source` already carries
  * its resolved clock (`Random/Types.ts`'s `Options.clock`), so `Constructor`'s
- * `toConstructionContext` reads it off whichever root a construction resolves
- * against. `plan`/ `resolve` (`./Plan.ts`) do the untyped recursive work; this
- * is the one precisely-typed layer, mirroring `Constructor.ts`'s `make`/
- * `construct` split.
+ * `toConstructionContext` reads it off the resolved `ConstructionTrace`.
+ * `plan`/ `resolve` (`./Plan.ts`) do the untyped recursive work; this is the
+ * one precisely-typed layer, mirroring `Constructor.ts`'s `make`/`construct`
+ * split.
  *
  * Two derived salts — one per API — each composed from the _effective_ source's
  * salt (`effectiveSource()` below — the active `wrap` frame's, or this
@@ -184,9 +184,9 @@ export function enumerables(
  */
 function orderer(source: RandomSource, salt: Salt): Orderer {
   const forked = source.fork(salt);
-  const root = forked.toRoot();
+  const trace = forked.toConstructionTrace();
   const stream = toStreamFromTrace(forked.algorithm, {
-    ...root,
+    ...trace,
     path: [],
     kind: "order",
   });

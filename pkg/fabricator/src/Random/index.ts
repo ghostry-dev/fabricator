@@ -3,12 +3,12 @@ import { cyrb128 } from "../Utility/Digest";
 import { sfc32 } from "./Generator/sfc32";
 import type {
   Algorithm,
+  ConstructionPins,
   ConstructionTrace,
   Layered,
   NumberGenerator,
   Options,
   RandomSource,
-  RootPins,
   Salt,
   Stream,
   Trace,
@@ -148,7 +148,7 @@ export function toStream(algorithm: Algorithm, seed: string): Stream {
  * `toStream(algorithm, encode(trace)).seed === stream.seed`. Not a
  * {@link RandomSource} member: derivation depends on no per-source state (a
  * fork shares only the algorithm), so it is a free function of `(algorithm,
- * trace)`. `toRoot` is the only stateful member.
+ * trace)`. `toConstructionTrace` is the only stateful member.
  *
  * {@link deriveClock} cannot route through this: a {@link Trace} carries
  * `clock`, and `deriveClock` is what produces it. That circularity is why
@@ -164,8 +164,8 @@ export function toStreamFromTrace(algorithm: Algorithm, trace: Trace): Stream {
  * single `initialize()` instance owns for its lifetime. `options.clock` is
  * baked in here, once, as a plain number — the `"derived"` policy is already
  * resolved by the caller (`Instance/Core.ts`'s `resolveClock`) before a source
- * is ever built, so every root this source resolves carries the identical
- * instant, and `fork` threads it forward unchanged.
+ * is ever built, so every construction trace this source resolves carries the
+ * identical instant, and `fork` threads it forward unchanged.
  */
 export function toRandomSource(options: Options): RandomSource {
   let salt: ReadonlyArray<string> = normalizeSalt(options.salt);
@@ -180,9 +180,9 @@ export function toRandomSource(options: Options): RandomSource {
   let constructionOrdinal = 0;
 
   /**
-   * Resolve one construction's root — the {@link ConstructionTrace} every node
-   * beneath it will complete into its own {@link Trace}. `salt` and `clock` ride
-   * along unchanged unless pinned: they are this source's own, except in an
+   * Resolve the {@link ConstructionTrace} every node beneath one construction
+   * will complete into its own {@link Trace}. `salt` and `clock` ride along
+   * unchanged unless pinned: they are this source's own, except in an
    * explicitly salted build or a replay pinning the original construction's
    * "now".
    *
@@ -193,7 +193,7 @@ export function toRandomSource(options: Options): RandomSource {
    * `!== undefined`, never `??`: `null` is a real pin meaning "no ordinal", and
    * `??` would treat it as missing and bump the counter.
    */
-  function toRoot(pins: RootPins = {}): ConstructionTrace {
+  function toConstructionTrace(pins: ConstructionPins = {}): ConstructionTrace {
     return {
       salt: pins.salt ?? salt,
       clock: pins.clock ?? clock,
@@ -210,12 +210,12 @@ export function toRandomSource(options: Options): RandomSource {
    * identity, not about "now," so `T.recursive`'s private source and an
    * explicitly salted build both resolve "now" exactly as their parent does
    * (see `Fabricator/Constructor.ts`'s `toConstructionContext`, which reads a
-   * construction's clock straight off its resolved root rather than threading a
-   * separate value).
+   * construction's clock straight off its resolved trace rather than threading
+   * a separate value).
    */
   function fork(childSalt: Salt): RandomSource {
     return toRandomSource({ salt: childSalt, algorithm, clock });
   }
 
-  return { toRoot, algorithm, salt, fork };
+  return { toConstructionTrace, algorithm, salt, fork };
 }

@@ -3,10 +3,10 @@ import type { Stack } from "../Instance/Types";
 import { Primitive } from "../Primitive";
 import { isLayered, normalizeSalt } from "../Random";
 import type {
+  ConstructionPins,
   ConstructionTrace,
   ConstructorOptions,
   RandomSource,
-  RootPins,
 } from "../Random/Types";
 import { toSchema } from "../Schema/Core";
 import { Adaptation, Fixed, Kind, Layer, Meta, type Buildable } from "../Types";
@@ -55,7 +55,8 @@ export type Constructor = {
  * source was built), and `resolveScope`'s chosen source — the active `wrap`
  * frame's, or this one — is exactly the source whose clock a construction
  * should resolve "now" against. `toConstructionContext` reads it straight off
- * the resolved root rather than threading a second value alongside `source`.
+ * the resolved construction trace rather than threading a second value
+ * alongside `source`.
  */
 export function Constructor(source: RandomSource, stack: Stack): Constructor {
   /**
@@ -81,8 +82,8 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
    * `context` belongs to — a field name, a slot/option index, and so on,
    * extended by exactly one segment per level of nesting (see each branch
    * below). It is what a leaf's own draw is keyed by, alongside `kind`, through
-   * `context.toTrace(path, kind)` after the construction's root was already
-   * resolved once, in `construct()`.
+   * `context.toTrace(path, kind)` after the construction-owned trace slots were
+   * already resolved once, in `construct()`.
    */
   function make(
     schema: any,
@@ -436,15 +437,15 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
 }
 
 /**
- * `clock` is not a field of its own: `toTrace` spreads `construction`, so every
- * node's `trace.clock` _is_ `construction.clock`. `resolveScope`'s resolved
+ * `clock` is not a field of its own: `toTrace` spreads `trace`, so every node's
+ * `trace.clock` _is_ `trace.clock`. `resolveScope`'s resolved
  * `ConstructionTrace` already carries whichever source's clock this
  * construction should resolve "now" against (the active `wrap` frame's, this
  * instance's own, or a pin from a replayed {@link Trace}). No separate
  * resolution needed here: a `RandomSource`'s clock is baked in, as a concrete
  * number, the moment it's built (`Random/index.ts`'s `toRandomSource`), so
- * `construction.clock` is never the unresolved `"derived"` sentinel by the time
- * it reaches this point. `algorithm` is read off `rooted`, not
+ * `trace.clock` is never the unresolved `"derived"` sentinel by the time it
+ * reaches this point. `algorithm` is read off `resolved`, not
  * `config.algorithm`: an active `wrap` frame's source may carry a different
  * one.
  */
@@ -453,21 +454,17 @@ function toConstructionContext(
   options: ConstructorOptions,
   stack: Stack,
 ): ConstructionContext {
-  const { source: rooted, root: construction } = resolveScope(
-    source,
-    options,
-    stack,
-  );
+  const { source: resolved, trace } = resolveScope(source, options, stack);
 
   return {
-    toTrace: (path, kind) => ({ ...construction, path, kind }),
-    algorithm: rooted.algorithm,
+    toTrace: (path, kind) => ({ ...trace, path, kind }),
+    algorithm: resolved.algorithm,
   };
 }
 
 /**
- * Resolve the root one `new Fabricator(...)` call's leaves are dispatched
- * against — both the `RandomSource` to draw from and that source's resolved
+ * Resolve the construction-owned trace slots for one `new Fabricator(...)` call
+ * — both the `RandomSource` to draw from and that source's resolved
  * `ConstructionTrace`. `construct()` calls this exactly once and reuses both
  * across every leaf, rather than re-resolving per leaf.
  *
@@ -504,7 +501,7 @@ function resolveScope(
   source: RandomSource,
   options: ConstructorOptions,
   stack: Stack,
-): { source: RandomSource; root: ConstructionTrace } {
+): { source: RandomSource; trace: ConstructionTrace } {
   const frame = stack.current();
   const base = frame?.source ?? source;
 
@@ -515,11 +512,11 @@ function resolveScope(
     return normalizeSalt(options.salt);
   });
 
-  const pins: RootPins = {
+  const pins: ConstructionPins = {
     salt,
     clock: options.clock,
     ordinal: options.ordinal,
   };
 
-  return { source: base, root: base.toRoot(pins) };
+  return { source: base, trace: base.toConstructionTrace(pins) };
 }

@@ -15,19 +15,20 @@ import type { PlainObject } from "../Utility/Types";
  * `toTrace` records this node's {@link Trace} — a plain object literal, no
  * hashing. Hashing is paid only where a kind actually calls
  * `toStreamFromTrace(algorithm, trace)`. Bound once in `construct()` to this
- * one construction's already-resolved `RandomSource`/ `ConstructionTrace` pair
+ * one construction's already-resolved `RandomSource`/`ConstructionTrace` pair
  * (see `Constructor.ts`'s `resolveScope`) — every leaf calls `toTrace` with
  * only its own structural `path` and kind, never re-resolving the
- * construction's root itself. `T.recursive` is the one kind that rebinds
- * `toTrace`: each lazy expansion opens its own scope on the node's own private
- * forked `RandomSource` (see `recursive/Fabricator.ts`), so a data-dependent
- * expansion count can never perturb, or be perturbed by, anything else built
- * from the same `initialize()` instance — `RandomSource.fork`
- * (`Random/Types.ts`) is the isolation primitive.
+ * construction-owned slots itself. `T.recursive` is the one kind that rebinds
+ * `toTrace`: each lazy expansion resolves its construction trace on the node's
+ * own private forked `RandomSource` (see `recursive/Fabricator.ts`), so a
+ * data-dependent expansion count can never perturb, or be perturbed by,
+ * anything else built from the same `initialize()` instance —
+ * `RandomSource.fork` (`Random/Types.ts`) is the isolation primitive.
  *
  * `algorithm` rather than the `RandomSource` itself: stream derivation depends
- * on no per-source state, and a leaf has no business with `toRoot`/`fork`.
- * `clock` is not a field of its own — it is always `trace.clock`.
+ * on no per-source state, and a leaf has no business with
+ * `toConstructionTrace`/`fork`. `clock` is not a field of its own — it is
+ * always `trace.clock`.
  *
  * `self` is what makes `case "recursive.self"` resolve to "recurse one level
  * deeper, right now" — absent outside any active recursion, which is how `case
@@ -49,11 +50,11 @@ export type ConstructionContext = {
  * `toStreamFromTrace(algorithm, trace)`. The guard is the call site's own `if
  * (meta.produce)` branch (or the equivalent drawing path), not an unevaluated
  * closure. `algorithm` rather than the `RandomSource`: derivation depends on no
- * per-source state, and a leaf has no business with `toRoot`/`fork`. No
- * `clock`: it is `trace.clock`, always. A kind-specific extra — an array's
- * `element`, an object's `fields`, a choice's `weightings` — still follows as
- * its own trailing parameter: those vary per kind and were never part of the
- * shared prefix this replaces.
+ * per-source state, and a leaf has no business with
+ * `toConstructionTrace`/`fork`. No `clock`: it is `trace.clock`, always. A
+ * kind-specific extra — an array's `element`, an object's `fields`, a choice's
+ * `weightings` — still follows as its own trailing parameter: those vary per
+ * kind and were never part of the shared prefix this replaces.
  */
 export type FabricatorContext<$Schema> = {
   schema: $Schema;

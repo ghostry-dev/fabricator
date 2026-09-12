@@ -427,12 +427,12 @@ test("fork() produces an isolated source that replays from its own salt", () => 
   const b = parent.fork("fork-child");
 
   const streamA = toStreamFromTrace(a.algorithm, {
-    ...a.toRoot(),
+    ...a.toConstructionTrace(),
     path: [],
     kind: "number",
   });
   const streamB = toStreamFromTrace(b.algorithm, {
-    ...b.toRoot(),
+    ...b.toConstructionTrace(),
     path: [],
     kind: "number",
   });
@@ -455,21 +455,21 @@ test("fork() never perturbs, or is perturbed by, its parent's own streams", () =
   const child = parent.fork("unrelated-child-salt");
   for (let i = 0; i < 50; i++) {
     toStreamFromTrace(child.algorithm, {
-      ...child.toRoot(),
+      ...child.toConstructionTrace(),
       path: [],
       kind: "number",
     });
   }
 
   const afterForkUsage = toStreamFromTrace(parent.algorithm, {
-    ...parent.toRoot(),
+    ...parent.toConstructionTrace(),
     path: [],
     kind: "number",
   }).seed;
 
   const control = toRandomSource({ salt: "fork-isolation", clock: 0 });
   const untouched = toStreamFromTrace(control.algorithm, {
-    ...control.toRoot(),
+    ...control.toConstructionTrace(),
     path: [],
     kind: "number",
   }).seed;
@@ -485,8 +485,8 @@ test("fork() never perturbs, or is perturbed by, its parent's own streams", () =
  */
 test("a leaf's stream seed is exactly the encoding of its own trace", () => {
   const source = toRandomSource({ salt: "trace-is-the-key", clock: 12345 });
-  const root = source.toRoot();
-  const trace = { ...root, path: ["field"], kind: "number" };
+  const construction = source.toConstructionTrace();
+  const trace = { ...construction, path: ["field"], kind: "number" };
   const stream = toStreamFromTrace(source.algorithm, trace);
 
   expect(stream.seed).toBe(encode(trace));

@@ -35,14 +35,13 @@ export type Fabricator<
  * how deep this `fabricate()` goes — so no structural path distinguishes
  * sibling expansions at the same depth (an `array` of three `self` children
  * calls `fabricateAt` three times on one shared element Fabricator; the schema
- * does not tell them apart). Each expansion gets its own _root_: `forkSource`
- * mints an isolated `RandomSource` salted from this node's draw, and each
- * `fabricateAt` resolves an ordinary construction root on it
- * (`RandomSource.toRoot`), recorded on each expansion's `trace`. The private
- * source's construction counter orders expansions; nothing to increment here.
- * Isolation also keeps this node's data-dependent draws from perturbing (or
- * being perturbed by) an unrelated Fabricator from the same `initialize()`
- * instance.
+ * does not tell them apart). `forkSource` mints an isolated `RandomSource`
+ * salted from this node's draw, and each `fabricateAt` resolves a
+ * `ConstructionTrace` on it (`RandomSource.toConstructionTrace`), recorded on
+ * each expansion's `trace`. The private source's construction counter orders
+ * expansions; nothing to increment here. Isolation also keeps this node's
+ * data-dependent draws from perturbing (or being perturbed by) an unrelated
+ * Fabricator from the same `initialize()` instance.
  *
  * Each `self` gets its own independently-dispatched expansion — calling
  * `context.self` twice (two array slots) is two `fabricateAt` calls, each with
@@ -70,7 +69,7 @@ export function Fabricator<$Body>(
     const atMax = depth >= meta.depth.max;
     const target = atMax ? meta.terminal : meta.body;
 
-    const construction = privateSource.toRoot();
+    const construction = privateSource.toConstructionTrace();
 
     const context: ConstructionContext = {
       toTrace: (path, kind) => ({ ...construction, path, kind }),

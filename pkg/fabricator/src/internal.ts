@@ -78,9 +78,9 @@ export {
 } from "./Random";
 export type {
   Algorithm,
+  ConstructionPins,
   ConstructionTrace,
   ConstructorOptions,
-  RootPins,
   Salt,
   Trace,
 } from "./Random/Types";

@@ -75,8 +75,8 @@ export type Trace = {
 
 /**
  * Caller-supplied overrides for the construction-owned {@link Trace} slots
- * {@link RandomSource.toRoot} resolves. `path`/`kind` are the only slots absent:
- * they are per-node and applied in `construct()`, not here.
+ * {@link RandomSource.toConstructionTrace} resolves. `path`/`kind` are the only
+ * slots absent: they are per-node and applied in `construct()`, not here.
  *
  * `salt` is a pin like the rest — it substitutes into that trace slot and does
  * nothing else. It does not fork, so it neither resets nor sidesteps this
@@ -89,18 +89,18 @@ export type Trace = {
  * ordinal" — is taken verbatim and does not advance the counter. That is all a
  * replay needs, since every real {@link Trace} carries a defined ordinal.
  */
-export type RootPins = {
+export type ConstructionPins = {
   salt?: ReadonlyArray<string> | undefined;
   clock?: number | undefined;
   ordinal?: number | null | undefined;
 };
 
 /**
- * A construction's root: every {@link Trace} slot a construction fixes, before a
- * leaf supplies its own `path`/`kind`. `RandomSource.toRoot` resolves this once
- * per construction; callers spread it into a full {@link Trace} per leaf and
- * hand that to `toStreamFromTrace`. One construction-ordinal bump is reused
- * across every leaf that construction dispatches.
+ * Every {@link Trace} slot fixed once per construction, before a leaf supplies
+ * its own `path`/`kind`. `RandomSource.toConstructionTrace` resolves this once;
+ * callers spread it into a full {@link Trace} per leaf and hand that to
+ * `toStreamFromTrace`. One construction-ordinal bump is reused across every
+ * leaf that construction dispatches.
  */
 export type ConstructionTrace = Omit<Trace, "path" | "kind">;
 
@@ -186,9 +186,9 @@ export type Options = {
  * constructions like any other. Two same-salt builds therefore diverge.
  *
  * `clock` / `ordinal` pin the construction-owned {@link Trace} slots
- * {@link RandomSource.toRoot} would otherwise resolve. Definedness, not `in`: a
- * given `ordinal` — a number, or `null` for "no ordinal" — is taken verbatim
- * with no counter bump, which is all a replay needs; without it, the
+ * {@link RandomSource.toConstructionTrace} would otherwise resolve. Definedness,
+ * not `in`: a given `ordinal` — a number, or `null` for "no ordinal" — is taken
+ * verbatim with no counter bump, which is all a replay needs; without it, the
  * construction takes the source counter's next value. A salted construction is
  * not, by default, asking for a different "now"; a replayed trace whose `clock`
  * is present explicitly is.
@@ -219,21 +219,23 @@ export type ConstructorOptions = {
  */
 export type RandomSource = {
   /**
-   * Resolve one construction's root: this source's own `salt`/`clock` and the
-   * next construction ordinal, each overridable by {@link RootPins}. Called once
-   * per `new Fabricator(...)` (or per lazy expansion of a `T.recursive` schema,
-   * each of which resolves its own root on a private forked source), never per
-   * leaf: the returned {@link ConstructionTrace} is what every leaf beneath it
-   * completes into a full {@link Trace} and hands to `toStreamFromTrace`. One
-   * construction-ordinal bump serves the whole construction.
+   * Resolve this source's `salt`/`clock` and the next construction ordinal,
+   * each overridable by {@link ConstructionPins}. Called once per `new
+   * Fabricator(...)` (or per lazy expansion of a `T.recursive` schema, each of
+   * which resolves its own construction trace on a private forked source),
+   * never per leaf: the returned {@link ConstructionTrace} is what every leaf
+   * beneath it completes into a full {@link Trace} and hands to
+   * `toStreamFromTrace`. One construction-ordinal bump serves the whole
+   * construction.
    */
-  toRoot(pins?: RootPins): ConstructionTrace;
+  toConstructionTrace(pins?: ConstructionPins): ConstructionTrace;
 
   /**
    * The algorithm this source (and every fork of it) hashes with. Stream
    * derivation is _not_ a member: it depends on no per-source state, so it is
-   * the free function `toStreamFromTrace(algorithm, trace)`. `toRoot` is the
-   * only stateful member (the construction counter).
+   * the free function `toStreamFromTrace(algorithm, trace)`.
+   * `toConstructionTrace` is the only stateful member (the construction
+   * counter).
    */
   readonly algorithm: Algorithm;
 
