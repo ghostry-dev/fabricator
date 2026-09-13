@@ -158,3 +158,54 @@ test("fork() alone has no ambient effect on ordinary construction", () => {
 
   expect(a).toBe(b);
 });
+
+/**
+ * `root` is the lineage's identity handle: a root names itself, every
+ * descendant names that same object, and two `initialize()` calls never share
+ * one. That last property is what makes `a.root === b.root` the "same lineage?"
+ * question — carrier identity cannot answer it, since two lineages may be
+ * handed the same `stack`.
+ */
+test("root is the lineage head, names itself on a root, and is shared by every descendant", () => {
+  const instance = initialize({ salt: "fork-root" });
+  const child = instance.fork({ salt: layer("child") });
+  const grandchild = child.fork({ salt: layer("grandchild") });
+
+  expect(instance.root).toBe(instance);
+  expect(child.root).toBe(instance);
+  expect(grandchild.root).toBe(instance);
+
+  expect(initialize({ salt: "fork-root-other" }).root).not.toBe(instance);
+});
+
+/**
+ * A `wrap`'s scope is an ordinary derived instance, so its `root` is the
+ * lineage head rather than the scope — the scope is not a root merely because a
+ * frame was entered for it.
+ */
+test("a wrap scope's root is the lineage head, not the scope", () => {
+  const instance = initialize({ salt: "fork-root-wrap" });
+
+  expect(
+    instance
+      .fork({ salt: layer("child") })
+      .wrap({ salt: layer("x") }, (scope) => scope.root),
+  ).toBe(instance);
+});
+
+/**
+ * `root` names the lineage's starting configuration, not whatever is in effect
+ * — the distinction that keeps it from being mistaken for an ambient accessor.
+ * Inside a wrap, `root.context.salt` does reflect the frame (the root is an
+ * ancestor, so it resolves against it), while `root.salt` stays the root's
+ * own.
+ */
+test("root is an identity, not the configuration in effect", () => {
+  const instance = initialize({ salt: "fork-root-identity" });
+  const child = instance.fork({ salt: layer("child") });
+
+  child.wrap({ salt: layer("x") }, (scope) => {
+    expect(scope.root.salt).toEqual(instance.salt);
+    expect(scope.root.context.salt).toEqual([...child.salt, "x"]);
+  });
+});

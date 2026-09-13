@@ -13,7 +13,16 @@ import { registry } from "../Schema/Registry";
 import { Layer } from "../Types";
 import { inline, isThenable, noop } from "../Utility/Core";
 import type { PlainObject } from "../Utility/Types";
-import type { Config, Context, Instance, Overlay, Stack } from "./Types";
+import { toInnermostFrame } from "./Stack/Visible";
+import type {
+  Ancestry,
+  Config,
+  Context,
+  Instance,
+  Overlay,
+  Stack,
+  Token,
+} from "./Types";
 
 /**
  * `combinatorial`'s default limit — `2**10`, so it admits ten independent
@@ -54,6 +63,17 @@ function resolveClock(config: Config<PlainObject>): number {
   return typeof config.clock === "number"
     ? config.clock
     : deriveClock(config.algorithm, normalizeSalt(config.salt));
+}
+
+/**
+ * One fresh instance identity. A `Symbol` rather than a counter or an object so
+ * it is unforgeable, unguessable, and cheap to compare; the description is for
+ * debuggers only and is never read. The cast is the brand — {@link Token}'s
+ * brand key is module-private to `Instance/Types.ts`, so this function is the
+ * only way one comes into being.
+ */
+function mint(): Token {
+  return Symbol("fabricator.instance") as Token;
 }
 
 /**
@@ -128,48 +148,100 @@ export function overlay<$Registry extends PlainObject>(
  * than each independently re-deriving one from the same config (and so silently
  * diverging/duplicating construction ordinals).
  *
- * `stack` is threaded straight through to `Constructor`/`enumerables` — this
- * function never reads or writes it itself, only passes it along so every built
- * `Fabricator`/`combinatorial`/`coverage` can consult whichever frame is active
- * _at the moment each is called_, not at this moment.
+ * `stack` and `ancestry` are threaded straight through to
+ * `Constructor`/`enumerables` — this function never reads the stack itself,
+ * only passes both along so every built `Fabricator`/`combinatorial`/`coverage`
+ * can consult whichever frame is visible to _this_ instance _at the moment each
+ * is called_, not at this moment.
+ *
+ * `parent` describes the instance this one is derived from, and its absence is
+ * the single marker of a root: `initialize` passes none, every `fork`/`wrap`
+ * passes the receiver's.
+ *
+ * A fresh token is minted either way, so no two instances share an identity,
+ * and the `ancestry` built here is _this_ instance's: the parent's plus one.
  */
 export function instantiate<$Registry extends PlainObject>(
   config: Config<$Registry>,
   stack: Stack,
+  parent?: { ancestry: Ancestry; root: Instance<PlainObject> },
 ): { instance: Instance<$Registry>; source: RandomSource } {
+  const ancestry: Ancestry =
+    typeof parent === "undefined" ? [mint()] : [...parent.ancestry, mint()];
+
   const source = toRandomSource({
     salt: config.salt,
     algorithm: config.algorithm,
     clock: resolveClock(config),
   });
 
-  const Fabricator = Constructor(source, stack);
-  const { combinatorial, coverage } = enumerables(source, config.limits, stack);
+  const Fabricator = Constructor(source, stack, ancestry);
+  const { combinatorial, coverage } = enumerables(
+    source,
+    config.limits,
+    stack,
+    ancestry,
+  );
+
+  /**
+   * The one derivation `fork` and `wrap` share: lay `over` on _this instance's_
+   * config and instantiate a child of it. They differ only in what they do with
+   * the result — `fork` returns the instance and drops the rest, `wrap` needs
+   * the resolved `config` and `source` too, for the frame it pushes.
+   */
+  function derive<const $Derived extends PlainObject = $Registry>(
+    over: Overlay<$Derived>,
+  ): {
+    config: Config<$Derived>;
+    instance: Instance<$Derived>;
+    source: RandomSource;
+  } {
+    const derived = overlay<$Derived>(config, over);
+
+    return {
+      ...instantiate<$Derived>(derived, stack, {
+        ancestry,
+        root: instance.root,
+      }),
+      config: derived,
+    };
+  }
 
   function fork<const $ForkRegistry extends PlainObject = $Registry>(
     forkOverlay: Overlay<$ForkRegistry> = {},
   ): Instance<$ForkRegistry> {
-    return instantiate(overlay<$ForkRegistry>(config, forkOverlay), stack)
-      .instance;
+    return derive<$ForkRegistry>(forkOverlay).instance;
   }
 
   /**
-   * Lays `wrapOverlay` over the _active frame's_ config when one exists, not
-   * over `config` (this instance's own) — the asymmetry with `fork` above: a
-   * nested `wrap({ salt: layer(...) })` accumulates onto whatever `wrap`
-   * already surrounds it, while a `fork` always stays a statement about its own
-   * parent alone.
+   * `derive` made ambient: the overlay lays over this instance's own config,
+   * same as `fork`, and the scope is then pushed as a frame for the extent of
+   * `block`. `wrap` writes the stack and never reads it — every read lives in
+   * `resolveScope`, `effectiveSource`, and the `context` getters — so what an
+   * overlay inherits from no longer depends on what happens to be open around
+   * the call.
+   *
+   * The frame is keyed on `ancestry`, **this** instance's, not the scope's: the
+   * scope is a fresh child, so keying on it would make every `fork` already
+   * taken off this instance a sibling of the scope, and calls on those forks
+   * would stop resolving against the frame. Keying on the origin keeps this
+   * instance's whole line resolving against it — the forks that predate the
+   * `wrap` included — while leaving a genuine sibling untouched (see
+   * {@link Ancestry}).
    */
   function wrap<$Return, const $WrapRegistry extends PlainObject = $Registry>(
     wrapOverlay: Overlay<$WrapRegistry>,
     block: (scope: Instance<$WrapRegistry>) => $Return,
   ): $Return {
-    const base = stack.current()?.config ?? config;
-    const scopedConfig = overlay<$WrapRegistry>(base, wrapOverlay);
-    const scoped = instantiate<$WrapRegistry>(scopedConfig, stack);
+    const scoped = derive<$WrapRegistry>(wrapOverlay);
 
     const result = stack.enter(
-      { config: scopedConfig, source: scoped.source },
+      {
+        config: scoped.config,
+        source: scoped.source,
+        instance: scoped.instance,
+        ancestry,
+      },
       () => block(scoped.instance),
     );
 
@@ -193,28 +265,59 @@ export function instantiate<$Registry extends PlainObject>(
   }
 
   /**
-   * Getters, not a snapshot — must reflect whichever frame is active at _read_
+   * The innermost frame _this_ instance may resolve against, or `undefined`
+   * outside any. Read fresh per access, never closed over: which frames are
+   * visible depends on what is open right now, and on this instance's own
+   * `ancestry` — a frame entered on a sibling is never one of them.
+   */
+  function visibleFrame() {
+    return toInnermostFrame(stack, ancestry);
+  }
+
+  /**
+   * Getters, not a snapshot — must reflect whichever frame is visible at _read_
    * time, since this one `Instance` outlives any number of `wrap`s entered and
    * exited around it. `config.salt` is already normalized by `overlay()`, but
    * `normalizeSalt` is called again here regardless, since `Config.salt`'s
    * declared type is the caller-facing `Salt`, not `ReadonlyArray<string>` (see
    * `Config`) — a no-op on an already-normalized array, but what actually
    * satisfies `Context.salt`'s type.
+   *
+   * `scope` is a function rather than a fifth getter: it is acted through
+   * rather than read, so freezing it would yield correct-looking code laying
+   * over the wrong base instead of a visibly stale value (see `Context`). As a
+   * function it survives destructuring.
    */
   const context: Context = {
     get salt() {
-      return normalizeSalt((stack.current()?.config ?? config).salt);
+      return normalizeSalt((visibleFrame()?.config ?? config).salt);
     },
     get algorithm() {
-      return (stack.current()?.config ?? config).algorithm;
+      return (visibleFrame()?.config ?? config).algorithm;
     },
     get clock() {
-      return resolveClock(stack.current()?.config ?? config);
+      return resolveClock(visibleFrame()?.config ?? config);
+    },
+    scope: () => visibleFrame()?.instance ?? instance,
+    get depth() {
+      return stack.visible(ancestry).length;
     },
   };
 
   const instance: Instance<$Registry> = {
     T: config.types,
+    ancestry,
+    /**
+     * A getter, so the root can name itself without a mutable local: `instance`
+     * is declared by this very statement, and a getter body runs only on read —
+     * the same forward reference `context.scope()` already relies on. Every
+     * descendant is handed this instance's own `root` by `derive`, so one
+     * object is shared by the whole lineage rather than re-derived per
+     * instance.
+     */
+    get root() {
+      return parent?.root ?? instance;
+    },
     Fabricator,
     combinatorial,
     coverage,

@@ -32,9 +32,11 @@ The shape `initialize()` returns:
 - **`salt`** — this instance's salt, always an array; empty if you didn't supply one (and no env var did)
 - **`combinatorial(schema)`** — every combination of every enumerable node in `schema` (every enum member, both sides of an optional field, and so on), as a lazy cartesian product. Throws eagerly, before producing anything, if the count would exceed `limits.combinatorial`.
 - **`coverage(schema)`** — the minimum set of instances such that every option of every enumerable node in `schema` appears at least once — count equal to the widest single axis, not the product, with narrower axes cycling to fill it. Unbounded by design: its count can never exceed the schema as written, so unlike `combinatorial` it carries no limit.
-- **`fork(overlay?)`** — derives a new, related `Instance`. See [`Instance.fork(overlay?)`](#instanceforkoverlay) below.
-- **`wrap(overlay, block)`** — makes a fork ambient for a block of code. See [`Instance.wrap(overlay, block)`](#instancewrapoverlay-block) below.
-- **`context`** — the configuration in effect right now. See [`Instance.context`](#instancecontext) below.
+- **`fork(overlay?)`** — derives a new, related `Instance`, the ordinary way to vary configuration. See [`Instance.fork(overlay?)`](#instanceforkoverlay) below.
+- **`wrap(overlay, block)`** — makes a fork ambient for a block of code, for when the scope cannot reach the code that needs it. See [`Instance.wrap(overlay, block)`](#instancewrapoverlay-block) below.
+- **`root`** — the head of this instance's lineage, for identity. See [`Instance.root`](#instanceroot) below.
+- **`context`** — what is in effect right now. See [`Instance.context`](#instancecontext) below.
+- **`ancestry`** — this instance's position in its lineage, as an opaque chain of per-instance tokens. Exposed so a caller can reason about which frames an instance's calls resolve against; for "same lineage?", compare `root`.
 
 Both `combinatorial` and `coverage` return a lazy, re-iterable `Iterable` — safe to iterate more than once, each pass drawing fresh randomness for whatever the enumeration didn't pin.
 
@@ -43,6 +45,8 @@ Both `combinatorial` and `coverage` return a lazy, re-iterable `Iterable` — sa
 ```ts
 function fork(overlay?: Overlay): Instance;
 ```
+
+The ordinary way to vary configuration, and the one to reach for before `wrap`: a fork is a value, so every receiver means exactly itself and nothing depends on what is open around the call site.
 
 Derives a new `Instance` laid over the one `fork` was called on: whatever `overlay` names overrides, whatever it omits inherits — `salt`, `algorithm`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value in every respect, including its own `fork`/`wrap`. A captured wall-clock or explicit `Date` is inherited as-is; an inherited `"derived"` clock re-derives from whichever salt the fork ends up with — see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
 
@@ -65,7 +69,9 @@ function wrap<$Return>(
 ): $Return;
 ```
 
-`fork(overlay)`, made ambient for the extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, or any other instance derived from the same root `initialize()` call — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use:
+Prefer [`fork`](#instanceforkoverlay) unless the scope cannot reach the code that needs it — a callback you don't own, a deep call stack, or call sites already written against a destructured `Fabricator`. Inside a `wrap`, a receiver no longer tells you which configuration a call draws from; that is what a `wrap` is for, and the reason it is not the default recommendation.
+
+`fork(overlay)`, made ambient for the extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, or on any other instance on that instance's ancestral line — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use:
 
 ```ts
 const { T, Fabricator, wrap } = initialize({ salt: "base" });
@@ -76,7 +82,23 @@ wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-A nested `wrap` lays its overlay over whichever `wrap` is _currently_ active, not over the instance it was called on — so `wrap({ salt: layer(...) })` accumulates with nesting depth, while a bare `salt` at any depth still replaces outright.
+The overlay lays over the instance `wrap` was called on, exactly as `fork`'s does, whether or not a `wrap` is already open around the call. So a nested `wrap` accumulates when it is reached through the enclosing `scope`, and restates when it is reached through a receiver bound outside — which a destructured `wrap` always is:
+
+```ts
+wrap({ salt: layer("a") }, (scope) => {
+  scope.wrap({ salt: layer("b") }, (inner) => {
+    inner.salt; // [...base.salt, "a", "b"] — composed
+  });
+
+  wrap({ salt: layer("b") }, (inner) => {
+    inner.salt; // [...base.salt, "b"] — restated from the base instance
+  });
+});
+```
+
+To compose onto whatever is in effect without holding the enclosing `scope`, go through [`context.scope()`](#instancecontext). A bare (non-layered) `salt` replaces outright either way.
+
+Which calls resolve against the frame follows the receiver's ancestral line: calls on that instance, on anything forked from it, and on its own ancestors up to the root — but never on a _sibling_ fork. See [Ambience follows the ancestral line](/guides/reproducibility#ambience-follows-the-ancestral-line).
 
 `block` may be `async`. On any runtime with `node:async_hooks` — Node, Bun, Deno — the ambient frame is carried by `AsyncLocalStorage`, so it survives `await`, and two concurrent `wrap`s never see each other's configuration:
 
@@ -89,7 +111,32 @@ await wrap({ salt: layer("a") }, async () => {
 
 Anywhere else — a browser bundle, or an `initialize({ stack })` given a synchronous carrier — a frame cannot outlive the block's first `await`. Rather than let a later build resolve against the base instance unannounced, `wrap` throws `SynchronousStackError` as soon as it sees `block` return a promise. The check is on the block, not on what it does: it fires even if the block only ever touches `scope`, because whether something later reads the ambient frame is not knowable from `wrap`. Keep the block synchronous, or hand `initialize({ stack })` an async-capable carrier.
 
-See [Making a fork ambient: wrap](/guides/reproducibility#making-a-fork-ambient-wrap) for the full walkthrough.
+See [When you cannot thread the scope: wrap](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) for the full walkthrough, including why `fork` is the better default choice.
+
+## `Instance.root`
+
+```ts
+readonly root: Instance;
+```
+
+The instance at the head of this lineage — the one `initialize()` returned. A root's own `root` is itself, so it is never `undefined` and no caller has to handle absence.
+
+Its job is identity. `a.root === b.root` answers "same lineage?", which `fork`/`wrap` descent preserves and which two separate `initialize()` calls never share, even when handed the same `stack`:
+
+```ts
+const base = initialize({ salt: "base" });
+const tenant = base.fork({ salt: layer("tenant-7") });
+
+tenant.root === base; // true
+base.root === base; // true — a root names itself
+initialize({ salt: "base" }).root === base; // false
+```
+
+It is **not** a way to reach "the ambient instance" — every instance in a lineage resolves against the frames on its own line, so there is nothing to reach for. Nor is it the configuration to build against in preference to the one you hold: `root`'s config is where the lineage started, not what is in effect now. For that, see [`context.scope()`](#instancecontext).
+
+Typed as `Instance` with an unparameterized registry. A root's registry is fixed at `initialize` and nothing later changes it — a `fork({ types })` mints a new instance and leaves the root alone. What a descendant loses is the ability to _name_ it: after such a fork its own `$Registry` is the fork's, so the root's is no longer recoverable from it. Recovering it would mean threading a second type parameter through `fork` and `wrap`, which is not worth it for an accessor whose job is identity — if you mean to build, you want the registry of the instance you hold. So `root.T` is untyped; `root.Fabricator` is unaffected, carrying no registry parameter.
+
+This is a different situation from [`context.scope()`](#instancecontext), whose registry depends on which instance entered the innermost visible frame and so cannot be known statically at all.
 
 ## `Instance.context`
 
@@ -98,10 +145,46 @@ readonly context: {
   salt: readonly string[];
   algorithm: (seed: string) => () => number;
   clock: number;
+  depth: number;
+  scope(): Instance;
 };
 ```
 
-The configuration in effect right now: the innermost active `wrap` frame's, or the instance's own outside any `wrap`. A live view, not a snapshot — a `context` reference held onto before a `wrap` still reflects it while active, and reverts once the `wrap` ends. `clock` is always a resolved epoch-millisecond number, even under `"derived"` — see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+What is in effect right now: the innermost `wrap` frame this instance can see, or the instance itself outside any. A live view, not a snapshot — a `context` reference held onto before a `wrap` still reflects it while active, and reverts once the `wrap` ends. `clock` is always a resolved epoch-millisecond number, even under `"derived"` — see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+
+`scope()` returns that configuration as a usable `Instance` — the frame's own scope, or this instance outside one. It is how to compose against whatever is active from a receiver bound elsewhere:
+
+```ts
+const { wrap, context } = initialize({ salt: "base" });
+
+wrap({ salt: layer("a") }, () => {
+  context.scope().wrap({ salt: layer("b") }, (inner) => {
+    inner.salt; // [...base.salt, "a", "b"]
+  });
+});
+```
+
+Unlike rebuilding an overlay out of `context.salt` by hand, it carries `types`, `limits`, `algorithm` and `clock` across as well.
+
+`depth` is how many frames an instance's own calls can resolve against, `0` outside any — real nesting depth, so a frame entered on a sibling fork does not count toward it.
+
+The four value properties are getters, so **destructure `context` itself, never those**. Holding the object keeps the live view; pulling one out calls its getter once and freezes the result, as does spreading (`{ ...context }`):
+
+```ts
+const { context } = initialize({ salt: "base" }); // live
+const { salt } = instance.context; // a snapshot, taken right now
+```
+
+`scope` is exempt, and is a function for exactly that reason. It is the one member you _act through_ rather than read, so freezing it would not show up as an obviously stale value — an ambient build through the captured instance would still be correct while `wrap`/`fork` on it laid over the wrong base. Capturing a function captures the lookup instead, so this stays live:
+
+```ts
+const { scope } = instance.context;
+wrap({ salt: layer("a") }, () => {
+  scope(); // the frame's scope, resolved now — not when it was destructured
+});
+```
+
+The `Instance` that `scope()` hands back is fixed, like any other instance. Holding that result across a frame change is a caller saying they wanted that one; holding `scope` keeps you live.
 
 ## `layer(salt)`
 

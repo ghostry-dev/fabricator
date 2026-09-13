@@ -61,7 +61,10 @@ export function initialize<
 
     /**
      * The ambient carrier backing `wrap` for this lineage — override only to
-     * force a specific one.
+     * force a specific one. A choice of carrier and nothing more: lineage
+     * identity is the instance's own `ancestry[0]`, so handing the same carrier
+     * to two `initialize()` calls does not join them — neither one's reads ever
+     * resolve the other's frames.
      *
      * Left unset (the norm), the `#stack` package import picks it: every
      * runtime with `node:async_hooks` — Node, Bun, Deno — gets the
@@ -167,5 +170,17 @@ export type { Trace } from "./Random/Types";
  * parameter is a `Partial` of; `Overlay` is what `fork`/`wrap` accept;
  * `Context` is `instance.context`'s own type, so a caller writing a helper that
  * reads it can name the parameter.
+ *
+ * `Ancestry` comes with `Stack`, whose `visible` takes one, so anyone
+ * implementing a carrier can name the parameter. `Token` is deliberately _not_
+ * exported: a chain is opaque, its elements are comparable only by identity,
+ * and the ordinary "same lineage?" question is `a.root === b.root` rather than
+ * anything a caller needs to name.
  */
-export type { Config, Context, Overlay, Stack } from "./Instance/Types";
+export type {
+  Ancestry,
+  Config,
+  Context,
+  Overlay,
+  Stack,
+} from "./Instance/Types";

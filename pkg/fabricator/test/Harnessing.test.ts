@@ -392,3 +392,43 @@ test("an outer integration's around nests around fabricator's, and the body's va
   expect(log).toEqual(["open", "body", "close"]);
   expect(result).toEqual(["a", ["testing-nesting", "test", "suite", "a"]]);
 });
+
+/**
+ * The instance handed to `integration(...)` need not be a lineage root. A
+ * caller may fork an application-wide configuration and treat that fork as
+ * _their_ root — destructuring `Fabricator` off it and never touching the
+ * instance `initialize()` returned.
+ *
+ * Ambience has to reach that fork, and reach it through its own destructured
+ * `Fabricator`, or per-test partitioning silently stops working for exactly the
+ * setup a careful user is most likely to write. The frame is keyed on the
+ * instance `wrap` was called on — the fork — so the fork is its own origin and
+ * resolves against it; the lineage root, being an ancestor, resolves against it
+ * too.
+ *
+ * Pinned because every other test in this file wires a root, which would leave
+ * this case uncovered.
+ */
+test("a non-root instance handed to integration() is still reached by ambience, through its own destructured Fabricator", () => {
+  const root = initialize({ salt: "testing-non-root", clock: CLOCK });
+  const testing = root.fork({ salt: layer("testing") });
+
+  /** The user's own "root": nothing below ever names `root` again. */
+  const { Fabricator, T } = testing;
+
+  const seen = run(integration(testing), idA, ({ fabricator }) => ({
+    provided: fabricator.salt,
+    ambientOnTheFork: testing.context.salt,
+    ambientOnTheRoot: root.context.salt,
+    builtOnTheFork: new Fabricator(T.number).trace.salt,
+  }));
+
+  const expected = ["testing-non-root", "testing", "test", "suite", "a"];
+
+  expect(seen).toEqual({
+    provided: expected,
+    ambientOnTheFork: expected,
+    ambientOnTheRoot: expected,
+    builtOnTheFork: expected,
+  });
+});

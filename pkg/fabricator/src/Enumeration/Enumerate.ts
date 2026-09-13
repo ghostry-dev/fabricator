@@ -1,7 +1,8 @@
 import { shuffle } from "../Distribution";
 import { FabricatorError } from "../Error";
 import { Constructor } from "../Fabricator/Constructor";
-import type { Stack } from "../Instance/Types";
+import { toInnermostFrame } from "../Instance/Stack/Visible";
+import type { Ancestry, Stack } from "../Instance/Types";
 import { toStreamFromTrace } from "../Random";
 import type { RandomSource, Salt } from "../Random/Types";
 import type { AnySchema, ValueOf } from "../Schema/Types";
@@ -11,7 +12,7 @@ import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
 /**
  * Typed `combinatorial`/`coverage` boundary, closing over one instance's
  * `source` and its already-validated `limits` — same shape as
- * `Constructor(source, stack)`. No separate `clock`: `source` already carries
+ * `Constructor(source, stack, ancestry)`. No separate `clock`: `source` carries
  * its resolved clock (`Random/Types.ts`'s `Options.clock`), so `Constructor`'s
  * `toConstructionContext` reads it off the resolved `ConstructionTrace`.
  * `plan`/ `resolve` (`./Plan.ts`) do the untyped recursive work; this is the
@@ -19,14 +20,14 @@ import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
  * split.
  *
  * Two derived salts — one per API — each composed from the _effective_ source's
- * salt (`effectiveSource()` below — the active `wrap` frame's, or this
- * instance's `source`; read fresh on every `combinatorial(...)`/`coverage(...)`
- * call, not once when `enumerables()` was built, so the same `combinatorial`
- * reference behaves differently inside an active `wrap`). Each build pins that
- * salt via `new Fabricator(schema, { salt })` (see `Constructor.ts`'s
- * `construct()`) — a pin, not a fork — so every rebuild of one schema draws
- * from the same universe, distinct from anything built under the instance's own
- * salt.
+ * salt (`effectiveSource()` below — the innermost visible `wrap` frame's, or
+ * this instance's `source`; read fresh on every
+ * `combinatorial(...)`/`coverage(...)` call, not once when `enumerables()` was
+ * built, so the same `combinatorial` reference behaves differently inside a
+ * `wrap` this instance can see). Each build pins that salt via `new
+ * Fabricator(schema, { salt })` (see `Constructor.ts`'s `construct()`) — a pin,
+ * not a fork — so every rebuild of one schema draws from the same universe,
+ * distinct from anything built under the instance's own salt.
  *
  * `ordinal: null` is pinned alongside it, and is not incidental: a salt says
  * nothing about ordering, so without this pin each lazy rebuild would take the
@@ -40,16 +41,19 @@ export function enumerables(
   source: RandomSource,
   limits: Limits,
   stack: Stack,
+  ancestry: Ancestry,
 ): { combinatorial: Enumerable; coverage: Enumerable } {
-  const Fabricator = Constructor(source, stack);
+  const Fabricator = Constructor(source, stack, ancestry);
 
   /**
-   * The active `wrap` frame's source when one exists, else this instance's own
-   * — read fresh every time it's called, never cached, so a seed derived from
-   * it reflects whichever frame is active _right now_.
+   * The innermost frame this instance can see, when there is one, else its own
+   * source — read fresh every time it's called, never cached, so a seed derived
+   * from it reflects whatever is visible _right now_. A frame entered on a
+   * sibling instance is not visible and is skipped
+   * (`Instance/Stack/Visible.ts`).
    */
   function effectiveSource(): RandomSource {
-    return stack.current()?.source ?? source;
+    return toInnermostFrame(stack, ancestry)?.source ?? source;
   }
 
   /**

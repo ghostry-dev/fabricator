@@ -66,7 +66,7 @@ A pinned `Date` is inherited unchanged by every test, so the whole suite shares 
 
 ## What each test's salt is
 
-Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#making-a-fork-ambient-wrap) with its identity [layered](/guides/reproducibility#composing-instead-of-replacing-layer) onto the instance salt:
+Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) with its identity [layered](/guides/reproducibility#composing-instead-of-replacing-layer) onto the instance salt:
 
 ```ts
 [...instanceSalt, "test", ...describeNames, testName]; // an ordinary test
@@ -77,6 +77,24 @@ Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#makin
 Because it layers rather than replaces, `initialize({ salt })` or [`FABRICATOR_SALT`](/guides/reproducibility#env-var-salting) still re-salts the whole suite at once.
 
 Each `wrap` also gets a fresh [construction counter](/guides/reproducibility#construction-order), so the first `new Fabricator(...)` in every test is that test's construction 0. What another test built, or whether it ran at all, never reaches it: `.only`, name filters, sharding, and `.concurrent` cannot shift a test's data.
+
+## Why this uses `wrap`
+
+The [reproducibility guide](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) recommends `fork` over `wrap` in ordinary code, because a fork's receivers each mean exactly themselves. This integration is the case that recommendation exempts: it has to apply a per-test configuration to a body it did not write and cannot thread a parameter into. Ambience is the only way to reach `new Fabricator(User)` inside someone else's test, so `wrap` is the right tool here — and `context.fabricator` is still provided for anywhere you would rather be explicit.
+
+The instance you hand `integration(...)` **need not be the one `initialize()` returned.** Forking an application-wide configuration and treating that fork as your own root works exactly the same way:
+
+```ts
+const app = initializeFabricator({ clock: new Date("2024-01-01T00:00:00Z") });
+export const fabricator = app.fork({ salt: layer("testing") });
+
+export const { describe, it, expect } = initializeHarness({
+  framework,
+  integrations: [fabricatorIntegration(fabricator)],
+});
+```
+
+Each test's frame is keyed on the instance `wrap` was called on — here the fork — so a `Fabricator` destructured off that fork picks up the per-test identity, and the per-test salt simply gains `"testing"` ahead of the identity. Which instance a lineage started from is not relevant here.
 
 ## Reaching the scope
 

@@ -1,4 +1,9 @@
-import { FabricatorError, initialize, layer } from "@ghostry/fabricator";
+import {
+  FabricatorError,
+  initialize,
+  layer,
+  registry,
+} from "@ghostry/fabricator";
 import { toSynchronousStack } from "@ghostry/fabricator/internal";
 import { expect, test } from "bun:test";
 
@@ -67,13 +72,67 @@ test("wrap returns the block's own return value", () => {
   expect(instance.wrap({ salt: layer("x") }, () => 42)).toBe(42);
 });
 
-test("a nested wrap({ salt: layer(...) }) composes onto the active frame, equal to one flat wrap with the combined layer", () => {
+/**
+ * `wrap` lays its overlay over the instance it was called on, so nesting
+ * accumulates when the inner `wrap` is reached _through the enclosing scope_ —
+ * the instance the outer block was handed. That is the composing form, and it
+ * equals one flat `wrap` carrying both layers.
+ */
+test("a nested scope.wrap({ salt: layer(...) }) composes onto the enclosing scope, equal to one flat wrap with the combined layer", () => {
   const instance = initialize({ salt: "wrap-nest" });
+
+  const nested = instance.wrap({ salt: layer("a") }, (scope) =>
+    scope.wrap({ salt: layer("b") }, () =>
+      new instance.Fabricator(instance.T.number).fabricate(),
+    ),
+  );
+
+  const flat = instance.wrap({ salt: layer(["a", "b"]) }, () =>
+    new instance.Fabricator(instance.T.number).fabricate(),
+  );
+
+  expect(nested).toBe(flat);
+});
+
+/**
+ * The counterpart, and the reason the rule is worth stating: a `wrap` reached
+ * through a receiver bound _outside_ the enclosing block — the common case,
+ * since a destructured `wrap` is permanently bound to the instance it came from
+ * — restates from that instance rather than accumulating. The enclosing
+ * `layer("a")` is discarded, exactly as a bare `salt` discards it.
+ */
+test("a nested wrap on the base instance restates from that instance, ignoring the enclosing frame", () => {
+  const instance = initialize({ salt: "wrap-nest-restate" });
 
   const nested = instance.wrap({ salt: layer("a") }, () =>
     instance.wrap({ salt: layer("b") }, () =>
       new instance.Fabricator(instance.T.number).fabricate(),
     ),
+  );
+
+  const flat = instance.wrap({ salt: layer("b") }, () =>
+    new instance.Fabricator(instance.T.number).fabricate(),
+  );
+
+  expect(nested).toBe(flat);
+});
+
+/**
+ * `context.scope()` is how to compose onto whatever is in effect without
+ * holding the enclosing block's `scope` — the explicit spelling of what `wrap`
+ * itself used to do implicitly. Reached through a base-bound receiver, exactly
+ * as the restating test above, it nevertheless accumulates, because the
+ * receiver it resolves to is the frame's own scope.
+ */
+test("a nested context.scope().wrap({ salt: layer(...) }) composes onto the frame in effect", () => {
+  const instance = initialize({ salt: "wrap-nest-context-scope" });
+
+  const nested = instance.wrap({ salt: layer("a") }, () =>
+    instance.context
+      .scope()
+      .wrap({ salt: layer("b") }, () =>
+        new instance.Fabricator(instance.T.number).fabricate(),
+      ),
   );
 
   const flat = instance.wrap({ salt: layer(["a", "b"]) }, () =>
@@ -100,26 +159,32 @@ test("a bare salt in a nested wrap replaces, ignoring the enclosing frame", () =
 });
 
 /**
- * `wrap` lays its overlay over the _active frame_, not over the instance it was
- * called on — so calling `sibling.wrap(...)` while `instance`'s own wrap is
- * active composes onto `instance`'s frame, completely ignoring `sibling`'s own
- * base salt.
+ * The receiver decides, whichever instance it is: `fork.wrap(...)` entered
+ * while another `wrap` is already open still lays over the fork's own config,
+ * keeping its `"fork"` salt and discarding the enclosing `"a"`. Built through
+ * `scope` rather than `instance`, because `instance` is not on the line of a
+ * frame entered on its own child's behalf — see the sibling tests below.
  */
-test("wrap() called on a forked instance while another wrap is active lays over the active frame, not the fork's own base", () => {
+test("wrap() called on a forked instance while another wrap is open still lays over that fork's own base", () => {
   const instance = initialize({ salt: "wrap-fork-nesting" });
-  const sibling = instance.fork({ salt: layer("sibling") });
+  const forked = instance.fork({ salt: layer("fork") });
 
   const nested = instance.wrap({ salt: layer("a") }, () =>
-    sibling.wrap({ salt: layer("b") }, () =>
-      new instance.Fabricator(instance.T.number).fabricate(),
+    forked.wrap({ salt: layer("b") }, (scope) =>
+      new scope.Fabricator(scope.T.number).fabricate(),
     ),
   );
 
-  const flat = instance.wrap({ salt: layer(["a", "b"]) }, () =>
-    new instance.Fabricator(instance.T.number).fabricate(),
+  const flat = forked.wrap({ salt: layer("b") }, (scope) =>
+    new scope.Fabricator(scope.T.number).fabricate(),
   );
 
   expect(nested).toBe(flat);
+  expect(
+    instance.wrap({ salt: layer("a") }, () =>
+      forked.wrap({ salt: layer("b") }, (scope) => scope.salt),
+    ),
+  ).toEqual([...forked.salt, "b"]);
 });
 
 /**
@@ -149,6 +214,195 @@ test("a sibling fork created outside a wrap is overridden inside it — both Fab
 
   expect(siblingBuildInWrap).toBe(expectedBuild);
   expect(siblingCombinatorialInWrap).toEqual(expectedCombinatorial);
+});
+
+/**
+ * Three generations, so both directions of the ancestral line are reachable
+ * from one fixture: `root` → `mid` → `childA`/`childB`.
+ */
+function toGenerations(salt: string) {
+  const root = initialize({ salt });
+  const mid = root.fork({ salt: layer("mid") });
+
+  return {
+    root,
+    mid,
+    childA: mid.fork({ salt: layer("a") }),
+    childB: mid.fork({ salt: layer("b") }),
+  };
+}
+
+/**
+ * The limit on ambient reach: a frame entered on one `fork` is invisible to
+ * another `fork` of the same parent. Two sibling derivations are unrelated
+ * statements, so neither should start drawing the other's data merely because
+ * the other happens to be mid-`wrap`.
+ *
+ * Asserted on salt rather than on a fabricated value: `childA` resolving
+ * against its own source twice takes two ordinals, so equal values would be the
+ * wrong expectation even though the source is right.
+ */
+test("a frame entered on one fork is invisible to a sibling fork — Fabricator, combinatorial, and context alike", () => {
+  const { childA, childB } = toGenerations("ancestry-siblings");
+
+  let builtSalt: ReadonlyArray<string> | undefined;
+  let contextSalt: ReadonlyArray<string> | undefined;
+  let depth: number | undefined;
+
+  childB.wrap({ salt: layer("frame") }, () => {
+    builtSalt = new childA.Fabricator(childA.T.number).trace.salt;
+    contextSalt = childA.context.salt;
+    depth = childA.context.depth;
+  });
+
+  expect(builtSalt).toEqual(childA.salt);
+  expect(contextSalt).toEqual(childA.salt);
+  expect(depth).toBe(0);
+});
+
+/**
+ * Ambience runs both ways along the line. A frame entered on `childB` reaches
+ * its ancestors — `mid` and `root` — because each is on `childB`'s line, and
+ * reaches anything derived from `childB` inside the block for the same reason.
+ * Only a divergence, as in the sibling test above, cuts it.
+ */
+test("a frame entered on a child reaches its ancestors and its own descendants", () => {
+  const { root, mid, childB } = toGenerations("ancestry-both-directions");
+
+  const expected = [...childB.salt, "frame"];
+
+  let rootSalt: ReadonlyArray<string> | undefined;
+  let midSalt: ReadonlyArray<string> | undefined;
+  let descendantSalt: ReadonlyArray<string> | undefined;
+
+  childB.wrap({ salt: layer("frame") }, () => {
+    rootSalt = new root.Fabricator(root.T.number).trace.salt;
+    midSalt = mid.context.salt;
+    descendantSalt = childB.fork().context.salt;
+  });
+
+  expect(rootSalt).toEqual(expected);
+  expect(midSalt).toEqual(expected);
+  expect(descendantSalt).toEqual(expected);
+});
+
+/**
+ * Why `visible` filters a chain rather than reporting its innermost frame: with
+ * `mid`'s `wrap` open and `childA`'s nested inside it, `childB` must step
+ * _over_ the frame it cannot see and keep walking outward to the one it can.
+ * Stopping at the first invisible frame would leave `childB` on its own config,
+ * silently outside a `wrap` that does apply to it.
+ */
+test("a reader skips an invisible frame and resolves against the innermost one it can see", () => {
+  const { mid, childA, childB } = toGenerations("ancestry-outward-walk");
+
+  let childASalt: ReadonlyArray<string> | undefined;
+  let childBSalt: ReadonlyArray<string> | undefined;
+  let childADepth: number | undefined;
+  let childBDepth: number | undefined;
+
+  mid.wrap({ salt: layer("outer") }, () => {
+    childA.wrap({ salt: layer("inner") }, () => {
+      childASalt = childA.context.salt;
+      childBSalt = childB.context.salt;
+      childADepth = childA.context.depth;
+      childBDepth = childB.context.depth;
+    });
+  });
+
+  expect(childASalt).toEqual([...childA.salt, "inner"]);
+  expect(childBSalt).toEqual([...mid.salt, "outer"]);
+  expect(childADepth).toBe(2);
+  expect(childBDepth).toBe(1);
+});
+
+/**
+ * `ancestry[0]` is lineage identity, and it is the instance — not the carrier —
+ * that now carries it. So two `initialize()` calls handed the _same_ carrier
+ * still cannot see each other's frames: their roots mint unrelated tokens,
+ * which leaves `initialize({ stack })` a choice of carrier and nothing more.
+ */
+test("two lineages sharing one carrier stay mutually invisible", () => {
+  const stack = toSynchronousStack();
+  const a = initialize({ salt: "ancestry-shared-carrier-a", stack });
+  const b = initialize({ salt: "ancestry-shared-carrier-b", stack });
+
+  expect(a.ancestry[0]).not.toBe(b.ancestry[0]);
+
+  let bSaltDuringA: ReadonlyArray<string> | undefined;
+  let bDepthDuringA: number | undefined;
+
+  a.wrap({ salt: layer("x") }, () => {
+    bSaltDuringA = b.context.salt;
+    bDepthDuringA = b.context.depth;
+  });
+
+  expect(bSaltDuringA).toEqual(b.salt);
+  expect(bDepthDuringA).toBe(0);
+});
+
+/**
+ * A fork and its parent share a root but never an identity, and every
+ * instance's own token is the last element of its chain — which is what makes a
+ * prefix comparison answer "on one line?".
+ */
+test("ancestry records the lineage root and extends by one token per derivation", () => {
+  const { root, mid, childA, childB } = toGenerations("ancestry-shape");
+
+  expect(root.ancestry).toHaveLength(1);
+  expect(mid.ancestry).toHaveLength(2);
+  expect(childA.ancestry).toHaveLength(3);
+
+  for (const derived of [mid, childA, childB]) {
+    expect(derived.ancestry[0]).toBe(root.ancestry[0]);
+  }
+
+  expect(childA.ancestry.slice(0, 2)).toEqual([...mid.ancestry]);
+  expect(childA.ancestry[2]).not.toBe(childB.ancestry[2]);
+});
+
+/**
+ * `types` follows the receiver now, and so does the declared `$WrapRegistry`
+ * default — previously the two disagreed, because the overlay took its `types`
+ * from the active frame while the type parameter defaulted to the receiver's.
+ * The `999` is the runtime half of that agreement: it can only come from the
+ * fork's own registry.
+ */
+test("a wrap on a fork with its own registry keeps that registry, even inside another frame", () => {
+  const instance = initialize({ salt: "wrap-registry" });
+  const forked = instance.fork({
+    types: registry.extend(({ T }) => ({ number: T.always(999) })),
+  });
+
+  const built = instance.wrap({ salt: layer("a") }, () =>
+    forked.wrap({}, (scope) =>
+      new scope.Fabricator(scope.T.number).fabricate(),
+    ),
+  );
+
+  expect(built).toBe(999);
+});
+
+/**
+ * `context.scope()` resolves live on every call, never snapshotting: it names
+ * the frame's own scope while one is visible and reverts to this instance
+ * after. Identity, not equality — it must be the very instance the block was
+ * handed, or the two routes would carry separate construction counters.
+ */
+test("context.scope() is the visible frame's own scope, and reverts after the block", () => {
+  const instance = initialize({ salt: "wrap-context-scope" });
+
+  let handed: unknown;
+  let seen: unknown;
+
+  instance.wrap({ salt: layer("x") }, (scope) => {
+    handed = scope;
+    seen = instance.context.scope();
+  });
+
+  expect(seen).toBe(handed);
+  expect(instance.context.scope()).toBe(instance);
+  expect(instance.context.depth).toBe(0);
 });
 
 /**
@@ -229,6 +483,74 @@ test("context reflects the instance's own config outside any wrap, the active fr
   expect(outsideBefore).toEqual(instance.salt);
   expect(insideSeed).toEqual([...instance.salt, "x"]);
   expect(outsideAfter).toEqual(instance.salt);
+});
+
+/**
+ * The companion to the test below, and the reason it is worth stating which of
+ * the two you captured. `context`'s four _value_ properties are getters, so
+ * destructuring one freezes it at the moment of destructuring — a stale value,
+ * visibly wrong wherever it matters.
+ *
+ * `scope` is deliberately not among them. It is the one member acted through
+ * rather than read, so freezing it would not surface as an obviously stale
+ * value: an ambient build through the captured instance would still be correct
+ * while `wrap`/`fork` on it laid over the wrong base — correct-looking code,
+ * silently wrong. As a function it captures the _lookup_, so a destructured
+ * `scope` stays live and that whole failure mode is unreachable.
+ */
+test("destructuring context's value properties snapshots them, while a destructured scope() stays live", () => {
+  const instance = initialize({ salt: "wrap-context-destructured" });
+
+  const { context } = instance;
+  const { salt: frozenSalt, depth: frozenDepth } = instance.context;
+  const spread = { ...instance.context };
+
+  /** The capture that used to be the footgun, taken outside any frame. */
+  const { scope } = instance.context;
+
+  instance.wrap({ salt: layer("x") }, (entered) => {
+    const wrapped = [...instance.salt, "x"];
+
+    expect(context.salt).toEqual(wrapped);
+    expect(context.depth).toBe(1);
+    expect(context.scope()).toBe(entered);
+
+    expect(frozenSalt).toEqual(instance.salt);
+    expect(frozenDepth).toBe(0);
+    expect(spread.salt).toEqual(instance.salt);
+
+    /** Captured before the wrap, still resolving against it. */
+    expect(scope()).toBe(entered);
+    expect(scope().wrap({ salt: layer("b") }, (s) => s.salt)).toEqual([
+      ...wrapped,
+      "b",
+    ]);
+    expect(scope().fork().salt).toEqual(wrapped);
+  });
+
+  expect(scope()).toBe(instance);
+});
+
+/**
+ * Holding the `Instance` `scope()` returned is a different act from holding
+ * `scope` — an `Instance` is a fixed configuration like any other, so it stays
+ * what it was. Pinned so the distinction is deliberate rather than incidental.
+ */
+test("the Instance returned by scope() is fixed, even though scope itself is live", () => {
+  const instance = initialize({ salt: "wrap-context-scope-result" });
+
+  instance.wrap({ salt: layer("x") }, () => {
+    const held = instance.context.scope();
+
+    instance.context.scope().wrap({ salt: layer("y") }, () => {
+      expect(instance.context.scope().salt).toEqual([
+        ...instance.salt,
+        "x",
+        "y",
+      ]);
+      expect(held.salt).toEqual([...instance.salt, "x"]);
+    });
+  });
 });
 
 test("a context reference captured before a wrap reflects the wrap live, since it's a getter, not a snapshot", () => {
@@ -488,4 +810,39 @@ test("structural keying survives a wrap — inserting a sibling field doesn't sh
 
   expect(after.name).toBe(before.name);
   expect(after.age).toBe(before.age);
+});
+
+/**
+ * The harness-free form of the setup pinned in `Harnessing.test.ts`: a caller
+ * forks an application-wide configuration and treats the fork as _their_ root,
+ * destructuring off it and never naming the lineage head again. Ambience has to
+ * reach that fork through its own destructured `Fabricator`.
+ *
+ * Pinned separately from the harnessing test because nothing about it is
+ * harness-specific — it is the general property that "which instance is a
+ * lineage root" must not decide whose calls a frame reaches, since being a root
+ * is an accident of where `initialize()` happened rather than a statement about
+ * how an instance is used.
+ */
+test("a fork treated as its own root is reached by a wrap entered on it, through its destructured Fabricator", () => {
+  const lineage = initialize({ salt: "wrap-fork-as-root" });
+  const own = lineage.fork({ salt: layer("own") });
+
+  const { Fabricator, T, wrap } = own;
+
+  let builtSalt: ReadonlyArray<string> | undefined;
+  let ownSalt: ReadonlyArray<string> | undefined;
+  let lineageSalt: ReadonlyArray<string> | undefined;
+
+  wrap({ salt: layer("x") }, () => {
+    builtSalt = new Fabricator(T.number).trace.salt;
+    ownSalt = own.context.salt;
+    lineageSalt = lineage.context.salt;
+  });
+
+  const expected = [...own.salt, "x"];
+
+  expect(builtSalt).toEqual(expected);
+  expect(ownSalt).toEqual(expected);
+  expect(lineageSalt).toEqual(expected);
 });

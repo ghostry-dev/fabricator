@@ -1,5 +1,6 @@
 import { FabricatorError } from "../Error";
-import type { Stack } from "../Instance/Types";
+import { toInnermostFrame } from "../Instance/Stack/Visible";
+import type { Ancestry, Stack } from "../Instance/Types";
 import { Primitive } from "../Primitive";
 import { isLayered, normalizeSalt } from "../Random";
 import type {
@@ -44,11 +45,13 @@ export type Constructor = {
  * fabricator this `construct()` produces draws from that instance's own
  * salt/streams and never another instance's.
  *
- * `stack` is the instance's own lineage-wide ambient stack
- * (`Instance/Core.ts`'s `toStack()`) — passed straight through to
+ * `stack` is the ambient carrier and `ancestry` is this instance's position in
+ * its lineage (`Instance/Core.ts`) — both passed straight through to
  * `resolveScope` on every `construct()` call, never read here directly, so a
- * build reached inside an active `wrap` resolves against that frame
- * automatically, with nothing threaded through by the caller.
+ * build reached inside a `wrap` this instance can see resolves against that
+ * frame automatically, with nothing threaded through by the caller. `ancestry`
+ * is what decides "can see": a frame entered on a sibling instance is not one
+ * this `construct()` will ever resolve against.
  *
  * No separate `clock` parameter: `source` already carries its own resolved
  * clock intrinsically (`Random/Types.ts`'s `Options.clock`, baked in when the
@@ -58,7 +61,11 @@ export type Constructor = {
  * the resolved construction trace rather than threading a second value
  * alongside `source`.
  */
-export function Constructor(source: RandomSource, stack: Stack): Constructor {
+export function Constructor(
+  source: RandomSource,
+  stack: Stack,
+  ancestry: Ancestry,
+): Constructor {
   /**
    * `schema` is `any` at the parameter: `switch (schema[Kind])` does not
    * narrow. Each case immediately casts to that kind's `Schema` (`const s =
@@ -407,7 +414,7 @@ export function Constructor(source: RandomSource, stack: Stack): Constructor {
       );
     }
 
-    const context = toConstructionContext(source, options, stack);
+    const context = toConstructionContext(source, options, stack, ancestry);
     const made = make(schema, options.path ?? [], context);
     const adaptations = schema[Adaptation];
 
@@ -453,8 +460,14 @@ function toConstructionContext(
   source: RandomSource,
   options: ConstructorOptions,
   stack: Stack,
+  ancestry: Ancestry,
 ): ConstructionContext {
-  const { source: resolved, trace } = resolveScope(source, options, stack);
+  const { source: resolved, trace } = resolveScope(
+    source,
+    options,
+    stack,
+    ancestry,
+  );
 
   return {
     toTrace: (path, kind) => ({ ...trace, path, kind }),
@@ -469,13 +482,16 @@ function toConstructionContext(
  * across every leaf, rather than re-resolving per leaf.
  *
  * There is only one source to choose between, and `options` never changes it:
- * `base` is the active `wrap` frame's source if `stack.current()` finds one,
- * otherwise this instance's own. A build inside a `wrap` therefore keeps its
- * own construction counter, exactly as it would under a separately
- * `initialize()`d instance sharing that config — and the branch is a no-op for
- * the wrap's _own_ `scope.Fabricator` (`frame.source` already _is_ that
- * instance's `source`), which makes the implicit and explicit routes resolve
- * identically.
+ * `base` is the innermost frame `ancestry` can see, if there is one, otherwise
+ * this instance's own source. A build inside a `wrap` therefore keeps its own
+ * construction counter, exactly as it would under a separately `initialize()`d
+ * instance sharing that config — and the branch is a no-op for the wrap's _own_
+ * `scope.Fabricator` (`frame.source` already _is_ that instance's `source`),
+ * which makes the implicit and explicit routes resolve identically.
+ *
+ * Visibility is the instance's, not the carrier's: a frame entered on a sibling
+ * `fork` is skipped, and the walk continues outward to the innermost frame this
+ * instance is actually on the line of (`Instance/Stack/Visible.ts`).
  *
  * Everything `options` can say is a pin, `salt` included, and pins only ever
  * substitute values into the {@link ConstructionTrace} this source resolves.
@@ -487,7 +503,7 @@ function toConstructionContext(
  *
  * `salt` is the one pin `options` does not hand over verbatim, because
  * `layer(...)` is relative: a bare salt normalizes to its own parts, while a
- * layered one resolves against `base.salt` — the instance's own with no active
+ * layered one resolves against `base.salt` — the instance's own with no visible
  * frame, or the frame's effective salt inside a `wrap`. Reading `base` rather
  * than always `source` matters only for that composition; a bare salt ignores
  * its base's salt entirely, so it can't tell the difference.
@@ -501,9 +517,9 @@ function resolveScope(
   source: RandomSource,
   options: ConstructorOptions,
   stack: Stack,
+  ancestry: Ancestry,
 ): { source: RandomSource; trace: ConstructionTrace } {
-  const frame = stack.current();
-  const base = frame?.source ?? source;
+  const base = toInnermostFrame(stack, ancestry)?.source ?? source;
 
   const salt = inline((): ReadonlyArray<string> | undefined => {
     if (!options.salt) return undefined;
