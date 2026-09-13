@@ -18,7 +18,7 @@
     },
     "pkg/fabricator": {
       "name": "@ghostry/fabricator",
-      "version": "0.0.3",
+      "version": "0.0.4",
     },
     "pkg/fabricator-adapter-typebox-v0": {
       "name": "@ghostry/fabricator-adapter-typebox-v0",
