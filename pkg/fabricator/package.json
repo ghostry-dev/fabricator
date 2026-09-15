@@ -1,6 +1,6 @@
 {
   "name": "@ghostry/fabricator",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
   "description": "Fabricate typed data from composable schemas.",
   "keywords": [
