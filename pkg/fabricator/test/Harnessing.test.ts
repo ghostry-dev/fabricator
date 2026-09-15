@@ -316,10 +316,10 @@ test("the provided fabricator is the per-test scope, not the base instance", () 
 });
 
 /**
- * The provider and `around` meet through one slot per integration. Two
- * interleaved async bodies must each keep the scope they were handed, which
- * holds only because the provider is read synchronously inside `around`, before
- * either body's first `await`.
+ * Two interleaved async bodies must each keep the scope they were handed. Once
+ * the frame's wrapper passes its scope forward and the provider receives it as
+ * `established`, that holds by construction: there is no slot for a second test
+ * to overwrite between the wrapper opening and the provider reading.
  */
 test("concurrent runs each keep their own scope across an await", async () => {
   const instance = initialize({ salt: "testing-concurrent", clock: CLOCK });
@@ -347,33 +347,39 @@ test("concurrent runs each keep their own scope across an await", async () => {
   expect(await b).toEqual({ provided: expectedB, ambient: expectedB });
 });
 
-test("the provider outside around raises HarnessingProviderError, including after a run", () => {
+test("the provider outside a frame raises HarnessingProviderError, including after a run", () => {
   const wired = integration(
     initialize({ salt: "testing-provider-outside", clock: CLOCK }),
   );
 
-  expect(() => wired.provides.fabricator(idA)).toThrow(
+  /** A composer that runs providers outside the frame establishes nothing. */
+  const outside = wired.provides.fabricator as (args: {
+    readonly identity: Identity;
+    readonly established?: unknown;
+  }) => unknown;
+
+  expect(() => outside({ identity: idA })).toThrow(
     FabricatorError.HarnessingProviderError,
   );
 
   run(wired, idA, () => undefined);
 
-  expect(() => wired.provides.fabricator(idA)).toThrow(
+  expect(() => outside({ identity: idA })).toThrow(
     FabricatorError.HarnessingProviderError,
   );
 });
 
-test("an outer integration's around nests around fabricator's, and the body's value returns unchanged", () => {
+test("an outer integration's frame nests around fabricator's, and the body's value returns unchanged", () => {
   const instance = initialize({ salt: "testing-nesting", clock: CLOCK });
   const log: string[] = [];
 
   const outer: AnyIntegration = {
     name: "outer",
-    provides: { label: (identity) => identity.name },
-    around<$Return>(_identity: Identity, body: () => $Return): $Return {
+    provides: { label: ({ identity }) => identity.name },
+    *frame() {
       log.push("open");
       try {
-        return body();
+        yield;
       } finally {
         log.push("close");
       }

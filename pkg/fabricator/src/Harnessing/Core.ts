@@ -3,36 +3,36 @@ import type { Instance } from "../Instance/Types";
 import { layer } from "../Random";
 import type { PlainObject } from "../Utility/Types";
 import { saltFor } from "./Salt";
-import type { FabricatorTestContext, Identity, Integration } from "./Types";
+import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
 
 /**
- * Decorate an existing `Instance` as a `@ghostry/harness` integration.
- * `around(identity, body)` is `instance.wrap({ salt: layer(saltFor(identity))
- * })` — one line of real work. Construction ordinals therefore restart per test
- * (each `wrap` re-instantiates), which is what makes `.only`, filters, shards,
- * and `.concurrent` unable to shift a neighbor's data. That per-test
- * partitioning is also why the salt needs no file in it; see `saltFor`
+ * Decorate an existing `Instance` as a `@ghostry/harness` integration. The
+ * whole of it is `instance.wrap({ salt: layer(saltFor(identity)) })` — one line
+ * of real work. Construction ordinals therefore restart per test (each `wrap`
+ * re-instantiates), which is what makes `.only`, filters, shards, and
+ * `.concurrent` unable to shift a neighbor's data. That per-test partitioning
+ * is also why the salt needs no file in it; see `saltFor`
  * (`Harnessing/Salt.ts`).
  *
- * `around`, not `setup`: the ambient frame has to enclose the body, and only
- * `around` does. Its `finally` running at the call boundary rather than at test
- * settlement costs nothing here — there is no teardown, and the
- * `AsyncLocalStorage` carrier keeps the frame alive across the body's `await`s
- * regardless of when `wrap` returns. On the synchronous carrier an async body
- * still raises `SynchronousStackError` from `wrap`. Declaring no `setup` also
- * keeps `@ghostry/harness` on its uninstrumented path, where a synchronous
- * assertion failure is reported at the user's own line.
+ * `frame` is a generator so that `yield` can be both where the body runs and
+ * where this hook waits. There is nothing after the `yield` here: fabricator
+ * has no teardown, and the `AsyncLocalStorage` carrier keeps the ambient frame
+ * alive across the body's `await`s on its own. What the `yield` carries is the
+ * wrapper, because the ambient frame has to _enclose_ the body rather than
+ * merely precede it. On the synchronous carrier an async body still raises
+ * `SynchronousStackError` from `wrap`.
  *
- * `provides.fabricator` hands back the scope `wrap` gave its block, not the
- * base instance, so `context.fabricator.salt` is the per-test salt and
- * `.fork()` forks from the test's configuration. The two calls meet through
- * `scope`: set just before `body()`, read by the provider, restored in a
- * `finally`. That is safe under `.concurrent` because `@ghostry/harness` runs a
- * provider synchronously inside its own integration's `around` — no other test
- * can enter between the write and the read, and the context object already
- * holds the scope by the body's first `await`. Restoring rather than clearing
- * keeps a nested `around` from dropping its parent's scope. A provider reached
- * with no scope is a composer breaking that contract, and raises
+ * `instance.wrap` is handed to the wrapper directly rather than called inside a
+ * closure. `wrap(overlay, block)` already takes `(scope) => $Return`, which is
+ * exactly the wrapper's own `(established) => $Return`, so the scope `wrap`
+ * opens _is_ the established value with nothing in between to adapt it.
+ *
+ * `provides.fabricator` is then that scope — the instance `wrap` gave its
+ * block, not the base instance — so `context.fabricator.salt` is the per-test
+ * salt and `.fork()` forks from the test's configuration. Nothing mediates
+ * between the two: the wrapper hands the scope forward and the provider
+ * receives it. A provider reached with no established scope is a composer
+ * running providers outside the frame it opened, and raises
  * `HarnessingProviderError` rather than quietly providing the base instance.
  *
  * Nothing here reads `instance.context`. The integration is a pure function of
@@ -46,30 +46,20 @@ import type { FabricatorTestContext, Identity, Integration } from "./Types";
  */
 export function integration<$Registry extends PlainObject>(
   instance: Instance<$Registry>,
-): Integration<FabricatorTestContext<$Registry>> {
-  let scope: Instance<$Registry> | undefined;
-
+): Integration<FabricatorTestContext<$Registry>, Instance<$Registry>> {
   return {
     name: "@ghostry/fabricator",
     provides: {
-      fabricator: () => {
-        if (typeof scope === "undefined") {
+      fabricator: ({ established }) => {
+        if (typeof established === "undefined") {
           throw new FabricatorError.HarnessingProviderError();
         }
-        return scope;
+        return established;
       },
     },
-    around<$Return>(identity: Identity, body: () => $Return): $Return {
+    *frame({ identity }: FrameArgs) {
       const salt = layer(saltFor(identity));
-      return instance.wrap({ salt }, (entered) => {
-        const previous = scope;
-        scope = entered;
-        try {
-          return body();
-        } finally {
-          scope = previous;
-        }
-      });
+      yield (body) => instance.wrap({ salt }, body);
     },
   };
 }

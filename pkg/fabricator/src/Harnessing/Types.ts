@@ -40,36 +40,89 @@ export type Identity = {
 /**
  * One context key's value, as a function of the test's `Identity` rather than a
  * fixed value.
+ *
+ * `established` is whatever this integration's own wrapper handed forward. For
+ * this integration that is the scoped `Instance` `wrap` opened, which is the
+ * whole of what `provides.fabricator` returns — so the value travels from the
+ * wrapper to the provider directly, with no mutable slot written on the way in
+ * and read on the way out.
  */
-export type Provider<$Value> = (identity: Identity) => $Value;
+export type Provider<$Value, $Established = void> = (
+  args: ProviderArgs<$Established>,
+) => $Value;
+
+/**
+ * What `@ghostry/harness` hands {@link Integration.frame}: one object, never
+ * positional arguments, so a field added to the contract later is a key an
+ * existing hook ignores rather than a parameter it has to thread past.
+ */
+export type FrameArgs = { readonly identity: Identity };
+
+/**
+ * What it hands each provider: everything {@link FrameArgs} carries, plus what
+ * this integration's own wrapper established — for this integration, the scoped
+ * `Instance` that `wrap` opened.
+ */
+export type ProviderArgs<$Established = void> = FrameArgs & {
+  readonly established: $Established;
+};
 
 /**
  * The keys an integration contributes, and how each is produced. Homomorphic
  * over `$Context`, so the context an integration contributes is read back out
  * of this object's shape with no separate key declaration to keep in sync.
  */
-export type Provides<$Context extends object> = {
-  readonly [$Key in keyof $Context]: Provider<$Context[$Key]>;
+export type Provides<$Context extends object, $Established = void> = {
+  readonly [$Key in keyof $Context]: Provider<$Context[$Key], $Established>;
 };
+
+/**
+ * How an integration runs the body when the body must run _inside_ something.
+ * Here that is fabricator's own `wrap`, whose block parameter is already this
+ * shape — the scoped `Instance` it opens is what reaches `body`, and therefore
+ * what reaches the providers.
+ *
+ * Generic in its return and must hand the body's value back unchanged: that is
+ * what keeps a synchronous test synchronous and what lets frames nest.
+ */
+export type Wrapper<$Established = void> = <$Return>(
+  body: (established: $Established) => $Return,
+) => $Return;
+
+/**
+ * What {@link Integration.frame} returns: a generator with **one** suspension
+ * point. Everything before the `yield` is setup, the body runs at the `yield`,
+ * and everything after it is teardown, resumed when the body _settles_.
+ *
+ * `@ghostry/harness` accepts an `AsyncGenerator` here too. This declares only
+ * the synchronous half, because that is the half this integration uses and the
+ * narrower type still satisfies the wider one — the same reason `frame` is
+ * required below though it is optional there. Opening a fabricator scope is
+ * synchronous, and declaring the async arm would invite an integration that
+ * promotes every test in the suite to a promise for no reason.
+ */
+export type Frame<$Established = void> = Generator<
+  Wrapper<$Established> | void,
+  void,
+  unknown
+>;
 
 /**
  * What `integration(instance)` is, as `@ghostry/harness`'s `initialize` sees
  * it. The subset of that package's contract this integration actually uses, not
- * a copy of all of it: `@ghostry/harness` also accepts an optional `setup`,
- * which fabricator has no teardown to put in, and an object lacking an optional
- * member still satisfies the contract structurally. `around` is required here,
- * though optional there, because this integration always declares it.
+ * a copy of all of it: an object lacking an optional member still satisfies the
+ * contract structurally, so `frame` is required here though optional there,
+ * because this integration always declares it.
  *
  * `provides` is the _only_ source of context keys; `initialize` rejects a
  * collision across integrations by reading `Object.keys(provides)`. Each
- * provider runs inside its integration's `around`. `around` is generic in its
- * return and must return the body's value unchanged: that is what makes async
- * work and what lets frames nest.
+ * provider runs _inside_ that frame and receives the same `$Established` the
+ * wrapper handed to the body.
  */
-export type Integration<$Context extends object> = {
+export type Integration<$Context extends object, $Established = void> = {
   readonly name: string;
-  readonly provides: Provides<$Context>;
-  around<$Return>(identity: Identity, body: () => $Return): $Return;
+  readonly provides: Provides<$Context, $Established>;
+  frame(args: FrameArgs): Frame<$Established>;
 };
 
 /**
