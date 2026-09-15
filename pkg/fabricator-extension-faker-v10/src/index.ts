@@ -12,7 +12,7 @@ export type { FakerExtension as FakerTypes } from "./Types";
  * The mirror's type-level machinery — not needed to _use_ it, but exported so a
  * consumer (or this package's compile-time checks in
  * `test/index.types.test.ts`) can name a module or method without a relative
- * `./Types` path tests otherwise avoid (`CLAUDE.md`: tests resolve through the
+ * `./Types` path tests otherwise avoid (`AGENTS.md`: tests resolve through the
  * package specifier, exercising built `dist/`).
  *
  * `FakerModules` is the surface those checks are made _against_ — every
@@ -146,7 +146,7 @@ function draw<$T>(produce: () => $T): (context: ProduceContext) => $T {
  * `FakerExtension` (`./Types.ts`) is spelled out explicitly rather than
  * inferred. An inferred type would reach into each kind's `Schema` interface —
  * internal to `@ghostry/fabricator`, unreachable from its `.` export — and
- * declaration emission (`tsgo`, not `tsc --noEmit`; see `CLAUDE.md`'s
+ * declaration emission (`tsgo`, not `tsc --noEmit`; see `AGENTS.md`'s
  * declaration-emit trap) refuses to print an anonymous expansion of one. Even
  * where it printed it would be the wrong contract: inference would surface each
  * builder's incidental narrowness (`Schema<{ produce; hints }>`) where the

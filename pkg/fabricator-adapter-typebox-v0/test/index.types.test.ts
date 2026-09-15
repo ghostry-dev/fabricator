@@ -210,13 +210,15 @@ export type Assertions = [
       TObject<{ readonly x: TUnion<[TInteger, TNull, TUndefined]> }>
     >
   >,
-  // `enum` preserves arity as a real tuple (`EnumOptions` in `ToTypeBox`, the
-  // same head/tail recursion `ChoiceOptions` uses below), so 3 members map to
-  // a proper 3-slot `TUnion<[...]>` — exactly what the runtime emits, rather
-  // than the arity-less `TLiteral<"a"> | TLiteral<"b"> | TLiteral<"c">` this
-  // approximated with while `enum.Meta.items` was a plain `ReadonlyArray`.
-  // Each member is a *value*, so it maps through `ToConst` (not `ToTypeBox`,
-  // which is what a `choice`'s option Schemas get).
+  /**
+   * `enum` preserves arity as a real tuple (`EnumOptions` in `ToTypeBox`, the
+   * same head/tail recursion `ChoiceOptions` uses below), so 3 members map to a
+   * proper 3-slot `TUnion<[...]>` — exactly what the runtime emits, rather than
+   * the arity-less `TLiteral<"a"> | TLiteral<"b"> | TLiteral<"c">` this
+   * approximated with while `enum.Meta.items` was a plain `ReadonlyArray`. Each
+   * member is a _value_, so it maps through `ToConst` (not `ToTypeBox`, which
+   * is what a `choice`'s option Schemas get).
+   */
   Expect<
     Equal<
       typeof withEnum,
@@ -225,72 +227,90 @@ export type Assertions = [
       }>
     >
   >,
-  // A single member collapses with no `TUnion` wrapper at all, matching
-  // TypeBox's own `Union<T>`/`Type.Union` behavior exactly — the one case the
-  // old arity-less form already got right, and the reason mirroring
-  // `Union<T>` rather than always wrapping is what makes this exact.
+  /**
+   * A single member collapses with no `TUnion` wrapper at all, matching
+   * TypeBox's own `Union<T>`/`Type.Union` behavior exactly — the one case the
+   * old arity-less form already got right, and the reason mirroring `Union<T>`
+   * rather than always wrapping is what makes this exact.
+   */
   Expect<
     Equal<typeof withSingleMemberEnum, TObject<{ readonly x: TLiteral<"a"> }>>
   >,
-  // `choice` preserves arity as a real tuple (`ChoiceOptions` in
-  // `ToTypeBox`), so 2 options map to a proper 2-slot `TUnion<[...]>` —
-  // matching what `Type.Union` actually returns at runtime for 2+ options
-  // (see `ToTypeBox`'s `choice.Core` branch, and the single-option case
-  // exercised at runtime in the tests below).
+  /**
+   * `choice` preserves arity as a real tuple (`ChoiceOptions` in `ToTypeBox`),
+   * so 2 options map to a proper 2-slot `TUnion<[...]>` — matching what
+   * `Type.Union` actually returns at runtime for 2+ options (see `ToTypeBox`'s
+   * `choice.Core` branch, and the single-option case exercised at runtime in
+   * the tests below).
+   */
   Expect<
     Equal<
       typeof withChoice,
       TObject<{ readonly x: TUnion<[TInteger, TString]> }>
     >
   >,
-  // A single option collapses with no `TUnion` wrapper at all, matching
-  // TypeBox's own `Union<T>`/`Type.Union` behavior exactly.
+  /**
+   * A single option collapses with no `TUnion` wrapper at all, matching
+   * TypeBox's own `Union<T>`/`Type.Union` behavior exactly.
+   */
   Expect<
     Equal<typeof withSingleOptionChoice, TObject<{ readonly x: TInteger }>>
   >,
-  // `tuple` preserves arity as a real tuple (`TupleItems` in `ToTypeBox`, the
-  // same head/tail recursion `ChoiceOptions` uses above), so a 2-slot
-  // `T.tuple([...])` maps to a proper 2-slot `TTuple<[...]>` — matching what
-  // `Type.Tuple` actually returns at runtime (exercised below).
+  /**
+   * `tuple` preserves arity as a real tuple (`TupleItems` in `ToTypeBox`, the
+   * same head/tail recursion `ChoiceOptions` uses above), so a 2-slot
+   * `T.tuple([...])` maps to a proper 2-slot `TTuple<[...]>` — matching what
+   * `Type.Tuple` actually returns at runtime (exercised below).
+   */
   Expect<
     Equal<
       typeof withTuple,
       TObject<{ readonly x: TTuple<[TInteger, TString]> }>
     >
   >,
-  // An opaque value is whatever its producer returns, so there is nothing to
-  // constrain — `TUnknown` is the honest mapping rather than a lossy guess.
-  // Note this is the one divergence that *widens*: `Static<TUnknown>` is
-  // `unknown` while `Fabrication<...>` of the same schema is the producer's
-  // precise return type (asserted in `Fabrication.types.test.ts`).
+  /**
+   * An opaque value is whatever its producer returns, so there is nothing to
+   * constrain — `TUnknown` is the honest mapping rather than a lossy guess.
+   * Note this is the one divergence that _widens_: `Static<TUnknown>` is
+   * `unknown` while `Fabrication<...>` of the same schema is the producer's
+   * precise return type (asserted in `Fabrication.types.test.ts`).
+   */
   Expect<Equal<typeof withOpaque, TUnknown>>,
-  // Bare-vs-concrete: `opaque.Core`'s default parameter is already `unknown`,
-  // so the bare form maps to `TUnknown` too — unlike `always`, whose bare
-  // form needed a guard to avoid degrading into `TObject<{}>`.
+  /**
+   * Bare-vs-concrete: `opaque.Core`'s default parameter is already `unknown`,
+   * so the bare form maps to `TUnknown` too — unlike `always`, whose bare form
+   * needed a guard to avoid degrading into `TObject<{}>`.
+   */
   Expect<Equal<ToTypeBox<Primitive.opaque.Core>, TUnknown>>,
-  // `record` defers to TypeBox's own `TRecordOrObject`, so it inherits that
-  // helper's split: an open string key stays a `TRecord` (emitting
-  // `patternProperties`), while a finite literal key set collapses into a
-  // `TObject` of exactly those properties.
+  /**
+   * `record` defers to TypeBox's own `TRecordOrObject`, so it inherits that
+   * helper's split: an open string key stays a `TRecord` (emitting
+   * `patternProperties`), while a finite literal key set collapses into a
+   * `TObject` of exactly those properties.
+   */
   Expect<Equal<typeof withRecord, TRecord<TString, TInteger>>>,
   Expect<
     Equal<typeof withLiteralKeyRecord, TObject<{ a: TInteger; b: TInteger }>>
   >,
-  // Note the collapsed form marks both properties *required*, while
-  // `Fabrication` of the same schema is `Partial` — a record's size is drawn
-  // and colliding keys collapse, so it may cover only a subset. That is a
-  // deliberate `Static<ToTypeBox<S>>` vs `ValueOf<S>` divergence, not a bug.
-  //
-  // Bare-vs-concrete: an unconstrained key has no TypeBox counterpart, so
-  // this resolves to `TNever` rather than a loose `TSchema` — agreeing with
-  // the runtime `convert()`, which throws instead of emitting a silent `TNever`.
+  /**
+   * Note the collapsed form marks both properties _required_, while
+   * `Fabrication` of the same schema is `Partial` — a record's size is drawn
+   * and colliding keys collapse, so it may cover only a subset. That is a
+   * deliberate `Static<ToTypeBox<S>>` vs `ValueOf<S>` divergence, not a bug.
+   *
+   * Bare-vs-concrete: an unconstrained key has no TypeBox counterpart, so this
+   * resolves to `TNever` rather than a loose `TSchema` — agreeing with the
+   * runtime `convert()`, which throws instead of emitting a silent `TNever`.
+   */
   Expect<Equal<ToTypeBox<Primitive.record.Core>, TNever>>,
-  // `Type.Recursive((This) => body)` already builds a `$ref`-based schema
-  // whose validation naturally recurses however deep an actual value goes,
-  // so `terminal` needs no separate mapping — only `body` matters here.
-  // Wherever `self` sits nested inside it (through `array`, here), it
-  // resolves to `TThis`, the direct analogue of `self.Core` reading
-  // `this["bindings"][0]` at the value level.
+  /**
+   * `Type.Recursive((This) => body)` already builds a `$ref`-based schema whose
+   * validation naturally recurses however deep an actual value goes, so
+   * `terminal` needs no separate mapping — only `body` matters here. Wherever
+   * `self` sits nested inside it (through `array`, here), it resolves to
+   * `TThis`, the direct analogue of `self.Core` reading `this["bindings"][0]`
+   * at the value level.
+   */
   Expect<
     Equal<
       typeof withRecursive,
@@ -304,12 +324,14 @@ export type Assertions = [
       }>
     >
   >,
-  // Bare-vs-concrete: an unparameterized `recursive.Core` defaults `$Body` to
-  // `unknown`, which matches none of `ToTypeBox`'s specific branches, so it
-  // falls through to the same loose `TSchema` every other unresolved branch
-  // uses — wrapped in `TRecursive`, since `recursive.Core` itself still
-  // matched. `self.Core` needs no such guard: it isn't parameterized by a
-  // value type at all, so it resolves to `TThis` unconditionally.
+  /**
+   * Bare-vs-concrete: an unparameterized `recursive.Core` defaults `$Body` to
+   * `unknown`, which matches none of `ToTypeBox`'s specific branches, so it
+   * falls through to the same loose `TSchema` every other unresolved branch
+   * uses — wrapped in `TRecursive`, since `recursive.Core` itself still
+   * matched. `self.Core` needs no such guard: it isn't parameterized by a value
+   * type at all, so it resolves to `TThis` unconditionally.
+   */
   Expect<Equal<ToTypeBox<Primitive.recursive.Core>, TRecursive<TSchema>>>,
   Expect<Equal<ToTypeBox<Primitive.recursive.self.Core>, TThis>>,
   Expect<Equal<typeof builtAlways, TLiteral<"x">>>,
@@ -320,20 +342,24 @@ export type Assertions = [
     >
   >,
 
-  // The widened `always` values. `bigint`/`Date` resolve to the plain
-  // `TBigInt`/`TDate` — TypeBox has no literal form for either, so the
-  // *static* type stays wide even though `toConst` pins the value exactly at
-  // runtime via `minimum`/`maximum` and `minimum`/`maximumTimestamp`
-  // (asserted in `test/Always.test.ts`). That divergence is the point of the
-  // note in `CLAUDE.md`.
+  /**
+   * The widened `always` values. `bigint`/`Date` resolve to the plain
+   * `TBigInt`/`TDate` — TypeBox has no literal form for either, so the _static_
+   * type stays wide even though `toConst` pins the value exactly at runtime via
+   * `minimum`/`maximum` and `minimum`/`maximumTimestamp` (asserted in
+   * `test/Always.test.ts`). That divergence is the point of the note in
+   * `AGENTS.md`.
+   */
   Expect<Equal<typeof alwaysNull, TNull>>,
   Expect<Equal<typeof alwaysBigInt, TBigInt>>,
   Expect<Equal<typeof alwaysDate, TDate>>,
-  // An object's *values* are wrapped in `TReadonly` while the key modifier
-  // itself is stripped (`TFromProperties` maps with `-readonly`) — so the
-  // key is mutable here but `Static<>` of it is still `{ readonly a: 1 }`,
-  // agreeing with what `T.always(...)`'s `const` type parameter infers for
-  // an object literal. `toConst` mirrors this exactly at runtime.
+  /**
+   * An object's _values_ are wrapped in `TReadonly` while the key modifier
+   * itself is stripped (`TFromProperties` maps with `-readonly`) — so the key
+   * is mutable here but `Static<>` of it is still `{ readonly a: 1 }`, agreeing
+   * with what `T.always(...)`'s `const` type parameter infers for an object
+   * literal. `toConst` mirrors this exactly at runtime.
+   */
   Expect<Equal<typeof alwaysObject, TObject<{ a: TReadonly<TLiteral<1>> }>>>,
 
   /**

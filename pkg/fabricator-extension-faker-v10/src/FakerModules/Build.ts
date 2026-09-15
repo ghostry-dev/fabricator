@@ -24,7 +24,7 @@
  *   producer rather than a length bound.
  * - `color`'s 7 split methods are a `{ text, channels }` pair each rather than
  *   one ambiguous builder, since their return type depends on their arguments;
- *   see the deviation policy in `CLAUDE.md`'s "The faker extension". All 7 name
+ *   see the deviation policy in `AGENTS.md`'s "The faker extension". All 7 name
  *   `format: "decimal"` on `.channels()`, not only `rgb`: bare is right at
  *   runtime for the other 6, but not provable through faker's declarations,
  *   whose _first_ overload takes `format?: StringColorFormat` and returns
@@ -56,7 +56,7 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
    *
    * Still has to be a valid Schema: `Constructor.ts` dispatches an object's
    * fields at construction, before any `produce` short-circuit applies, and
-   * `T.string` has no bare form (`CLAUDE.md`'s "Not every kind has a bare
+   * `T.string` has no bare form (`AGENTS.md`'s "Not every kind has a bare
    * form") — a bare one throws on `meta.produce` of `undefined`. `T.number`
    * needs no equivalent, which is why `atomicNumber` and friends are written
    * plainly.

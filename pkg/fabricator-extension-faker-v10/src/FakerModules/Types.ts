@@ -45,7 +45,7 @@
  * Fix the entry in **both** files; the annotation on `build` fails until they
  * agree.
  *
- * These assertions resolve through built `dist/`, not `src/` (`CLAUDE.md`'s
+ * These assertions resolve through built `dist/`, not `src/` (`AGENTS.md`'s
  * test-import convention), so a `src`-only edit proves nothing about faker
  * drift until you rebuild. A disagreement between this file and `./Build.ts` is
  * caught without one, being internal to `src`.

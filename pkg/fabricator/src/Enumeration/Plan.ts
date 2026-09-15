@@ -43,7 +43,7 @@ function delegate(axis: Axis, index: number): Branch {
  * wrapper's outcomes (`null`/`undefined`/`Omitted` alongside "present"). Always
  * totals widths, regardless of `Strategy`: only one branch is realized per
  * instance, so unlike a product node their costs add rather than overlap (see
- * CLAUDE.md's "sum vs product" note). A literal contributes `{ value }`; a
+ * AGENTS.md's "sum vs product" note). A literal contributes `{ value }`; a
  * delegate wraps the child's pin in `{ branch, inner }`.
  */
 function sumAxis(branches: ReadonlyArray<Branch>): Axis {

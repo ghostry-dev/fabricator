@@ -28,7 +28,7 @@ const { T, Fabricator } = initialize({ types: registry });
 
 /* -------------------------------------------------------------------------- */
 /*  One representative Fabricator per primitive. Every `T.<primitive>` access */
-/*  (bare, `.whereby(...)`, a factory call) yields a Schema, never something   */
+/*  (bare, `.whereby(...)`, a factory call) yields a Schema, never something  */
 /*  with `.fabricate()` — that only exists once `build()` is called on it.    */
 /* -------------------------------------------------------------------------- */
 
@@ -116,16 +116,14 @@ const refinedSchema = T.object({ id: T.always(1) }).refine(({ compute }) => ({
 }));
 
 /* -------------------------------------------------------------------------- */
-/*  Each primitive's Fabrication must resolve to its fabricated value type.    */
-/*  Exported as a tuple so `noUnusedLocals` sees them as used.                 */
+/*  Each primitive's Fabrication must resolve to its fabricated value type.   */
+/*  Exported as a tuple so `noUnusedLocals` sees them as used.                */
 /* -------------------------------------------------------------------------- */
 
 export type Assertions = [
   Expect<Equal<Fabrication<typeof always>, "hello">>,
   Expect<Extends<Fabrication<typeof array>, "x"[]>>,
   Expect<Equal<Fabrication<typeof tuple>, ["x", number]>>,
-  // An open keyspace stays a plain index signature — no `Partial`, since an
-  // index signature never guarantees a key is present anyway.
   Expect<Equal<Fabrication<typeof opaque>, Map<string, number>>>,
   Expect<Equal<Fabrication<typeof opaqueUsingStream>, number>>,
   Expect<
@@ -134,17 +132,25 @@ export type Assertions = [
       number
     >
   >,
+  /**
+   * An open keyspace stays a plain index signature — no `Partial`, since an
+   * index signature never guarantees a key is present anyway.
+   */
   Expect<Equal<Fabrication<typeof stringRecord>, Record<string, 1>>>,
   Expect<Equal<Fabrication<typeof symbolRecord>, Record<symbol, 1>>>,
-  // The mixed case must keep *both* halves. Asserting the negative too,
-  // because the failure mode here is a silent collapse to `Record<string, 1>`
-  // (what hardcoding `string` in the open branch would have produced).
+  /**
+   * The mixed case must keep _both_ halves. Asserting the negative too, because
+   * the failure mode here is a silent collapse to `Record<string, 1>` (what
+   * hardcoding `string` in the open branch would have produced).
+   */
   Expect<Equal<Fabrication<typeof mixedKeyRecord>, Record<string | symbol, 1>>>,
   Expect<
     Equal<Equal<Fabrication<typeof mixedKeyRecord>, Record<string, 1>>, false>
   >,
-  // A finite key set becomes `Partial`: the size is drawn and colliding keys
-  // collapse, so neither member is guaranteed to appear.
+  /**
+   * A finite key set becomes `Partial`: the size is drawn and colliding keys
+   * collapse, so neither member is guaranteed to appear.
+   */
   Expect<Equal<Fabrication<typeof literalKeyRecord>, { a?: 1; b?: 1 }>>,
   Expect<Equal<Fabrication<typeof bigint>, bigint>>,
   Expect<Equal<Fabrication<typeof boolean>, boolean>>,
@@ -152,13 +158,15 @@ export type Assertions = [
   Expect<Equal<Fabrication<typeof date>, Date>>,
   Expect<Equal<Fabrication<typeof enumFabricator>, "a" | "b" | "c">>,
   Expect<Equal<Fabrication<typeof number>, number>>,
-  // `Pretty` intersects `& {}`, so compare by mutual assignability.
+  /** `Pretty` intersects `& {}`, so compare by mutual assignability. */
   Expect<Extends<Fabrication<typeof object>, { a: 1 }>>,
   Expect<Extends<{ a: 1 }, Fabrication<typeof object>>>,
-  // `T.omittable`'s wrapped key must be a real `?:`, not `a: "x" | undefined`.
+  /**
+   * `T.omittable`'s wrapped key must be a real `?:`, not `a: "x" | undefined`.
+   */
   Expect<Extends<Fabrication<typeof omittableObject>, { a?: "x"; b: 1 }>>,
   Expect<Extends<{ a?: "x"; b: 1 }, Fabrication<typeof omittableObject>>>,
-  // `T.optional` combines both: a real `?:` *and* `| undefined`.
+  /** `T.optional` combines both: a real `?:` _and_ `| undefined`. */
   Expect<
     Extends<Fabrication<typeof optionalObject>, { a?: "x" | undefined; b: 1 }>
   >,
@@ -172,7 +180,7 @@ export type Assertions = [
   Expect<Equal<Fabrication<typeof nul>, null>>,
   Expect<Equal<Fabrication<typeof nullable>, "x" | null>>,
   Expect<Equal<Fabrication<typeof nullish>, "x" | null | undefined>>,
-  // A computed key resolves to its source's type, not `unknown`.
+  /** A computed key resolves to its source's type, not `unknown`. */
   Expect<Extends<ValueOf<typeof refinedSchema>, { id: 1; refined: Date }>>,
   Expect<Extends<{ id: 1; refined: Date }, ValueOf<typeof refinedSchema>>>,
 ];
@@ -180,8 +188,8 @@ export type Assertions = [
 /* -------------------------------------------------------------------------- */
 /*  object/array/tuple/always additionally expose their own, kind-local       */
 /*  `Fabrication<$Fabricator>` (distinct from the shared one above) — kept    */
-/*  around as forward-looking public type-helpers even though nothing in     */
-/*  the library consumes them yet, so they're asserted here directly.        */
+/*  around as forward-looking public type-helpers even though nothing in      */
+/*  the library consumes them yet, so they're asserted here directly.         */
 /* -------------------------------------------------------------------------- */
 
 export type LocalFabricationAssertions = [
@@ -211,7 +219,7 @@ export type FromDoesNotBreakBareFabricatorAssertions = [
 /*  The core invariant this architecture rests on: a Schema — bare, or fully  */
 /*  configured via `.whereby(...)` — never has `.fabricate()` until it is     */
 /*  explicitly passed to `build()`. `object`/`array`/`.extend()`/`.refine()`  */
-/*  never produce one either, only ever more Schema.                         */
+/*  never produce one either, only ever more Schema.                          */
 /* -------------------------------------------------------------------------- */
 
 export type BareNamespaceIsNotYetBuilt = Expect<
@@ -228,8 +236,10 @@ export type ConfiguredSchemaIsNotYetBuilt = Expect<
 >;
 
 test("primitive Fabrication resolutions typecheck", () => {
-  // The assertions above are compile-time; this keeps the suite non-empty
-  // and sanity-checks that a resolved fabricator actually produces a value.
+  /**
+   * The assertions above are compile-time; this keeps the suite non-empty and
+   * sanity-checks that a resolved fabricator actually produces a value.
+   */
   expect(typeof bigint.fabricate()).toBe("bigint");
   expect(["x", 1]).toContain(choice.fabricate());
   expect(["a", "b", "c"]).toContain(enumFabricator.fabricate());
@@ -268,8 +278,10 @@ test("every composite kind's built Fabricator carries [Children]; recursive's ca
   expect(optionalField[Kind]).toBe("object.optional");
   expect(optionalField[Children]).toBeDefined();
 
-  // `recursive` dispatches lazily during `fabricate()`, so it has no
-  // build-time children to expose.
+  /**
+   * `recursive` dispatches lazily during `fabricate()`, so it has no build-time
+   * children to expose.
+   */
   expect((recursiveTree as any)[Children]).toBeUndefined();
 });
 

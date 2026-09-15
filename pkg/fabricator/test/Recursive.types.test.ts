@@ -17,7 +17,7 @@ const { T, Fabricator } = initialize({ types: registry });
 /*  self-referential `RecursiveValue<$Body> = ValueOf<$Body, [RecursiveValue<  */
 /*  $Body>]>` alias that makes this possible is legal only because the        */
 /*  recursion routes through an interface member lookup (`this["bindings"]`   */
-/*  on every composite kind's `Core` — see `CLAUDE.md`'s "`ValueOf`'s         */
+/*  on every composite kind's `Core` — see `AGENTS.md`'s "`ValueOf`'s         */
 /*  `$Bindings`" section). This file is what would catch a regression back   */
 /*  to `unknown`/`any` if that mechanism ever broke.                          */
 /* -------------------------------------------------------------------------- */

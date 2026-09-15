@@ -8,7 +8,7 @@ import type { PlainObject } from "../Utility/Types";
  * is the cartesian product — width is the product of every child's width;
  * `at(index)` mixed-radix decodes to a full combination (`combinatorial`).
  * `"cycle"` (`coverage`) takes the widest child as the composite's width,
- * cycling narrower children to fill it — see CLAUDE.md's "sum vs product" note
+ * cycling narrower children to fill it — see AGENTS.md's "sum vs product" note
  * for why cycling only ever applies to `object`/`tuple` and never to a sum node
  * (`choice`, the presence wrappers), which always total their children's widths
  * regardless of strategy.
@@ -19,7 +19,7 @@ export type Strategy = "product" | "cycle";
  * A fresh, reproducible permutation of `0..width-1` each call — one per
  * width-`>1` node `plan()` visits, in walk order, so two nodes of the same
  * width never receive the same permutation (which would otherwise iterate them
- * in lockstep — see CLAUDE.md's note on why a constant phase offset isn't
+ * in lockstep — see AGENTS.md's note on why a constant phase offset isn't
  * enough). Only consulted under `"cycle"`; `"product"`'s mixed-radix decode
  * already visits every combination, so permuting there would only reorder
  * identical output. Built in `Enumerate.ts` (which can reach `Random/`), then

@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 
 /**
  * The mirror's shape is deliberate, not incidental — see the deviation policy
- * in `CLAUDE.md`'s "The faker extension". These pin the three departures from a
+ * in `AGENTS.md`'s "The faker extension". These pin the three departures from a
  * straight 1:1 mapping of faker's own API: `helpers` dropped entirely,
  * `color`'s 7 return-type-varies-by-argument methods split into named
  * `text`/`channels` builders, and a return type narrowed to a literal union

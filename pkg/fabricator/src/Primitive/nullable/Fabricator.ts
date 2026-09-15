@@ -39,7 +39,7 @@ export type Fabricator<
  * `source` is already dispatched into its own independent stream by
  * `Constructor.ts` regardless of this roll, skipping its draw here can never
  * perturb any other field's reproducibility (see
- * `object/omittable/Fabricator.ts`, and CLAUDE.md's "Randomness"). 50/50 by
+ * `object/omittable/Fabricator.ts`, and AGENTS.md's "Randomness"). 50/50 by
  * default; `.weighted(...)` (`Schema.ts`) reweights either outcome relative to
  * that same default of `1`.
  */

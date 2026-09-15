@@ -23,7 +23,7 @@ export type Meta = Record<string, never>;
 
 /**
  * An `interface`, not a `type` alias, so `this["bindings"]` resolves — the
- * entire mechanism this kind exists for. See `CLAUDE.md`'s "`ValueOf`'s
+ * entire mechanism this kind exists for. See `AGENTS.md`'s "`ValueOf`'s
  * `$Bindings`" section for why threading requires this.
  */
 export interface Core<$Adaptations extends Adaptations = {}> {

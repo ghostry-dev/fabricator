@@ -277,7 +277,7 @@ See [Adapting to an external schema library](/guides/typebox) for the full walkt
 A separate entry point for _authoring_ a schema adapter (e.g. [`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0)) — not re-exported from `.`, since ordinary schema composition never needs it. Named for the activity rather than the `Adapter` noun, the same pattern `@ghostry/fabricator/harnessing` follows for supplying a test-framework integration. This package names no external schema library and depends on none: every mapping, and every dependency it needs, belongs to the adapter.
 
 - **`Adapter<$Key, $Context, $Returnable>`** — the shape an adapter itself is: `{ key, convert }`. `convert` is the per-kind dispatch a conversion entry point (e.g. `toTypeBox`) calls.
-- **`walk(schema, adapter, context)`** — walks a schema with an adapter, checking whether each node declared an adaptation for that adapter's `key` before falling back to the adapter's own `convert`.
+- **`walk(adapter, schema, context)`** — walks a schema with an adapter, checking whether each node declared an adaptation for that adapter's `key` before falling back to the adapter's own `convert`.
 - **`Recurse<$Context, $Returnable>`** — the callback `walk` hands an adapter's `convert` so nested schema nodes (an object field, an array element) get the same adaptation lookup as the root.
 - **`Adaptation`** — the well-known symbol a Schema stores its per-adapter overrides under; read only by an adapter.
 - **`Adaptations`** / **`AdaptationsOf<$Schema>`** — the runtime shape of that map, and the type-level read of what a given Schema declared.
@@ -286,13 +286,15 @@ A separate entry point for _authoring_ a schema adapter (e.g. [`@ghostry/fabrica
 
 The entry point [`@ghostry/harness`](https://github.com/ghostry-dev/harness) integrates through — not re-exported from `.`, since only a test setup module needs it. Neither package depends on the other: the types here are fabricator's own copy of the part of that contract it uses, satisfied structurally. See [Harness](/guides/harness) for the setup.
 
-- **`integration(instance)`** — decorates an existing instance as an integration; it never mints one, so the caller's `initialize(...)` owns the configuration, `clock` especially. Each test body runs inside `instance.wrap({ salt: layer(identity) }, ...)`, and no clock is ever set.
-- **`Integration<$Context>`** — `{ name, provides, around }`, what `integration(...)` returns. `around(identity, body)` returns the body's value unchanged.
+- **`integration(instance)`** — decorates an existing instance as an integration; it never mints one, so the caller's `initialize(...)` owns the configuration, `clock` especially. Each test body runs inside `instance.wrap({ salt: layer(...) }, ...)`, salted from that test's `Identity` as `[kind, ...path, name, row?]`, and no clock is ever set.
+- **`Integration<$Context, $Established>`** — `{ name, provides, frame }`, what `integration(...)` returns. `frame` is a generator with one suspension point: the wrapper it yields encloses the test body and returns the body's value unchanged.
 - **`Identity`** — `{ kind, path, name, row }`: `"test"` or `"suite"`, the enclosing `describe` names outer → inner, the test name (`""` for a suite hook), and the `.each` row index or `undefined`. It carries no file.
-- **`Provider<$Value>`** / **`Provides<$Context>`** — one `(identity) => value` per context key; `provides` is the only source of an integration's keys.
+- **`Frame<$Established>`** / **`Wrapper<$Established>`** — the generator `frame` returns, and the optional value it yields. `Wrapper` is generic in its return and hands the body's value back unchanged, which is what keeps a synchronous test synchronous and lets frames nest.
+- **`FrameArgs`** / **`ProviderArgs<$Established>`** — what each hook is handed, always as one object rather than positional arguments: `{ identity }` for `frame`, the same plus `established` for a provider.
+- **`Provider<$Value, $Established>`** / **`Provides<$Context, $Established>`** — one provider per context key, each handed `{ identity, established }`, where `established` is whatever this integration's own wrapper passed forward; `provides` is the only source of an integration's keys.
 - **`FabricatorTestContext<$Registry>`** — `{ fabricator }`, the per-test scoped `Instance` a test body receives.
 
-Reading `provides.fabricator` outside that integration's `around` throws a `FabricatorError` named `HarnessingProviderError`. Only a composer breaking the contract does that; `@ghostry/harness` never does.
+Reading `provides.fabricator` outside that integration's own frame throws a `FabricatorError` named `HarnessingProviderError`. Only a composer breaking the contract does that; `@ghostry/harness` never does.
 
 ## `@ghostry/fabricator/internal`
 

@@ -131,8 +131,8 @@ type TupleItems<$Items extends Primitive.tuple.Items> =
  * `unknown extends $Value` is load-bearing: `TConst<unknown>` resolves to
  * `TObject<{}>`, not `TSchema`, so a bare unparameterized
  * `Primitive.always.Core` would claim to be an empty object instead of falling
- * back to `TSchema`. Guard: `test/Adapter/TypeBox/index.types.test.ts`'s
- * bare-vs-concrete assertion — same trap as `tuple`'s `TupleItems`.
+ * back to `TSchema`. Guard: `test/index.types.test.ts`'s bare-vs-concrete
+ * assertion — same trap as `tuple`'s `TupleItems`.
  */
 type ToConst<$Value> = unknown extends $Value ? Returnable : TConst<$Value>;
 

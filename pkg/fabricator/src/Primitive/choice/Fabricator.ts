@@ -33,7 +33,7 @@ export type Fabricator<
  * shared across every element. The weighted pick happens on this field's
  * private stream; only the chosen option's `fabricate()` is called, so an
  * unpicked option never advances its stream (safe for the same reason skipping
- * `object.omittable`'s inner draw is — see CLAUDE.md's "Randomness").
+ * `object.omittable`'s inner draw is — see AGENTS.md's "Randomness").
  */
 export function Fabricator<$Items extends Items>(
   context: FabricatorContext<Schema<$Items>>,

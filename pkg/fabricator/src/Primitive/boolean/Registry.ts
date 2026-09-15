@@ -5,7 +5,7 @@ import type { Fabricated } from "./Types";
 
 const registry: Schema<{}, Adaptations> = {
   /**
-   * Keep `[Produces]` and `[Adaptation]` assigned here — see CLAUDE.md's
+   * Keep `[Produces]` and `[Adaptation]` assigned here — see AGENTS.md's
    * "declaration-emit trap." Both are optional and symbol-keyed, so this
    * top-level spread is the one place declaration emit needs them actually
    * written to have a name to print.

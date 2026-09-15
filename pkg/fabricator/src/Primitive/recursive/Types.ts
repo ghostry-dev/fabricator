@@ -7,7 +7,7 @@ import { Produces, type Adaptation, type Kind, type Meta } from "../../Types";
  * `TS2456` ("`RecursiveValue` circularly references itself") — legal _only_
  * because `ValueOf`'s second argument is read through an interface member
  * (`this["bindings"]` on every composite `Core`), which TypeScript defers. Do
- * not rewrite as a conditional; that reintroduces the error. See `CLAUDE.md`'s
+ * not rewrite as a conditional; that reintroduces the error. See `AGENTS.md`'s
  * "`ValueOf`'s `$Bindings`".
  *
  * Wherever `self` sits in `$Body` (nested through `array`/`object`/`tuple`/

@@ -85,7 +85,7 @@ export type Assertions = [
    * `use.opaque`'s `$T` is inferred from `produce`'s own return type, so a
    * narrower callback (`arrayElement([1, 2, 3])`, a literal `1 | 2 | 3`) keeps
    * its exact literal union rather than widening to `number` — the same
-   * inference `T.opaque` itself gives, per `CLAUDE.md`.
+   * inference `T.opaque` itself gives, per `AGENTS.md`.
    */
   Expect<Equal<Built["usedOpaque"], 1 | 2 | 3>>,
 
@@ -172,7 +172,7 @@ type AllTrue<$U extends boolean> = [$U] extends [true] ? true : false;
  *
  * They remain covered by `MethodsExhaustive<$M>`, which checks that the _keys_
  * match faker's — only the return-type comparison is skipped. See the deviation
- * policy in `CLAUDE.md`'s "The faker extension".
+ * policy in `AGENTS.md`'s "The faker extension".
  *
  * Nothing else is exempt, `location.nearbyGPSCoordinate` included: the mirror
  * gives it `T.tuple([T.number, T.number])`, matching faker's declared
@@ -239,7 +239,7 @@ export type HonestAssertions = [
  * Every exclusion is a deliberate deviation and is named. `helpers` is faker's
  * utility belt, omitted because core already expresses all of it and better
  * (`arrayElement` is `T.enum.uniform`, `maybe` is `T.optional`/`T.omittable`,
- * and so on — see the deviation policy in `CLAUDE.md`'s "The faker extension");
+ * and so on — see the deviation policy in `AGENTS.md`'s "The faker extension");
  * reach it through `T.faker.use.*`. The rest are not data-generating modules at
  * all — two definition bags, and four members describing the instance itself
  * rather than producing values from it (`getMetadata()` reports the resolved

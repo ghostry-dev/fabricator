@@ -26,7 +26,7 @@ export type Registry = Pick<
  * Every module the mirror covers, intersected with `keyof Faker` so every
  * downstream `Faker[$M]` indexing is sound. `FakerModules/Types.ts` is the
  * source of truth — `helpers` is absent from it deliberately (deviation policy
- * in `CLAUDE.md`'s "The faker extension"), so this type excludes it without
+ * in `AGENTS.md`'s "The faker extension"), so this type excludes it without
  * saying so twice.
  *
  * `test/index.types.test.ts`'s `_ModulesExhaustive` holds this to faker's own
@@ -77,7 +77,7 @@ export type FakerExtension = FakerModules & {
    * (`src/index.ts`'s `draw`).
    *
    * How `helpers` is reached (omitted from the mirror — deviation policy in
-   * `CLAUDE.md`'s "The faker extension"). Kind-tagged forms (`.string`,
+   * `AGENTS.md`'s "The faker extension"). Kind-tagged forms (`.string`,
    * `.number`, `.date`, `.boolean`, `.bigint`) keep adapter compatibility
    * available there too. `.opaque` is the **only** way to get an `opaque`
    * schema out of this package — honest, since it is the one place the caller
