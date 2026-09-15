@@ -1,5 +1,5 @@
-import { expect, test } from "bun:test";
 import { Omitted, initialize, registry } from "@ghostry/fabricator";
+import { expect, test } from "bun:test";
 import {
   combinatorialFromHere,
   enumerableSharedSchema,
@@ -149,22 +149,33 @@ test("non-enumerable kinds stay a single axis — array/record don't enumerate t
 });
 
 test("non-enumerated fields are still fuzzed across enumerated instances", () => {
+  /**
+   * A pinned "now" for the fuzz-difference tests below, so a failure can be
+   * re-run. Left off every other test here: the default wall clock is what most
+   * of this file exercises, and pinning it wholesale would change what they
+   * test.
+   */
   const { T, combinatorial } = initialize({
     salt: "combinatorial-still-fuzzed",
+    clock: new Date("2024-01-01T00:00:00.000Z"),
   });
 
   const results = [
     ...combinatorial(
       T.object({
         e: T.enum.uniform(["a", "b"]),
-        s: T.string.whereby({ length: { max: 24 } }),
+        s: T.string.whereby({ length: { min: 8, max: 24 } }),
       }),
     ),
   ];
 
   const strings = new Set(results.map((r) => r.s));
-  // Two enumerated instances, each independently drawing its own string —
-  // vanishingly unlikely to collide by chance.
+  // Two enumerated instances, each independently drawing its own string.
+  // `length.min` is what makes that assertion true rather than merely likely:
+  // it defaults to 0, and two independent draws both landing on length 0 are
+  // both `""` — a collision at ~1 in 625, which is a flake, not a rarity. With
+  // a floor of 8 the two must also agree on eight code points drawn from the
+  // BMP minus surrogates.
   expect(strings.size).toBe(2);
 });
 

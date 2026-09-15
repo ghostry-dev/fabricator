@@ -1,4 +1,3 @@
-import { expect, test } from "bun:test";
 import { Omitted, initialize } from "@ghostry/fabricator";
 import {
   plan,
@@ -7,6 +6,7 @@ import {
   type Pin,
   type Resolvable,
 } from "@ghostry/fabricator/internal";
+import { expect, test } from "bun:test";
 
 /**
  * Drives `plan`/`resolve` directly — no public API exists yet (that's phases
@@ -206,19 +206,32 @@ test("a recursive field stays width 1 — its body/self are never planned", () =
 });
 
 test("non-enumerated fields are still fuzzed across resolved instances", () => {
-  const { T, Fabricator } = initialize({ salt: "plan-still-fuzzed" });
+  /**
+   * A pinned "now" for the fuzz-difference tests below, so a failure can be
+   * re-run. Left off every other test here: the default wall clock is what most
+   * of this file exercises, and pinning it wholesale would change what they
+   * test.
+   */
+  const { T, Fabricator } = initialize({
+    salt: "plan-still-fuzzed",
+    clock: new Date("2024-01-01T00:00:00.000Z"),
+  });
 
   const built = new Fabricator(
     T.object({
       e: T.enum.uniform(["a", "b"]),
-      s: T.string.whereby({ length: { max: 24 } }),
+      s: T.string.whereby({ length: { min: 8, max: 24 } }),
     }),
   );
 
   const { results } = enumerateAll(built);
   const strings = new Set((results as any[]).map((r) => r.s));
 
-  // Two enumerated instances, each independently drawing its own string —
-  // vanishingly unlikely to collide by chance.
+  // Two enumerated instances, each independently drawing its own string.
+  // `length.min` is what makes that assertion true rather than merely likely:
+  // it defaults to 0, and two independent draws both landing on length 0 are
+  // both `""` — a collision at ~1 in 625, which is a flake, not a rarity. With
+  // a floor of 8 the two must also agree on eight code points drawn from the
+  // BMP minus surrogates.
   expect(strings.size).toBe(2);
 });
