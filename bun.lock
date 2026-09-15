@@ -25,13 +25,13 @@
     },
     "pkg/fabricator-adapter-typebox-v0": {
       "name": "@ghostry/fabricator-adapter-typebox-v0",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "devDependencies": {
         "@ghostry/fabricator": "workspace:*",
         "@sinclair/typebox": "^0.34.52",
       },
       "peerDependencies": {
-        "@ghostry/fabricator": ">=0.0.1 <0.1.0",
+        "@ghostry/fabricator": ">=0.0.3 <0.1.0",
         "@sinclair/typebox": "^0.34.52",
       },
     },

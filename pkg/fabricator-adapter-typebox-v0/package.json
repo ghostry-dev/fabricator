@@ -1,6 +1,6 @@
 {
   "name": "@ghostry/fabricator-adapter-typebox-v0",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "description": "TypeBox v0 (@sinclair/typebox 0.34.x) adapter for @ghostry/fabricator — converts any Fabricator Schema to a TypeBox schema.",
   "keywords": [
@@ -60,7 +60,7 @@
     "dist"
   ],
   "peerDependencies": {
-    "@ghostry/fabricator": ">=0.0.1 <0.1.0",
+    "@ghostry/fabricator": ">=0.0.3 <0.1.0",
     "@sinclair/typebox": "^0.34.52"
   },
   "devDependencies": {
