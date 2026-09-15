@@ -64,6 +64,9 @@
     "access": "public",
     "provenance": true
   },
+  "devDependencies": {
+    "@ghostry/harness": "^0.0.4"
+  },
   "scripts": {
     "build:reset": "rm -rf ./dist",
     "build:compile": "bunx --no-install --bun rslib build --config ./rslib.config.ts",
