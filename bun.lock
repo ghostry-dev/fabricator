@@ -37,7 +37,7 @@
     },
     "pkg/fabricator-extension-faker-v10": {
       "name": "@ghostry/fabricator-extension-faker-v10",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "devDependencies": {
         "@faker-js/faker": "^10.5.0",
         "@ghostry/fabricator": "workspace:*",

@@ -1,6 +1,6 @@
 {
   "name": "@ghostry/fabricator-extension-faker-v10",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "description": "@faker-js/faker integration for @ghostry/fabricator — faker's data generators, seeded and reproducible through the fabricator instance that calls them.",
   "keywords": [
