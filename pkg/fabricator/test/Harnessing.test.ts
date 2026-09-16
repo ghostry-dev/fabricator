@@ -438,3 +438,100 @@ test("a non-root instance handed to integration() is still reached by ambience, 
     builtOnTheFork: expected,
   });
 });
+
+/**
+ * The per-test overlay lays over the frame in effect, not over the instance
+ * `integration(...)` was handed. That receiver is bound before any test runs, so
+ * overlaying it would restate from the configured instance and drop an enclosing
+ * scope entirely — silently, and while still landing innermost and therefore
+ * governing every draw, since a construction resolves against the innermost
+ * frame on the stack rather than the instance it was built from.
+ *
+ * Reachable whenever another library opens a fabricator scope around the body:
+ * `@ghostry/extern`'s fabricator extension does exactly that, and which of the
+ * two lands innermost is decided by the order the integrations were registered
+ * in. Composing here is what makes that order a choice of layer order rather
+ * than a behavioral difference.
+ */
+test("the per-test salt composes onto an enclosing scope rather than replacing it", () => {
+  const instance = initialize({ salt: "testing-enclosing", clock: CLOCK });
+  const wired = integration(instance);
+
+  instance.wrap({ salt: layer("enclosing") }, () => {
+    run(wired, idA, ({ fabricator }) => {
+      expect(fabricator.context.salt).toEqual([
+        "testing-enclosing",
+        "enclosing",
+        "test",
+        "suite",
+        "a",
+      ]);
+    });
+
+    /** Per-test partitioning is unaffected by the enclosing layer. */
+    const draw = (identity: typeof idA) =>
+      run(wired, identity, ({ fabricator }) =>
+        new fabricator.Fabricator(fabricator.T.number).fabricate(),
+      );
+
+    expect(draw(idA)).not.toBe(draw(idB));
+    expect(draw(idA)).toBe(draw(idA));
+  });
+});
+
+/**
+ * The consequence of overlaying the scope in effect, stated as the ordinary
+ * ancestry rule rather than rediscovered later as a defect: `wrap` keys the
+ * frame it pushes on its **receiver's** ancestry (see `Instance/Types.ts`), so
+ * under composition the per-test frame belongs to the enclosing scope's line. A
+ * fork taken off the base instance is collateral kin to that line, so it steps
+ * over the per-test frame and resolves against the enclosing one — exactly what
+ * `Wrap.test.ts`'s outward walk describes.
+ *
+ * With no enclosing scope there is nothing to step over: the frame is keyed on
+ * the instance itself, and every fork in the lineage sees it. That is the case
+ * the rest of this file covers.
+ */
+test("under composition the per-test frame belongs to the enclosing scope's line", () => {
+  const instance = initialize({ salt: "testing-collateral", clock: CLOCK });
+  const wired = integration(instance);
+
+  instance.wrap({ salt: layer("enclosing") }, () => {
+    run(wired, idA, () => {
+      expect(instance.context.salt).toEqual([
+        "testing-collateral",
+        "enclosing",
+        "test",
+        "suite",
+        "a",
+      ]);
+
+      expect(instance.fork().context.salt).toEqual([
+        "testing-collateral",
+        "enclosing",
+      ]);
+    });
+  });
+});
+
+/**
+ * `clock` is still never set here — it is inherited, and the frame in effect is
+ * now part of what it inherits from. A caller who wrapped a different instant
+ * around a group of tests gets that instant inside them, rather than having the
+ * per-test scope silently revert to the instance's own.
+ */
+test("clock inherits from the frame in effect, and is still never set here", () => {
+  const instance = initialize({ salt: "testing-clock-frame", clock: CLOCK });
+  const enclosing = new Date("2030-06-01T00:00:00.000Z");
+
+  instance.wrap({ clock: enclosing }, () => {
+    run(integration(instance), idA, ({ fabricator }) => {
+      expect(fabricator.context.clock).toBe(enclosing.getTime());
+    });
+  });
+
+  /** Outside any frame, the instance's own clock, exactly as before. */
+  run(integration(instance), idA, ({ fabricator }) => {
+    expect(fabricator.context.clock).toBe(CLOCK.getTime());
+  });
+});

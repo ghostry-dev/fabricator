@@ -7,9 +7,9 @@ import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
 
 /**
  * Decorate an existing `Instance` as a `@ghostry/harness` integration. The
- * whole of it is `instance.wrap({ salt: layer(saltFor(identity)) })` — one line
- * of real work. Construction ordinals therefore restart per test (each `wrap`
- * re-instantiates), which is what makes `.only`, filters, shards, and
+ * whole of it is `context.scope().wrap({ salt: layer(saltFor(identity)) })` —
+ * one line of real work. Construction ordinals therefore restart per test (each
+ * `wrap` re-instantiates), which is what makes `.only`, filters, shards, and
  * `.concurrent` unable to shift a neighbor's data. That per-test partitioning
  * is also why the salt needs no file in it; see `saltFor`
  * (`Harnessing/Salt.ts`).
@@ -22,10 +22,28 @@ import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
  * merely precede it. On the synchronous carrier an async body still raises
  * `SynchronousStackError` from `wrap`.
  *
- * `instance.wrap` is handed to the wrapper directly rather than called inside a
- * closure. `wrap(overlay, block)` already takes `(scope) => $Return`, which is
- * exactly the wrapper's own `(established) => $Return`, so the scope `wrap`
- * opens _is_ the established value with nothing in between to adapt it.
+ * `body` is handed to `wrap` directly rather than called inside a closure.
+ * `wrap(overlay, block)` already takes `(scope) => $Return`, which is exactly
+ * the wrapper's own `(established) => $Return`, so the scope `wrap` opens _is_
+ * the established value with nothing in between to adapt it.
+ *
+ * `context.scope()`, not `instance`, is the receiver. A plain `instance.wrap`
+ * lays its overlay over the instance it was called on, and that receiver is
+ * bound before any test runs — so an integration composed _inside_ another
+ * library's fabricator scope would restate from the configured instance and
+ * drop that enclosing scope entirely, silently, while still landing innermost
+ * and therefore governing every draw. `context.scope()` is the frame in effect,
+ * or the instance itself when there is none, which is this integration's
+ * contract in both cases with no branch. Called fresh here rather than hoisted:
+ * `scope` is a function so that capturing it captures the lookup, where a
+ * captured result would pin one frame.
+ *
+ * The frame that `wrap` pushes is keyed on the receiver's ancestry, so under
+ * composition the per-test frame belongs to the enclosing scope's line: a
+ * collateral `fork()` taken inside a test resolves against the outermost frame
+ * on its own line instead. That is the ordinary ancestry rule — siblings never
+ * see each other's frames, and the outward walk supplies the outer ones — not a
+ * special case here.
  *
  * `provides.fabricator` is then that scope — the instance `wrap` gave its
  * block, not the base instance — so `context.fabricator.salt` is the per-test
@@ -35,14 +53,13 @@ import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
  * running providers outside the frame it opened, and raises
  * `HarnessingProviderError` rather than quietly providing the base instance.
  *
- * Nothing here reads `instance.context`. The integration is a pure function of
- * the `Identity` it is handed and the instance it decorates, and never sets
- * `clock`. A pinned `Date` (the recommended setup) and the wall-clock default
- * are already concrete numbers by the time `overlay()` sees them, so they
- * inherit through every `wrap` unchanged: salt varies per test, "now" does not.
- * `clock: "derived"` is left alone on purpose — that policy's documented
- * meaning is that the salt _is_ the reproducibility unit, so per-test clocks
- * are the request honored, not a bug to override.
+ * Nothing here sets `clock`. A pinned `Date` (the recommended setup) and the
+ * wall-clock default are already concrete numbers by the time `overlay()` sees
+ * them, so they inherit through every `wrap` — the frame in effect's included:
+ * salt varies per test, "now" does not. `clock: "derived"` is left alone on
+ * purpose — that policy's documented meaning is that the salt _is_ the
+ * reproducibility unit, so per-test clocks are the request honored, not a bug
+ * to override.
  */
 export function integration<$Registry extends PlainObject>(
   instance: Instance<$Registry>,
@@ -50,16 +67,16 @@ export function integration<$Registry extends PlainObject>(
   return {
     name: "@ghostry/fabricator",
     provides: {
-      fabricator: ({ established }) => {
-        if (typeof established === "undefined") {
+      fabricator: ({ established: instance }) => {
+        if (typeof instance === "undefined") {
           throw new FabricatorError.HarnessingProviderError();
         }
-        return established;
+        return instance;
       },
     },
     *frame({ identity }: FrameArgs) {
       const salt = layer(saltFor(identity));
-      yield (body) => instance.wrap({ salt }, body);
+      yield (body) => instance.context.scope().wrap({ salt }, body);
     },
   };
 }

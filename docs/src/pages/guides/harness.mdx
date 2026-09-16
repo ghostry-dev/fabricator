@@ -94,7 +94,9 @@ export const { describe, it, expect } = initializeHarness({
 });
 ```
 
-Each test's frame is keyed on the instance `wrap` was called on — here the fork — so a `Fabricator` destructured off that fork picks up the per-test identity, and the per-test salt simply gains `"testing"` ahead of the identity. Which instance a lineage started from is not relevant here.
+Each test's frame is keyed on the scope in effect — here the fork, since nothing encloses it — so a `Fabricator` destructured off that fork picks up the per-test identity, and the per-test salt simply gains `"testing"` ahead of the identity. Which instance a lineage started from is not relevant here.
+
+When something *does* enclose it — another integration that opened a fabricator scope of its own — the per-test salt composes onto that scope rather than replacing it, and the frame belongs to that scope's line. A fork taken off the base instance inside such a test is collateral to that line, so it resolves against the enclosing scope instead of the per-test one.
 
 ## Reaching the scope
 
