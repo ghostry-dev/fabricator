@@ -135,6 +135,7 @@ export default defineConfig({
         { text: "TypeBox", link: "/guides/typebox" },
         { text: "Faker", link: "/guides/faker" },
         { text: "Harness", link: "/guides/harness" },
+        { text: "Extern", link: "/guides/extern" },
         { text: "Custom types", link: "/guides/custom-types" },
       ],
     },

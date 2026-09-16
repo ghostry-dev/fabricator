@@ -1,0 +1,178 @@
+# Extern
+
+[`@ghostry/extern`](https://github.com/pjrebsch/extern) wraps external interactions so tests can substitute them. Fabricator schemas are not identities that it accepts on its own.
+
+`@ghostry/extern-extension-fabricator-v0` widens one extern instance so a fabricator Schema — or a built Fabricator — is a valid identity. By default the block is **self-mocking**: inside `extern.testing(...)` it fabricates from its own schema instead of throwing `NotMockedError`. An instance without the extension still rejects fabricator schemas, exactly as before.
+
+:::code-group
+
+```bash [bun]
+bun add @ghostry/extern @ghostry/extern-extension-fabricator-v0
+```
+
+```bash [npm]
+npm install @ghostry/extern @ghostry/extern-extension-fabricator-v0
+```
+
+:::
+
+## Setup
+
+One fabricator instance is handed to the extension. Pin a `clock` the same way [the harness guide](/guides/harness#pin-a-fixed-date) does — the unconfigured default is the wall-clock instant of `initialize()`, so every run of the suite would otherwise draw different data:
+
+```ts
+import { initialize as initializeExtern } from "@ghostry/extern";
+import { initialize as initializeFabricator } from "@ghostry/fabricator";
+import { fabricatorExtension } from "@ghostry/extern-extension-fabricator-v0";
+
+export const fabricator = initializeFabricator({
+  salt: "my-suite",
+  clock: new Date("2024-01-01T00:00:00Z"),
+});
+
+export const extern = await initializeExtern({
+  extensions: [fabricatorExtension({ instance: fabricator })],
+});
+```
+
+## Using it
+
+A fabricator schema is the block's identity. The production function is what runs outside tests; under `extern.testing` it does not run — the schema is enough:
+
+```ts
+const { T } = fabricator;
+
+const user = T.object({
+  id: T.number,
+  name: T.string.whereby({ length: { max: 10 } }),
+});
+
+const load = () => extern.typed.by(user).will(() => fetchUser());
+```
+
+```ts
+await extern.testing(() => {
+  expect(load()).toMatchObject({ id: expect.any(Number) });
+});
+```
+
+`extern.typed.by(new fabricator.Fabricator(user))` is the same identity.
+
+An `effect` block has no value to fabricate, so this extension does not touch it. A Standard Schema or `extern.T<number>()` is not a fabricator identity either, so it will still throw `NotMockedError` unless mocked.
+
+## Overriding and shaping
+
+### Overriding outright
+
+```ts
+await extern.testing((mock) => {
+  mock(user).with({ id: 1, name: "Ada" });
+});
+```
+
+That is a wholesale substitute, not a fabrication. `UnusedMocksError` still applies: a `with()` or `produce()` that never runs is a failed test, fabrication or not.
+
+### Shaping the fabrication
+
+`produce()` fabricates and hands back a spy. Given a callback, it hands you the built Fabricator, so overrides are expressed in fabricator's own vocabulary — this package models none of it:
+
+```ts
+await extern.testing((mock) => {
+  mock(user).produce(({ via }) => via.fabricate({ name: "Ada" }));
+
+  expect(load().name).toBe("Ada");
+});
+```
+
+`via` is the built Fabricator, so an object's `fabricate(overrides)` carries fabricator's own `Override` — nested objects, the [`Omitted`](/reference/primitives/omittable) sentinel, and all. Everything else it carries is reachable too, `trace` and `schema` included.
+
+The callback form is available on every schema, not object schemas alone. What differs is what that Fabricator accepts: an object's `fabricate` takes overrides, a `T.number`'s takes none. That is fabricator's own type saying so, not a rule this package imposes.
+
+Both `produce()` and `produce(fn)` cache per `(identity, name)`: the callback runs once, and reading the block twice in one test agrees. Bare `produce()` fabricates exactly what the unmocked path would.
+
+### Requiring an explicit mock
+
+```ts
+fabricatorExtension({ instance: fabricator, unmocked: "error" });
+```
+
+Blocks then throw `NotMockedError` again unless mocked, while `produce()` still fabricates on demand.
+
+## Determinism
+
+Every testing block runs inside [`instance.wrap(...)`](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) with one foreknown constant [layered](/guides/reproducibility#composing-instead-of-replacing-layer) onto the salt in effect — never anything derived from where a block was written:
+
+```ts
+[...enclosingSalt, "@ghostry/extern"];
+```
+
+Each `wrap` also gets a fresh [construction counter](/guides/reproducibility#construction-order). That gives:
+
+- the same block fabricates the same value across independent `testing()` calls
+- the same schema exercised from a different test file draws the same value
+- construction order within one testing block determines unnamed values
+
+A user's own `new fabricator.Fabricator(schema)` written inside a testing block shares that block's source, but is a **separate draw** — successive ordinals in one stream — not a second view of the block's value.
+
+One written _outside_ the block draws from the enclosing scope instead. The constant layer is what keeps those two streams disjoint: a fabrication either side of a testing block can never collide with one inside it, at any ordinal.
+
+Two blocks over one schema in one test are a single production. Give them `named(...)` to make them distinct:
+
+```ts
+const namedLoad = (name: string) =>
+  extern.typed
+    .by(user)
+    .named(name)
+    .will(() => fetchUser());
+
+await extern.testing(() => {
+  expect(namedLoad("a")).not.toEqual(namedLoad("b"));
+});
+```
+
+A name does more than disambiguate. It lifts a block out of positional identity altogether: a named block's value is a function of its identity and its name, and of nothing else — it is pinned with `ordinal: null`, fabricator's own encoding for a build that takes no construction number. Add a second fixture above it, or a helper that fabricates on its way past, and a named block keeps its value where an unnamed one moves. Concurrent `Promise.all` of two named blocks keeps each value deterministic regardless of settle order. That is the trade the two forms make, and it is why the bullet above is scoped to unnamed values.
+
+## Why this uses `wrap`
+
+The [reproducibility guide](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) recommends `fork` over `wrap` in ordinary code, because a fork's receivers each mean exactly themselves. This extension is the case that recommendation exempts: it has to apply a per-block configuration to a testing body it did not write and cannot thread a parameter into. Ambience is the only way to reach both `load()` and a user's own `new Fabricator(...)` inside that body, so `wrap` is the right tool here.
+
+The overlay goes through `context.scope()`, not the instance `fabricatorExtension({ instance })` was handed. That receiver is bound before any test runs, so wrapping it would restate from the configured instance and drop an enclosing scope — silently, while still landing innermost and governing every draw. `context.scope()` is the frame in effect, or the instance itself when there is none, which is this extension's contract in both cases.
+
+## With a test harness
+
+[`@ghostry/fabricator/harnessing`](/guides/harness) opens a `wrap` of its own per test, salted by that test's identity. This extension's scope then runs _inside_ it, and the two nest rather than compete: blocks inside `extern.testing` inherit the enclosing test's salt, and its clock along with it.
+
+The construction ordinal does not carry through — every testing block re-instantiates, as stated above — but the scope's constant salt layer keeps the block's stream disjoint from the enclosing test's, so a `fabricate()` written either side of `extern.testing` never collides with one inside it.
+
+The harness's own `context.fabricator` stays usable inside a block. It holds the harness's scope rather than this extension's, but a construction resolves against the innermost active frame, so it draws in step with the blocks around it.
+
+Both halves must come from **one `initialize()`**:
+
+```ts
+const fabricator = initializeFabricator({
+  salt: "my-suite",
+  clock: new Date("2024-01-01T00:00:00Z"),
+});
+
+// harness integration and extension, one lineage
+integration(fabricator);
+fabricatorExtension({ instance: fabricator });
+```
+
+A `fork()` stays within the lineage and is fine to pass. Two `initialize()` calls mint unrelated lineages and never see each other's frames — not even when handed the same `stack`, which selects a carrier and nothing more. An extension pointed at a _second_ instance never observes the harness's frame and falls back to its own configuration: the per-test salt is lost and every test fabricates identically, with no error raised.
+
+Determinism survives that; **distinctness** does not. The symptom is tests that write a fabricated id into shared state colliding with each other — passing individually, failing as a suite, and passing again under `.only`, which sends you looking for pollution rather than for the wiring.
+
+Where both instances are in scope, you can assert it directly — `root` is fabricator's answer to "same lineage?":
+
+```ts
+if (integrationInstance.root !== extensionInstance.root) {
+  throw new Error("fabricator instances are from different lineages");
+}
+```
+
+Where they are not — the two halves wired in separate modules, which is how this goes wrong in practice — one guard test in the suite's own setup covers it: fabricate the same schema under two different test identities and assert the values differ.
+
+## Runtime
+
+Async testing bodies need an async stack carrier, which means any runtime with `node:async_hooks` — Bun, Node, and Deno. This extension runs the testing block inside fabricator's `wrap`, which refuses an async block under the synchronous carrier a browser bundle selects. A sync body works under that carrier too. See [Runtime support](/guides/reproducibility#runtime-support).

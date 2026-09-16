@@ -93,3 +93,21 @@ npm install --save-dev @ghostry/harness
 :::
 
 See [the Harness guide](/guides/harness) for the setup module.
+
+## Optional: extern blocks
+
+When a `typed` extern block uses a fabricator schema, `@ghostry/extern-extension-fabricator-v0` makes it self-mocking: inside a testing block it fabricates from its own schema instead of requiring a mock.
+
+:::code-group
+
+```bash [bun]
+bun add @ghostry/extern @ghostry/extern-extension-fabricator-v0
+```
+
+```bash [npm]
+npm install @ghostry/extern @ghostry/extern-extension-fabricator-v0
+```
+
+:::
+
+See [the Extern guide](/guides/extern) for the setup.
