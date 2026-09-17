@@ -304,6 +304,19 @@ function axisFor(node: Resolvable, planning: Planning): Axis {
       return productAxis(planning.strategy, axes, (slots) => ({ slots }));
     }
 
+    /**
+     * Planned like `tuple`: every `from` slot is an independent axis, so an
+     * enumerable input (an `enum`, a `boolean`) is still covered even though
+     * the derive itself only exposes `resolve`'s output. `resolve` below
+     * applies the pinned slot values through the derive's own `resolve`.
+     */
+    case "derive": {
+      const from: ReadonlyArray<Resolvable> = node[Children];
+      const axes = from.map((slot) => plan(slot, planning));
+
+      return productAxis(planning.strategy, axes, (slots) => ({ slots }));
+    }
+
     case "object": {
       const definition: Record<string, any> = node[Meta].definition;
       const fields: Record<string, Resolvable> = node[Children];
@@ -453,6 +466,14 @@ export function resolve(node: Resolvable, pin: Pin): unknown {
       const p = pin as { slots: ReadonlyArray<Pin> };
       const elements: ReadonlyArray<Resolvable> = node[Children];
       return elements.map((element, i) => resolve(element, p.slots[i]));
+    }
+
+    case "derive": {
+      const p = pin as { slots: ReadonlyArray<Pin> };
+      const from: ReadonlyArray<Resolvable> = node[Children];
+      return node.fabricate({
+        from: from.map((slot, i) => resolve(slot, p.slots[i])),
+      });
     }
 
     case "object": {

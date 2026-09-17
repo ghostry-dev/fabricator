@@ -32,9 +32,10 @@ export type Orderer = (width: bigint) => ReadonlyArray<bigint>;
  * Recipe for one enumerated combination against a built Fabricator tree:
  * `undefined` for a drawn (not chosen) node — fabricate normally; `{ value }`
  * for a literal (enum member, boolean, `null`, `undefined`, `Omitted`); `{
- * slots }`/`{ fields }` for a tuple/object, recursing per position/key; `{
- * branch, inner }` for a choice's chosen option, or a presence wrapper's
- * "present" arm, recursing into whichever child was picked.
+ * slots }` for a tuple or a derive's `from`, recursing per position; `{ fields
+ * }` for an object, recursing per key; `{ branch, inner }` for a choice's
+ * chosen option, or a presence wrapper's "present" arm, recursing into
+ * whichever child was picked.
  */
 export type Pin =
   | undefined

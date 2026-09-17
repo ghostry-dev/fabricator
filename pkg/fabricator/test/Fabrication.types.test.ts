@@ -2,6 +2,7 @@ import { initialize, registry } from "@ghostry/fabricator";
 import {
   Children,
   Kind,
+  Meta,
   type Fabrication,
   type NaiveFabricator,
   type Primitive,
@@ -37,6 +38,11 @@ const array = new Fabricator(
   T.array(T.always("x")).whereby({ length: { max: 2 } }),
 );
 const tuple = new Fabricator(T.tuple([T.always("x"), T.number]));
+const derivedSchema = T.derive({
+  to: T.string,
+  from: [T.always("hello"), T.string.as(() => "world")],
+}).as((parts) => parts.join(":"));
+const derived = new Fabricator(derivedSchema);
 /**
  * All four key shapes a `record` can take. The split its `Fabricated` makes is
  * _open keyspace vs. finite one_, not string vs. symbol — so the mixed `string
@@ -136,6 +142,18 @@ export type Assertions = [
   Expect<Equal<Fabrication<typeof always>, "hello">>,
   Expect<Extends<Fabrication<typeof array>, "x"[]>>,
   Expect<Equal<Fabrication<typeof tuple>, ["x", number]>>,
+  Expect<Equal<Fabrication<typeof derived>, string>>,
+  /**
+   * `resolve`'s first argument is the positional tuple of `from` values, not a
+   * flattened union — the same arity-preserving shape `tuple.Fabricated`
+   * already is.
+   */
+  Expect<
+    Equal<
+      Parameters<(typeof derivedSchema)[typeof Meta]["resolve"]>[0],
+      ["hello", string]
+    >
+  >,
   Expect<Equal<Fabrication<typeof opaque>, Map<string, number>>>,
   Expect<Equal<Fabrication<typeof opaqueUsingStream>, number>>,
   Expect<
@@ -211,6 +229,7 @@ export type LocalFabricationAssertions = [
   Expect<Equal<Primitive.always.Fabrication<typeof always>, "hello">>,
   Expect<Extends<Primitive.array.Fabrication<typeof array>, "x"[]>>,
   Expect<Equal<Primitive.tuple.Fabrication<typeof tuple>, ["x", number]>>,
+  Expect<Equal<Primitive.derive.Fabrication<typeof derived>, string>>,
   Expect<Extends<Primitive.object.Fabrication<typeof object>, { a: 1 }>>,
   Expect<Extends<{ a: 1 }, Primitive.object.Fabrication<typeof object>>>,
 ];
@@ -280,6 +299,7 @@ test("a .refine()-computed field builds and fabricates against its siblings", ()
 test("every composite kind's built Fabricator carries [Children]; recursive's carries none", () => {
   expect(array[Children]).toBeDefined();
   expect(tuple[Children]).toHaveLength(2);
+  expect(derived[Children]).toHaveLength(2);
   expect(choice[Children]).toHaveLength(2);
   expect(object[Children]).toBeDefined();
   expect(stringRecord[Children]).toHaveProperty("key");

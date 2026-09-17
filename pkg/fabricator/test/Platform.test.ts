@@ -18,7 +18,12 @@ function walk(dir: string): string[] {
  * provide.
  */
 function externalImports(source: string): string[] {
-  return [...source.matchAll(/\bfrom\s*"([^"]+)"/g)]
+  /**
+   * `\s+`, not `\s*`: ESM `from` specifiers always have whitespace before the
+   * quote (`from "async_hooks"`), and `\s*` would also match a string literal
+   * `"from"` used as a structural path segment (`derive`'s `from` slots).
+   */
+  return [...source.matchAll(/\bfrom\s+"([^"]+)"/g)]
     .map((match) => match[1]!)
     .filter(
       (specifier) => !specifier.startsWith(".") && !specifier.startsWith("#"),

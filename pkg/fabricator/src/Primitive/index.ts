@@ -7,6 +7,7 @@ export { default as bigint } from "./bigint";
 export { default as boolean } from "./boolean";
 export { default as choice } from "./choice";
 export { default as date } from "./date";
+export { default as derive } from "./derive";
 export { default as enum } from "./enum";
 export { default as null } from "./null";
 export { default as nullable } from "./nullable";
@@ -33,6 +34,7 @@ export type Fabricator =
   | Primitive.boolean.Fabricator
   | Primitive.choice.Fabricator<any>
   | Primitive.date.Fabricator
+  | Primitive.derive.Fabricator<any>
   | Primitive.enum.Fabricator<any>
   | Primitive.null.Fabricator
   | Primitive.nullable.Fabricator<any>
@@ -59,6 +61,7 @@ export type Schema =
   | Primitive.boolean.Schema
   | Primitive.choice.Schema<any>
   | Primitive.date.Schema
+  | Primitive.derive.Schema<any, any>
   | Primitive.enum.Schema<any>
   | Primitive.null.Schema
   | Primitive.nullable.Schema<any>

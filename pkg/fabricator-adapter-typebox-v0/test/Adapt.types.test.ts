@@ -1,5 +1,6 @@
 import {
   Type,
+  type TBoolean,
   type TInteger,
   type TObject,
   type TOptional,
@@ -160,6 +161,32 @@ const adaptedComputed = T.object({
 const inCompute = toTypeBox(computed);
 const inAdaptedCompute = toTypeBox(adaptedComputed);
 
+const derived = T.derive({ to: T.string, from: [T.always("hello")] }).as(
+  ([value]) => value,
+);
+const adaptedDerived = derived.adapt(typebox, () =>
+  Type.Integer({ minimum: 1 }),
+);
+const inDerived = toTypeBox(derived);
+const inAdaptedDerived = toTypeBox(adaptedDerived);
+
+/**
+ * `to` is reached through the same adaptation lookup as any nested node, so an
+ * adapted `to` is honored, and an adaptation on the derive itself still wins.
+ */
+const adaptedTo = T.string
+  .whereby({ length: { max: 5 } })
+  .adapt(typebox, () => Type.Integer({ minimum: 1 }));
+const derivedFromAdaptedTo = T.derive({
+  to: adaptedTo,
+  from: [T.always("hello")],
+}).as(([value]) => value);
+const adaptedDerivedOverAdaptedTo = derivedFromAdaptedTo.adapt(typebox, () =>
+  Type.Boolean(),
+);
+const inDerivedFromAdaptedTo = toTypeBox(derivedFromAdaptedTo);
+const inAdaptedDerivedOverAdaptedTo = toTypeBox(adaptedDerivedOverAdaptedTo);
+
 /**
  * The producer's parameter as a caller actually receives it — read back off a
  * real `.adapt(...)`, so it tracks whatever that method declares rather than
@@ -228,6 +255,10 @@ export type Assertions = [
       TObject<{ readonly name: TString; readonly slug: TInteger }>
     >
   >,
+  Expect<Equal<typeof inDerived, TString>>,
+  Expect<Equal<typeof inAdaptedDerived, TInteger>>,
+  Expect<Equal<typeof inDerivedFromAdaptedTo, TInteger>>,
+  Expect<Equal<typeof inAdaptedDerivedOverAdaptedTo, TBoolean>>,
 ];
 
 test("an adaptation replaces its kind's own mapping", () => {
@@ -285,6 +316,23 @@ test("an adapted computed field maps via its adaptation, not its source", () => 
   /** And resolving the value is untouched by any of it. */
   const fabricated = new Fabricator(adaptedComputed).fabricate();
   expect(fabricated.slug).toBe(fabricated.name.toLowerCase());
+});
+
+test("an adapted derive maps via its adaptation, not its to schema", () => {
+  expect(inDerived.type).toBe("string");
+  expect(inAdaptedDerived.type).toBe("integer");
+  expect(toTypeBox(new Fabricator(adaptedDerived)).type).toBe("integer");
+  expect(new Fabricator(adaptedDerived).fabricate()).toBe("hello");
+});
+
+test("a derive defers to an adapted to, unless the derive itself is adapted", () => {
+  expect(inDerivedFromAdaptedTo.type).toBe("integer");
+  expect(toTypeBox(new Fabricator(derivedFromAdaptedTo)).type).toBe("integer");
+  expect(inAdaptedDerivedOverAdaptedTo.type).toBe("boolean");
+  expect(toTypeBox(new Fabricator(adaptedDerivedOverAdaptedTo)).type).toBe(
+    "boolean",
+  );
+  expect(new Fabricator(adaptedDerivedOverAdaptedTo).fabricate()).toBe("hello");
 });
 
 test("a nested adapted `object` field survives `.override(...)`", () => {

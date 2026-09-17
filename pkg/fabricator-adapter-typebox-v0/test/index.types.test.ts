@@ -133,6 +133,11 @@ const withTuple = toTypeBox(
     }),
   ),
 );
+const withDerive = toTypeBox(
+  T.derive({ to: T.string, from: [T.always("hello"), T.always("world")] }).as(
+    (parts) => parts.join(":"),
+  ),
+);
 
 /**
  * `always` and `object.compute` are the two kinds whose Schema shape used to be
@@ -151,6 +156,16 @@ const builtComputed = toTypeBox(
     T.object({ id: T.always(1) }).refine(({ compute }) => ({
       label: compute(T.string).as(() => "computed"),
     })),
+  ),
+);
+/**
+ * `derive`'s Schema requires `.adapt(...)`, so matching `Schema` instead of
+ * `Core` would drop a built Fabricator to `TSchema` the same way `always`/
+ * `object.compute` did. This is the assertion that would catch it.
+ */
+const builtDerived = toTypeBox(
+  new Fabricator(
+    T.derive({ to: T.number.integer, from: [T.always(1)] }).as(([n]) => n),
   ),
 );
 
@@ -268,6 +283,12 @@ export type Assertions = [
       TObject<{ readonly x: TTuple<[TInteger, TString]> }>
     >
   >,
+  /**
+   * A derive maps to `to`'s TypeBox shape, not a union of `from` — adapters
+   * reflect the result, the same standing as `object.compute`'s `source`.
+   */
+  Expect<Equal<typeof withDerive, TString>>,
+  Expect<Equal<typeof builtDerived, TInteger>>,
   /**
    * An opaque value is whatever its producer returns, so there is nothing to
    * constrain — `TUnknown` is the honest mapping rather than a lossy guess.
@@ -478,6 +499,11 @@ test("a tuple field maps to a TypeBox tuple of its slots' own schemas", () => {
     "integer",
     "string",
   ]);
+});
+
+test("a derive maps to the TypeBox shape of to", () => {
+  expect(withDerive.type).toBe("string");
+  expect(builtDerived.type).toBe("integer");
 });
 
 test("a recursive field maps to a $ref-based TypeBox schema", () => {

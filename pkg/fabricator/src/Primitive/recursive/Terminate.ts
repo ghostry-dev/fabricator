@@ -100,6 +100,21 @@ function terminateAt(schema: any, path: ReadonlyArray<string>): AnySchema {
       });
     }
 
+    /**
+     * `to` is left alone even when it contains `self`: it only declares the
+     * result's type and is never dispatched, so it cannot recurse. Unlike
+     * `object.compute`'s `source`, nothing here needs to throw.
+     */
+    case "derive": {
+      const s = schema as Primitive.derive.Schema;
+      return withMeta(s, {
+        ...s[Meta],
+        from: s[Meta].from.map((item, i) =>
+          terminateAt(item, [...path, "from", String(i)]),
+        ),
+      });
+    }
+
     case "object.compute": {
       const s = schema as Primitive.object.compute.Schema<any, any>;
       if (containsSelf(s[Meta].source)) {
@@ -191,6 +206,11 @@ function containsSelf(schema: any): boolean {
     case "tuple": {
       const s = schema as Primitive.tuple.Schema;
       return s[Meta].items.some((item) => containsSelf(item));
+    }
+
+    case "derive": {
+      const s = schema as Primitive.derive.Schema;
+      return s[Meta].from.some((item) => containsSelf(item));
     }
 
     case "object.compute": {

@@ -274,6 +274,21 @@ export function Constructor(
         );
         return Primitive.tuple.Fabricator({ ...common, schema: s }, elements);
       }
+      case "derive": {
+        /**
+         * `from` slots are dispatched independently, same as `tuple` — each on
+         * its own path-keyed stream, extended by `"from"` then the slot index
+         * so they cannot collide with each other or with this node's own stream
+         * (`resolve` draws from `toStreamFromTrace` on this node's trace). `to`
+         * is not dispatched: it names the result's kind only, the same standing
+         * as `object.compute`'s `source`.
+         */
+        const s = schema as Primitive.derive.Schema;
+        const from = s[Meta].from.map((item, i) =>
+          make(item, [...path, "from", i.toString(10)], context),
+        );
+        return Primitive.derive.Fabricator({ ...common, schema: s }, from);
+      }
       case "object.compute": {
         const s = schema as Primitive.object.compute.Schema<any, any>;
         return Primitive.object.compute.Fabricator({ ...common, schema: s });

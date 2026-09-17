@@ -62,6 +62,7 @@ type Body = Primitive.object.Core<{
   tup: Primitive.tuple.Core<readonly [SelfCore, Primitive.number.Core]>;
   rec: Primitive.record.Core<Primitive.string.Core, SelfCore>;
   cho: Primitive.choice.Core<readonly [readonly [1, SelfCore]]>;
+  der: Primitive.derive.Core<readonly [Primitive.number.Core], SelfCore>;
   nul: Primitive.nullable.Core<SelfCore>;
   nsh: Primitive.nullish.Core<SelfCore>;
   und: Primitive.undefinable.Core<SelfCore>;
@@ -79,6 +80,7 @@ export type ThreadingAssertions = [
   Expect<Equal<R["tup"], [R, number]>>,
   Expect<Equal<R["rec"], Record<string, R>>>,
   Expect<Equal<R["cho"], R>>,
+  Expect<Equal<R["der"], R>>,
   Expect<Equal<R["nul"], R | null>>,
 
   /**
@@ -130,6 +132,17 @@ export type UnchangedAssertions = [
         >
       >,
       [number, string]
+    >
+  >,
+  Expect<
+    Equal<
+      ValueOf<
+        Primitive.derive.Core<
+          readonly [Primitive.number.Core],
+          Primitive.string.Core
+        >
+      >,
+      string
     >
   >,
 ];

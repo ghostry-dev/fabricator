@@ -224,6 +224,30 @@ export namespace FabricatorError {
   }
 
   /**
+   * A `T.derive` resolver returned a value of the wrong shape for the `to`
+   * schema it was declared against.
+   */
+  export class DeriveResultMismatchError extends FabricatorError {
+    constructor(
+      /**
+       * The `[Kind]` of the derive's `to` schema.
+       */
+      public readonly kind: string,
+
+      /**
+       * What the resolver actually returned.
+       */
+      public readonly value: unknown,
+    ) {
+      super();
+      this.name = "DeriveResultMismatchError";
+      this.message =
+        "A T.derive resolver returned a value of type "
+        + `${typeof value} that does not match its \`to\` schema ("${kind}").`;
+    }
+  }
+
+  /**
    * An override names a field the object schema does not define — most often a
    * typo, which is why the known fields are listed.
    */

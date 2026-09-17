@@ -22,6 +22,7 @@ export * as bigint from "./bigint";
 export * as boolean from "./boolean";
 export * as choice from "./choice";
 export * as date from "./date";
+export * as derive from "./derive";
 export * as enum from "./enum";
 export * as null from "./null";
 export * as nullable from "./nullable";

@@ -392,6 +392,11 @@ test("every kind carries a defined .trace, including nodes that never draw", () 
   expect(new Fabricator(T.undefined).trace).toBeDefined();
   expect(new Fabricator(T.tuple([T.always(1)])).trace).toBeDefined();
   expect(new Fabricator(T.object({ a: T.always(1) })).trace).toBeDefined();
+  expect(
+    new Fabricator(
+      T.derive({ to: T.number, from: [T.always(1)] }).as(([n]) => n),
+    ).trace,
+  ).toBeDefined();
 });
 
 /**

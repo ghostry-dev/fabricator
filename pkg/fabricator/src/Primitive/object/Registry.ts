@@ -1,7 +1,7 @@
 import { mergeAdaptations } from "../../Adapter/Core";
 import type { Adaptations } from "../../Adapter/Types";
 import { FabricatorError } from "../../Error";
-import { toSchema, violatesKind } from "../../Schema/Core";
+import { toSchema, toValueKind, violatesKind } from "../../Schema/Core";
 import { Adaptation, Fixed, Kind, Meta, Omitted } from "../../Types";
 import { isPlainObject } from "../../Utility/Core";
 import { shallowMerge } from "../../Utility/ShallowMerge";
@@ -9,7 +9,7 @@ import { type PlainObject } from "../../Utility/Types";
 import { isNullableSchema } from "../nullable/Schema";
 import { isNullishSchema } from "../nullish/Schema";
 import { isUndefinableSchema } from "../undefinable/Schema";
-import { default as computer, isObjectComputeSchema } from "./compute";
+import { default as computer } from "./compute";
 import { isObjectOmittableSchema } from "./omittable/Schema";
 import { isObjectOptionalSchema } from "./optional/Schema";
 import { isObjectSchema, Schema } from "./Schema";
@@ -109,7 +109,7 @@ function make<
             continue;
           }
 
-          const innerKind = fieldSchema[Meta].definition[Kind];
+          const innerKind = toValueKind(fieldSchema[Meta].definition);
           if (violatesKind(innerKind, value)) {
             throw new FabricatorError.InvalidOverrideValueError(
               key,
@@ -128,7 +128,7 @@ function make<
             continue;
           }
 
-          const innerKind = fieldSchema[Meta].definition[Kind];
+          const innerKind = toValueKind(fieldSchema[Meta].definition);
           if (violatesKind(innerKind, value)) {
             throw new FabricatorError.InvalidOverrideValueError(
               key,
@@ -143,7 +143,7 @@ function make<
 
         if (isUndefinableSchema(fieldSchema)) {
           if (value !== undefined) {
-            const innerKind = fieldSchema[Meta].definition[Kind];
+            const innerKind = toValueKind(fieldSchema[Meta].definition);
             if (violatesKind(innerKind, value)) {
               throw new FabricatorError.InvalidOverrideValueError(
                 key,
@@ -159,7 +159,7 @@ function make<
 
         if (isNullableSchema(fieldSchema)) {
           if (value !== null) {
-            const innerKind = fieldSchema[Meta].definition[Kind];
+            const innerKind = toValueKind(fieldSchema[Meta].definition);
             if (violatesKind(innerKind, value)) {
               throw new FabricatorError.InvalidOverrideValueError(
                 key,
@@ -175,7 +175,7 @@ function make<
 
         if (isNullishSchema(fieldSchema)) {
           if (value !== null && value !== undefined) {
-            const innerKind = fieldSchema[Meta].definition[Kind];
+            const innerKind = toValueKind(fieldSchema[Meta].definition);
             if (violatesKind(innerKind, value)) {
               throw new FabricatorError.InvalidOverrideValueError(
                 key,
@@ -196,9 +196,7 @@ function make<
           );
         }
 
-        const kind = isObjectComputeSchema(fieldSchema)
-          ? fieldSchema[Meta].source[Kind]
-          : fieldSchema[Kind];
+        const kind = toValueKind(fieldSchema);
 
         if (violatesKind(kind, value)) {
           throw new FabricatorError.InvalidOverrideValueError(key, kind, value);

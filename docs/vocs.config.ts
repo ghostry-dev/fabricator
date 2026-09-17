@@ -24,6 +24,7 @@ const PRIMITIVES = [
   "boolean",
   "choice",
   "date",
+  "derive",
   "enum",
   "null",
   "nullable",

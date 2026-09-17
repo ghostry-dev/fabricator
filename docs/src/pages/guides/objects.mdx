@@ -42,6 +42,8 @@ const IdentifiableProductSchema = ProductSchema.refine(({ compute }) => ({
 
 This is why `.refine()` needs its own method distinct from `.extend()`: a computed field genuinely needs a second pass, after the ordinary fields resolve. See [Composition](/guides/composition) for the full `extend`/`refine`/`override` picture and the performance trade-off between the two.
 
+For a value computed from other schemas that are not fields of a surrounding object, use [`T.derive`](/reference/primitives/derive) instead.
+
 ## Per-call overrides
 
 ```ts

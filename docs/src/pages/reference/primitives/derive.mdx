@@ -1,0 +1,19 @@
+# T.derive
+
+A value computed from other schemas' fabricated output, without wrapping them in a throwaway object.
+
+```ts
+T.derive({
+  to: T.string,
+  from: [T.always("hello"), T.string.as(() => "world")],
+}).as((parts) => parts.join(":"));
+// "hello:world"
+```
+
+`from` is a tuple of schemas, each fabricated independently — one private stream per slot, the same way [`T.tuple`](/reference/primitives/tuple) works. `to` names the result's type and shape: a schema, or a bare builder like `T.string` when you only need to declare the kind. Adapters reflect `to`, and a resolver that returns the wrong kind throws.
+
+Overriding a derive-valued field with `.override()` checks the value against `to`. `coverage` and `combinatorial` enumerate the enumerable inputs in `from` (an enum, a boolean) and run `resolve` on each combination.
+
+`.as(resolve)` is required. `resolve` receives the fabricated `from` values as a positional tuple, then `{ random, clock }` — this node's own seeded stream, so any extra draw still replays under a salt.
+
+For a field that reads its siblings on the same object, use `.refine(({ compute }) => ...)` instead — see [Computed fields](/guides/objects#computed-fields). `T.derive` is when the inputs are not (or need not be) fields of a surrounding object.

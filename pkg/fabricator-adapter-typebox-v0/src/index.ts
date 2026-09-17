@@ -244,6 +244,9 @@ export type ToTypeBox<$Schema> =
   $Schema extends Primitive.tuple.Core<infer $Items>
     ? TTuple<TupleItems<$Items>> :
 
+  $Schema extends Primitive.derive.Core<any, infer $To>
+    ? ToTypeBox<Primitive.derive.Denoted<$To>> :
+
   $Schema extends Primitive.object.compute.Core<any, infer $Source>
     ? ToTypeBox<Primitive.object.compute.Denoted<$Source>> :
 
@@ -455,6 +458,16 @@ function convert(
     case "tuple": {
       const s = schema as Primitive.tuple.Schema;
       return Type.Tuple(s[Meta].items.map((item) => recurse(item, context)));
+    }
+
+    /**
+     * A derive resolves to its `to` schema; the resolver that produces the
+     * value is irrelevant to the shape — the same standing as
+     * `object.compute`'s `source`.
+     */
+    case "derive": {
+      const s = schema as Primitive.derive.Schema;
+      return recurse(s[Meta].to, context);
     }
 
     /**

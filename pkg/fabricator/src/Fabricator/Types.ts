@@ -173,6 +173,9 @@ export type AsFabricator<$Schema> =
   $Schema extends Primitive.tuple.Core
     ? Primitive.tuple.Fabricator<$Schema> :
 
+  $Schema extends Primitive.derive.Core
+    ? Primitive.derive.Fabricator<$Schema> :
+
   $Schema extends Primitive.always.Core
     ? Primitive.always.Fabricator<$Schema> :
 

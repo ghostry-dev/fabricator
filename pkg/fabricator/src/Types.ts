@@ -22,9 +22,10 @@ export const Layer = Symbol.for("fabricator:layer");
  * already constructed for this node's nested schemas before handing them to the
  * kind's own `Fabricator()` factory. Every composite kind whose construction
  * receives already-dispatched Fabricators carries this: `object` (its `Fields`
- * map), `tuple` (`elements`, in slot order), `choice` (the dispatched options,
- * in `[Meta].items` order — weights stay in `[Meta]`), `array` (the single
- * shared `element`), `record` (`{ key, value }`), and each of
+ * map), `tuple` (`elements`, in slot order), `derive` (the dispatched `from`
+ * slots, in `[Meta].from` order), `choice` (the dispatched options, in
+ * `[Meta].items` order — weights stay in `[Meta]`), `array` (the single shared
+ * `element`), `record` (`{ key, value }`), and each of
  * `nullable`/`nullish`/`undefinable`/`object.omittable`/`object.optional` (the
  * single wrapped `source`).
  *

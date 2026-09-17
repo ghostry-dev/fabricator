@@ -47,6 +47,29 @@ export function toSchema<
 }
 
 /**
+ * The `[Kind]` a schema's fabricated value should be checked against with
+ * {@link violatesKind}. For most kinds that is its own `[Kind]`, but
+ * `object.compute` and `derive` only declare their value's shape, through
+ * `source` and `to`. Those resolve to that schema's kind, recursively, so a
+ * `to` that is itself a `derive` still reaches a checkable kind. Without this,
+ * an override of a derive-valued field would be checked against `"derive"`,
+ * which accepts anything.
+ */
+export function toValueKind(schema: {
+  [Kind]: SchemaKind;
+  [Meta]?: any;
+}): SchemaKind {
+  switch (schema[Kind]) {
+    case "object.compute":
+      return toValueKind(schema[Meta].source);
+    case "derive":
+      return toValueKind(schema[Meta].to);
+    default:
+      return schema[Kind];
+  }
+}
+
+/**
  * Whether `value`'s basic JS shape is compatible with `kind` (one of this
  * library's `[Kind]` literals, e.g. `"string"`, `"object"`, `"date"`). Stops at
  * "is this the right _kind of value_" (right JS type/shape), not deeper schema
@@ -151,6 +174,14 @@ export function violatesKind(kind: SchemaKind, value: unknown): boolean {
     case "choice":
       return false;
     case "object.compute":
+      return false;
+    /**
+     * Never checked directly. Callers resolve a derive to its `to` kind with
+     * `toValueKind` first: `derive/Fabricator.ts` does this for its resolver's
+     * result, and `object/Registry.ts`'s `.override()` does it for an override
+     * value.
+     */
+    case "derive":
       return false;
     /**
      * Never checked directly — `object/Registry.ts`'s `.override()` unwraps to
