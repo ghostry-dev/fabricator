@@ -89,6 +89,18 @@ const boolean = new Fabricator(T.boolean);
 const choice = new Fabricator(T.choice.uniform([T.always("x"), T.always(1)]));
 const date = new Fabricator(T.date);
 const enumFabricator = new Fabricator(T.enum.uniform(["a", "b", "c"]));
+/**
+ * A `.map()`-built member list is a plain array, not a tuple — accepted, with
+ * its element union kept and only its arity lost.
+ */
+const records = [{ id: 1 }, { id: 2 }, { id: 3 }] as const;
+const mappedEnum = new Fabricator(T.enum.uniform(records.map((x) => x.id)));
+const mappedWeightedEnum = new Fabricator(
+  T.enum.weighted(records.map((x) => [1, x.id] as const)),
+);
+const mappedChoice = new Fabricator(
+  T.choice.uniform(records.map((x) => T.always(x.id))),
+);
 const number = new Fabricator(T.number);
 const object = new Fabricator(T.object({ a: T.always(1) }));
 const omittableObject = new Fabricator(
@@ -157,6 +169,9 @@ export type Assertions = [
   Expect<Equal<Fabrication<typeof choice>, "x" | 1>>,
   Expect<Equal<Fabrication<typeof date>, Date>>,
   Expect<Equal<Fabrication<typeof enumFabricator>, "a" | "b" | "c">>,
+  Expect<Equal<Fabrication<typeof mappedEnum>, 1 | 2 | 3>>,
+  Expect<Equal<Fabrication<typeof mappedWeightedEnum>, 1 | 2 | 3>>,
+  Expect<Equal<Fabrication<typeof mappedChoice>, 1 | 2 | 3>>,
   Expect<Equal<Fabrication<typeof number>, number>>,
   /** `Pretty` intersects `& {}`, so compare by mutual assignability. */
   Expect<Extends<Fabrication<typeof object>, { a: 1 }>>,
@@ -243,6 +258,9 @@ test("primitive Fabrication resolutions typecheck", () => {
   expect(typeof bigint.fabricate()).toBe("bigint");
   expect(["x", 1]).toContain(choice.fabricate());
   expect(["a", "b", "c"]).toContain(enumFabricator.fabricate());
+  expect([1, 2, 3]).toContain(mappedEnum.fabricate());
+  expect([1, 2, 3]).toContain(mappedWeightedEnum.fabricate());
+  expect([1, 2, 3]).toContain(mappedChoice.fabricate());
   expect(undef.fabricate()).toBeUndefined();
   expect([undefined, "x"]).toContain(undefinable.fabricate());
   expect(nul.fabricate()).toBeNull();

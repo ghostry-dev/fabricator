@@ -103,6 +103,15 @@ test("T.enum.uniform/.weighted throw on an empty member list", () => {
   expect(() => T.enum.weighted([])).toThrow();
 });
 
+test("T.enum.uniform/.weighted accept a dynamically built array, still throwing when it is empty", () => {
+  const { T } = initialize({ salt: "enum-dynamic" });
+
+  const ids: number[] = [];
+
+  expect(() => T.enum.uniform(ids)).toThrow();
+  expect(() => T.enum.weighted(ids.map((id) => [1, id] as const))).toThrow();
+});
+
 test("T.enum.weighted throws on a negative weight", () => {
   const { T } = initialize({ salt: "enum-negative-weight" });
 

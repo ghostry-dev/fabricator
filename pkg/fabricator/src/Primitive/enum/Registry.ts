@@ -18,14 +18,25 @@ type Weighted<$Items extends ReadonlyArray<Item>> = {
 };
 
 /**
- * At least one element — an empty `enum` has no member to draw, which would
- * otherwise fail inside `weighted()` (`Distribution/index.ts`) with an opaque
- * `TypeError` at fabricate time (weight sum is `0`, so `.find` returns
- * `undefined` and `chosen![1]` throws). Rejecting emptiness here is a
- * construction-time compile error; the runtime check below is the backstop for
- * an `as any` call that bypasses it.
+ * At least one element — an `enum` with no member has nothing to draw, which
+ * would otherwise fail inside `weighted()` (`Distribution/index.ts`) with an
+ * opaque `TypeError` at fabricate time (weight sum is `0`, so `.find` returns
+ * `undefined` and `chosen![1]` throws).
+ *
+ * Only a _statically_ empty tuple (a literal `[]`) is a compile error. A
+ * dynamically built array — e.g. `.map()` over an `as const` array — is
+ * accepted: its element union survives but its arity doesn't, so it can't be
+ * proven non-empty and a tuple-shaped `readonly [$T, ...$T[]]` constraint would
+ * wrongly reject it. The runtime check below is the backstop for that case, and
+ * for an `as any` call.
+ *
+ * Intersected onto the parameter (`items: $Items & NonEmpty<$Items>`) rather
+ * than written as a conditional parameter type (`$Items extends readonly [] ?
+ * never : $Items`): the latter blocks `const` inference, widening `["a", "b"]`
+ * to `string[]` and losing the tuple `Weighted` depends on.
  */
-type NonEmpty<$T> = readonly [$T, ...$T[]];
+type NonEmpty<$Items extends ReadonlyArray<unknown>> =
+  $Items extends readonly [] ? never : unknown;
 
 function assertNonEmpty(items: ReadonlyArray<unknown>): void {
   if (items.length === 0) {
@@ -40,8 +51,8 @@ export default {
    * uniform draw when every weight is equal, so there is no separate unweighted
    * code path to keep in sync.
    */
-  uniform: <const $Items extends NonEmpty<Item>>(
-    items: $Items,
+  uniform: <const $Items extends ReadonlyArray<Item>>(
+    items: $Items & NonEmpty<$Items>,
   ): Schema<Weighted<$Items>> => {
     assertNonEmpty(items);
 
@@ -61,12 +72,16 @@ export default {
    * same tuple shape `weighted()` (`Distribution/index.ts`) itself accepts, not
    * an object keyed by member.
    */
-  weighted: <const $Items extends NonEmpty<Items[number]>>(
-    items: $Items,
+  weighted: <const $Items extends Items>(
+    items: $Items & NonEmpty<$Items>,
   ): Schema<$Items> => {
     assertNonEmpty(items);
     assertDrawableWeights("T.enum.weighted", "member", items);
 
-    return Schema({ [Kind]: "enum", [Meta]: { items } });
+    /**
+     * Widened back to `$Items`: the `NonEmpty<$Items>` intersection is only a
+     * call-site guard, and left in place it would leak into the Schema's type.
+     */
+    return Schema<$Items>({ [Kind]: "enum", [Meta]: { items } });
   },
 };

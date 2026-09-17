@@ -14,3 +14,5 @@ T.choice.weighted([
 Same idea as [`T.enum`](/reference/primitives/enum), but between arbitrary _schemas_ instead of literal _values_. `T.enum` draws one of several fixed values directly; `T.choice` draws one of several schemas and then fabricates from whichever one wins — so each option can itself be dynamic, nested, or composed from other primitives.
 
 There's no bare `T.choice(...)` — pick `.uniform` or `.weighted`. Weights are relative proportions, numerator over the sum of all values given. A weight of `0` disables that option. Every weight zero throws; negative weights, `NaN`, and `Infinity` are invalid.
+
+The options don't have to be written inline — an array built at runtime (e.g. `records.map((r) => r.id)`) works too. Its type keeps the union of the options but not how many there are, and because it can't be checked for emptiness at compile time, an empty one throws when the schema is built.

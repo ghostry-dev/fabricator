@@ -132,6 +132,17 @@ test("T.choice.uniform/.weighted throw on an empty option list", () => {
   expect(() => T.choice.weighted([])).toThrow();
 });
 
+test("T.choice.uniform/.weighted accept a dynamically built array, still throwing when it is empty", () => {
+  const { T } = initialize({ salt: "choice-dynamic" });
+
+  const ids: number[] = [];
+
+  expect(() => T.choice.uniform(ids.map((id) => T.always(id)))).toThrow();
+  expect(() =>
+    T.choice.weighted(ids.map((id) => [1, T.always(id)] as const)),
+  ).toThrow();
+});
+
 test("T.choice.weighted throws on a negative weight", () => {
   const { T } = initialize({ salt: "choice-negative-weight" });
 
