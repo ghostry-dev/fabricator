@@ -441,11 +441,11 @@ test("a non-root instance handed to integration() is still reached by ambience, 
 
 /**
  * The per-test overlay lays over the frame in effect, not over the instance
- * `integration(...)` was handed. That receiver is bound before any test runs, so
- * overlaying it would restate from the configured instance and drop an enclosing
- * scope entirely — silently, and while still landing innermost and therefore
- * governing every draw, since a construction resolves against the innermost
- * frame on the stack rather than the instance it was built from.
+ * `integration(...)` was handed. That receiver is bound before any test runs,
+ * so overlaying it would restate from the configured instance and drop an
+ * enclosing scope entirely — silently, and while still landing innermost and
+ * therefore governing every draw, since a construction resolves against the
+ * innermost frame on the stack rather than the instance it was built from.
  *
  * Reachable whenever another library opens a fabricator scope around the body:
  * `@ghostry/extern`'s fabricator extension does exactly that, and which of the
@@ -480,19 +480,12 @@ test("the per-test salt composes onto an enclosing scope rather than replacing i
 });
 
 /**
- * The consequence of overlaying the scope in effect, stated as the ordinary
- * ancestry rule rather than rediscovered later as a defect: `wrap` keys the
- * frame it pushes on its **receiver's** ancestry (see `Instance/Types.ts`), so
- * under composition the per-test frame belongs to the enclosing scope's line. A
- * fork taken off the base instance is collateral kin to that line, so it steps
- * over the per-test frame and resolves against the enclosing one — exactly what
- * `Wrap.test.ts`'s outward walk describes.
- *
- * With no enclosing scope there is nothing to step over: the frame is keyed on
- * the instance itself, and every fork in the lineage sees it. That is the case
- * the rest of this file covers.
+ * The per-test wrap is entered on `context.scope()`, so it governs that
+ * instance and its ancestors — never a fork of the integrated instance. A
+ * `fork()` taken off the base instance inside a composed test draws its own
+ * configuration, not the enclosing salt and not the per-test identity.
  */
-test("under composition the per-test frame belongs to the enclosing scope's line", () => {
+test("under composition a fork of the integrated instance is not governed at all", () => {
   const instance = initialize({ salt: "testing-collateral", clock: CLOCK });
   const wired = integration(instance);
 
@@ -506,12 +499,59 @@ test("under composition the per-test frame belongs to the enclosing scope's line
         "a",
       ]);
 
-      expect(instance.fork().context.salt).toEqual([
-        "testing-collateral",
-        "enclosing",
-      ]);
+      expect(instance.fork().context.salt).toEqual(["testing-collateral"]);
     });
   });
+});
+
+/**
+ * Per-test data comes from the integrated instance, `context.fabricator`, or a
+ * fork of that scope. A module-level fork draws the same salt in every test,
+ * and because its construction counter runs across tests, which values a test
+ * gets depends on which tests ran before it — nothing detects this; it presents
+ * as tests colliding as a suite and passing under `.only`. A `fork()` of the
+ * integrated instance taken inside the test likewise misses the per-test
+ * identity. That is the documented consequence of the receiver-and-ancestors
+ * rule, not a defect.
+ */
+test("per-test data comes from the integrated instance or a fork of its scope, not a module-level or bare fork", () => {
+  const fabricator = initialize({ salt: "suite", clock: CLOCK });
+  const A = fabricator.fork({ salt: layer("A") });
+  const wired = integration(fabricator);
+  const alpha = toIdentity({ path: [], name: "alpha", kind: "test" });
+  const beta = toIdentity({ path: [], name: "beta", kind: "test" });
+
+  const observed = (identity: Identity) =>
+    run(wired, identity, ({ fabricator: scope }) => {
+      const integrated = new fabricator.Fabricator(fabricator.T.number);
+      const moduleLevelBuild = new A.Fabricator(A.T.number);
+      return {
+        integrated: integrated.trace.salt,
+        integratedOrdinal: integrated.trace.ordinal,
+        provided: new scope.Fabricator(scope.T.number).trace.salt,
+        moduleLevel: moduleLevelBuild.trace.salt,
+        moduleLevelOrdinal: moduleLevelBuild.trace.ordinal,
+        bare: fabricator.fork({ salt: layer("B") }).context.salt,
+        scoped: scope.fork({ salt: layer("B") }).context.salt,
+      };
+    });
+
+  const a = observed(alpha);
+  expect(a.integrated).toEqual(["suite", "test", "alpha"]);
+  expect(a.provided).toEqual(["suite", "test", "alpha"]);
+  expect(a.moduleLevel).toEqual(["suite", "A"]);
+  expect(a.bare).toEqual(["suite", "B"]);
+  expect(a.scoped).toEqual(["suite", "test", "alpha", "B"]);
+  expect(a.integratedOrdinal).toBe(0);
+  expect(a.moduleLevelOrdinal).toBe(0);
+
+  const b = observed(beta);
+  expect(b.integrated).toEqual(["suite", "test", "beta"]);
+  expect(b.moduleLevel).toEqual(["suite", "A"]);
+  expect(b.bare).toEqual(["suite", "B"]);
+  expect(b.scoped).toEqual(["suite", "test", "beta", "B"]);
+  expect(b.integratedOrdinal).toBe(0);
+  expect(b.moduleLevelOrdinal).toBe(1);
 });
 
 /**

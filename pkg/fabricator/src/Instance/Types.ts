@@ -74,20 +74,20 @@ export type Token = symbol & { readonly [Brand]: "Instance" };
  * over that instance's `config`. One rule, so an instance's position and its
  * configuration always agree about who its parent is.
  *
- * Two chains describe instances on the same ancestral line when either is a
- * prefix of the other, which is what {@link Stack.visible} tests. That relation
- * decides whose calls resolve against whose frames: a parent's calls resolve
- * against a child's frame and a child's against a parent's, while two siblings
- * resolve against neither's. Note this never crosses lineages, and not for want
- * of identity — two roots hold two separate carriers, so a `wrap` on one pushes
- * where the other's reads never look.
+ * {@link Stack.visible} tests whether the reader is the wrap's receiver or one
+ * of that receiver's ancestors — the reader's chain a prefix of the frame's. A
+ * parent's constructions resolve against a wrap entered on a child; a child's
+ * constructions do not resolve against a wrap entered on a parent. Two siblings
+ * resolve against neither's. The relation never crosses lineages, and not for
+ * want of identity — two roots hold two separate carriers, so a `wrap` on one
+ * pushes where the other's reads never look.
  */
 export type Ancestry = readonly [Token, ...ReadonlyArray<Token>];
 
 /**
  * One active `wrap` — its resolved config plus the single `RandomSource` every
- * build reached inside that `wrap` shares, whether reached implicitly (any
- * instance on the origin's ancestral line consulting the frame) or explicitly
+ * build reached inside that `wrap` shares, whether reached implicitly (the
+ * receiver and its ancestors consulting the frame) or explicitly
  * (`scope.Fabricator`, the `Instance` passed to the block). Storing the scope's
  * own already-built `source` here, rather than each consumer re-deriving one
  * from `config`, keeps the two routes resolving against the _same_ source —
@@ -99,11 +99,12 @@ export type Ancestry = readonly [Token, ...ReadonlyArray<Token>];
  * separate `salt`/`algorithm`/`clock` fields.
  *
  * `ancestry` is the **origin's** — the instance `wrap` was called on — not the
- * scope's. The scope is a fresh child of the origin, so keying on it would make
- * every `fork` taken off that origin a _sibling_ of the scope, and calls on
- * those forks would stop resolving against the frame. Keying on the origin
- * keeps everything on the origin's own line resolving against it, which is the
- * whole point of entering one.
+ * scope's, and {@link Stack.visible} governs that origin and its ancestors. Not
+ * load-bearing for who is governed: keyed on the scope, the frame would govern
+ * the same instances plus the scope itself, which resolves against this very
+ * `source` either way. What it decides is the scope's own `context.depth` — 0,
+ * since the scope is a descendant of the origin and not among those the frame
+ * governs.
  */
 export type Frame = {
   readonly config: Config<PlainObject>;
@@ -140,24 +141,22 @@ export type Stack = {
 
   /**
    * Every open frame `ancestry` may resolve against, outermost first: those
-   * whose own `ancestry` is a prefix of this one or has this one as a prefix.
-   * The innermost visible frame — what a build or a `context` read actually
-   * resolves against — is the last element, and the count is `context.depth`.
+   * whose receiver this instance is, or is an ancestor of — this chain a prefix
+   * of the frame's. The innermost visible frame — what a build or a `context`
+   * read actually resolves against — is the last element, and the count is
+   * `context.depth`.
    *
-   * Filtering, rather than simply reporting the innermost frame, is what makes
-   * the outward walk possible: with a parent's `wrap` open and a child's nested
-   * inside it, the child's _sibling_ must skip the inner frame and still find
-   * the outer one. Callers never filter themselves — `toVisible`
-   * (`Instance/Stack/Visible.ts`) is the single definition both carriers
-   * delegate to, so the rule cannot drift between them.
+   * Callers never filter themselves — `toVisible` (`Instance/Stack/Visible.ts`)
+   * is the single definition both carriers delegate to, so the rule cannot
+   * drift between them.
    */
   visible(ancestry: Ancestry): ReadonlyArray<Frame>;
 
   /**
    * Append `frame`, run `block`, remove it in a `finally`, so a frame unwinds
-   * correctly even if `block` throws. Appends rather than replaces: the chain
-   * has to stay intact for {@link visible} to walk outward past a frame this
-   * reader cannot see.
+   * correctly even if `block` throws. Appends rather than replaces: nested
+   * wraps are a chain, and {@link visible} reports every frame this reader is
+   * governed by, not only the innermost.
    */
   enter<$Return>(frame: Frame, block: () => $Return): $Return;
 };
@@ -200,11 +199,13 @@ export type Context = {
   scope(): Instance<PlainObject>;
 
   /**
-   * How many frames are currently visible to this instance — 0 outside any.
-   * Genuine dynamic nesting depth, counted off the carrier rather than inferred
-   * from {@link Ancestry}: a frame a sibling cannot see is not counted for that
-   * sibling, and entering two `wrap`s on one instance reads as 2 even though
-   * neither deepened anyone's ancestry.
+   * How many frames currently govern this instance — 0 outside any. Genuine
+   * dynamic nesting depth, counted off the carrier rather than inferred from
+   * {@link Ancestry}: a wrap entered on a descendant is counted (this instance
+   * is an ancestor of that receiver), a wrap entered on a sibling or an
+   * ancestor is not, and entering two `wrap`s on one instance reads as 2 even
+   * though neither deepened anyone's ancestry. A wrap's own `scope` is a
+   * descendant of the receiver, so its depth inside that wrap is 0.
    */
   readonly depth: number;
 };
@@ -305,7 +306,7 @@ export interface Instance<$Registry extends PlainObject> extends Pick<
   /**
    * `fork(overlay)`, made ambient for the synchronous extent of `block`: every
    * `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached
-   * inside — on this instance or any other in the same lineage — resolves
+   * inside — on this instance, and on this instance's ancestors — resolves
    * against the fork instead, with nothing threaded through. The fork is also
    * passed to `block`: use it explicitly where that reads better, and
    * _necessarily_ for any async work, which the ambient frame does not survive
@@ -319,11 +320,11 @@ export interface Instance<$Registry extends PlainObject> extends Pick<
    * bound outside, as a destructured `wrap` is. To compose onto whatever is
    * active regardless of receiver, go through `context.scope().wrap(...)`.
    *
-   * While the block runs, calls made on this instance's ancestral line resolve
-   * against the scope — its forks, their forks, and its own ancestors up to the
-   * root. Calls on a _sibling_ do not: a frame entered on one `fork` is not one
-   * that another `fork` of the same parent can resolve against, which keeps two
-   * unrelated derivations from drawing each other's data. See
+   * While the block runs, calls on this instance and its ancestors resolve
+   * against the scope. Calls on a descendant — a fork of this instance, or the
+   * wrap's own scope — draw that instance's own configuration; so does a
+   * sibling. The scope still shares one `RandomSource` with this instance
+   * inside the wrap, so ambient and explicit construction agree. See
    * {@link Ancestry}.
    */
   wrap<$Return, const $WrapRegistry extends PlainObject = $Registry>(

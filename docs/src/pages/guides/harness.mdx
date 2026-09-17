@@ -94,9 +94,9 @@ export const { describe, it, expect } = initializeHarness({
 });
 ```
 
-Each test's frame is keyed on the scope in effect — here the fork, since nothing encloses it — so a `Fabricator` destructured off that fork picks up the per-test identity, and the per-test salt simply gains `"testing"` ahead of the identity. Which instance a lineage started from is not relevant here.
+Each test's wrap is entered on the instance in effect — here the fork, since nothing encloses it — so a `Fabricator` destructured off that fork picks up the per-test identity, and the per-test salt simply gains `"testing"` ahead of the identity. Forks _of_ that instance are not reached. Which instance a lineage started from is not relevant here.
 
-When something *does* enclose it — [the extern extension](/guides/extern) opens a fabricator scope around every testing block — the per-test salt composes onto that scope rather than replacing it, and the frame belongs to that scope's line. A fork taken off the base instance inside such a test is collateral to that line, so it resolves against the enclosing scope instead of the per-test one.
+When something _does_ enclose it — [the extern extension](/guides/extern) opens a fabricator scope around every testing block — the per-test salt composes onto that scope rather than replacing it. The integrated instance is an ancestor of that scope, so it is still reached. A fork of the integrated instance is not.
 
 ## Reaching the scope
 
@@ -109,7 +109,7 @@ it("builds two users", ({ fabricator: scope }) => {
 });
 ```
 
-The two share one construction counter, so those are constructions 0 and 1 of the test, not two construction 0s. Reach for `context.fabricator` to hand the scope to a helper explicitly, or to read `scope.salt` for a log line.
+The two share one construction counter, so those are constructions 0 and 1 of the test, not two construction 0s. Reach for `context.fabricator` to hand the scope to a helper explicitly, or to read `scope.salt` for a log line. To derive per-test data under its own layer, fork the scope — `scope.fork(...)`, or `fabricator.context.scope().fork(...)` where the context is not in hand. A fork of the integrated instance itself is not per test; see [A module-level fork is not per test](#a-module-level-fork-is-not-per-test).
 
 The ambient frame survives `await` on Node, Bun, and Deno. On a runtime without `node:async_hooks`, an `async` test body raises `SynchronousStackError` whichever of the two it uses — see [Runtime support](/guides/reproducibility#runtime-support).
 
@@ -122,6 +122,10 @@ The ambient frame survives `await` on Node, Bun, and Deno. On a runtime without 
 What running hooks inside the test costs — a hook failure reported against the test, hook time counted against its timeout — belongs to the harness; see [its README](https://github.com/ghostry-dev/harness#readme).
 
 ## Potential surprises
+
+### A module-level fork is not per test
+
+The per-test wrap reaches the instance handed to `integration(...)` and its ancestors, not forks of it. A fork created as `fabricator.fork({ salt: layer("A") })` at module scope draws the same salt in every test, and its construction counter runs across tests — so which values a test gets depends on which tests ran before it. It presents as tests colliding as a suite and passing under `.only`. Fork `context.fabricator` (or `fabricator.context.scope()`) inside the test instead.
 
 ### Same path, same data
 

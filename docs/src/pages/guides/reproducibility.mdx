@@ -106,8 +106,8 @@ This composes `"some-identity"` onto the instance's own salt (`[...instance.salt
 ```ts
 const base = initialize({ salt: "base" });
 
-const tenant = base.fork({ salt: "tenant-7" });
-tenant.salt; // ["tenant-7"] — replaced
+const A = base.fork({ salt: "A" });
+A.salt; // ["A"] — replaced
 ```
 
 Anything the overlay names overrides; anything it omits inherits — `algorithm`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose.
@@ -142,7 +142,7 @@ base.fork({ salt: layer("a") }).salt; // ["base", "a"] — composed
 - **`wrap({ salt: layer(...) })`** — composes onto the instance it was called on, exactly as `fork` does ([below](#when-you-cannot-thread-the-scope-wrap)) — so nesting accumulates through the enclosing `scope`.
 - **`new Fabricator(schema, { salt: layer(...) })`** — composes onto the instance's salt (or a visible `wrap` frame's, if the construction happens inside one), for a single construction rather than a whole derived instance.
 
-Reach for `layer(...)` any time an identity — a tenant id, a test's own name (which [the harness integration](/guides/harness) layers for you), a schema's registered name — should still vary when the surrounding run is re-salted. A bare salt is for the opposite case: a fixture that must stay exactly the same no matter what.
+Reach for `layer(...)` any time an identity — a test's own name (which [the harness integration](/guides/harness) layers for you), a schema's registered name — should still vary when the surrounding run is re-salted. A bare salt is for the opposite case: a fixture that must stay exactly the same no matter what.
 
 ## When you cannot thread the scope: wrap
 
@@ -162,7 +162,7 @@ wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-`wrap` influences every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` call made while it's active, whether that be on the instance `wrap` was called on, on anything forked from it (including a `fork` created before the `wrap` even started), and on its own ancestors up to the root. The block also receives the fork directly, as `scope`: reach for it when explicit is clearer, or when work needs to outlive the block — a callback stored and invoked later has no frame around it, so only an explicit receiver still carries the wrap's configuration.
+`wrap` governs constructions on the instance it was called on and on that instance's ancestors — see [Ambience governs the receiver and its ancestors](#ambience-governs-the-receiver-and-its-ancestors). The block also receives the fork directly, as `scope`: reach for it when explicit is clearer, or when work needs to outlive the block — a callback stored and invoked later has no frame around it, so only an explicit receiver still carries the wrap's configuration.
 
 A `wrap`'s overlay lays over the instance it was called on, exactly as `fork`'s does, regardless of whether or not another `wrap` is already open around the call. So nesting accumulates when the inner `wrap` goes through the enclosing `scope`, and restates when it goes through a receiver bound outside the block:
 
@@ -190,26 +190,49 @@ wrap({ salt: layer("a") }, () => {
 
 `scope` is a function, not a property, and that is what makes lifting it out of `context` safe — capturing it captures the lookup rather than one answer, so a destructured `scope` still resolves live. The rest are getters, so destructuring one (or spreading the object) freezes it; that only ever costs you a stale value, where a frozen `scope` would have cost you correct-looking code laying over the wrong base. Destructuring `context` itself is fine either way, and is how these examples get it.
 
-### Ambience follows the ancestral line
+### Ambience governs the receiver and its ancestors
 
-While a `wrap` is open, a call resolves against it if it was made on the instance the `wrap` was entered on, on anything forked from that instance, or on one of that instance's own ancestors — both directions along a single line of descent. A call made on a _sibling_ fork resolves against that fork's own configuration instead: two forks of the same parent are unrelated statements, and neither should start drawing the other's data just because the other is mid-`wrap`.
+A `wrap` governs constructions on the instance it was called on, and on that instance's ancestors — never on its descendants, its siblings, or another `initialize()`. The innermost governing wrap wins; with none, an instance draws its own configuration.
 
 ```ts
-const tenant = base.fork({ salt: layer("tenant-7") });
-const admin = base.fork({ salt: layer("admin") });
+const A = base.fork({ salt: layer("A") });
+const B = base.fork({ salt: layer("B") });
 
-tenant.wrap({ salt: layer("import") }, () => {
-  new tenant.Fabricator(T.number).fabricate(); // the wrap — same instance
-  new base.Fabricator(T.number).fabricate(); // the wrap — an ancestor
-  new admin.Fabricator(T.number).fabricate(); // admin's own config — a sibling
+B.wrap({ salt: layer("b") }, () => {
+  new B.Fabricator(T.number); // [...base.salt, "B", "b"] — the receiver
+  new base.Fabricator(T.number); // [...base.salt, "B", "b"] — an ancestor
+  new A.Fabricator(T.number); // [...base.salt, "A"] — a sibling
 });
 ```
 
-Note the middle line: the receiver says `base`, and the configuration is `tenant`'s frame. Every instance on the line is affected, not only the one the `wrap` was entered on — which is exactly what makes a destructured `Fabricator` work without plumbing, and exactly why a receiver inside a `wrap` does not tell you what it draws from. If that matters at a given call site, build through a [`fork`](#deriving-a-related-instance-fork) instead of entering a `wrap`.
+Note the middle line: the receiver says `base`, and the configuration is `B`'s frame. A destructured `Fabricator` is bound to the instance it came from and governed exactly when that instance is, which is what makes it work without plumbing, and exactly why a receiver inside a `wrap` does not tell you what it draws from. If that matters at a given call site, build through a [`fork`](#deriving-a-related-instance-fork) instead of entering a `wrap`.
 
-`context.depth` counts only the frames an instance's own calls can resolve against, so `admin.context.depth` is `0` inside that block while `tenant.context.depth` is `1`. Nesting a `wrap` on `tenant` inside one on `base` leaves calls on `admin` resolving against `base`'s frame: a frame they cannot resolve against is stepped over, not treated as the end of the search.
+A fork of the receiver — created before the wrap, or during it — draws its own configuration. To carry a wrap's layer onto a derived instance, fork the scope — `scope`, or `base.context.scope()` when it is not in hand:
 
-Which instance a lineage started from carries no special weight here. A frame is keyed on the instance `wrap` was called on, whatever its position — so a caller who forks an application-wide configuration and treats that fork as their own root, destructuring from it and never naming the original again, gets the same ambience as anyone else. Being the instance `initialize()` returned is an accident of where that call happened, not a statement about how an instance is used.
+```ts
+base.wrap({ salt: layer("a") }, (scope) => {
+  const C = scope.fork({ salt: layer("C") });
+  new C.Fabricator(T.number); // [...base.salt, "a", "C"]
+
+  const D = base.fork({ salt: layer("C") });
+  new D.Fabricator(T.number); // [...base.salt, "C"] — no wrap layer
+});
+```
+
+Governance follows the line, not the nesting. A wrap on a descendant opened inside a wrap on its ancestor governs that ancestor, while the outer wrap's scope — itself a descendant of `base`, on another branch — keeps its own configuration:
+
+```ts
+base.wrap({ salt: layer("a") }, (scope) => {
+  B.wrap({ salt: layer("b") }, () => {
+    new base.Fabricator(T.number); // [...base.salt, "B", "b"] — an ancestor of B
+    new scope.Fabricator(T.number); // [...base.salt, "a"] — not an ancestor of B
+  });
+});
+```
+
+`context.depth` counts the wraps governing that instance, so `A.context.depth` is `0` inside `B`'s wrap while `B.context.depth` is `1`. A wrap's own `scope` is a descendant of the receiver, so `scope.context.depth` is `0` — it already holds the wrap's configuration as its own.
+
+Which instance a lineage started from carries no special weight here. A frame is keyed on the instance `wrap` was called on, whatever its position — so a caller who forks an application-wide configuration and treats that fork as their own root, destructuring from it and never naming the original again, gets the same ambience as anyone else. Being the instance `initialize()` returned is an accident of where that call happened, not a statement about how an instance is used. Forks _of_ that treated-as-root instance are not reached; they draw their own configuration.
 
 Lineage identity is the instance's, not the carrier's: `a.root === b.root` answers "same lineage?", and two separate `initialize()` calls stay mutually invisible even when handed the same `stack`. Passing `initialize({ stack })` chooses a carrier and nothing else.
 

@@ -221,13 +221,12 @@ export function instantiate<$Registry extends PlainObject>(
    * overlay inherits from no longer depends on what happens to be open around
    * the call.
    *
-   * The frame is keyed on `ancestry`, **this** instance's, not the scope's: the
-   * scope is a fresh child, so keying on it would make every `fork` already
-   * taken off this instance a sibling of the scope, and calls on those forks
-   * would stop resolving against the frame. Keying on the origin keeps this
-   * instance's whole line resolving against it — the forks that predate the
-   * `wrap` included — while leaving a genuine sibling untouched (see
-   * {@link Ancestry}).
+   * The frame is keyed on `ancestry`, **this** instance's, so it governs this
+   * instance and its ancestors; a fork of this instance is a descendant and is
+   * not governed, nor is a sibling (see {@link Ancestry}). Keying on the scope
+   * instead would govern exactly the same instances plus the scope itself, and
+   * the scope already resolves against the frame's own `source` either way — so
+   * the choice decides only the scope's `context.depth`, which is 0 here.
    */
   function wrap<$Return, const $WrapRegistry extends PlainObject = $Registry>(
     wrapOverlay: Overlay<$WrapRegistry>,
@@ -268,7 +267,9 @@ export function instantiate<$Registry extends PlainObject>(
    * The innermost frame _this_ instance may resolve against, or `undefined`
    * outside any. Read fresh per access, never closed over: which frames are
    * visible depends on what is open right now, and on this instance's own
-   * `ancestry` — a frame entered on a sibling is never one of them.
+   * `ancestry` — a frame entered on this instance or on one of its descendants
+   * governs it; a frame entered on an ancestor, a sibling, or another lineage
+   * does not.
    */
   function visibleFrame() {
     return toInnermostFrame(stack, ancestry);

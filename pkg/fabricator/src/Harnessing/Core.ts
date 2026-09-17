@@ -38,12 +38,15 @@ import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
  * `scope` is a function so that capturing it captures the lookup, where a
  * captured result would pin one frame.
  *
- * The frame that `wrap` pushes is keyed on the receiver's ancestry, so under
- * composition the per-test frame belongs to the enclosing scope's line: a
- * collateral `fork()` taken inside a test resolves against the outermost frame
- * on its own line instead. That is the ordinary ancestry rule — siblings never
- * see each other's frames, and the outward walk supplies the outer ones — not a
- * special case here.
+ * The per-test wrap is entered on `context.scope()`, so it governs that
+ * instance and its ancestors: the integrated instance when nothing encloses
+ * it, and that instance as an ancestor of the enclosing scope when something
+ * does. It does not govern forks of the integrated instance. Per-test data
+ * therefore comes from the instance handed to `integration(...)`, from
+ * `context.fabricator`, or from a fork of that scope — a module-level fork of
+ * the integrated instance draws the same data in every test, and because its
+ * construction counter runs across tests, which values a test gets depends on
+ * which tests ran before it.
  *
  * `provides.fabricator` is then that scope — the instance `wrap` gave its
  * block, not the base instance — so `context.fabricator.salt` is the per-test

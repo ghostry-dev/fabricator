@@ -48,8 +48,9 @@ export function enumerables(
   /**
    * The innermost frame this instance can see, when there is one, else its own
    * source — read fresh every time it's called, never cached, so a seed derived
-   * from it reflects whatever is visible _right now_. A frame entered on a
-   * sibling instance is not visible and is skipped
+   * from it reflects whatever is visible _right now_. Only a frame entered on
+   * this instance or one of its descendants is visible; one entered on an
+   * ancestor, a sibling, or another lineage is not
    * (`Instance/Stack/Visible.ts`).
    */
   function effectiveSource(): RandomSource {

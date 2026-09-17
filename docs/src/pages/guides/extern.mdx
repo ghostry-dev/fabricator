@@ -159,11 +159,11 @@ integration(fabricator);
 fabricatorExtension({ instance: fabricator });
 ```
 
-A `fork()` stays within the lineage and is fine to pass. Two `initialize()` calls mint unrelated lineages and never see each other's frames — not even when handed the same `stack`, which selects a carrier and nothing more. An extension pointed at a _second_ instance never observes the harness's frame and falls back to its own configuration: the per-test salt is lost and every test fabricates identically, with no error raised.
+The extension's instance must be the harness integration's instance or one of its ancestors. The per-test `wrap` governs the instance handed to `integration(...)` and its ancestors, never forks of it — so handing the extension a `fork()` of the integrated instance loses the per-test salt exactly as a second lineage would, while handing the integration a fork of the extension's instance is fine. Two `initialize()` calls mint unrelated lineages and never see each other's frames — not even when handed the same `stack`, which selects a carrier and nothing more. An extension pointed at a _second_ instance never observes the harness's frame and falls back to its own configuration: the per-test salt is lost and every test fabricates identically, with no error raised.
 
 Determinism survives that; **distinctness** does not. The symptom is tests that write a fabricated id into shared state colliding with each other — passing individually, failing as a suite, and passing again under `.only`, which sends you looking for pollution rather than for the wiring.
 
-Where both instances are in scope, you can assert it directly — `root` is fabricator's answer to "same lineage?":
+Where both instances are in scope, `root` catches the separate-lineage case — it is fabricator's answer to "same lineage?":
 
 ```ts
 if (integrationInstance.root !== extensionInstance.root) {
@@ -171,7 +171,7 @@ if (integrationInstance.root !== extensionInstance.root) {
 }
 ```
 
-Where they are not — the two halves wired in separate modules, which is how this goes wrong in practice — one guard test in the suite's own setup covers it: fabricate the same schema under two different test identities and assert the values differ.
+It does not catch a fork of the integrated instance handed to the extension, since that shares its root. What catches both — and works when the two halves are wired in separate modules, which is how this goes wrong in practice — is one guard test in the suite's own setup covers it: fabricate the same schema under two different test identities and assert the values differ.
 
 ## Runtime
 

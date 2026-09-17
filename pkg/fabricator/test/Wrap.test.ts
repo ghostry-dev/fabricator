@@ -162,8 +162,9 @@ test("a bare salt in a nested wrap replaces, ignoring the enclosing frame", () =
  * The receiver decides, whichever instance it is: `fork.wrap(...)` entered
  * while another `wrap` is already open still lays over the fork's own config,
  * keeping its `"fork"` salt and discarding the enclosing `"a"`. Built through
- * `scope` rather than `instance`, because `instance` is not on the line of a
- * frame entered on its own child's behalf — see the sibling tests below.
+ * `scope` rather than `instance`, because `instance` is an ancestor of `forked`
+ * and would pick up `forked`'s wrap rather than measuring that wrap's own
+ * overlay in isolation.
  */
 test("wrap() called on a forked instance while another wrap is open still lays over that fork's own base", () => {
   const instance = initialize({ salt: "wrap-fork-nesting" });
@@ -188,37 +189,51 @@ test("wrap() called on a forked instance while another wrap is open still lays o
 });
 
 /**
- * A frame reaches the whole lineage: a fork created _outside_ a wrap — with no
- * ancestry relationship to the wrap beyond sharing the same lineage's stack —
- * is still overridden _inside_ one, for both `Fabricator` and `combinatorial`.
+ * A wrap governs the instance it was called on and that instance's ancestors,
+ * never a descendant. A fork created before the wrap — even of the receiver —
+ * draws its own configuration inside one, for both `Fabricator` and
+ * `combinatorial`.
+ *
+ * The enumerated schema pairs the enum with a fuzzed `n`: a bare enum axis
+ * enumerates identically under every salt, so it could not tell the two
+ * configurations apart (see the `combinatorial` test further down).
  */
-test("a sibling fork created outside a wrap is overridden inside it — both Fabricator and combinatorial", () => {
-  const instance = initialize({ salt: "wrap-lineage-reach" });
-  const sibling = instance.fork({ salt: layer("sibling") });
+test("a fork of the receiver draws its own configuration inside the wrap — both Fabricator and combinatorial", () => {
+  const instance = initialize({
+    salt: "wrap-descendant-own-config",
+    clock: new Date("2020-01-01T00:00:00.000Z"),
+  });
+  const forked = instance.fork({ salt: layer("B") });
+  const schema = () =>
+    forked.T.object({
+      e: forked.T.enum.uniform(["1", "2", "3"]),
+      n: forked.T.number,
+    });
 
-  let siblingBuildInWrap: number | undefined;
-  let siblingCombinatorialInWrap: unknown[] | undefined;
+  let forkedBuildSalt: ReadonlyArray<string> | undefined;
+  let forkedCombinatorialInWrap: unknown[] | undefined;
 
-  instance.wrap({ salt: layer("a") }, () => {
-    siblingBuildInWrap = new sibling.Fabricator(sibling.T.number).fabricate();
-    siblingCombinatorialInWrap = [
-      ...sibling.combinatorial(sibling.T.enum.uniform(["1", "2", "3"])),
-    ];
+  const scope = instance.wrap({ salt: layer("A") }, (scoped) => {
+    forkedBuildSalt = new forked.Fabricator(forked.T.number).trace.salt;
+    forkedCombinatorialInWrap = [...forked.combinatorial(schema())];
+    return scoped;
   });
 
-  const expected = instance.fork({ salt: layer("a") });
-  const expectedBuild = new expected.Fabricator(expected.T.number).fabricate();
-  const expectedCombinatorial = [
-    ...expected.combinatorial(expected.T.enum.uniform(["1", "2", "3"])),
-  ];
+  const governed = scope.fork({ salt: layer("B") });
 
-  expect(siblingBuildInWrap).toBe(expectedBuild);
-  expect(siblingCombinatorialInWrap).toEqual(expectedCombinatorial);
+  expect(forkedBuildSalt).toEqual(forked.salt);
+  expect(forkedCombinatorialInWrap).toEqual([
+    ...forked.combinatorial(schema()),
+  ]);
+  expect(forkedCombinatorialInWrap).not.toEqual([
+    ...governed.combinatorial(schema()),
+  ]);
 });
 
 /**
- * Three generations, so both directions of the ancestral line are reachable
- * from one fixture: `root` → `mid` → `childA`/`childB`.
+ * Three generations, so a wrap entered on a child can reach its ancestors
+ * (`root`, `mid`) while leaving a sibling (`childA` vs `childB`) untouched:
+ * `root` → `mid` → `childA`/`childB`.
  */
 function toGenerations(salt: string) {
   const root = initialize({ salt });
@@ -244,30 +259,40 @@ function toGenerations(salt: string) {
  */
 test("a frame entered on one fork is invisible to a sibling fork — Fabricator, combinatorial, and context alike", () => {
   const { childA, childB } = toGenerations("ancestry-siblings");
+  const schema = () =>
+    childA.T.object({
+      e: childA.T.enum.uniform(["1", "2", "3"]),
+      n: childA.T.number,
+    });
 
   let builtSalt: ReadonlyArray<string> | undefined;
+  let combinations: unknown[] | undefined;
   let contextSalt: ReadonlyArray<string> | undefined;
   let depth: number | undefined;
 
-  childB.wrap({ salt: layer("frame") }, () => {
+  const frame = childB.wrap({ salt: layer("frame") }, (scope) => {
     builtSalt = new childA.Fabricator(childA.T.number).trace.salt;
+    combinations = [...childA.combinatorial(schema())];
     contextSalt = childA.context.salt;
     depth = childA.context.depth;
+    return scope;
   });
 
   expect(builtSalt).toEqual(childA.salt);
+  expect(combinations).toEqual([...childA.combinatorial(schema())]);
+  expect(combinations).not.toEqual([...frame.combinatorial(schema())]);
   expect(contextSalt).toEqual(childA.salt);
   expect(depth).toBe(0);
 });
 
 /**
- * Ambience runs both ways along the line. A frame entered on `childB` reaches
- * its ancestors — `mid` and `root` — because each is on `childB`'s line, and
- * reaches anything derived from `childB` inside the block for the same reason.
- * Only a divergence, as in the sibling test above, cuts it.
+ * Ambience reaches up the line, not down. A frame entered on `childB` reaches
+ * its ancestors — `mid` and `root` — because each is an ancestor of the
+ * receiver. Anything derived from `childB` inside the block is a descendant and
+ * draws its own configuration.
  */
-test("a frame entered on a child reaches its ancestors and its own descendants", () => {
-  const { root, mid, childB } = toGenerations("ancestry-both-directions");
+test("a frame entered on a child reaches its ancestors, not its descendants", () => {
+  const { root, mid, childB } = toGenerations("ancestry-ancestors-only");
 
   const expected = [...childB.salt, "frame"];
 
@@ -283,18 +308,19 @@ test("a frame entered on a child reaches its ancestors and its own descendants",
 
   expect(rootSalt).toEqual(expected);
   expect(midSalt).toEqual(expected);
-  expect(descendantSalt).toEqual(expected);
+  expect(descendantSalt).toEqual(childB.salt);
 });
 
 /**
- * Why `visible` filters a chain rather than reporting its innermost frame: with
- * `mid`'s `wrap` open and `childA`'s nested inside it, `childB` must step
- * _over_ the frame it cannot see and keep walking outward to the one it can.
- * Stopping at the first invisible frame would leave `childB` on its own config,
- * silently outside a `wrap` that does apply to it.
+ * A wrap on a parent does not govern its children. With `mid`'s wrap open and
+ * `childA`'s nested inside it, `childB` draws its own configuration — `mid` is
+ * an ancestor of `childB`, not a descendant of `childB`. `childA` sees only the
+ * wrap entered on it; `mid`'s wrap does not reach it either.
  */
-test("a reader skips an invisible frame and resolves against the innermost one it can see", () => {
-  const { mid, childA, childB } = toGenerations("ancestry-outward-walk");
+test("a wrap on a parent does not reach its children", () => {
+  const { mid, childA, childB } = toGenerations(
+    "ancestry-parent-does-not-reach",
+  );
 
   let childASalt: ReadonlyArray<string> | undefined;
   let childBSalt: ReadonlyArray<string> | undefined;
@@ -311,9 +337,158 @@ test("a reader skips an invisible frame and resolves against the innermost one i
   });
 
   expect(childASalt).toEqual([...childA.salt, "inner"]);
-  expect(childBSalt).toEqual([...mid.salt, "outer"]);
-  expect(childADepth).toBe(2);
-  expect(childBDepth).toBe(1);
+  expect(childBSalt).toEqual(childB.salt);
+  expect(childADepth).toBe(1);
+  expect(childBDepth).toBe(0);
+});
+
+function saltOf(instance: {
+  readonly context: { readonly salt: ReadonlyArray<string> };
+}) {
+  return instance.context.salt;
+}
+
+/**
+ * The rule in one fixture: a wrap governs the instance it was called on and
+ * that instance's ancestors — never a descendant, a sibling, or another
+ * `initialize()`. `B` is forked with `layer("B")` so it composes onto `A`; a
+ * bare `{ salt: "B" }` would replace and give `["B"]`. Inside `B.wrap`, `A` is
+ * governed by `B`'s wrap — the innermost wrap `A` is an ancestor of — while
+ * `AA`, `A`'s own scope, is not.
+ */
+test("a wrap governs the receiver and its ancestors, never descendants, siblings, or another initialize()", () => {
+  const A = initialize({ salt: "A" });
+  const B = A.fork({ salt: layer("B") });
+  const C = initialize({ salt: "C" });
+
+  A.wrap({ salt: layer("AA") }, (AA) => {
+    expect(saltOf(AA)).toEqual(["A", "AA"]);
+    expect(saltOf(A)).toEqual(["A", "AA"]);
+    expect(saltOf(B)).toEqual(["A", "B"]);
+    expect(saltOf(C)).toEqual(["C"]);
+
+    const AAA = AA.fork({ salt: layer("AAA") });
+    expect(saltOf(AAA)).toEqual(["A", "AA", "AAA"]);
+
+    AAA.wrap({ salt: layer("AAAA") }, (AAAA) => {
+      expect(saltOf(AAAA)).toEqual(["A", "AA", "AAA", "AAAA"]);
+      expect(saltOf(AAA)).toEqual(["A", "AA", "AAA", "AAAA"]);
+      expect(saltOf(AA)).toEqual(["A", "AA", "AAA", "AAAA"]);
+      expect(saltOf(A)).toEqual(["A", "AA", "AAA", "AAAA"]);
+      expect(saltOf(B)).toEqual(["A", "B"]);
+      expect(saltOf(C)).toEqual(["C"]);
+    });
+
+    B.wrap({ salt: layer("BB") }, (BB) => {
+      expect(saltOf(BB)).toEqual(["A", "B", "BB"]);
+      expect(saltOf(B)).toEqual(["A", "B", "BB"]);
+      expect(saltOf(A)).toEqual(["A", "B", "BB"]);
+      expect(saltOf(AA)).toEqual(["A", "AA"]);
+      expect(saltOf(AAA)).toEqual(["A", "AA", "AAA"]);
+      expect(saltOf(C)).toEqual(["C"]);
+    });
+  });
+});
+
+/**
+ * A fork takes the configuration of the instance it was forked from. The
+ * scope's configuration contains the wrap's layer; `A`'s own does not. To
+ * derive something that carries a wrap's configuration, fork the scope — `AA`,
+ * or `A.context.scope()` when it is not in hand.
+ */
+test("forking the scope carries the wrap's layer; forking the receiver does not", () => {
+  const A = initialize({ salt: "A" });
+
+  A.wrap({ salt: layer("AA") }, (AA) => {
+    expect(saltOf(AA.fork({ salt: layer("B") }))).toEqual(["A", "AA", "B"]);
+    expect(saltOf(A.fork({ salt: layer("B") }))).toEqual(["A", "B"]);
+  });
+});
+
+/**
+ * Nesting through `AA` composes onto `AA`; nesting through `A` restates from
+ * `A`'s own configuration. Either way `AA` — the first wrap's scope, and so a
+ * descendant of `A` — is not governed by a later wrap entered on `A`, and keeps
+ * drawing its own configuration inside it.
+ */
+test("a scope is not governed by a later wrap on its receiver", () => {
+  const A = initialize({ salt: "A" });
+
+  A.wrap({ salt: layer("AA") }, (AA) => {
+    AA.wrap({ salt: layer("AAA") }, (AAA) => {
+      expect(saltOf(A)).toEqual(["A", "AA", "AAA"]);
+      expect(saltOf(AA)).toEqual(["A", "AA", "AAA"]);
+      expect(saltOf(AAA.fork({ salt: layer("B") }))).toEqual([
+        "A",
+        "AA",
+        "AAA",
+        "B",
+      ]);
+    });
+
+    A.wrap({ salt: layer("C") }, (C) => {
+      expect(saltOf(C)).toEqual(["A", "C"]);
+      expect(saltOf(AA)).toEqual(["A", "AA"]);
+    });
+  });
+});
+
+/**
+ * A fork of a wrap's scope keeps its own layer inside that wrap and under any
+ * later wrap — it is a descendant of both receivers, so neither wrap reaches
+ * it.
+ */
+test("a fork of a wrap's scope keeps its own layer under later wraps", () => {
+  const A = initialize({ salt: "A" });
+
+  A.wrap({ salt: layer("AA") }, (AA) => {
+    const B = AA.fork({ salt: layer("B") });
+    expect(saltOf(B)).toEqual(["A", "AA", "B"]);
+
+    AA.wrap({ salt: layer("C") }, () => {
+      expect(saltOf(B)).toEqual(["A", "AA", "B"]);
+    });
+
+    A.wrap({ salt: layer("C") }, () => {
+      expect(saltOf(B)).toEqual(["A", "AA", "B"]);
+    });
+  });
+});
+
+/**
+ * Why `visible` filters the whole chain rather than walking in from the
+ * innermost frame and stopping at the first one this reader is not governed by:
+ * `B`'s wrap is still open, and still governs `B`, while `C`'s — which does not
+ * — is nested inside it. Stopping at `C`'s frame would leave `B` on its own
+ * configuration, silently outside a wrap that applies to it.
+ */
+test("a reader skips a wrap that does not govern it and resolves against an enclosing one that does", () => {
+  const A = initialize({ salt: "A" });
+  const B = A.fork({ salt: layer("B") });
+  const C = A.fork({ salt: layer("C") });
+
+  B.wrap({ salt: layer("BB") }, () => {
+    C.wrap({ salt: layer("CC") }, () => {
+      expect(new B.Fabricator(B.T.number).trace.salt).toEqual(["A", "B", "BB"]);
+      expect(saltOf(B)).toEqual(["A", "B", "BB"]);
+      expect(B.context.depth).toBe(1);
+    });
+  });
+});
+
+/**
+ * `depth` counts the wraps governing that instance. A scope is a descendant of
+ * its receiver, so none govern it — it already holds the wrap's configuration
+ * as its own.
+ */
+test("a wrap's scope has depth 0; the receiver has depth 1", () => {
+  const A = initialize({ salt: "A" });
+
+  A.wrap({ salt: layer("AA") }, (AA) => {
+    expect(A.context.depth).toBe(1);
+    expect(AA.context.depth).toBe(0);
+    expect(AA.context.salt).toEqual(["A", "AA"]);
+  });
 });
 
 /**

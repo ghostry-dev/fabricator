@@ -53,11 +53,11 @@ Derives a new `Instance` laid over the one `fork` was called on: whatever `overl
 ```ts
 const base = initialize({ salt: "base" });
 
-const tenant = base.fork({ salt: "tenant-7" });
-tenant.salt; // ["tenant-7"] — replaced, the ordinary meaning of `salt`
+const A = base.fork({ salt: "A" });
+A.salt; // ["A"] — replaced, the ordinary meaning of `salt`
 
-const layered = base.fork({ salt: layer("tenant-7") });
-layered.salt; // ["base", "tenant-7"] — composed instead
+const B = base.fork({ salt: layer("B") });
+B.salt; // ["base", "B"] — composed instead
 ```
 
 ## `Instance.wrap(overlay, block)`
@@ -71,7 +71,7 @@ function wrap<$Return>(
 
 Prefer [`fork`](#instanceforkoverlay) unless the scope cannot reach the code that needs it — a callback you don't own, a deep call stack, or call sites already written against a destructured `Fabricator`. Inside a `wrap`, a receiver no longer tells you which configuration a call draws from; that is what a `wrap` is for, and the reason it is not the default recommendation.
 
-`fork(overlay)`, made ambient for the extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, or on any other instance on that instance's ancestral line — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use:
+`fork(overlay)`, made ambient for the extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, and on that instance's ancestors — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use:
 
 ```ts
 const { T, Fabricator, wrap } = initialize({ salt: "base" });
@@ -98,7 +98,7 @@ wrap({ salt: layer("a") }, (scope) => {
 
 To compose onto whatever is in effect without holding the enclosing `scope`, go through [`context.scope()`](#instancecontext). A bare (non-layered) `salt` replaces outright either way.
 
-Which calls resolve against the frame follows the receiver's ancestral line: calls on that instance, on anything forked from it, and on its own ancestors up to the root — but never on a _sibling_ fork. See [Ambience follows the ancestral line](/guides/reproducibility#ambience-follows-the-ancestral-line).
+Which calls resolve against the frame: the instance `wrap` was called on, and that instance's ancestors up to the root — never a descendant (a fork of the receiver, or the wrap's own scope), a sibling, or another `initialize()`. See [Ambience governs the receiver and its ancestors](/guides/reproducibility#ambience-governs-the-receiver-and-its-ancestors).
 
 `block` may be `async`. On any runtime with `node:async_hooks` — Node, Bun, Deno — the ambient frame is carried by `AsyncLocalStorage`, so it survives `await`, and two concurrent `wrap`s never see each other's configuration:
 
@@ -125,9 +125,9 @@ Its job is identity. `a.root === b.root` answers "same lineage?", which `fork`/`
 
 ```ts
 const base = initialize({ salt: "base" });
-const tenant = base.fork({ salt: layer("tenant-7") });
+const A = base.fork({ salt: layer("A") });
 
-tenant.root === base; // true
+A.root === base; // true
 base.root === base; // true — a root names itself
 initialize({ salt: "base" }).root === base; // false
 ```
@@ -166,7 +166,7 @@ wrap({ salt: layer("a") }, () => {
 
 Unlike rebuilding an overlay out of `context.salt` by hand, it carries `types`, `limits`, `algorithm` and `clock` across as well.
 
-`depth` is how many frames an instance's own calls can resolve against, `0` outside any — real nesting depth, so a frame entered on a sibling fork does not count toward it.
+`depth` is how many wraps currently govern this instance, `0` outside any. A wrap's own `scope` is a descendant of the receiver, so its depth inside that wrap is 0 — it already holds the wrap's configuration as its own. A frame entered on a sibling or an ancestor does not count toward it.
 
 The four value properties are getters, so **destructure `context` itself, never those**. Holding the object keeps the live view; pulling one out calls its getter once and freezes the result, as does spreading (`{ ...context }`):
 

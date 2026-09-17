@@ -4,8 +4,8 @@ import type { PlainObject } from "../Utility/Types";
 /**
  * What identifies one registered test or suite — the material a salt is derived
  * from. Named to match how this codebase already talks about the concept:
- * fabricator's own reproducibility guide reaches for `layer(...)` for "a tenant
- * id, a test's own name" — this is that identity, structured.
+ * fabricator's own reproducibility guide reaches for `layer(...)` for "a test's
+ * own name" — this is that identity, structured.
  *
  * Declared here rather than imported from `@ghostry/harness`, so neither
  * package depends on the other — the same arrangement `Adapter`/`walk` already
