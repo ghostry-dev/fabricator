@@ -1,4 +1,5 @@
 import type { Adaptations } from "../Adapter/Types";
+import type { NaiveFabricator } from "../Fabricator/Types";
 import type { Kind as SchemaKind } from "../Primitive";
 import type { Adaptation, Kind, Meta, Produces } from "../Types";
 import type { PlainObject } from "../Utility/Types";
@@ -27,6 +28,21 @@ export type AnySchema = {
  * earlier, before a Schema has been built. `[Produces]` is always optional
  * (never assigned at runtime — see `DeepMerge`'s handling of optional-only keys
  * for why that matters).
+ *
+ * A built Fabricator carries no `[Produces]` — its value type lives on
+ * `fabricate: () => $T` (`Fabricator/Types.ts`) — yet `toSchema` lets one stand
+ * anywhere a Schema is expected: an `array` element, an `object` field, a
+ * `tuple` slot, a `record` key or value, a wrapper's inner schema. So the
+ * `NaiveFabricator` branch comes **first**, reading `$T` straight off
+ * `fabricate`, and the `[Produces]` branch handles only what is left. That
+ * order is load-bearing: a conditional matching an _optional_ property still
+ * succeeds against a type that lacks it entirely (the same behavior
+ * `AdaptationsOf` has to work around in `Adapter/Types.ts`), so a Fabricator
+ * tested against `[Produces]` first matches, indexes a property it never had,
+ * and collapses to `unknown` — `T.array(built)` silently becoming `unknown[]`.
+ * `$Bindings` is not threaded into a Fabricator: it is already built, so any
+ * `self` inside it was resolved when it was. `Fabrication.types.test.ts`'s
+ * `NestedFabricatorAssertions` pin this.
  *
  * `$Bindings` is threaded down into every composite kind's children (each
  * `Core` is an `interface` carrying an optional `bindings`, and forwards
@@ -58,9 +74,9 @@ export type AnySchema = {
  *   deliberately omits it), and that shifts variance enough to break `.as`'s
  *   contravariant parameter check in `Fabrication.types.test.ts`.
  */
-export type ValueOf<
-  $Schema,
-  $Bindings extends unknown[] = [],
-> = $Schema extends { readonly [Produces]?: unknown }
-  ? Required<$Schema & { bindings: $Bindings }>[typeof Produces]
-  : unknown;
+export type ValueOf<$Schema, $Bindings extends unknown[] = []> =
+  $Schema extends NaiveFabricator<infer $T>
+    ? $T
+    : $Schema extends { readonly [Produces]?: unknown }
+      ? Required<$Schema & { bindings: $Bindings }>[typeof Produces]
+      : unknown;

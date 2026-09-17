@@ -21,12 +21,11 @@ export type { Denoted, Resolved, Source } from "../object/compute/Types";
  * `from` is stored after `toSchema` (inert per-slot schemas, same as `tuple`).
  * `to` is stored exactly as given, whether a Schema or a builder, so its
  * `[Meta]` and `[Adaptation]` survive: adapters convert it as a nested schema
- * (honoring its own adaptation unless the derive is adapted), and
- * `toValueKind` follows it to the kind a result or override is checked
- * against. `resolve` is plain data from the moment `.as(resolve)` is called.
- * `to` is only used for its shape/type — the value comes entirely from
- * `resolve`, which is why `to` may not even have a buildable recipe (a bare
- * `T.string`/`T.bigint`).
+ * (honoring its own adaptation unless the derive is adapted), and `toValueKind`
+ * follows it to the kind a result or override is checked against. `resolve` is
+ * plain data from the moment `.as(resolve)` is called. `to` is only used for
+ * its shape/type — the value comes entirely from `resolve`, which is why `to`
+ * may not even have a buildable recipe (a bare `T.string`/`T.bigint`).
  */
 export type Meta<$From extends From = From, $To extends Source = Source> = {
   from: $From;

@@ -39,10 +39,10 @@ import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
  * captured result would pin one frame.
  *
  * The per-test wrap is entered on `context.scope()`, so it governs that
- * instance and its ancestors: the integrated instance when nothing encloses
- * it, and that instance as an ancestor of the enclosing scope when something
- * does. It does not govern forks of the integrated instance. Per-test data
- * therefore comes from the instance handed to `integration(...)`, from
+ * instance and its ancestors: the integrated instance when nothing encloses it,
+ * and that instance as an ancestor of the enclosing scope when something does.
+ * It does not govern forks of the integrated instance. Per-test data therefore
+ * comes from the instance handed to `integration(...)`, from
  * `context.fabricator`, or from a fork of that scope — a module-level fork of
  * the integrated instance draws the same data in every test, and because its
  * construction counter runs across tests, which values a test gets depends on

@@ -158,8 +158,7 @@ export namespace FabricatorError {
       public readonly label: string,
 
       /**
-       * What the caller calls its items, e.g.
-       * `"member"`/`"option"`/`"item"`.
+       * What the caller calls its items, e.g. `"member"`/`"option"`/`"item"`.
        */
       public readonly noun: string,
     ) {

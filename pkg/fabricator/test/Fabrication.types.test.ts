@@ -219,6 +219,64 @@ export type Assertions = [
 ];
 
 /* -------------------------------------------------------------------------- */
+/*  A built Fabricator stands anywhere a Schema does (`toSchema` strips it     */
+/*  back to `[Kind]`/`[Meta]`), and it carries no `[Produces]` — its value   */
+/*  type is on `fabricate`. `ValueOf` has to read that, or every composite   */
+/*  wrapping a built Fabricator silently degrades to `unknown` while the      */
+/*  same composite over `built.schema` stays precise.                        */
+/* -------------------------------------------------------------------------- */
+
+const element = new Fabricator(T.object({ a: T.always("x"), b: T.always(1) }));
+type Element = { a: "x"; b: 1 };
+
+const arrayOfBuilt = new Fabricator(
+  T.array(element).whereby({ length: { max: 2 } }),
+);
+const arrayOfBuiltSchema = new Fabricator(
+  T.array(element.schema).whereby({ length: { max: 2 } }),
+);
+const objectOfBuilt = new Fabricator(T.object({ f: element }));
+const tupleOfBuilt = new Fabricator(T.tuple([element, T.always("y")]));
+const recordOfBuilt = new Fabricator(
+  T.record(new Fabricator(T.enum.uniform(["k"])), element).whereby({
+    size: { max: 1 },
+  }),
+);
+const choiceOfBuilt = new Fabricator(
+  T.choice.uniform([element, T.always("y")]),
+);
+const nullableBuilt = new Fabricator(T.nullable(element));
+const derivedFromBuilt = new Fabricator(
+  T.derive({ to: T.string, from: [element] }).as(([e]) => e.a),
+);
+
+export type NestedFabricatorAssertions = [
+  /** The Fabricator and its `.schema` must resolve identically. */
+  Expect<
+    Equal<
+      Fabrication<typeof arrayOfBuilt>,
+      Fabrication<typeof arrayOfBuiltSchema>
+    >
+  >,
+  Expect<Extends<Fabrication<typeof arrayOfBuilt>, Element[]>>,
+  Expect<Extends<Element[], Fabrication<typeof arrayOfBuilt>>>,
+  Expect<Extends<Fabrication<typeof objectOfBuilt>, { f: Element }>>,
+  Expect<Extends<{ f: Element }, Fabrication<typeof objectOfBuilt>>>,
+  Expect<Extends<Fabrication<typeof tupleOfBuilt>, [Element, "y"]>>,
+  Expect<Extends<[Element, "y"], Fabrication<typeof tupleOfBuilt>>>,
+  Expect<Extends<Fabrication<typeof recordOfBuilt>, { k?: Element }>>,
+  Expect<Extends<{ k?: Element }, Fabrication<typeof recordOfBuilt>>>,
+  Expect<Extends<Fabrication<typeof choiceOfBuilt>, Element | "y">>,
+  Expect<Extends<Element | "y", Fabrication<typeof choiceOfBuilt>>>,
+  Expect<Extends<Fabrication<typeof nullableBuilt>, Element | null>>,
+  Expect<Extends<Element | null, Fabrication<typeof nullableBuilt>>>,
+  Expect<Equal<Fabrication<typeof derivedFromBuilt>, string>>,
+  /** Read directly, not only through a composite. */
+  Expect<Extends<ValueOf<typeof element>, Element>>,
+  Expect<Extends<Element, ValueOf<typeof element>>>,
+];
+
+/* -------------------------------------------------------------------------- */
 /*  object/array/tuple/always additionally expose their own, kind-local       */
 /*  `Fabrication<$Fabricator>` (distinct from the shared one above) — kept    */
 /*  around as forward-looking public type-helpers even though nothing in      */
@@ -321,6 +379,17 @@ test("every composite kind's built Fabricator carries [Children]; recursive's ca
    * children to expose.
    */
   expect((recursiveTree as any)[Children]).toBeUndefined();
+});
+
+test("a built Fabricator nested in a composite fabricates like its .schema would", () => {
+  for (const item of arrayOfBuilt.fabricate()) {
+    expect(item).toEqual({ a: "x", b: 1 });
+  }
+  expect(objectOfBuilt.fabricate()).toEqual({ f: { a: "x", b: 1 } });
+  expect(tupleOfBuilt.fabricate()).toEqual([{ a: "x", b: 1 }, "y"]);
+  expect([{ a: "x", b: 1 }, "y"]).toContainEqual(choiceOfBuilt.fabricate());
+  expect([{ a: "x", b: 1 }, null]).toContainEqual(nullableBuilt.fabricate());
+  expect(derivedFromBuilt.fabricate()).toBe("x");
 });
 
 test("a compute source with no buildable recipe (e.g. bare T.string) still builds, since its value never comes from the source", () => {
