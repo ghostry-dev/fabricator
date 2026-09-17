@@ -122,6 +122,15 @@ export type { Bound, InputBound } from "./Bound";
  */
 export type { Stream } from "./Random/Types";
 /**
+ * Uniform pick and Fisher–Yates shuffle over a caller-held list, each taking
+ * the `Stream` a producer is already handed. Exported so a caller writing
+ * `.as(produce)`, `T.opaque`, or a `T.derive` resolver can draw from a list
+ * they already have — the same rationale as the `Stream` export. Prefer
+ * `T.enum` when the pick can be a schema: it is enumerable and path-keyed;
+ * these helpers are for the cases that cannot.
+ */
+export { sample, shuffle } from "./Distribution";
+/**
  * What every kind's `.as(produce)` producer is called with — a single curated
  * object rather than a positional argument list, so a caller writing the
  * producer as a named function can name its parameter. `T.opaque`'s producer

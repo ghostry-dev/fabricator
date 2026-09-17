@@ -24,7 +24,7 @@ Every field — nested or not — draws from its own independent stream, assigne
 T.object({ id: T.number.integer.sequence });
 ```
 
-A monotonically increasing counter starting at 1, fresh per `new Fabricator(schema)` — every `.fabricate()` call on the same Fabricator instance advances it, so ten calls yield ids 1 through 10.
+A monotonically increasing counter starting at 1, fresh per `new Fabricator(schema)` — every `.fabricate()` call on the same Fabricator instance advances it, so ten calls yield ids 1 through 10. A batch of N of these is `T.array(schema).whereby({ length: N })` — see [Batches](/guides/relationships#batches).
 
 ## Computed fields
 

@@ -1,0 +1,86 @@
+# Batches and relationships
+
+Fabricator has no factory-style `assoc`.
+
+A batch is an array schema, and a foreign key is an enum over ids you already hold.
+
+## Batches
+
+`T.array(schema).whereby({ length: N })` is a batch: one element Fabricator, called N times.
+
+```ts
+const FooSchema = T.object({
+  id: T.number.integer.sequence,
+  name: T.string.whereby({ length: { min: 1, max: 25 } }),
+});
+
+const Foos = new Fabricator(T.array(FooSchema).whereby({ length: 10 }));
+const foos = Foos.fabricate();
+// ids 1 through 10
+```
+
+Because the array reuses one element Fabricator, a sequence on that element advances across the batch.
+
+A second `.fabricate()` on the same built array continues the sequence, so that call yields 11 through 20.
+
+A fresh `new Fabricator(...)` restarts the sequence at 1.
+
+```ts
+const Foo = new Fabricator(FooSchema);
+const foos = Array.from({ length: 10 }, () => Foo.fabricate());
+```
+
+That loop is equivalent at the value level, but the result is not a schema: it cannot nest, and `coverage`/`combinatorial` have no array to walk.
+
+## Referencing a pool
+
+Fabricate the parents first, then extend the child with an enum over their ids.
+
+```ts
+const BarSchema = T.object({
+  id: T.number.integer.sequence,
+  title: T.string.whereby({ length: { min: 1, max: 40 } }),
+  foo_id: T.number.integer, // stands alone; the pool replaces it below
+});
+
+const bars = new Fabricator(
+  T.array(
+    BarSchema.extend(() => ({ foo_id: T.enum.uniform(foos.map((f) => f.id)) })),
+  ).whereby({ length: 100 }),
+).fabricate();
+```
+
+The draw lives in the schema: it is keyed by path, it replays under a salt, and `coverage`/`combinatorial` see the pool as an axis.
+
+Use `.weighted` when some parents should appear more often than others.
+
+Wrap with `T.nullable(T.enum.uniform(ids))` for an optional foreign key.
+
+## Owning versus referencing
+
+A child that creates its own parent nests the parent schema and derives the foreign key from it.
+
+```ts
+const BarOwningFoo = T.object({
+  id: T.number.integer.sequence,
+  foo: FooSchema,
+}).refine(({ compute }) => ({
+  foo_id: compute(T.number.integer).as(({ fabricated }) => fabricated.foo.id),
+}));
+```
+
+One-to-many is the other direction: nest `T.array(BarSchema)` on the parent.
+
+See [Computed fields](/guides/objects#computed-fields) for `.refine(({ compute }) => ...)`.
+
+## Drawing inside a producer
+
+`sample` and `shuffle` from `@ghostry/fabricator` are for a pick that happens inside `.as`, `T.opaque`, or a `T.derive` resolver — where you already hold a `Stream`.
+
+```ts
+import { shuffle } from "@ghostry/fabricator";
+
+T.opaque(({ random }) => shuffle(list, random).slice(0, 2));
+```
+
+Prefer `T.enum` when the pick can be represented as a schema: it is enumerable and path-keyed, and these helpers are not.

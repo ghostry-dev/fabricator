@@ -140,19 +140,26 @@ export namespace FabricatorError {
   }
 
   /**
-   * `T.enum`/`T.choice` given no items. An empty draw table has nothing to
-   * select, which would otherwise surface as an opaque `TypeError` inside
-   * `weighted()` at fabricate time rather than here.
+   * A pick with nothing to pick from: `T.enum`/`T.choice` given no items, or
+   * `sample()` (`Distribution/index.ts`) given an empty list. Emptiness is
+   * otherwise only discovered mid-draw, and opaquely — as a `TypeError` inside
+   * `weighted()` for the registries, whose empty draw table makes `.find`
+   * return `undefined`, and as an out-of-range element read for `sample`.
+   *
+   * The registries throw at construction, where the mistake is; `sample` can
+   * only throw at fabricate time, since a producer is the only place it runs.
    */
   export class EmptyItemsError extends FabricatorError {
     constructor(
       /**
-       * The registry entry that was called, e.g. `"T.enum.uniform"`.
+       * The registry entry or helper that was called, e.g. `"T.enum"` or
+       * `"sample"`.
        */
       public readonly label: string,
 
       /**
-       * What the kind calls its items, e.g. `"member"`/`"option"`.
+       * What the caller calls its items, e.g.
+       * `"member"`/`"option"`/`"item"`.
        */
       public readonly noun: string,
     ) {

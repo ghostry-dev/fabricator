@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
+The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `sample`, `shuffle`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
 
 ## `initialize(config?)`
 
@@ -193,6 +193,19 @@ function layer(salt: Salt): Layered;
 ```
 
 Tags a salt as composing onto whatever base is in effect, rather than replacing it outright — the reading a bare `salt` has everywhere else in this library. Works identically wherever a `salt` is accepted against a base: `Instance.fork`, `Instance.wrap`, and a single `new Fabricator(schema, { salt })` call. See [Composing instead of replacing: layer(...)](/guides/reproducibility#composing-instead-of-replacing-layer) for the full picture.
+
+## `sample(list, stream)` / `shuffle(list, stream)`
+
+```ts
+function sample<T>(list: ReadonlyArray<T>, stream: Stream): T;
+function shuffle<T>(items: ReadonlyArray<T>, stream: Stream): T[];
+```
+
+Helpers for a producer that already holds a `Stream` — `.as(produce)`, `T.opaque`, a `T.derive` resolver — and needs to pick from a list it already has.
+
+`sample` is a uniform pick, one `stream.next()` per call, and does not mutate `list`. An empty list throws a `FabricatorError` named `EmptyItemsError`. `shuffle` returns a new array in uniformly random order and does not mutate `items`; an empty list shuffles to an empty list.
+
+Prefer `T.enum` when the pick can be represented as a schema: it is enumerable and keyed by path, so `coverage`/`combinatorial` see it and a salt replays it without a producer. See [Drawing inside a producer](/guides/relationships#drawing-inside-a-producer).
 
 ## `registry`
 

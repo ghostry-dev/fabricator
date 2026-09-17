@@ -335,7 +335,16 @@ function normalInv(p: number): number {
   );
 }
 
+/**
+ * A uniform pick from `list`. One `stream.next()` per call; `list` is not
+ * mutated. An empty list throws {@link FabricatorError.EmptyItemsError} — there
+ * is no member to return.
+ */
 export function sample<$T>(list: ReadonlyArray<$T>, stream: Stream): $T {
+  if (list.length === 0) {
+    throw new FabricatorError.EmptyItemsError("sample", "item");
+  }
+
   const index = Math.floor(stream.next() * list.length);
   const item: $T = list[index]!;
   return item;
