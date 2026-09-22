@@ -1,6 +1,70 @@
 import { expect, test } from "bun:test";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
+test("a bare length is an exact code-unit count", () => {
+  const { T, Fabricator } = initialize({ salt: "string-length-bare" });
+  const built = new Fabricator(T.string.whereby({ length: 8 }));
+
+  for (let i = 0; i < 50; i++) {
+    expect(built.fabricate()).toHaveLength(8);
+  }
+});
+
+test("a skewed length distribution biases toward the minimum", () => {
+  const { T, Fabricator } = initialize({ salt: "string-length-skew" });
+  const uniform = new Fabricator(
+    T.string.whereby({ length: { min: 0, max: 20 } }),
+  );
+  const skewed = new Fabricator(
+    T.string.whereby({
+      length: { min: 0, max: 20, distribution: { kind: "skew", exponent: 4 } },
+    }),
+  );
+
+  const mean = (built: { fabricate: () => string }): number => {
+    let sum = 0;
+    const n = 2000;
+    for (let i = 0; i < n; i++) {
+      const length = built.fabricate().length;
+      expect(length).toBeGreaterThanOrEqual(0);
+      expect(length).toBeLessThanOrEqual(20);
+      sum += length;
+    }
+    return sum / n;
+  };
+
+  /**
+   * Uniform mean over the inclusive 0..20 integers is 10; exponent 4 clusters
+   * near 0.
+   */
+  expect(mean(skewed)).toBeLessThan(mean(uniform) - 3);
+});
+
+test("a length distribution still honors an exclusive end", () => {
+  const { T, Fabricator } = initialize({
+    salt: "string-length-skew-exclusive",
+  });
+  const built = new Fabricator(
+    T.string.whereby({
+      length: {
+        min: { value: 0, exclusive: true },
+        max: 20,
+        distribution: { kind: "skew", exponent: 4 },
+      },
+    }),
+  );
+
+  /**
+   * Exponent 4 piles mass near the lower end, so an exclusive `0` that leaked
+   * through would show up quickly.
+   */
+  for (let i = 0; i < 2000; i++) {
+    const length = built.fabricate().length;
+    expect(length).toBeGreaterThanOrEqual(1);
+    expect(length).toBeLessThanOrEqual(20);
+  }
+});
+
 /**
  * `length` counts UTF-16 code units, so `.length` must equal the chosen length
  * exactly — not merely fall within it — even when astral characters are in play

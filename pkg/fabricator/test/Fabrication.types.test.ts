@@ -116,6 +116,13 @@ const optionalObject = new Fabricator(
   T.object({ a: T.optional(T.always("x")), b: T.always(1) }),
 );
 const string = new Fabricator(T.string.whereby({ length: { max: 25 } }));
+const bareStringLength = T.string.whereby({ length: 5 });
+const distributedStringLength = T.string.whereby({
+  length: { max: 5, distribution: { kind: "skew", exponent: 4 } },
+});
+const distributedArrayLength = T.array(T.always("x")).whereby({
+  length: { max: 5, distribution: { kind: "skew", exponent: 4 } },
+});
 const symbol = new Fabricator(T.symbol);
 const undef = new Fabricator(T.undefined);
 const undefinable = new Fabricator(T.undefinable(T.always("x")));
@@ -207,6 +214,9 @@ export type Assertions = [
     Extends<{ a?: "x" | undefined; b: 1 }, Fabrication<typeof optionalObject>>
   >,
   Expect<Equal<Fabrication<typeof string>, string>>,
+  Expect<Equal<ValueOf<typeof bareStringLength>, string>>,
+  Expect<Equal<ValueOf<typeof distributedStringLength>, string>>,
+  Expect<Equal<ValueOf<typeof distributedArrayLength>, "x"[]>>,
   Expect<Equal<Fabrication<typeof symbol>, symbol>>,
   Expect<Equal<Fabrication<typeof undef>, undefined>>,
   Expect<Equal<Fabrication<typeof undefinable>, "x" | undefined>>,

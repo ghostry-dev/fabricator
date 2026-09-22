@@ -1,3 +1,4 @@
+import type { Distribution } from "./Distribution";
 import { FabricatorError } from "./Error";
 import { isPlainObject } from "./Utility/Core";
 
@@ -148,15 +149,35 @@ export function epochBound(bound: Bound<Date>): Bound<number> {
 }
 
 /**
- * Array/string `length`: a bare number is an exact count; an omitted `min` is
- * inclusive `0`. Always stored as a Bound pair so adapters have one path.
+ * Call-site `length` for `string` and `array`: a bare number is an exact count,
+ * and `{ max, min?, distribution? }` is a range. A scalar end is inclusive.
  */
-export function toLengthRange(
-  length:
-    | number
-    | { max: InputBound<number>; min?: InputBound<number> | undefined },
-  label: string,
-): { min: Bound<number>; max: Bound<number> } {
+export type InputLength =
+  | number
+  | {
+      max: InputBound<number>;
+      min?: InputBound<number> | undefined;
+      distribution?: Distribution | undefined;
+    };
+
+/**
+ * Stored `length`: both ends are canonical {@link Bound}s. `distribution` is
+ * present only when the caller set one, so a bare count and an unspecified
+ * distribution stay off the stored object.
+ */
+export type Length = {
+  min: Bound<number>;
+  max: Bound<number>;
+  distribution?: Distribution | undefined;
+};
+
+/**
+ * Array/string `length`: a bare number is an exact count (no distribution); an
+ * omitted `min` is inclusive `0`. Always stored as a Bound pair so adapters
+ * have one path. `distribution` is copied only when the caller set one,
+ * matching `date/Registry.ts`'s `toWhereby`, so stored meta stays minimal.
+ */
+export function toLengthRange(length: InputLength, label: string): Length {
   const range =
     typeof length === "number"
       ? { min: toBound(length), max: toBound(length) }
@@ -168,5 +189,10 @@ export function toLengthRange(
           max: toBound(length.max),
         };
   assertNonemptyDiscrete(label, range.min, range.max);
-  return range;
+
+  if (typeof length === "number" || length.distribution === undefined) {
+    return range;
+  }
+
+  return { min: range.min, max: range.max, distribution: length.distribution };
 }

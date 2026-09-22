@@ -1,5 +1,5 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { Bound, InputBound } from "../../Bound";
+import type { InputLength, Length } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produces } from "../../Types";
 import type { classes } from "./Constants";
@@ -31,15 +31,9 @@ export type Composition =
   | Partial<Record<CharacterClass, number>>
   | ReadonlyArray<[number, CharacterSource]>;
 
-export type InputWhereby = {
-  length: { max: InputBound<number>; min?: InputBound<number> | undefined };
-  composition?: Composition;
-};
+export type InputWhereby = { length: InputLength; composition?: Composition };
 
-export type Whereby = {
-  length: { min: Bound<number>; max: Bound<number> };
-  composition?: Composition;
-};
+export type Whereby = { length: Length; composition?: Composition };
 
 export type Fabricated = string;
 
@@ -56,8 +50,10 @@ export type Fabricated = string;
 export type JsonSchema = { format?: string; pattern?: string };
 
 /**
- * A length/composition, drawn via `whereby` — no natural bound to fuzz to, so
- * unlike `number`/`date` there's no bare form — optionally overridden by an
+ * A length and optional composition, drawn via `whereby`. There is no natural
+ * bound to fuzz a string to, so unlike `number`/`date` the builder itself has
+ * no bare form. `length` does: a bare count, or `{ min?, max, distribution? }`
+ * — the same {@link InputLength} `array` uses. Optionally overridden by an
  * opaque `as` production, carried alongside `whereby` rather than replacing it
  * (when `whereby` was already set) so a prior length/composition survives `as`
  * for future validation.

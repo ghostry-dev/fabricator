@@ -1,13 +1,13 @@
 import type { AdaptationsOf } from "../../Adapter/Types";
 import { effectiveDiscrete } from "../../Bound";
+import { discreteSampler } from "../../Distribution";
 import type {
   FabricatorContext,
   NaiveFabricator,
 } from "../../Fabricator/Types";
-import type { Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
+import type { Trace } from "../../Random/Types";
 import { Children, Kind, Meta, type Adaptation } from "../../Types";
-import { inline } from "../../Utility/Core";
 import { Schema } from "./Schema";
 import type { Definition, Fabricated, Meta as ThisMeta } from "./Types";
 
@@ -51,23 +51,14 @@ export function Fabricator<$Definition extends Definition>(
 
   const stream = toStreamFromTrace(algorithm, trace);
   const whereby = meta.whereby;
+  const drawLength = discreteSampler(
+    whereby.length.distribution,
+    effectiveDiscrete(whereby.length.min, whereby.length.max),
+    stream,
+  );
 
   const fabricate = (): Fabricated<$Definition> => {
-    const length = inline((): number => {
-      /**
-       * Uniform and inclusive across the effective `[min, max]` after exclusive
-       * ends are resolved — the same formula `string/Fabricator.ts` uses for
-       * its own length (and `record`'s for its `size`).
-       */
-      const { min, max } = effectiveDiscrete(
-        whereby.length.min,
-        whereby.length.max,
-      );
-
-      return min + Math.floor(stream.next() * (max - min + 1));
-    });
-
-    return Array.from({ length }, () =>
+    return Array.from({ length: drawLength() }, () =>
       element.fabricate(),
     ) as Fabricated<$Definition>;
   };

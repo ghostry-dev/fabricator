@@ -54,6 +54,12 @@ test("date bounds map to timestamp keywords", () => {
   expect(schema.exclusiveMaximumTimestamp).toBe(max.getTime());
 });
 
+test("a bare string length is minLength = maxLength = N", () => {
+  const schema = toTypeBox(T.string.whereby({ length: 8 }));
+  expect(schema.minLength).toBe(8);
+  expect(schema.maxLength).toBe(8);
+});
+
 test("string length maps through the effective inclusive integers", () => {
   const schema = toTypeBox(
     T.string.whereby({

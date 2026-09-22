@@ -288,7 +288,7 @@ import type { Order, Product } from "./api-client";
 // Order   = { id: string; product: Product; quantity: number; note?: string }
 
 const { T, Fabricator } = initialize({ types: registry });
-const id = T.string.whereby({ length: { min: 8, max: 8 } });
+const id = T.string.whereby({ length: 8 });
 
 const ProductSchema = T.object({
   id,

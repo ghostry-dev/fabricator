@@ -3,19 +3,17 @@
 A [scalar](/reference/primitives#scalars). No bare form — there's no natural bound to fuzz a string to, so `.whereby({ length })` is required.
 
 ```ts
+T.string.whereby({ length: 8 });
 T.string.whereby({ length: { min: 1, max: 25 } });
 T.string.whereby({ length: { min: { value: 0, exclusive: true }, max: 25 } });
 ```
 
-`length.min` defaults to `0`. `length` counts UTF-16 code units, so the result's `.length` equals the chosen length exactly.
+`length` is a bare `N` (exactly N code units) or `{ min?, max, distribution? }`. `length.min` defaults to `0`. Without `distribution` the length is drawn uniformly; a `distribution` shapes that draw (see [Distributions](/guides/distributions)). `length` counts UTF-16 code units, so the result's `.length` equals the chosen length exactly.
 
 By default, characters span all Unicode scalar values — the full codespace minus surrogates, so the result is always well-formed UTF-16. Control that with `composition`:
 
 ```ts
-T.string.whereby({
-  length: { min: 8, max: 8 },
-  composition: { lowercase: 3, digit: 1 },
-});
+T.string.whereby({ length: 8, composition: { lowercase: 3, digit: 1 } });
 ```
 
 `composition` is either a weighting over the built-in classes (`lowercase`, `uppercase`, `digit`, `symbol`, `space`) or explicit `[weight, source]` pairs over arbitrary character sources — a literal string (shorthand for the ranges of its individual characters), a code point range, or a list of ranges.

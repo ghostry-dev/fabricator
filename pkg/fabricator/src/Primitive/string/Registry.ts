@@ -28,17 +28,21 @@ export default {
   },
 
   /**
-   * A string whose length falls uniformly within `[length.min, length.max]`;
-   * `length.min` defaults to inclusive 0. Exclusive ends use a Bound object.
+   * A string of `length` UTF-16 code units. `length` is a bare `N` (exactly N)
+   * or `{ min?, max, distribution? }`. `min` defaults to inclusive 0. Exclusive
+   * ends use a Bound object. A bare `N` is stored as min = max = N inclusive
+   * and carries no distribution. Without `distribution`, the length is drawn
+   * uniformly across the inclusive interval; `distribution` shapes that draw
+   * the same way it does for `T.number.integer`.
+   *
    * Pass `composition` to control which characters appear and in what
    * proportion; without one, characters span all Unicode scalar values (the
-   * codespace minus surrogates, so always well-formed UTF-16).
-   *
-   * `length` counts UTF-16 code units, so the result's `.length` equals the
-   * chosen length exactly. When the composition cannot fill the final code
-   * units — e.g. only astral, two-unit characters remain for a one-unit gap —
-   * the gap is topped up with a well-formed BMP character outside the requested
-   * `composition`, inserted at a random character boundary.
+   * codespace minus surrogates, so always well-formed UTF-16). The result's
+   * `.length` equals the chosen length exactly. When the composition cannot
+   * fill the final code units — e.g. only astral, two-unit characters remain
+   * for a one-unit gap — the gap is topped up with a well-formed BMP character
+   * outside the requested `composition`, inserted at a random character
+   * boundary.
    */
   whereby: (whereby: InputWhereby): Schema<{ whereby: Whereby }> => {
     return Schema({

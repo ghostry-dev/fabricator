@@ -1,6 +1,6 @@
 # Distributions
 
-By default, a range-bound value — `T.number.whereby({ min, max })`, `T.date.whereby({ min, max })`, `T.date.past`, `T.date.future` — draws uniformly: every value in the range is equally likely. A scalar `min`/`max` is inclusive; `{ value, exclusive: true }` excludes that end. A `distribution` shapes the draw inside that interval, so generated data can cluster the way real-world data usually does.
+By default, a range-bound value — `T.number.whereby({ min, max })`, `T.date.whereby({ min, max })`, `T.date.past`, `T.date.future`, `T.string.whereby({ length })`, `T.array(...).whereby({ length })` — draws uniformly: every value in the range is equally likely. A scalar `min`/`max` is inclusive; `{ value, exclusive: true }` excludes that end. A `distribution` shapes the draw inside that interval, so generated data can cluster the way real-world data usually does.
 
 ```ts
 T.number.whereby({
@@ -11,7 +11,7 @@ T.number.whereby({
 ```
 
 :::note
-`distribution` is a plain tagged object, not a builder you import — the field is structurally typed, so a matching object literal is accepted with no import at all. Available on any `whereby` that takes a `{ min, max }` range: `T.number.whereby`, `T.number.integer.whereby`, `T.date.whereby`, `T.date.past.whereby`, `T.date.future.whereby`.
+`distribution` is a plain tagged object, not a builder you import — the field is structurally typed, so a matching object literal is accepted with no import at all. Available on any `whereby` that takes a `{ min, max }` range: `T.number.whereby`, `T.number.integer.whereby`, `T.date.whereby`, `T.date.past.whereby`, `T.date.future.whereby`, `T.string.whereby({ length })`, `T.array(...).whereby({ length })`.
 :::
 
 ## The variants

@@ -67,8 +67,8 @@ export type Fabricated<
  * so. `minTried` is optional, default `0`, matching `string`'s
  * `whereby.length.min`.
  *
- * No bare-number form (unlike `array`'s `length`): "exactly N" is a promise a
- * collapsing key set cannot keep.
+ * No bare-number form (unlike `string`'s and `array`'s `length`): "exactly N"
+ * is a promise a collapsing key set cannot keep.
  */
 export type Whereby = { size: { max: number; minTried?: number | undefined } };
 

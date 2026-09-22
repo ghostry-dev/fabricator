@@ -7,11 +7,13 @@ import type { Definition, Fabricated, InputWhereby } from "./Types";
 
 type ThisRegistry<$Definition extends Definition> = {
   /**
-   * An array of `definition`, repeated `whereby.length` times — either a fixed
-   * count, or uniformly across `[length.min, length.max]` with `length.min`
-   * defaulting to inclusive 0, so an empty array is a legitimate outcome when
-   * no `min` is given. Exclusive ends use a Bound object; a bare `length: N` is
-   * stored as min = max = N inclusive.
+   * An array of `definition`, repeated `length` times. `length` is a bare `N`
+   * (exactly N) or `{ min?, max, distribution? }`. `min` defaults to inclusive
+   * 0, so an empty array is a legitimate outcome when no `min` is given.
+   * Exclusive ends use a Bound object. A bare `N` is stored as min = max = N
+   * inclusive and carries no distribution. Without `distribution`, the length
+   * is drawn uniformly across the inclusive interval; `distribution` shapes
+   * that draw the same way it does for `T.number.integer`.
    */
   whereby: (whereby: InputWhereby) => Schema<$Definition>;
 

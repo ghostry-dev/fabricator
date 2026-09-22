@@ -1,10 +1,11 @@
 import type { AdaptationsOf } from "../../Adapter/Types";
+import { discreteSampler } from "../../Distribution";
 import type {
   FabricatorContext,
   NaiveFabricator,
 } from "../../Fabricator/Types";
-import type { Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
+import type { Trace } from "../../Random/Types";
 import { Children, Kind, Meta, type Adaptation } from "../../Types";
 import { Schema } from "./Schema";
 import type { Fabricated, Key, Meta as ThisMeta, Value } from "./Types";
@@ -56,14 +57,15 @@ export function Fabricator<$Key extends Key, $Value extends Value>(
 
   const stream = toStreamFromTrace(algorithm, trace);
   const { max, minTried = 0 } = meta.whereby.size;
+  /**
+   * Uniform and inclusive across `[minTried, max]`, through the same
+   * `discreteSampler` `string`/`array` lengths and `number.integer` use. `size`
+   * has no `distribution`, so it is always the uniform case.
+   */
+  const drawSize = discreteSampler(undefined, { min: minTried, max }, stream);
 
   const fabricate = (): Fabricated<$Key, $Value> => {
-    /**
-     * Uniform and inclusive across `[minTried, max]` — the same formula
-     * `string/Fabricator.ts` uses for its length and `array/Fabricator.ts` for
-     * its own.
-     */
-    const size = minTried + Math.floor(stream.next() * (max - minTried + 1));
+    const size = drawSize();
 
     const fabricated: Record<PropertyKey, unknown> = {};
 

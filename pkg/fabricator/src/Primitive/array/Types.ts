@@ -1,5 +1,5 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { Bound, InputBound } from "../../Bound";
+import type { InputLength, Length } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { AnySchema, ValueOf } from "../../Schema/Types";
 import type { Adaptation, Kind, Meta, Produces } from "../../Types";
@@ -11,13 +11,9 @@ export type Fabricated<
   $Bindings extends unknown[] = [],
 > = Array<ValueOf<$Definition, $Bindings>>;
 
-export type InputWhereby = {
-  length:
-    | number
-    | { max: InputBound<number>; min?: InputBound<number> | undefined };
-};
+export type InputWhereby = { length: InputLength };
 
-export type Whereby = { length: { min: Bound<number>; max: Bound<number> } };
+export type Whereby = { length: Length };
 
 /**
  * `whereby` (a length spec — no natural bound to fuzz to, so unlike

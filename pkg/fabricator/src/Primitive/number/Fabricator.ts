@@ -1,12 +1,12 @@
 import type { AdaptationsOf } from "../../Adapter/Types";
 import { constrainContinuous, effectiveDiscrete } from "../../Bound";
-import { Distribution, sampler } from "../../Distribution";
+import { Distribution, discreteSampler, sampler } from "../../Distribution";
 import type {
   FabricatorContext,
   NaiveFabricator,
 } from "../../Fabricator/Types";
-import type { Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
+import type { Trace } from "../../Random/Types";
 import { Kind, Meta, type Adaptation } from "../../Types";
 import { unboundedContinuous, unboundedDiscrete } from "./defaults";
 import { Schema } from "./Schema";
@@ -63,19 +63,16 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
   const distribution = range.distribution ?? Distribution.uniform();
 
   if (meta.integer) {
-    const { min, max } = effectiveDiscrete(range.min, range.max);
-    /**
-     * Draws over [min, max + 1) and floors, so each integer owns a full-width
-     * bucket — avoiding the half-width endpoint bias that rounding a [min, max]
-     * draw would produce. `min`/`max` here are already the effective inclusive
-     * integers after exclusive ends.
-     */
-    const draw = sampler(distribution, { min, max: max + 1 }, stream);
+    const draw = discreteSampler(
+      distribution,
+      effectiveDiscrete(range.min, range.max),
+      stream,
+    );
     return {
       [Kind]: "number",
       [Meta]: meta,
       trace,
-      fabricate: () => Math.min(max, Math.floor(draw())),
+      fabricate: () => draw(),
       schema: rehydrated,
     };
   }

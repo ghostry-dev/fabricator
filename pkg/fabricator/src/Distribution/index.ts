@@ -127,6 +127,33 @@ function unitPosition(x: number, min: number, max: number): number {
 }
 
 /**
+ * Integer draw over the inclusive `[min, max]` of `range`. Samples `[min, max +
+ * 1)` and floors, so each integer owns a full-width bucket — avoiding the
+ * half-width endpoint bias that rounding a `[min, max]` draw would produce. An
+ * omitted `distribution` is uniform. `range` is already the effective inclusive
+ * interval; exclusive ends are the caller's to resolve (`effectiveDiscrete`).
+ *
+ * The `Math.min(max, …)` clamp is load-bearing, not defensive. `max + 1` is
+ * exact even at `Number.MAX_SAFE_INTEGER` (it is 2^53), but near there doubles
+ * are spaced 1 apart, so `sampler`'s `(1 - u) * min + u * (max + 1)` can round
+ * up to exactly `max + 1` — e.g. `[MAX_SAFE_INTEGER - 10, MAX_SAFE_INTEGER]` —
+ * which would floor to one past `max`.
+ */
+export function discreteSampler(
+  distribution: Distribution | undefined,
+  range: Range,
+  stream: Stream,
+): () => number {
+  const { min, max } = range;
+  const draw = sampler(
+    distribution ?? Distribution.uniform(),
+    { min, max: max + 1 },
+    stream,
+  );
+  return () => Math.min(max, Math.floor(draw()));
+}
+
+/**
  * Build a sampler that draws values within `range` following `distribution`.
  * Each call consumes one fresh uniform draw and, by construction, returns a
  * value within `[min, max]` — distributions with mass outside the range (e.g. a

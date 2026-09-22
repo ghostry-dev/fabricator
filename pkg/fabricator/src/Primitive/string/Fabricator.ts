@@ -1,6 +1,6 @@
 import type { AdaptationsOf } from "../../Adapter/Types";
 import { effectiveDiscrete } from "../../Bound";
-import { weighted } from "../../Distribution";
+import { discreteSampler, weighted } from "../../Distribution";
 import type {
   FabricatorContext,
   NaiveFabricator,
@@ -60,6 +60,11 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     whereby.length.min,
     whereby.length.max,
   );
+  const drawLength = discreteSampler(
+    whereby.length.distribution,
+    { min, max },
+    stream,
+  );
 
   const sources = inline((): ReadonlyArray<[number, CharacterSource]> => {
     const composition = whereby.composition;
@@ -87,7 +92,7 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
   const fill = compiler(bmpScalars, stream);
 
   const fabricate = (): string => {
-    const length = min + Math.floor(stream.next() * (max - min + 1));
+    const length = drawLength();
 
     /**
      * Spend a budget of UTF-16 code units so the joined result's `.length`
