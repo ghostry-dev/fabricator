@@ -5,18 +5,31 @@ import type {
   Adapting,
   WithAdaptations,
 } from "../../Adapter/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../Schema/Satisfies";
 import { Kind } from "../../Types";
-import type { Core, Meta as ThisMeta } from "./Types";
+import type { Core, Fabricated, Meta as ThisMeta } from "./Types";
 
 /**
  * Nothing to configure (see `Types.ts`'s `Meta`), so `adapt` is this kind's
- * only builder method — an external library that spells "null" differently
+ * only mapping method — an external library that spells "null" differently
  * still needs a way to say so.
  */
 export interface Schema<$Adaptations extends Adaptations = {}> extends Core<
   ThisMeta,
   $Adaptations
 > {
+  /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated, $Target>,
+  ): Schema<$Adaptations>;
+
   /**
    * Override what this schema maps to in one or more external schema libraries
    * — see `string/Schema.ts`'s `adapt` for the full contract.
@@ -38,6 +51,7 @@ export function Schema<$Adaptations extends Adaptations = {}>(
   return {
     ...schema,
     [Kind]: "null",
+    satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),
   };

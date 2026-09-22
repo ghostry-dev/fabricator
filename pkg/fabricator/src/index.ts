@@ -168,6 +168,15 @@ export type { Fabrication } from "./Fabricator/Types";
  */
 export type { ValueOf } from "./Schema/Types";
 /**
+ * Check that a Schema or built Fabricator produces a value assignable to a
+ * supplied type — `.satisfies<T>()` on every kind's Schema is the main form;
+ * this function covers a built Fabricator (no schema methods) and a Schema the
+ * caller does not want to edit. `SatisfiedBy` is the type-only equivalent. See
+ * `Schema/Satisfies.ts`.
+ */
+export { satisfies } from "./Schema/Satisfies";
+export type { SatisfiedBy } from "./Schema/Satisfies";
+/**
  * `fabricator.trace`'s type — otherwise unnameable by a caller wanting to hold
  * onto one, the same reason `Stream` is exported above.
  */

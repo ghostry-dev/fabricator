@@ -5,8 +5,12 @@ import type {
   Adapting,
   WithAdaptations,
 } from "../../Adapter/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../Schema/Satisfies";
 import { Kind } from "../../Types";
-import type { Core } from "./Types";
+import type { Core, Fabricated } from "./Types";
 
 /**
  * A recursive schema, produced by `.whereby({ depth })` — see `Registry.ts` for
@@ -22,6 +26,15 @@ export interface Schema<
   $Body = unknown,
   $Adaptations extends Adaptations = {},
 > extends Core<$Body, $Adaptations> {
+  /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated<$Body>, $Target>,
+  ): Schema<$Body, $Adaptations>;
+
   /**
    * Override what this schema maps to in one or more external schema libraries
    * — see `string/Schema.ts`'s `adapt` for the full contract.
@@ -44,6 +57,7 @@ export function Schema<$Body, $Adaptations extends Adaptations = {}>(
   return {
     ...schema,
     [Kind]: "recursive",
+    satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),
   };

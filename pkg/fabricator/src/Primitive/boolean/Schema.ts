@@ -7,6 +7,10 @@ import type {
 } from "../../Adapter/Types";
 import { assertDrawableKeyedWeights } from "../../Distribution";
 import type { Produce } from "../../Random/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../Schema/Satisfies";
 import { Kind, Meta } from "../../Types";
 import { outcomes } from "./Outcomes";
 import type { Core, Fabricated, Meta as ThisMeta, Weights } from "./Types";
@@ -30,6 +34,15 @@ export interface Schema<
    * validation of `produce`) still has it to check against.
    */
   as: (produce: Produce<Fabricated>) => Schema<$Meta, $Adaptations>;
+
+  /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated, $Target>,
+  ): Schema<$Meta, $Adaptations>;
 
   weighted: (weights: Weights) => Schema<$Meta, $Adaptations>;
 
@@ -58,6 +71,7 @@ export function Schema<
     [Kind]: "boolean",
     as: (produce) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
+    satisfies,
     weighted: (weights) => {
       const merged = { ...schema[Meta].weights, ...weights };
       assertDrawableKeyedWeights("T.boolean.weighted", outcomes, merged);

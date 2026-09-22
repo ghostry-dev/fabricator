@@ -6,6 +6,10 @@ import type {
   WithAdaptations,
 } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../Schema/Satisfies";
 import type { AnySchema } from "../../Schema/Types";
 import { Kind, Meta } from "../../Types";
 import type { ShallowMerge } from "../../Utility/ShallowMerge";
@@ -54,6 +58,17 @@ export interface Schema<
   ) => Schema<$Definition, $Adaptations>;
 
   /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls.
+   * Canonical `.satisfies`; every other kind's method is the same and points
+   * here. See `Schema/Satisfies.ts` for the `this`-param signature and why the
+   * alternatives fail.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated<$Definition>, $Target>,
+  ): Schema<$Definition, $Adaptations>;
+
+  /**
    * Override what this schema maps to in one or more external schema libraries
    * — see `string/Schema.ts`'s `adapt` for the full contract. Carried through
    * `extend`/`refine`/`override`, which all reduce to a fresh `make(...)`
@@ -78,19 +93,21 @@ export interface Schema<
  * `make` alongside `extend`/`refine`/`override`: those three rebuild from
  * `definition`/`refinements` rather than deriving from this object, so the
  * adaptation map has to be threaded through `make` itself or chaining one of
- * them would drop it (see `make`'s `adapt`).
+ * them would drop it (see `make`'s `adapt`). `as` and `satisfies` are the
+ * methods this factory attaches, so they are what the parameter omits.
  */
 export function Schema<
   $Definition extends Definition,
   $Adaptations extends Adaptations = {},
 >(
-  schema: Omit<Schema<$Definition, $Adaptations>, "as">,
+  schema: Omit<Schema<$Definition, $Adaptations>, "as" | "satisfies">,
 ): Schema<$Definition, $Adaptations> {
   return {
     ...schema,
     [Kind]: "object",
     as: (produce) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
+    satisfies,
   };
 }
 

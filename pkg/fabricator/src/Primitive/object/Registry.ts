@@ -27,7 +27,7 @@ function normalizeDefinition<$Definition extends Definition>(
  * `adaptations` is threaded through every branch rather than living on the
  * schema object: `extend`/`refine`/`override` each rebuild via `make`, so a map
  * left on the object alone would be dropped by the next chained call
- * (`Schema.ts`'s factory adds only `as` for this reason).
+ * (`Schema.ts`'s factory adds `as` and `satisfies` for this reason).
  */
 function make<
   $Definition extends Definition,

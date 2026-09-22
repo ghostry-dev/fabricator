@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `sample`, `shuffle`, `Fabrication`, `ValueOf`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
+The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `sample`, `shuffle`, `Fabrication`, `ValueOf`, `satisfies`, `SatisfiedBy`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
 
 ## `initialize(config?)`
 
@@ -272,6 +272,80 @@ import type { ValueOf } from "@ghostry/fabricator";
 
 type ProductSchemaValue = ValueOf<typeof ProductSchema>;
 ```
+
+## `.satisfies<$Target>()`
+
+The chainable check that a schema produces a value assignable to a type that already exists elsewhere — an API response, a database model, a generated client. The type still comes from the schema; this is an optional check against a supplied `T`, not a second definition to keep in sync.
+
+Assignable-to, not exact equality: extra fields pass. The method returns the same schema, unchanged at runtime, so it can sit inline. The target is not carried forward — a later `.extend` that changes a field's type is not re-checked. Put `.satisfies` last to check the final shape.
+
+Call it on any schema, at any depth. A nested field that drifts errors on that field's line rather than on the outer object:
+
+```ts
+import { initialize, registry } from "@ghostry/fabricator";
+import type { Order, Product } from "./api-client";
+// Product = { id: string; price: number }
+// Order   = { id: string; product: Product; quantity: number; note?: string }
+
+const { T, Fabricator } = initialize({ types: registry });
+const id = T.string.whereby({ length: { min: 8, max: 8 } });
+
+const ProductSchema = T.object({
+  id,
+  price: T.number.whereby({ min: 1, max: 500 }),
+}).satisfies<Product>();
+
+const OrderSchema = T.object({
+  id,
+  product: T.object({ id, price: id }).satisfies<Product>(),
+  //       ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // the error underlines the schema that is wrong:
+  //   "schema produces": { id: string; price: string }
+  //   "but target requires": Product
+  quantity: T.number.integer.whereby({ min: 1, max: 9 }),
+});
+
+const Orders = new Fabricator(OrderSchema);
+Orders.fabricate(); // typed exactly as before — `.satisfies` changes nothing at runtime
+```
+
+Bare builders are not schemas: `T.string.satisfies<string>()` is not a method; `T.string.whereby({ length: { max: 8 } }).satisfies<string>()` is.
+
+Under `exactOptionalPropertyTypes`, `T.optional` produces `note?: string | undefined` (present, present-as-`undefined`, or omitted) and does **not** satisfy `note?: string`. `T.omittable` produces `note?: string` and does. Widen the target to `note?: string | undefined`, or use `T.omittable`.
+
+### `satisfies<$Target>(buildable)`
+
+The function is available standalone for use anywhere you want to check the type. It is a type-level statement and a no-op at runtime. It also accepts a Schema, which is the form to use when the schema comes from somewhere you don't want to edit:
+
+```ts
+import { satisfies } from "@ghostry/fabricator";
+
+const ProductSchema = T.object({
+  id,
+  price: T.number.whereby({ min: 1, max: 500 }),
+});
+
+const ProductFabricator = new Fabricator(ProductSchema);
+
+satisfies<Product>(ProductFabricator);
+
+satisfies<Product>(ProductSchema);
+```
+
+If the type is not satisfied, a typecheck error is raised.
+
+### `SatisfiedBy<$Target, $Buildable>` (type only)
+
+Resolves to `true` when the Schema or built Fabricator produces a value assignable to `$Target`, and otherwise to an object naming both sides. Assert it with the `satisfies` operator, no helper needed:
+
+```ts
+import type { SatisfiedBy } from "@ghostry/fabricator";
+
+true satisfies SatisfiedBy<Product, typeof ProductSchema>;
+true satisfies SatisfiedBy<Product, typeof ProductFabricator>;
+```
+
+A failure reads `Type 'boolean' does not satisfy the expected type '{ produces: { id: string }; required: Product }'`.
 
 ## Calling `.adapt(adapter, produce)`
 

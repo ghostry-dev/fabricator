@@ -7,10 +7,14 @@ import type {
 } from "../../../Adapter/Types";
 import { assertDrawableKeyedWeights } from "../../../Distribution";
 import type { Produce } from "../../../Random/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../../Schema/Satisfies";
 import type { AnySchema } from "../../../Schema/Types";
 import { Kind, Meta } from "../../../Types";
 import { outcomes } from "./Outcomes";
-import type { Core, Definition, Resolved, Weights } from "./Types";
+import type { Core, Definition, Fabricated, Resolved, Weights } from "./Types";
 
 export interface Schema<
   $Definition extends Definition = Definition,
@@ -26,6 +30,18 @@ export interface Schema<
   as: (
     produce: Produce<Resolved<$Definition>>,
   ) => Schema<$Definition, $Adaptations>;
+
+  /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`. The produced type is the wrapped
+   * value (not `Omitted`); omission is a fact about the enclosing object's
+   * keys, which is why this check lives more usefully on the object.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated<$Definition>, $Target>,
+  ): Schema<$Definition, $Adaptations>;
+
   /**
    * Reweight the built-in presence roll. Keys are optional — an omitted key
    * keeps baseline weight `1`, the same weight the 50/50 split already uses —
@@ -64,6 +80,7 @@ export function Schema<
     [Kind]: "object.omittable",
     as: (produce) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
+    satisfies,
     weighted: (weights) => {
       const merged = { ...schema[Meta].weights, ...weights };
       assertDrawableKeyedWeights("T.omittable.weighted", outcomes, merged);

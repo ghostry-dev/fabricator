@@ -87,6 +87,8 @@ const product = new Fabricator(ProductSchema).fabricate();
 
 There's no second definition to keep in sync and no type annotation to write. Change the schema and every place consuming the fabricated value re-checks against the new shape automatically.
 
+When a type already exists elsewhere — an API response, a domain entity, a generated client — [`.satisfies<T>()`](/reference/api#satisfiestarget) checks that the schema still produces that shape. Drift fails at the schema rather than in a fixture. The type still comes from the schema; this is an optional check, not a second definition.
+
 ### Every value can be replayed
 
 An instance's data is a function of its [clock](/guides/reproducibility#the-clock-is-the-entropy) — the instant captured when `initialize()` ran — and of a [salt](/guides/reproducibility#salt-is-optional), if one was given. No salt is required: the clock differs on every run, which is what makes runs vary, and it's readable afterwards, so a failing run can be turned back into a repeatable one:

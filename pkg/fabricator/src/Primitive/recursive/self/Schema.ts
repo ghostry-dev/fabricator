@@ -5,8 +5,12 @@ import type {
   Adapting,
   WithAdaptations,
 } from "../../../Adapter/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../../Schema/Satisfies";
 import { Kind } from "../../../Types";
-import type { Core } from "./Types";
+import type { Core, Fabricated } from "./Types";
 
 /**
  * The placeholder `T.recursive`'s body callback receives in place of the schema
@@ -24,6 +28,18 @@ import type { Core } from "./Types";
 export interface Schema<
   $Adaptations extends Adaptations = {},
 > extends Core<$Adaptations> {
+  /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`. Outside `ValueOf`'s `$Bindings`,
+   * `Fabricated` is `unknown` — a `self` has no value of its own. Put
+   * `.satisfies` on the enclosing `T.recursive(...).whereby(...)` to check the
+   * tree.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated, $Target>,
+  ): Schema<$Adaptations>;
+
   adapt: <
     const $Adapter extends Adapter,
     $Returnable extends ReturnType<$Adapter["convert"]>,
@@ -41,6 +57,7 @@ export function Schema<$Adaptations extends Adaptations = {}>(
   return {
     ...schema,
     [Kind]: "recursive.self",
+    satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),
   };

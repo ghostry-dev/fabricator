@@ -5,8 +5,12 @@ import type {
   Adapting,
   WithAdaptations,
 } from "../../Adapter/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../Schema/Satisfies";
 import { Kind } from "../../Types";
-import type { Core, Value } from "./Types";
+import type { Core, Fabricated, Value } from "./Types";
 
 /**
  * A fixed value, so unlike every other kind there is no `.as()` — nothing left
@@ -20,6 +24,15 @@ export interface Schema<
   $Value extends Value = Value,
   $Adaptations extends Adaptations = {},
 > extends Core<$Value, $Adaptations> {
+  /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated<$Value>, $Target>,
+  ): Schema<$Value, $Adaptations>;
+
   /**
    * Override what this schema maps to in one or more external schema libraries
    * — see `string/Schema.ts`'s `adapt` for the full contract.
@@ -43,6 +56,7 @@ export function Schema<
   return {
     ...schema,
     [Kind]: "always",
+    satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),
   };

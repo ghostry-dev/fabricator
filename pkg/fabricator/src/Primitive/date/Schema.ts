@@ -6,6 +6,10 @@ import type {
   WithAdaptations,
 } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../Schema/Satisfies";
 import { Kind, Meta } from "../../Types";
 import type { Core, Fabricated, Meta as ThisMeta } from "./Types";
 
@@ -28,6 +32,15 @@ export interface Schema<
    * future validation of `produce`) still has them to check against.
    */
   as: (produce: Produce<Fabricated>) => Schema<$Meta, $Adaptations>;
+
+  /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Fabricated, $Target>,
+  ): Schema<$Meta, $Adaptations>;
 
   /**
    * Override what this schema maps to in one or more external schema libraries
@@ -54,6 +67,7 @@ export function Schema<
     [Kind]: "date",
     as: (produce) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
+    satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),
   };

@@ -6,6 +6,10 @@ import type {
   WithAdaptations,
 } from "../../Adapter/Types";
 import type { ProduceContext } from "../../Random/Types";
+import {
+  schemaSatisfies as satisfies,
+  type SatisfiesThis,
+} from "../../Schema/Satisfies";
 import { Kind } from "../../Types";
 import type * as tuple from "../tuple/Types";
 import type { Core, From, Resolved, Source } from "./Types";
@@ -42,6 +46,16 @@ export interface Schema<
   $Adaptations extends Adaptations = {},
 > extends Core<$From, $To, $Adaptations> {
   /**
+   * Check that this schema's fabricated value type is assignable to `$Target`.
+   * Identity at runtime; the target is not carried into later chained calls —
+   * see `object/Schema.ts`'s `satisfies`. The produced type is `to`'s
+   * (`Resolved<$To>`), not `from`'s.
+   */
+  satisfies<$Target>(
+    this: this & SatisfiesThis<Resolved<$To>, $Target>,
+  ): Schema<$From, $To, $Adaptations>;
+
+  /**
    * Override what this schema maps to in one or more external schema libraries
    * — see `string/Schema.ts`'s `adapt` for the full contract. An unadapted
    * derive maps to whatever `to` maps to, honoring any adaptation already on
@@ -71,6 +85,7 @@ export function Schema<
   return {
     ...schema,
     [Kind]: "derive",
+    satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),
   };
