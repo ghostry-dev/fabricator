@@ -109,8 +109,8 @@ function at(u: number, min: number, max: number): number {
 }
 
 /**
- * Inverse of {@link at}: where `x` sits in `[min, max]` as a unit position. `(x
- * - min) / (max - min)` is the finite-span form; `max - min` overflowing makes
+ * Inverse of {@link at}: where `x` sits in `[min, max]` as a unit position. `(x -
+ * min) / (max - min)` is the finite-span form; `max - min` overflowing makes
  * that `0` or `NaN`, so rewrite as `1 / (1 + (max - x) / (x - min))` — a ratio
  * of two finite distances when `x` is strictly inside.
  */

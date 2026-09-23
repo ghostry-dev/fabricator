@@ -8,22 +8,22 @@
     "preview": "bunx --no-install --bun vocs preview"
   },
   "dependencies": {
-    "react": "^19",
-    "react-dom": "^19",
-    "vocs": "2.8.5",
-    "waku": "^1.0.0-beta.3"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vocs": "2.10.0",
+    "waku": "^1.0.0-rc.1"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.5.0",
+    "@faker-js/faker": "^10.6.0",
     "@ghostry/fabricator": "file:../pkg/fabricator",
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^5",
-    "vite": "^8"
+    "vite": "^8.3.0"
   },
   "patchedDependencies": {
-    "vocs@2.8.5": "patches/vocs@2.8.5.patch"
+    "vocs@2.10.0": "patches/vocs@2.10.0.patch"
   }
 }

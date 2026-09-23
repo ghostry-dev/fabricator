@@ -25,7 +25,7 @@ jobs:
 
   get-version-fabricator:
     name: Get current version (fabricator)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       version: ${{ steps.read-version.outputs.version }}
     steps:
@@ -47,7 +47,7 @@ jobs:
 
   get-version-fabricator-adapter-typebox-v0:
     name: Get current version (fabricator-adapter-typebox-v0)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       version: ${{ steps.read-version.outputs.version }}
     steps:
@@ -69,7 +69,7 @@ jobs:
 
   get-version-fabricator-extension-faker-v10:
     name: Get current version (fabricator-extension-faker-v10)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       version: ${{ steps.read-version.outputs.version }}
     steps:
@@ -92,7 +92,7 @@ jobs:
   check-release-fabricator:
     name: Check for existing release (fabricator)
     needs: [get-version-fabricator]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       exists: ${{ steps.release-exists.outputs.result }}
     steps:
@@ -114,7 +114,7 @@ jobs:
   check-release-fabricator-adapter-typebox-v0:
     name: Check for existing release (fabricator-adapter-typebox-v0)
     needs: [get-version-fabricator-adapter-typebox-v0]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       exists: ${{ steps.release-exists.outputs.result }}
     steps:
@@ -136,7 +136,7 @@ jobs:
   check-release-fabricator-extension-faker-v10:
     name: Check for existing release (fabricator-extension-faker-v10)
     needs: [get-version-fabricator-extension-faker-v10]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       exists: ${{ steps.release-exists.outputs.result }}
     steps:
