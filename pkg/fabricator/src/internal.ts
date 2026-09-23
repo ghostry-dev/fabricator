@@ -86,6 +86,14 @@ export type {
 } from "./Random/Types";
 
 /**
+ * The shared index-selection draw every weighted kind (`enum`, `choice`,
+ * `boolean`, the presence wrappers) reaches through construction — exported so
+ * a test can measure its distribution against a raw stream, without a kind's
+ * registry guards or `.fabricate()` in between.
+ */
+export { weighted } from "./Distribution";
+
+/**
  * The synchronous ambient carrier. `#stack` (`package.json`) selects it only
  * where there is no `node:async_hooks` — in practice a browser bundle — so on
  * Bun, Node, and Deno alike the condition always resolves to the

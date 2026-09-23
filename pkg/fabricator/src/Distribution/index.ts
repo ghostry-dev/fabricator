@@ -372,7 +372,11 @@ export function sample<$T>(list: ReadonlyArray<$T>, stream: Stream): $T {
     throw new FabricatorError.EmptyItemsError("sample", "item");
   }
 
-  const index = Math.floor(stream.next() * list.length);
+  const index = discreteSampler(
+    undefined,
+    { min: 0, max: list.length - 1 },
+    stream,
+  )();
   const item: $T = list[index]!;
   return item;
 }
@@ -410,8 +414,9 @@ export function isDrawable(weight: number): boolean {
  * Whether a weight is _expressible_ at all, as opposed to whether it is
  * drawable. `0` is valid and disables the outcome; a negative weight or `NaN`
  * is a mistake. `Infinity` is rejected because it cannot be summed into a
- * usable draw table — every cumulative bound becomes `Infinity`, so
- * `weighted()`'s `x < weight` scan matches nothing.
+ * usable draw table — the sum becomes `Infinity`, so `weighted()`'s alias
+ * scaling (`weight * n / sum`) yields `NaN` for the infinite entry and `0` for
+ * every other.
  */
 export function isValidWeight(weight: number): boolean {
   return weight >= 0 && Number.isFinite(weight);
@@ -490,31 +495,100 @@ export function assertDrawableKeyedWeights<$Outcome extends string>(
   }
 }
 
+/**
+ * A pick over `weights`, in O(1) per call regardless of table size. The table
+ * is built once, here, during `new Fabricator(...)`; the returned closure is
+ * what `.fabricate()` calls.
+ *
+ * Two paths, chosen at construction:
+ *
+ * - **Equal weights** (every `.uniform(...)` registry, every default-weighted
+ *   presence wrapper) need no table at all: the pick is `discreteSampler`'s
+ *   uniform index draw, one `stream.next()` per call.
+ * - **Unequal weights** use Vose's alias method (see {@link toAliasTable}): draw
+ *   a column with that same index draw, then a second `stream.next()` as a coin
+ *   between the column's own item and its alias. The coin is a separate draw
+ *   rather than the fractional remainder of the first, because that remainder
+ *   keeps only `53 - log2(n)` bits, which coarsens the probabilities as the
+ *   table grows. A column whose probability is `1` returns without drawing the
+ *   coin; the draw count stays a pure function of the stream, so this is still
+ *   replayable.
+ */
 export function weighted<const $Item>(
   weights: ReadonlyArray<readonly [number, $Item]>,
   stream: Stream,
   label: string,
 ): () => $Item {
-  let sum = 0;
-
-  const weightings = weights
-    .filter(([weight]) => isDrawable(weight))
-    .map(([weight, item]) => [(sum += weight), item] as const);
+  const drawable = weights.filter(([weight]) => isDrawable(weight));
 
   /**
    * Eager: this closure is built during `new Fabricator(...)`, so an empty
    * table is a construction error, matching the `.weighted()` guards. A lazy
    * throw would surface at `.fabricate()` instead.
    */
-  if (weightings.length === 0) {
+  if (drawable.length === 0) {
     throw new FabricatorError.NoDrawableOutcomesError(label, "outcome");
   }
 
+  const items = drawable.map(([, item]) => item);
+  const column = discreteSampler(
+    undefined,
+    { min: 0, max: items.length - 1 },
+    stream,
+  );
+
+  const [first] = drawable[0]!;
+  if (drawable.every(([weight]) => weight === first)) {
+    return () => items[column()]!;
+  }
+
+  const table = toAliasTable(drawable.map(([weight]) => weight));
+
   return () => {
-    const x = stream.next() * sum;
-
-    const chosen = weightings.find(([weight]) => x < weight);
-
-    return chosen![1];
+    const i = column();
+    const probability = table.probability[i]!;
+    if (probability === 1) return items[i]!;
+    return items[stream.next() < probability ? i : table.alias[i]!]!;
   };
+}
+
+/**
+ * Vose's alias table over strictly positive `weights`: `n` columns, each split
+ * between its own index (with `probability[i]`) and one other (`alias[i]`), so
+ * that a uniform column plus one biased coin reproduces `weights[i] / sum`
+ * exactly, up to the rounding in scaling each weight by `n / sum`.
+ *
+ * Whatever remains in either worklist once the other empties gets probability
+ * `1`. In exact arithmetic only `large` can be left over, and every entry in it
+ * has scaled to exactly `1`; anything in `small` is there because rounding left
+ * it a hair under `1`. Either way the residue is float error, and treating it
+ * as a full column is the standard resolution.
+ */
+function toAliasTable(weights: ReadonlyArray<number>): {
+  probability: Float64Array;
+  alias: Uint32Array;
+} {
+  const n = weights.length;
+  const sum = weights.reduce((total, weight) => total + weight, 0);
+  const scaled = weights.map((weight) => (weight * n) / sum);
+  const probability = new Float64Array(n);
+  const aliases = new Uint32Array(n);
+
+  const small: number[] = [];
+  const large: number[] = [];
+  for (let i = 0; i < n; i++) (scaled[i]! < 1 ? small : large).push(i);
+
+  while (small.length > 0 && large.length > 0) {
+    const less = small.pop()!;
+    const more = large.pop()!;
+    probability[less] = scaled[less]!;
+    aliases[less] = more;
+    scaled[more] = scaled[more]! + scaled[less]! - 1;
+    (scaled[more]! < 1 ? small : large).push(more);
+  }
+
+  for (const i of large) probability[i] = 1;
+  for (const i of small) probability[i] = 1;
+
+  return { probability, alias: aliases };
 }

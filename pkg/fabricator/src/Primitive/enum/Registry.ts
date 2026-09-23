@@ -19,9 +19,9 @@ type Weighted<$Items extends ReadonlyArray<Item>> = {
 
 /**
  * At least one element — an `enum` with no member has nothing to draw, which
- * would otherwise fail inside `weighted()` (`Distribution/index.ts`) with an
- * opaque `TypeError` at fabricate time (weight sum is `0`, so `.find` returns
- * `undefined` and `chosen![1]` throws).
+ * would otherwise surface only as `weighted()`'s (`Distribution/index.ts`)
+ * generic `NoDrawableOutcomesError` at construction, naming an "outcome" rather
+ * than this registry's own `EmptyItemsError` for a member.
  *
  * Only a _statically_ empty tuple (a literal `[]`) is a compile error. A
  * dynamically built array — e.g. `.map()` over an `as const` array — is
