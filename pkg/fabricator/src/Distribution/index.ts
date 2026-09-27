@@ -268,7 +268,7 @@ function clamp(value: number, min: number, max: number): number {
  * Standard normal CDF via the Abramowitz & Stegun 7.1.26 approximation of the
  * error function (|error| < 1.5e-7).
  */
-function normalCdf(x: number): number {
+export function normalCdf(x: number): number {
   return 0.5 * (1 + erf(x / Math.SQRT2));
 }
 

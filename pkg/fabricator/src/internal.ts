@@ -94,6 +94,15 @@ export type {
 export { weighted } from "./Distribution";
 
 /**
+ * The normal CDF the `normal` distribution's truncation is computed with. The
+ * docs site's distribution explorer draws each variant's exact density, and a
+ * truncated normal's density divides by the mass this function measures —
+ * importing it rather than restating the approximation keeps the plotted
+ * curve normalized exactly as `sampler` truncates.
+ */
+export { normalCdf } from "./Distribution";
+
+/**
  * The synchronous ambient carrier. `#stack` (`package.json`) selects it only
  * where there is no `node:async_hooks` — in practice a browser bundle — so on
  * Bun, Node, and Deno alike the condition always resolves to the
