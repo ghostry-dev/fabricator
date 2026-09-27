@@ -290,7 +290,7 @@ function erf(x: number): number {
  * Inverse of the standard normal CDF (quantile function) via Peter Acklam's
  * rational approximation (relative error < 1.15e-9).
  */
-function normalInv(p: number): number {
+export function normalInv(p: number): number {
   if (p <= 0) return -Infinity;
   if (p >= 1) return Infinity;
 

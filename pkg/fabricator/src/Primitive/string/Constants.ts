@@ -9,8 +9,17 @@ import type { CodepointRange } from "./Types";
  * export alongside `export type Fabricated = string` makes the module a value
  * module, and `export * as string` in `Primitive/namespace.ts` then resolves
  * `string` to the namespace — a cycle that drops `[Kind]`/`[Meta]` off `Core`.
+ *
+ * Annotated member-by-member, like `classes`, because it is public API and JSR
+ * rejects an inferred `const` type there.
  */
-export const unicode = {
+export const unicode: {
+  scalars: ReadonlyArray<CodepointRange>;
+  codespace: CodepointRange;
+  bmp: CodepointRange;
+  ascii: CodepointRange;
+  range: (from: number, to: number) => CodepointRange;
+} = {
   /**
    * All Unicode scalar values: the codespace minus the surrogate block
    * (U+D800–U+DFFF). Always well-formed UTF-16, so it round-trips cleanly

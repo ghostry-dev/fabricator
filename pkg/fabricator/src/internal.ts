@@ -97,10 +97,15 @@ export { weighted } from "./Distribution";
  * The normal CDF the `normal` distribution's truncation is computed with. The
  * docs site's distribution explorer draws each variant's exact density, and a
  * truncated normal's density divides by the mass this function measures —
- * importing it rather than restating the approximation keeps the plotted
- * curve normalized exactly as `sampler` truncates.
+ * importing it rather than restating the approximation keeps the plotted curve
+ * normalized exactly as `sampler` truncates.
+ *
+ * `normalInv` is its inverse, the quantile `sampler` maps a truncated unit draw
+ * through. `@ghostry/fabricator-census` imports both to score a fitted `normal`
+ * against the exact curve fabrication will draw from, rather than against a
+ * second approximation that could disagree with it in the tails.
  */
-export { normalCdf } from "./Distribution";
+export { normalCdf, normalInv } from "./Distribution";
 
 /**
  * The synchronous ambient carrier. `#stack` (`package.json`) selects it only

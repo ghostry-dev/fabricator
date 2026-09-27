@@ -116,6 +116,31 @@ export { registry } from "./Schema/Registry";
 export { effectiveDiscrete, toBound } from "./Bound";
 export type { Bound, InputBound } from "./Bound";
 /**
+ * The `length` shapes `T.string`/`T.array`'s `.whereby(...)` accept and store,
+ * and the `distribution` every range-bearing `whereby` takes. Exported so a
+ * `whereby` argument built programmatically, or read back off a schema's `meta`
+ * in an `.adapt` producer, can be typed — the same rationale as `Bound`.
+ * `Distribution` is type-only: a distribution is written as its plain tagged
+ * object (`{ kind: "skew", exponent: 4 }`), and the type's namespace members
+ * (`Distribution.Normal`, …) name each variant.
+ */
+export type { Distribution, Range } from "./Distribution";
+export type { InputLength, Length } from "./Bound";
+/**
+ * `T.string`'s `composition` vocabulary: the class-weighting and `[weight,
+ * source]` forms, and the sources the second form draws from. `classes` holds
+ * each built-in class as its code point ranges, so the pair form can mix a
+ * class with an arbitrary range (`[[3, classes.lowercase], [1, unicode.bmp]]`);
+ * `unicode` holds codespace presets and `range(from, to)`.
+ */
+export type {
+  CharacterClass,
+  CharacterSource,
+  CodepointRange,
+  Composition,
+} from "./Primitive/string/Types";
+export { classes, unicode } from "./Primitive/string/Constants";
+/**
  * Public because it is the type of `ProduceContext`'s `random` member — the
  * seeded stream every kind's `.as(produce)` and `T.opaque`'s producer are
  * handed — so a caller writing either as a named function can name it.
