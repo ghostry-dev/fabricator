@@ -10,12 +10,47 @@ T.string.whereby({ length: { min: { value: 0, exclusive: true }, max: 25 } });
 
 `length` is a bare `N` (exactly N code units) or `{ min?, max, distribution? }`. `length.min` defaults to `0`. Without `distribution` the length is drawn uniformly; a `distribution` shapes that draw (see [Distributions](/guides/distributions)). `length` counts UTF-16 code units, so the result's `.length` equals the chosen length exactly.
 
-By default, characters span all Unicode scalar values — the full codespace minus surrogates, so the result is always well-formed UTF-16. Control that with `composition`:
+`T.string.as(produce, hints?)` layers a custom producer over the schema — see [`T.opaque`](/reference/primitives/opaque).
+
+## Composition
+
+By default, characters span all Unicode scalar values — the full codespace minus surrogates, so the result is always well-formed UTF-16. Control that with `composition`, either a weighting over the built-in classes by name or explicit `[weight, source]` pairs.
+
+### Classes
 
 ```ts
 T.string.whereby({ length: 8, composition: { lowercase: 3, digit: 1 } });
 ```
 
-`composition` is either a weighting over the built-in classes (`lowercase`, `uppercase`, `digit`, `symbol`, `space`) or explicit `[weight, source]` pairs over arbitrary character sources — a literal string (shorthand for the ranges of its individual characters), a code point range, or a list of ranges.
+| Class       | Characters                           | Code points                                          |
+| ----------- | ------------------------------------ | ---------------------------------------------------- |
+| `lowercase` | `a`–`z`                              | U+0061–U+007A                                        |
+| `uppercase` | `A`–`Z`                              | U+0041–U+005A                                        |
+| `digit`     | `0`–`9`                              | U+0030–U+0039                                        |
+| `symbol`    | `` !"#$%&'()*+,-./:;<=>?@[\]^_`{\|}~ `` | U+0021–U+002F, U+003A–U+0040, U+005B–U+0060, U+007B–U+007E |
+| `space`     | the space character only             | U+0020                                               |
 
-`T.string.as(produce, hints?)` layers a custom producer over the schema — see [`T.opaque`](/reference/primitives/opaque).
+Every class is ASCII, and together the five cover exactly printable ASCII (U+0020–U+007E). `space` holds no tab, newline, or other whitespace — write those as a custom source.
+
+Each character independently picks a class by weight, then a character uniformly within that class. Weights are relative and describe the string's _expected_ makeup, so any one string can stray from the proportions. A class left out never appears, a weight of `0` disables it, and a composition with every weight at `0` throws.
+
+### Custom sources
+
+```ts
+T.string.whereby({
+  length: 12,
+  composition: [
+    [3, "abc"],
+    [1, { from: 0x30, to: 0x39 }], // 0–9
+    [1, [{ from: 0x3b1, to: 0x3c1 }, { from: 0x3c3, to: 0x3c9 }]], // α–ω, skipping final ς
+  ],
+});
+```
+
+The `[weight, source]` form takes arbitrary character sources: a literal string, a code point range `{ from, to }` (inclusive), or a list of ranges. The weighting works the same way: pick a source by weight, then a code point uniformly across all of that source's ranges. Class names aren't accepted here; to mix a class with a custom source, write the class as its ranges from the table above.
+
+A literal string is shorthand for one single-character range per character, so a repeated character is drawn more often — `"aab"` yields `a` twice as often as `b`.
+
+### Exact length
+
+`length` is honored exactly even when the composition can't fill it. If the drawn character is two units wide (astral) but only one code unit remains, that unit is filled with a well-formed BMP character from outside the composition, inserted at a random character boundary.

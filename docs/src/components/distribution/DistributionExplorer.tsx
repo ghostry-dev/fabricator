@@ -56,6 +56,11 @@ export function DistributionExplorer(props: {
    * `useDeferredValue` and the draws key on its identity.
    */
   const shaping = useMemo(() => fitShaping(chosen, range), [chosen, range]);
+  /**
+   * A log axis exists only over a range starting above zero, so outside one
+   * the toggle is not rendered at all. The reader's choice is kept rather
+   * than reset, and applies again once `min` is back above zero.
+   */
   const [preferredScale, setScale] = useState<Scale>(props.scale ?? "linear");
   const scale: Scale = range.min > 0 ? preferredScale : "linear";
 
@@ -170,20 +175,18 @@ export function DistributionExplorer(props: {
           >
             Redraw
           </button>
-          <label
-            className="dx-toggle"
-            title={range.min > 0 ? undefined : "A log axis needs min > 0"}
-          >
-            <input
-              type="checkbox"
-              checked={scale === "log"}
-              disabled={range.min <= 0}
-              onChange={(event) =>
-                setScale(event.target.checked ? "log" : "linear")
-              }
-            />
-            log axis
-          </label>
+          {range.min > 0 ? (
+            <label className="dx-toggle">
+              <input
+                type="checkbox"
+                checked={scale === "log"}
+                onChange={(event) =>
+                  setScale(event.target.checked ? "log" : "linear")
+                }
+              />
+              log axis
+            </label>
+          ) : null}
           <span className="dx-legend">
             <span className="dx-swatch dx-swatch-bar" /> {count.toLocaleString("en-US")} draws
             <span className="dx-swatch dx-swatch-curve" /> exact density
