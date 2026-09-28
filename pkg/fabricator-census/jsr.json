@@ -1,0 +1,6 @@
+{
+  "name": "@ghostry/fabricator-census",
+  "version": "0.0.1",
+  "exports": { ".": "./src/index.ts", "./postgres": "./src/postgres.ts" },
+  "publish": { "exclude": ["test", "src/playground.ts"] }
+}

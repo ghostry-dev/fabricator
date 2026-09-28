@@ -1,0 +1,75 @@
+{
+  "name": "@ghostry/fabricator-census",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Take a census of real data and get @ghostry/fabricator schema suggestions — distributions, presence weights, string lengths and compositions, enums — with PostgreSQL sampling and aggregate helpers.",
+  "keywords": [
+    "factory",
+    "reproducible",
+    "fixtures",
+    "testing",
+    "mock",
+    "schema",
+    "statistics",
+    "distribution",
+    "postgres",
+    "typescript"
+  ],
+  "author": {
+    "name": "Patrick Rebsch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ghostry-dev/fabricator",
+    "directory": "pkg/fabricator-census"
+  },
+  "homepage": "https://docs.ghostry.dev/fabricator/",
+  "bugs": "https://github.com/ghostry-dev/fabricator/issues",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "types": "./dist/types/index.d.ts",
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./postgres": {
+      "types": "./dist/types/postgres.d.ts",
+      "import": "./dist/esm/postgres.js",
+      "default": "./dist/esm/postgres.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build:reset": "rm -rf ./dist",
+    "build:compile": "bunx --no-install --bun rslib build --config ./rslib.config.ts",
+    "build:compile:rsdoctor": "RSDOCTOR=true bunx --no-install --bun rslib build --config ./rslib.config.ts",
+    "build:types": "bun --bun ../../node_modules/typescript-5/lib/tsc.js -p ./tsconfig.build.json --noEmit false --declaration --emitDeclarationOnly --declarationDir ./dist/types",
+    "build:verify": "tsc --noEmit -p ./tsconfig.verify.json",
+    "build:clean": "find ./dist -type f -name '*.tsbuildinfo' -delete",
+    "build": "bun run build:reset && bun run build:compile && bun run build:types && bun run build:verify && bun run build:clean",
+    "build:rsdoctor": "bun run build:reset && bun run build:compile:rsdoctor && bun run build:types && bun run build:verify && bun run build:clean",
+    "check": "tsc --noEmit",
+    "check:ts5": "bun --bun ../../node_modules/typescript-5/lib/tsc.js --noEmit",
+    "check:jsr": "DENO_BIN_PATH=$PWD/../../node_modules/.bin/deno bunx --no-install jsr publish --dry-run --allow-dirty",
+    "format": "bunx --no-install oxfmt .",
+    "test": "bun run check && bun run check:ts5 && bun run check:jsr && bun test"
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "@ghostry/fabricator": ">=0.0.11 <0.1.0"
+  },
+  "devDependencies": {
+    "@ghostry/fabricator": "workspace:*"
+  }
+}

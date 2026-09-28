@@ -53,6 +53,15 @@ jobs:
           run-id: ${{ inputs.build-run-id }}
           repository: ${{ github.repository }}
 
+      - name: Download the fabricator-census build
+        uses: actions/download-artifact@v8
+        with:
+          name: pkg-fabricator-census
+          path: pkg/fabricator-census/dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.build-run-id }}
+          repository: ${{ github.repository }}
+
       - name: Test fabricator
         working-directory: pkg/fabricator
         run: bun run test
@@ -63,4 +72,8 @@ jobs:
 
       - name: Test fabricator-extension-faker-v10
         working-directory: pkg/fabricator-extension-faker-v10
+        run: bun run test
+
+      - name: Test fabricator-census
+        working-directory: pkg/fabricator-census
         run: bun run test

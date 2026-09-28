@@ -35,6 +35,16 @@
         "@sinclair/typebox": "^0.34.52",
       },
     },
+    "pkg/fabricator-census": {
+      "name": "@ghostry/fabricator-census",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@ghostry/fabricator": "workspace:*",
+      },
+      "peerDependencies": {
+        "@ghostry/fabricator": ">=0.0.11 <0.1.0",
+      },
+    },
     "pkg/fabricator-extension-faker-v10": {
       "name": "@ghostry/fabricator-extension-faker-v10",
       "version": "0.0.2",
@@ -101,6 +111,8 @@
     "@ghostry/fabricator": ["@ghostry/fabricator@workspace:pkg/fabricator"],
 
     "@ghostry/fabricator-adapter-typebox-v0": ["@ghostry/fabricator-adapter-typebox-v0@workspace:pkg/fabricator-adapter-typebox-v0"],
+
+    "@ghostry/fabricator-census": ["@ghostry/fabricator-census@workspace:pkg/fabricator-census"],
 
     "@ghostry/fabricator-extension-faker-v10": ["@ghostry/fabricator-extension-faker-v10@workspace:pkg/fabricator-extension-faker-v10"],
 

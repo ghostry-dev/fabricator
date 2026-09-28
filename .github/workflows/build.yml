@@ -45,3 +45,10 @@ jobs:
           name: pkg-fabricator-extension-faker-v10
           path: pkg/fabricator-extension-faker-v10/dist
           if-no-files-found: error
+
+      - name: Upload `fabricator-census`
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkg-fabricator-census
+          path: pkg/fabricator-census/dist
+          if-no-files-found: error

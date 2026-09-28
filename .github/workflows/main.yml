@@ -89,6 +89,28 @@ jobs:
         working-directory: pkg/fabricator-extension-faker-v10
         run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
 
+  get-version-fabricator-census:
+    name: Get current version (fabricator-census)
+    runs-on: ubuntu-26.04
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Read package version
+        id: read-version
+        working-directory: pkg/fabricator-census
+        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
+
   check-release-fabricator:
     name: Check for existing release (fabricator)
     needs: [get-version-fabricator]
@@ -155,6 +177,28 @@ jobs:
       - name: Release `fabricator-extension-faker-v10/${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}` already exists?
         run: echo "${{ steps.release-exists.outputs.result }}"
 
+  check-release-fabricator-census:
+    name: Check for existing release (fabricator-census)
+    needs: [get-version-fabricator-census]
+    runs-on: ubuntu-26.04
+    outputs:
+      exists: ${{ steps.release-exists.outputs.result }}
+    steps:
+      - name: Find existing release if it exists
+        id: release-exists
+        uses: actions/github-script@v9
+        with:
+          result-encoding: string
+          script: |
+            return github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'fabricator-census/${{ needs.get-version-fabricator-census.outputs.version }}',
+            }).then(() => 'true').catch(() => 'false');
+
+      - name: Release `fabricator-census/${{ needs.get-version-fabricator-census.outputs.version }}` already exists?
+        run: echo "${{ steps.release-exists.outputs.result }}"
+
   publish-fabricator:
     name: Publish (fabricator)
     if: ${{ needs.check-release-fabricator.outputs.exists == 'false' }}
@@ -214,6 +258,27 @@ jobs:
     with:
       package: fabricator-extension-faker-v10
       version: ${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}
+      build-run-id: ${{ needs.build.outputs.run-id }}
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
+  publish-fabricator-census:
+    name: Publish (fabricator-census)
+    if: ${{ needs.check-release-fabricator-census.outputs.exists == 'false' }}
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - build
+      - test
+      - get-version-fabricator-census
+      - check-release-fabricator-census
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+    with:
+      package: fabricator-census
+      version: ${{ needs.get-version-fabricator-census.outputs.version }}
       build-run-id: ${{ needs.build.outputs.run-id }}
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
