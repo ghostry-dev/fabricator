@@ -217,8 +217,6 @@ jobs:
       package: fabricator
       version: ${{ needs.get-version-fabricator.outputs.version }}
       build-run-id: ${{ needs.build.outputs.run-id }}
-    secrets:
-      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   publish-fabricator-adapter-typebox-v0:
     name: Publish (fabricator-adapter-typebox-v0)
@@ -238,8 +236,6 @@ jobs:
       package: fabricator-adapter-typebox-v0
       version: ${{ needs.get-version-fabricator-adapter-typebox-v0.outputs.version }}
       build-run-id: ${{ needs.build.outputs.run-id }}
-    secrets:
-      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   publish-fabricator-extension-faker-v10:
     name: Publish (fabricator-extension-faker-v10)
@@ -259,8 +255,6 @@ jobs:
       package: fabricator-extension-faker-v10
       version: ${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}
       build-run-id: ${{ needs.build.outputs.run-id }}
-    secrets:
-      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   publish-fabricator-census:
     name: Publish (fabricator-census)
@@ -280,5 +274,3 @@ jobs:
       package: fabricator-census
       version: ${{ needs.get-version-fabricator-census.outputs.version }}
       build-run-id: ${{ needs.build.outputs.run-id }}
-    secrets:
-      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

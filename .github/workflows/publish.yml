@@ -2,10 +2,6 @@ name: Publish
 
 on:
   workflow_call:
-    secrets:
-      NPM_AUTH_TOKEN:
-        required: true
-        description: The NPM authentication token to publish packages.
     inputs:
       package:
         required: true
@@ -148,20 +144,23 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
       ##
-      # `NODE_AUTH_TOKEN` is the bootstrap path, not the steady state. A
-      # trusted publisher cannot be configured for a package that does not
-      # exist yet, so a package's very first version has to authenticate
-      # with a token. Provenance is unaffected — it comes from the
-      # `id-token: write` permission above, not from how npm authenticates.
+      # npm authenticates through trusted publishing (OIDC) alone; there is
+      # no token. Provenance comes from the `id-token: write` permission
+      # above, which `main.yml` must also grant — npm requires it on both
+      # the calling and the called workflow.
       #
-      # Once every package under `pkg/` has published once and has its
-      # trusted publisher configured, delete this `env:` block and the
-      # `NPM_AUTH_TOKEN` secret; the `.npmrc` that `setup-node` wrote will
-      # simply hold an empty token and npm falls back to OIDC.
+      # A trusted publisher can only be configured for a package that
+      # already exists, so a new package under `pkg/` is claimed by hand
+      # first: publish a README-only stub at `0.0.0` from a maintainer's
+      # machine (`npm publish --access public`, 2FA), then add a trusted
+      # publisher on npmjs.com naming `main.yml` — npm validates a reusable
+      # workflow against its caller, not this file — with direct publishing
+      # enabled, since a new configuration only allows `npm stage publish`
+      # by default. CI then publishes every real version with provenance;
+      # deprecate the stub once the first one is live. Until that is done,
+      # this step fails for that package.
       #
       - name: Publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
         run: >
           bunx --no-install npm publish
           ${{ github.workspace }}/dist/${{ env.filename }}
