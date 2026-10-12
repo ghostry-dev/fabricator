@@ -5,20 +5,19 @@ import { fromAxis, toAxis } from "./sample";
 import type { Range, Scale, Shape, Shaping } from "./types";
 
 /**
- * The width the prerendered page assumes. Once hydrated the chart draws at
- * its real width instead (see `useWidth`), so on a phone the tick labels stay
- * at their set size rather than scaling down with the whole SVG.
+ * The width the prerendered page assumes. Once hydrated the chart draws at its
+ * real width instead (see `useWidth`), so on a phone the tick labels stay at
+ * their set size rather than scaling down with the whole SVG.
  */
 const INITIAL_WIDTH = 640;
 const PAD = { top: 10, right: 14, bottom: 26, left: 14 };
 const CURVE_POINTS = 240;
 
 /**
- * One chart, both layers in one coordinate system: bars are the library's
- * real draws (`sample.ts`), the line is the exact density (`density.ts`).
- * Agreement between them is the point — it shows the formula describes what
- * the library does, and it shows the reader how noisy a few thousand draws
- * still are.
+ * One chart, both layers in one coordinate system: bars are the library's real
+ * draws (`sample.ts`), the line is the exact density (`density.ts`). Agreement
+ * between them is the point — it shows the formula describes what the library
+ * does, and it shows the reader how noisy a few thousand draws still are.
  *
  * `bars` is absent until the page hydrates, since the draws run client-side
  * only; the curve alone renders on the prerendered page.
@@ -38,12 +37,13 @@ export function Chart(props: {
   const plotHeight = height - PAD.top - PAD.bottom;
   const lower = toAxis(range.min, scale);
   const upper = toAxis(range.max, scale);
-  const valid = Number.isFinite(lower) && Number.isFinite(upper) && upper > lower;
+  const valid =
+    Number.isFinite(lower) && Number.isFinite(upper) && upper > lower;
 
   /**
-   * Density per unit of axis, not per unit of `x`: on a log axis a bin
-   * spanning `ds` covers `dx = x·ds`, so the curve is scaled by `x` to stay
-   * comparable with bars binned in that same space.
+   * Density per unit of axis, not per unit of `x`: on a log axis a bin spanning
+   * `ds` covers `dx = x·ds`, so the curve is scaled by `x` to stay comparable
+   * with bars binned in that same space.
    */
   const curve = valid
     ? Array.from({ length: CURVE_POINTS + 1 }, (_, i) => {
@@ -57,8 +57,8 @@ export function Chart(props: {
   /**
    * The ceiling ignores the curve's two endpoints: `skew` with an exponent
    * above 1 is infinite exactly at `min`, and letting that decide the scale
-   * would flatten everything else to the baseline. What pokes above the
-   * ceiling is clipped rather than rescaled.
+   * would flatten everything else to the baseline. What pokes above the ceiling
+   * is clipped rather than rescaled.
    */
   const interior = curve.slice(1, -1).map(({ y }) => y);
   const peak = Math.max(
@@ -153,9 +153,9 @@ export function Chart(props: {
 
 /**
  * Where the parameters the reader is dragging sit on the axis — a `normal`'s
- * `mean`, a `triangular`'s `mode`, and the same for each `multi` component —
- * so moving a slider visibly moves something even where the shape itself
- * barely changes.
+ * `mean`, a `triangular`'s `mode`, and the same for each `multi` component — so
+ * moving a slider visibly moves something even where the shape itself barely
+ * changes.
  */
 function markers(shaping: Shaping): ReadonlyArray<number> {
   const of = (shape: Shape): ReadonlyArray<number> =>
@@ -172,10 +172,10 @@ function markers(shaping: Shaping): ReadonlyArray<number> {
 }
 
 /**
- * Both ends always, since they are the bounds the reader typed. Between
- * them, round multiples on a linear axis — `250`, not `250.75` when `min` is
- * `1` — and powers of ten on a log one, the values a log axis is read by.
- * Inner ticks too close to an end are dropped so labels never collide.
+ * Both ends always, since they are the bounds the reader typed. Between them,
+ * round multiples on a linear axis — `250`, not `250.75` when `min` is `1` —
+ * and powers of ten on a log one, the values a log axis is read by. Inner ticks
+ * too close to an end are dropped so labels never collide.
  */
 function ticks(range: Range, scale: Scale): ReadonlyArray<number> {
   const { min, max } = range;

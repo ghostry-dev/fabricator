@@ -1,7 +1,7 @@
 /**
- * The nearest of 1, 2 or 5 times a power of ten — slider steps and axis
- * ticks that land on values a reader would type, so the snippet reads
- * `mean: 350` rather than `mean: 347.83`.
+ * The nearest of 1, 2 or 5 times a power of ten — slider steps and axis ticks
+ * that land on values a reader would type, so the snippet reads `mean: 350`
+ * rather than `mean: 347.83`.
  */
 export function niceStep(raw: number): number {
   if (!(raw > 0) || !Number.isFinite(raw)) return 1;
@@ -12,8 +12,7 @@ export function niceStep(raw: number): number {
 
 /**
  * Snap to `step` and drop the floating-point residue that snapping leaves
- * (`0.30000000000000004`), since the value is printed verbatim in the
- * snippet.
+ * (`0.30000000000000004`), since the value is printed verbatim in the snippet.
  */
 export function round(value: number, step: number): number {
   const decimals = Math.max(0, -Math.floor(Math.log10(step)));

@@ -9,13 +9,13 @@ import {
 } from "./types";
 
 /**
- * A slider paired with a number box. The slider covers the range a reader
- * is likely to want; the box accepts anything, including values the slider
- * cannot reach (a `normal` mean outside the range is legitimate — it gives a
- * one-sided tail), and the slider pins to its end while that is so.
+ * A slider paired with a number box. The slider covers the range a reader is
+ * likely to want; the box accepts anything, including values the slider cannot
+ * reach (a `normal` mean outside the range is legitimate — it gives a one-sided
+ * tail), and the slider pins to its end while that is so.
  *
- * `bounded` is for a parameter that has no meaning outside the slider's
- * range — a `triangular` mode past `max` — and holds the box to it too.
+ * `bounded` is for a parameter that has no meaning outside the slider's range —
+ * a `triangular` mode past `max` — and holds the box to it too.
  *
  * `log` puts the slider on a log10 scale, for a parameter like `skew`'s
  * exponent where 0.1 and 10 are mirror images and 1 is the middle.
@@ -67,20 +67,20 @@ export function Param(props: {
 
 /**
  * A number input that keeps its own draft while the reader types, so a
- * half-typed `-` or `1e` is not parsed, rejected and wiped mid-keystroke.
- * It commits whenever the draft parses to a finite number, and snaps back to
- * the current value on blur when it does not.
+ * half-typed `-` or `1e` is not parsed, rejected and wiped mid-keystroke. It
+ * commits whenever the draft parses to a finite number, and snaps back to the
+ * current value on blur when it does not.
  *
  * The draft exists only while the box has focus. Unfocused, it shows `value`
- * directly, so nothing — a clamp, a range change, another control — can
- * leave it displaying a number the chart is not using.
+ * directly, so nothing — a clamp, a range change, another control — can leave
+ * it displaying a number the chart is not using.
  *
- * `min`/`max` make the bounds the input's own: the spinner stops at them,
- * and a typed value outside them is held as an uncommitted draft (styled
- * `:invalid`) rather than committed. Clamping on every keystroke instead
- * would break typing toward a value — `4` on the way to `450` is below a
- * `min` of `300` — so the clamp waits for blur. What the box shows and what
- * the chart uses therefore never disagree once the reader moves on.
+ * `min`/`max` make the bounds the input's own: the spinner stops at them, and a
+ * typed value outside them is held as an uncommitted draft (styled `:invalid`)
+ * rather than committed. Clamping on every keystroke instead would break typing
+ * toward a value — `4` on the way to `450` is below a `min` of `300` — so the
+ * clamp waits for blur. What the box shows and what the chart uses therefore
+ * never disagree once the reader moves on.
  */
 export function NumberBox(props: {
   label: string;
@@ -135,7 +135,11 @@ export function ShapeControls(props: {
 
   switch (shape.kind) {
     case "uniform":
-      return <p className="dx-hint">No parameters — every value is equally likely.</p>;
+      return (
+        <p className="dx-hint">
+          No parameters — every value is equally likely.
+        </p>
+      );
 
     case "logarithmic":
       return (
@@ -197,8 +201,8 @@ export function ShapeControls(props: {
 }
 
 /**
- * The picker every non-`multi` shape shares — the explorer's own variant
- * picker when unlocked, and each `multi` component's.
+ * The picker every non-`multi` shape shares — the explorer's own variant picker
+ * when unlocked, and each `multi` component's.
  */
 export function ShapePicker(props: {
   label: string;
@@ -232,7 +236,9 @@ export function ComponentsControls(props: {
 }) {
   const { components, range, onChange } = props;
   const replace = (index: number, next: Component) =>
-    onChange(components.map((component, i) => (i === index ? next : component)));
+    onChange(
+      components.map((component, i) => (i === index ? next : component)),
+    );
 
   return (
     <div className="dx-components">
@@ -253,7 +259,9 @@ export function ComponentsControls(props: {
                 type="button"
                 className="dx-button dx-remove"
                 aria-label={`Remove component ${index + 1}`}
-                onClick={() => onChange(components.filter((_, i) => i !== index))}
+                onClick={() =>
+                  onChange(components.filter((_, i) => i !== index))
+                }
               >
                 ×
               </button>

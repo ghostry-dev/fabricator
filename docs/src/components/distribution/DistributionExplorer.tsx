@@ -2,11 +2,7 @@
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Chart } from "./Chart";
-import {
-  ComponentsControls,
-  NumberBox,
-  ShapeControls,
-} from "./Controls";
+import { ComponentsControls, NumberBox, ShapeControls } from "./Controls";
 import { format } from "./numbers";
 import { draw, histogram } from "./sample";
 import {
@@ -25,8 +21,8 @@ import "./explorer.css";
  *
  * The full form (the default) is the page's main explorer: range inputs, a
  * variant picker, the variant's parameters and a copyable `T.number.whereby`
- * snippet. `compact` is the per-variant preview under each section: locked
- * to the variant it starts on, over a fixed range, with only that variant's
+ * snippet. `compact` is the per-variant preview under each section: locked to
+ * the variant it starts on, over a fixed range, with only that variant's
  * parameters.
  *
  * `distribution` is the starting shape, or just a variant name to start from
@@ -57,23 +53,23 @@ export function DistributionExplorer(props: {
    */
   const shaping = useMemo(() => fitShaping(chosen, range), [chosen, range]);
   /**
-   * A log axis exists only over a range starting above zero, so outside one
-   * the toggle is not rendered at all. The reader's choice is kept rather
-   * than reset, and applies again once `min` is back above zero.
+   * A log axis exists only over a range starting above zero, so outside one the
+   * toggle is not rendered at all. The reader's choice is kept rather than
+   * reset, and applies again once `min` is back above zero.
    */
   const [preferredScale, setScale] = useState<Scale>(props.scale ?? "linear");
   const scale: Scale = range.min > 0 ? preferredScale : "linear";
 
   /**
-   * Starts at a fixed instant rather than the wall clock so that every
-   * reader's first histogram is the same one. "Redraw" moves it forward.
+   * Starts at a fixed instant rather than the wall clock so that every reader's
+   * first histogram is the same one. "Redraw" moves it forward.
    */
   const [clock, setClock] = useState(0);
 
   /**
-   * The draws run in the browser only. This page is prerendered, and
-   * drawing during that render would both run the library at build time for
-   * nothing and risk a hydration mismatch on a float's last digit.
+   * The draws run in the browser only. This page is prerendered, and drawing
+   * during that render would both run the library at build time for nothing and
+   * risk a hydration mismatch on a float's last digit.
    */
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -89,14 +85,14 @@ export function DistributionExplorer(props: {
 
   const draws = useMemo(
     () =>
-      hydrated
-        ? draw(deferredShaping, deferredRange, count, clock)
-        : undefined,
+      hydrated ? draw(deferredShaping, deferredRange, count, clock) : undefined,
     [hydrated, deferredShaping, deferredRange, count, clock],
   );
   const bars = useMemo(
     () =>
-      draws?.ok ? histogram(draws.values, deferredRange, scale, bins) : undefined,
+      draws?.ok
+        ? histogram(draws.values, deferredRange, scale, bins)
+        : undefined,
     [draws, deferredRange, scale, bins],
   );
 
@@ -188,7 +184,8 @@ export function DistributionExplorer(props: {
             </label>
           ) : null}
           <span className="dx-legend">
-            <span className="dx-swatch dx-swatch-bar" /> {count.toLocaleString("en-US")} draws
+            <span className="dx-swatch dx-swatch-bar" />{" "}
+            {count.toLocaleString("en-US")} draws
             <span className="dx-swatch dx-swatch-curve" /> exact density
           </span>
         </div>
@@ -232,8 +229,8 @@ function Snippet(props: { range: Range; shaping: Shaping }) {
 
 /**
  * The call a reader would write for what is on screen, formatted the way the
- * guide's own examples are: one short line per shape, and a `multi` broken
- * out one component per line.
+ * guide's own examples are: one short line per shape, and a `multi` broken out
+ * one component per line.
  */
 function snippet(range: Range, shaping: Shaping): string {
   const distribution =

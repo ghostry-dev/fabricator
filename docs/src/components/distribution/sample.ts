@@ -6,15 +6,15 @@ export type Draws =
   | { ok: false; message: string };
 
 /**
- * `count` values from the real library, built the way a reader would write
- * it — so the histogram is what `T.number.whereby` actually does, and a
+ * `count` values from the real library, built the way a reader would write it —
+ * so the histogram is what `T.number.whereby` actually does, and a
  * configuration the library rejects surfaces its own error rather than a
  * message the docs made up.
  *
- * `clock` pins the instance, and with it every draw: the same `clock` feeds
- * the same underlying uniforms through whatever distribution is chosen, so
- * dragging a slider morphs one sample instead of reshuffling it on every
- * tick. A new `clock` is what "Redraw" means.
+ * `clock` pins the instance, and with it every draw: the same `clock` feeds the
+ * same underlying uniforms through whatever distribution is chosen, so dragging
+ * a slider morphs one sample instead of reshuffling it on every tick. A new
+ * `clock` is what "Redraw" means.
  */
 export function draw(
   shaping: Shaping,
@@ -43,9 +43,9 @@ export function draw(
 }
 
 /**
- * Position along the x-axis. Bins, ticks and the curve all work in this
- * space, so a `log` axis gets log-width bins — equal-looking bars for equal
- * ratios, which is the only way a log-uniform histogram comes out flat.
+ * Position along the x-axis. Bins, ticks and the curve all work in this space,
+ * so a `log` axis gets log-width bins — equal-looking bars for equal ratios,
+ * which is the only way a log-uniform histogram comes out flat.
  */
 export function toAxis(x: number, scale: Scale): number {
   return scale === "log" ? Math.log(x) : x;
@@ -57,8 +57,8 @@ export function fromAxis(s: number, scale: Scale): number {
 
 /**
  * Bar heights as densities in axis space — the fraction of draws in a bin
- * divided by its width — so they sit on the same vertical scale as the
- * curve, which the chart converts to axis space the same way.
+ * divided by its width — so they sit on the same vertical scale as the curve,
+ * which the chart converts to axis space the same way.
  */
 export function histogram(
   values: ReadonlyArray<number>,

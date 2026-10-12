@@ -2,17 +2,16 @@ import { normalCdf } from "@ghostry/fabricator/internal";
 import type { Range, Shape, Shaping } from "./types";
 
 /**
- * The exact probability density of `shaping` at `x`, over `range`. Each case
- * is the derivative of the inverse CDF `sampler` in
- * `pkg/fabricator/src/Distribution/index.ts` applies to a uniform draw, so
- * the curve is a statement about that code rather than about the textbook
+ * The exact probability density of `shaping` at `x`, over `range`. Each case is
+ * the derivative of the inverse CDF `sampler` in
+ * `pkg/fabricator/src/Distribution/index.ts` applies to a uniform draw, so the
+ * curve is a statement about that code rather than about the textbook
  * distribution of the same name — `normal` is truncated to the range, and
- * `multi` shares one range across its components, because `sampler` does
- * both.
+ * `multi` shares one range across its components, because `sampler` does both.
  *
- * `NaN` means "no density exists here" (a `logarithmic` range reaching zero,
- * a `multi` with no drawable component); the chart draws nothing for it, and
- * the library's own error explains why.
+ * `NaN` means "no density exists here" (a `logarithmic` range reaching zero, a
+ * `multi` with no drawable component); the chart draws nothing for it, and the
+ * library's own error explains why.
  */
 export function density(shaping: Shaping, x: number, range: Range): number {
   if (shaping.kind === "multi") {

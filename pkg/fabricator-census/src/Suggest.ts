@@ -397,8 +397,8 @@ class Suggester {
      * non-integer range puts no mass on any single value.
      */
     if (
-      members !== null &&
-      (!numeric.integer || fitted.score > fitted.threshold)
+      members !== null
+      && (!numeric.integer || fitted.score > fitted.threshold)
     )
       return { kind: "enum", items: members, notes };
 
@@ -441,9 +441,9 @@ class Suggester {
       const singletons = top.filter((entry) => entry.count === 1).length;
 
       if (
-        top.length < 2 ||
-        values / top.length < this.options.enumSupport ||
-        singletons / values > this.options.enumSingletons
+        top.length < 2
+        || values / top.length < this.options.enumSupport
+        || singletons / values > this.options.enumSingletons
       )
         return null;
 
@@ -457,8 +457,8 @@ class Suggester {
     const sampled = this.enumMembers(frequencies, count);
 
     if (
-      distinct !== undefined &&
-      values / distinct < this.options.enumSupport
+      distinct !== undefined
+      && values / distinct < this.options.enumSupport
     ) {
       if (sampled !== null)
         notes.push(
@@ -507,10 +507,10 @@ class Suggester {
     if (only !== undefined) return { kind: "always", value: only, notes };
 
     if (
-      column === null &&
-      !frequencies.saturated &&
-      frequencies.distinct === 1 &&
-      frequencies.top
+      column === null
+      && !frequencies.saturated
+      && frequencies.distinct === 1
+      && frequencies.top
     )
       return { kind: "always", value: frequencies.top[0]!.value, notes };
 
@@ -933,10 +933,10 @@ function discriminantOf(
     }
     const split = fields.filter(
       (field) =>
-        field !== candidate &&
-        field.present > 0 &&
-        field.present < objects &&
-        sums.has(field.present),
+        field !== candidate
+        && field.present > 0
+        && field.present < objects
+        && sums.has(field.present),
     );
     if (split.length >= 2)
       return `\`${candidate.key}\` may discriminate a union: ${split

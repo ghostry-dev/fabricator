@@ -22,13 +22,13 @@ By default, characters span all Unicode scalar values — the full codespace min
 T.string.whereby({ length: 8, composition: { lowercase: 3, digit: 1 } });
 ```
 
-| Class       | Characters                           | Code points                                          |
-| ----------- | ------------------------------------ | ---------------------------------------------------- |
-| `lowercase` | `a`–`z`                              | U+0061–U+007A                                        |
-| `uppercase` | `A`–`Z`                              | U+0041–U+005A                                        |
-| `digit`     | `0`–`9`                              | U+0030–U+0039                                        |
-| `symbol`    | `` !"#$%&'()*+,-./:;<=>?@[\]^_`{\|}~ `` | U+0021–U+002F, U+003A–U+0040, U+005B–U+0060, U+007B–U+007E |
-| `space`     | the space character only             | U+0020                                               |
+| Class       | Characters                            | Code points                                                |
+| ----------- | ------------------------------------- | ---------------------------------------------------------- |
+| `lowercase` | `a`–`z`                               | U+0061–U+007A                                              |
+| `uppercase` | `A`–`Z`                               | U+0041–U+005A                                              |
+| `digit`     | `0`–`9`                               | U+0030–U+0039                                              |
+| `symbol`    | ``!"#$%&'()*+,-./:;<=>?@[\]^_`{\|}~`` | U+0021–U+002F, U+003A–U+0040, U+005B–U+0060, U+007B–U+007E |
+| `space`     | the space character only              | U+0020                                                     |
 
 Every class is ASCII, and together the five cover exactly printable ASCII (U+0020–U+007E). `space` holds no tab, newline, or other whitespace — write those as a custom source.
 
@@ -42,7 +42,13 @@ T.string.whereby({
   composition: [
     [3, "abc"],
     [1, { from: 0x30, to: 0x39 }], // 0–9
-    [1, [{ from: 0x3b1, to: 0x3c1 }, { from: 0x3c3, to: 0x3c9 }]], // α–ω, skipping final ς
+    [
+      1,
+      [
+        { from: 0x3b1, to: 0x3c1 },
+        { from: 0x3c3, to: 0x3c9 },
+      ],
+    ], // α–ω, skipping final ς
   ],
 });
 ```

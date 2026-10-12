@@ -92,9 +92,9 @@ export function validateFacts(
     const count = (field: string, value: unknown) => {
       if (
         !(
-          typeof value === "number" &&
-          Number.isSafeInteger(value) &&
-          value >= 0
+          typeof value === "number"
+          && Number.isSafeInteger(value)
+          && value >= 0
         )
       )
         fail(field, "an integer ≥ 0", value);
