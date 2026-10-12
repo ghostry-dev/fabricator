@@ -1,6 +1,6 @@
 {
   "name": "@ghostry/fabricator-census",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "description": "Take a census of real data and get @ghostry/fabricator schema suggestions — distributions, presence weights, string lengths and compositions, enums — with PostgreSQL sampling and aggregate helpers.",
   "keywords": [

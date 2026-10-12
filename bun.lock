@@ -37,7 +37,7 @@
     },
     "pkg/fabricator-census": {
       "name": "@ghostry/fabricator-census",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "devDependencies": {
         "@electric-sql/pglite": "^0.5.8",
         "@ghostry/fabricator": "workspace:*",
