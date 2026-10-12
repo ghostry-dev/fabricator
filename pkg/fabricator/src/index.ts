@@ -181,17 +181,11 @@ export type { Adapting } from "./Adapter/Types";
  */
 export type { Salt } from "./Random/Types";
 /**
- * Reads the value type a built Fabricator produces straight off its `fabricate`
- * signature — `Fabrication<typeof Product>` instead of `ReturnType<typeof
- * Product.fabricate>`.
+ * Reads the value type a Schema produces, via its phantom `[Produces]` marker —
+ * before it is built, which is what a helper accepting a Schema needs — or the
+ * value type a built Fabricator produces, off its `fabricate` signature.
  */
-export type { Fabrication } from "./Fabricator/Types";
-/**
- * Reads the value type a Schema (not yet built) will eventually produce, via
- * its phantom `[Produces]` marker. Mostly useful for a helper that accepts a
- * Schema before it's built into a Fabricator.
- */
-export type { ValueOf } from "./Schema/Types";
+export type { Fabricated } from "./Schema/Types";
 /**
  * Check that a Schema or built Fabricator produces a value assignable to a
  * supplied type — `.satisfies<T>()` on every kind's Schema is the main form;

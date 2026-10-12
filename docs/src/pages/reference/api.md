@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `sample`, `shuffle`, `Fabrication`, `ValueOf`, `satisfies`, `SatisfiedBy`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
+The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `sample`, `shuffle`, `Fabricated`, `satisfies`, `SatisfiedBy`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
 
 ## `initialize(config?)`
 
@@ -246,31 +246,23 @@ try {
 
 The parameter type `T.opaque`'s producer receives — exported so a producer written as a named function has something to annotate its parameter with. See [`T.opaque`](/reference/primitives/opaque).
 
-## `Fabrication<$Fabricator>` (type only)
+## `Fabricated<$Schema>` (type only)
 
-Reads the value type a built Fabricator produces, straight off its `fabricate` signature:
+Reads the value type a Schema produces. Works on a Schema before it's built, which is useful for a helper that accepts a Schema directly, and on a built Fabricator:
 
 ```ts
-import type { Fabrication } from "@ghostry/fabricator";
+import type { Fabricated } from "@ghostry/fabricator";
+
+type ProductValue = Fabricated<typeof ProductSchema>;
 
 const Product = new Fabricator(ProductSchema);
 
-type ProductValue = Fabrication<typeof Product>;
+type SameProductValue = Fabricated<typeof Product>;
 // same as: ReturnType<typeof Product.fabricate>
 
 function seedDb(p: ProductValue) {
   /* ... */
 }
-```
-
-## `ValueOf<$Schema>` (type only)
-
-The Schema-level counterpart of `Fabrication` — reads the value type a Schema will eventually produce, before it's built into a Fabricator. Useful for a helper that accepts a Schema directly:
-
-```ts
-import type { ValueOf } from "@ghostry/fabricator";
-
-type ProductSchemaValue = ValueOf<typeof ProductSchema>;
 ```
 
 ## `.satisfies<$Target>()`

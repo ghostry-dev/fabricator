@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import type { AnySchema, ValueOf } from "../../Schema/Types";
+import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import {
   Produces,
   type Adaptation,
@@ -48,7 +48,7 @@ type IsKeyspaceOpen<$Key> = string extends $Key
  * An open key (`string`, `symbol`, or both) is a plain index signature: no
  * `Partial` — an index signature never guarantees a key is present, and
  * wrapping one would only add a spurious `| undefined`. Carrying
- * `ValueOf<$Key>` rather than hardcoding `string` keeps a mixed `string |
+ * `FabricatedBy<$Key>` rather than hardcoding `string` keeps a mixed `string |
  * symbol` key as `Record<string | symbol, ...>` instead of silently dropping
  * the symbol half.
  *
@@ -62,12 +62,15 @@ export type Fabricated<
   $Value extends Value = Value,
   $Bindings extends unknown[] = [],
 > =
-  IsKeyspaceOpen<ValueOf<$Key, $Bindings>> extends true
-    ? Record<ValueOf<$Key, $Bindings> & PropertyKey, ValueOf<$Value, $Bindings>>
+  IsKeyspaceOpen<FabricatedBy<$Key, $Bindings>> extends true
+    ? Record<
+        FabricatedBy<$Key, $Bindings> & PropertyKey,
+        FabricatedBy<$Value, $Bindings>
+      >
     : Partial<
         Record<
-          ValueOf<$Key, $Bindings> & PropertyKey,
-          ValueOf<$Value, $Bindings>
+          FabricatedBy<$Key, $Bindings> & PropertyKey,
+          FabricatedBy<$Value, $Bindings>
         >
       >;
 

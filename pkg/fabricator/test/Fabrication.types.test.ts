@@ -6,7 +6,7 @@ import {
   type Fabrication,
   type NaiveFabricator,
   type Primitive,
-  type ValueOf,
+  type Fabricated,
 } from "@ghostry/fabricator/internal";
 import { expect, test } from "bun:test";
 
@@ -131,7 +131,7 @@ const nullable = new Fabricator(T.nullable(T.always("x")));
 const nullish = new Fabricator(T.nullish(T.always("x")));
 
 /**
- * A refined object's Schema, asserted here pre-`build()` via `ValueOf` (a
+ * A refined object's Schema, asserted here pre-`build()` via `Fabricated` (a
  * computed field's type is readable straight off the Schema without building
  * it). See the `test("a .refine()-computed field builds and fabricates ...")`
  * block below for the built/fabricated runtime behavior.
@@ -214,9 +214,9 @@ export type Assertions = [
     Extends<{ a?: "x" | undefined; b: 1 }, Fabrication<typeof optionalObject>>
   >,
   Expect<Equal<Fabrication<typeof string>, string>>,
-  Expect<Equal<ValueOf<typeof bareStringLength>, string>>,
-  Expect<Equal<ValueOf<typeof distributedStringLength>, string>>,
-  Expect<Equal<ValueOf<typeof distributedArrayLength>, "x"[]>>,
+  Expect<Equal<Fabricated<typeof bareStringLength>, string>>,
+  Expect<Equal<Fabricated<typeof distributedStringLength>, string>>,
+  Expect<Equal<Fabricated<typeof distributedArrayLength>, "x"[]>>,
   Expect<Equal<Fabrication<typeof symbol>, symbol>>,
   Expect<Equal<Fabrication<typeof undef>, undefined>>,
   Expect<Equal<Fabrication<typeof undefinable>, "x" | undefined>>,
@@ -224,14 +224,14 @@ export type Assertions = [
   Expect<Equal<Fabrication<typeof nullable>, "x" | null>>,
   Expect<Equal<Fabrication<typeof nullish>, "x" | null | undefined>>,
   /** A computed key resolves to its source's type, not `unknown`. */
-  Expect<Extends<ValueOf<typeof refinedSchema>, { id: 1; refined: Date }>>,
-  Expect<Extends<{ id: 1; refined: Date }, ValueOf<typeof refinedSchema>>>,
+  Expect<Extends<Fabricated<typeof refinedSchema>, { id: 1; refined: Date }>>,
+  Expect<Extends<{ id: 1; refined: Date }, Fabricated<typeof refinedSchema>>>,
 ];
 
 /* -------------------------------------------------------------------------- */
 /*  A built Fabricator stands anywhere a Schema does (`toSchema` strips it     */
 /*  back to `[Kind]`/`[Meta]`), and it carries no `[Produces]` — its value   */
-/*  type is on `fabricate`. `ValueOf` has to read that, or every composite   */
+/*  type is on `fabricate`. `Fabricated` has to read that, or every composite   */
 /*  wrapping a built Fabricator silently degrades to `unknown` while the      */
 /*  same composite over `built.schema` stays precise.                        */
 /* -------------------------------------------------------------------------- */
@@ -282,8 +282,15 @@ export type NestedFabricatorAssertions = [
   Expect<Extends<Element | null, Fabrication<typeof nullableBuilt>>>,
   Expect<Equal<Fabrication<typeof derivedFromBuilt>, string>>,
   /** Read directly, not only through a composite. */
-  Expect<Extends<ValueOf<typeof element>, Element>>,
-  Expect<Extends<Element, ValueOf<typeof element>>>,
+  Expect<Extends<Fabricated<typeof element>, Element>>,
+  Expect<Extends<Element, Fabricated<typeof element>>>,
+  /**
+   * The public reader and the internal one agree on a built Fabricator — what
+   * lets `.` export `Fabricated` alone.
+   */
+  Expect<
+    Equal<Fabricated<typeof arrayOfBuilt>, Fabrication<typeof arrayOfBuilt>>
+  >,
 ];
 
 /* -------------------------------------------------------------------------- */

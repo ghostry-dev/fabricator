@@ -317,7 +317,8 @@ export type Assertions = [
    * Note the collapsed form marks both properties _required_, while
    * `Fabrication` of the same schema is `Partial` — a record's size is drawn
    * and colliding keys collapse, so it may cover only a subset. That is a
-   * deliberate `Static<ToTypeBox<S>>` vs `ValueOf<S>` divergence, not a bug.
+   * deliberate `Static<ToTypeBox<S>>` vs `Fabricated<S>` divergence, not a
+   * bug.
    *
    * Bare-vs-concrete: an unconstrained key has no TypeBox counterpart, so this
    * resolves to `TNever` rather than a loose `TSchema` — agreeing with the

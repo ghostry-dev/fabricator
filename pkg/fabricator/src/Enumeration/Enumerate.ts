@@ -5,7 +5,7 @@ import { toInnermostFrame } from "../Instance/Stack/Visible";
 import type { Ancestry, Stack } from "../Instance/Types";
 import { toStreamFromTrace } from "../Random";
 import type { RandomSource, Salt } from "../Random/Types";
-import type { AnySchema, ValueOf } from "../Schema/Types";
+import type { AnySchema, Fabricated } from "../Schema/Types";
 import { plan, resolve } from "./Plan";
 import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
 
@@ -71,15 +71,15 @@ export function enumerables(
    */
   function iterable<$Schema extends AnySchema>(
     rebuild: () => { built: Resolvable; axis: Axis },
-  ): Iterable<ValueOf<$Schema>> {
+  ): Iterable<Fabricated<$Schema>> {
     return {
-      [Symbol.iterator](): Iterator<ValueOf<$Schema>> {
+      [Symbol.iterator](): Iterator<Fabricated<$Schema>> {
         const { built, axis } = rebuild();
         const width = Number(axis.width);
         let index = 0;
 
         return {
-          next: (): IteratorResult<ValueOf<$Schema>> => {
+          next: (): IteratorResult<Fabricated<$Schema>> => {
             if (index >= width) {
               return { done: true, value: undefined as never };
             }
@@ -87,7 +87,7 @@ export function enumerables(
             const value = resolve(
               built,
               axis.at(BigInt(index)),
-            ) as ValueOf<$Schema>;
+            ) as Fabricated<$Schema>;
             index++;
 
             return { done: false, value };
@@ -106,7 +106,7 @@ export function enumerables(
    */
   function combinatorial<const $Schema extends AnySchema>(
     schema: $Schema,
-  ): Iterable<ValueOf<$Schema>> {
+  ): Iterable<Fabricated<$Schema>> {
     const combinatorialSalt = [...effectiveSource().salt, "combinatorial"];
 
     /**
@@ -147,7 +147,7 @@ export function enumerables(
    */
   function coverage<const $Schema extends AnySchema>(
     schema: $Schema,
-  ): Iterable<ValueOf<$Schema>> {
+  ): Iterable<Fabricated<$Schema>> {
     const base = effectiveSource();
     const coverageSalt = [...base.salt, "coverage"];
 

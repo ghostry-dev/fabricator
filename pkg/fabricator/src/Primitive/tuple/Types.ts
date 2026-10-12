@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import type { AnySchema, ValueOf } from "../../Schema/Types";
+import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 /** The schema occupying a single tuple slot. */
@@ -22,9 +22,9 @@ export type Items = ReadonlyArray<Item>;
  * `keyof` a still-abstract `ReadonlyArray<Item>` (this type's default, and what
  * a kind-local `Fabrication<$Fabricator>` resolves against for the _bare_,
  * unparameterized `Fabricator`) pulls in `"length"`/method keys that don't
- * resolve to a sensible `ValueOf`. A homomorphic version type-checks for any
- * concrete tuple but silently produces a malformed bare type, which then fails
- * `.schema.as`'s contravariant parameter check against any concrete
+ * resolve to a sensible `FabricatedBy`. A homomorphic version type-checks for
+ * any concrete tuple but silently produces a malformed bare type, which then
+ * fails `.schema.as`'s contravariant parameter check against any concrete
  * instantiation (`Fabrication.types.test.ts`). Matching a fixed-length tuple
  * pattern at every step avoids it, as `TupleItems` does for `ToTypeBox`. The
  * fallback (a genuinely widened, arity-less array) is a plain `Array<...>`,
@@ -39,8 +39,8 @@ export type Fabricated<
         infer $Head extends Item,
         ...infer $Rest extends Items,
       ]
-    ? [ValueOf<$Head, $Bindings>, ...Fabricated<$Rest, $Bindings>]
-    : Array<ValueOf<$Items[number], $Bindings>>;
+    ? [FabricatedBy<$Head, $Bindings>, ...Fabricated<$Rest, $Bindings>]
+    : Array<FabricatedBy<$Items[number], $Bindings>>;
 
 /**
  * No `whereby`: arity is fixed at `T.tuple([...])` and there is nothing left to

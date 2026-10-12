@@ -104,7 +104,8 @@ export type Recurse<$Context, $Returnable> = (
  * package declares its own conversion entry point with its own return type
  * (`toTypeBox<$S>(schema: $S): ToTypeBox<$S>`), so nothing has to compute a
  * type-level mapping out of a stored value — which would need the
- * interface-member-lookup encoding `ValueOf`'s `$Bindings` uses, for no gain.
+ * interface-member-lookup encoding `Fabricated`'s `$Bindings` uses, for no
+ * gain.
  */
 export interface Adapter<
   $Key extends string = string,
@@ -127,7 +128,7 @@ export interface Adapter<
  * and why no adapter matches `{ [Adaptation]?: Record<Key, ...> }` directly.
  * Every kind's `Core` declares `[Adaptation]` as _optional_, and a conditional
  * matching an optional property against a schema that lacks it entirely still
- * _succeeds_, inferring `unknown` (the same behavior `ValueOf` relies on for
+ * _succeeds_, inferring `unknown` (the same behavior `Fabricated` relies on for
  * `[Produces]`) — so a direct match would resolve every unadapted schema to
  * whatever the adapter's adaptation branch produces. Constraining the `infer`
  * sends that case here, to `{}`, which then fails each adapter's `Record<Key,

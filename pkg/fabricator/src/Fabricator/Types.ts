@@ -1,7 +1,7 @@
 import type { Adaptations, AdaptationsOf } from "../Adapter/Types";
 import type { Primitive, Kind as SchemaKind } from "../Primitive";
 import type { Algorithm, Trace } from "../Random/Types";
-import type { ValueOf } from "../Schema/Types";
+import type { Fabricated } from "../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types";
 import type { PlainObject } from "../Utility/Types";
 
@@ -92,9 +92,9 @@ export type Fabricator<$T> = NaiveFabricator<$T> & {
  * `fabricate` signature. Every kind's `construct()` output shares the exact
  * same shape (`NaiveFabricator<$T>` plus `[Kind]`/`[Meta]`, see this file's
  * `Fabricator<$T>`), so there's nothing to dispatch per kind here — unlike
- * `ValueOf`, which reads a Schema's phantom `[Produces]` marker for the
- * pre-`construct()` case, this only ever needs to unwrap an already-uniform
- * `fabricate: () => $T`.
+ * `Schema/Types.ts`'s `Fabricated`, which reads a Schema's phantom `[Produces]`
+ * marker for the pre-`construct()` case, this only ever needs to unwrap an
+ * already-uniform `fabricate: () => $T`.
  */
 export type Fabrication<$Fabricator extends NaiveFabricator<any>> =
   $Fabricator extends NaiveFabricator<infer $T> ? $T : never;
@@ -105,7 +105,7 @@ export type Fabrication<$Fabricator extends NaiveFabricator<any>> =
  * carries a required `as` method a built Fabricator never has) to the precise,
  * kind-specific `Fabricator<...>` type it builds into. Mirrors
  * `Adapter/TypeBox/index.ts`'s `ToTypeBox` dispatch. Falls back to the loose
- * base `Fabricator<ValueOf<$Schema>>` for anything unmatched.
+ * base `Fabricator<Fabricated<$Schema>>` for anything unmatched.
  *
  * No branch here needs to do anything about `[Adaptation]`: each kind's own
  * `Fabricator<$Schema>` reads it back off `$Schema` via `AdaptationsOf`, so an
@@ -219,6 +219,6 @@ export type AsFabricator<$Schema> =
     ? Primitive.nullish.Fabricator<$Schema> :
 
   $Schema extends { readonly [Produces]?: Produced<unknown> }
-    ? Fabricator<ValueOf<$Schema>> :
+    ? Fabricator<Fabricated<$Schema>> :
 
   Fabricator<unknown>;

@@ -3,7 +3,7 @@ import {
   registry,
   satisfies,
   type SatisfiedBy,
-  type Fabrication,
+  type Fabricated,
 } from "@ghostry/fabricator";
 import { expect, test } from "bun:test";
 
@@ -242,37 +242,37 @@ const afterExtendCheckedBuilt = new Fabricator(afterExtendChecked);
 export type ObjectChainingAssertions = [
   Expect<
     Extends<
-      Fabrication<typeof afterExtendBuilt>,
+      Fabricated<typeof afterExtendBuilt>,
       { id: string; price: number; sku: string }
     >
   >,
   Expect<
     Extends<
       { id: string; price: number; sku: string },
-      Fabrication<typeof afterExtendBuilt>
+      Fabricated<typeof afterExtendBuilt>
     >
   >,
   Expect<
     Extends<
-      Fabrication<typeof afterRefineBuilt>,
+      Fabricated<typeof afterRefineBuilt>,
       { id: string; price: number; label: string }
     >
   >,
   Expect<
     Extends<
       { id: string; price: number; label: string },
-      Fabrication<typeof afterRefineBuilt>
+      Fabricated<typeof afterRefineBuilt>
     >
   >,
-  Expect<Extends<Fabrication<typeof afterOverrideBuilt>, Product>>,
-  Expect<Extends<Product, Fabrication<typeof afterOverrideBuilt>>>,
-  Expect<Extends<Fabrication<typeof afterAsBuilt>, Product>>,
-  Expect<Extends<Product, Fabrication<typeof afterAsBuilt>>>,
-  Expect<Extends<Fabrication<typeof afterAdaptBuilt>, Product>>,
-  Expect<Extends<Product, Fabrication<typeof afterAdaptBuilt>>>,
+  Expect<Extends<Fabricated<typeof afterOverrideBuilt>, Product>>,
+  Expect<Extends<Product, Fabricated<typeof afterOverrideBuilt>>>,
+  Expect<Extends<Fabricated<typeof afterAsBuilt>, Product>>,
+  Expect<Extends<Product, Fabricated<typeof afterAsBuilt>>>,
+  Expect<Extends<Fabricated<typeof afterAdaptBuilt>, Product>>,
+  Expect<Extends<Product, Fabricated<typeof afterAdaptBuilt>>>,
   Expect<
     Extends<
-      Fabrication<typeof afterExtendCheckedBuilt>,
+      Fabricated<typeof afterExtendCheckedBuilt>,
       { id: string; price: number; sku: string }
     >
   >,
@@ -296,17 +296,15 @@ const afterAlwaysAdaptBuilt = new Fabricator(afterAlwaysAdapt);
 const afterNullableWeightedBuilt = new Fabricator(afterNullableWeighted);
 
 export type BuilderAfterSatisfiesAssertions = [
-  Expect<Extends<Fabrication<typeof afterStringAsBuilt>, string>>,
-  Expect<Extends<string, Fabrication<typeof afterStringAsBuilt>>>,
-  Expect<Extends<Fabrication<typeof afterBooleanWeightedBuilt>, boolean>>,
-  Expect<Extends<boolean, Fabrication<typeof afterBooleanWeightedBuilt>>>,
-  Expect<Extends<Fabrication<typeof afterArrayAsBuilt>, string[]>>,
-  Expect<Extends<string[], Fabrication<typeof afterArrayAsBuilt>>>,
-  Expect<Extends<Fabrication<typeof afterArrayAdaptBuilt>, string[]>>,
-  Expect<Extends<Fabrication<typeof afterAlwaysAdaptBuilt>, string>>,
-  Expect<
-    Extends<Fabrication<typeof afterNullableWeightedBuilt>, string | null>
-  >,
+  Expect<Extends<Fabricated<typeof afterStringAsBuilt>, string>>,
+  Expect<Extends<string, Fabricated<typeof afterStringAsBuilt>>>,
+  Expect<Extends<Fabricated<typeof afterBooleanWeightedBuilt>, boolean>>,
+  Expect<Extends<boolean, Fabricated<typeof afterBooleanWeightedBuilt>>>,
+  Expect<Extends<Fabricated<typeof afterArrayAsBuilt>, string[]>>,
+  Expect<Extends<string[], Fabricated<typeof afterArrayAsBuilt>>>,
+  Expect<Extends<Fabricated<typeof afterArrayAdaptBuilt>, string[]>>,
+  Expect<Extends<Fabricated<typeof afterAlwaysAdaptBuilt>, string>>,
+  Expect<Extends<Fabricated<typeof afterNullableWeightedBuilt>, string | null>>,
 ];
 
 /* -------------------------------------------------------------------------- */

@@ -1,6 +1,6 @@
 import type { NaiveFabricator } from "../Fabricator/Types";
 import type { Buildable, Produced, Produces } from "../Types";
-import type { ValueOf } from "./Types";
+import type { Fabricated } from "./Types";
 
 /**
  * The `this`-parameter constraint every kind's `.satisfies<$Target>()`
@@ -9,13 +9,14 @@ import type { ValueOf } from "./Types";
  * where the error lands on `inner` rather than the outer object.
  *
  * `$Produced` is each kind's own `Fabricated<…>` (or `Resolved<…>` for `derive`
- * / `object.compute`, which have no `Fabricated` alias). A shared
- * `ValueOf<this>` form errors in the same place but reports `"schema produces":
- * any`, which is why each kind still names its own produced type. The check is
- * wrapped in a 1-tuple so it does not distribute over unions: a bare `$Produced
- * extends $Target ? unknown : Error` on `"x" | null` becomes `unknown | Error`,
- * which is `unknown`, and `T.nullable(…).satisfies<string>()` would pass. Other
- * signatures that were considered, and why they are not this:
+ * / `object.compute`, which have no `Fabricated` alias). A shared schema-level
+ * `Fabricated<this>` form errors in the same place but reports `"schema
+ * produces": any`, which is why each kind still names its own produced type.
+ * The check is wrapped in a 1-tuple so it does not distribute over unions: a
+ * bare `$Produced extends $Target ? unknown : Error` on `"x" | null` becomes
+ * `unknown | Error`, which is `unknown`, and
+ * `T.nullable(…).satisfies<string>()` would pass. Other signatures that were
+ * considered, and why they are not this:
  *
  * - A rest tuple `...check: D extends T ? [] : [error]` errors in the right place
  *   but says "Expected 1 arguments, but got 0".
@@ -27,11 +28,12 @@ import type { ValueOf } from "./Types";
  * that changes a field's type is not re-checked. Put `.satisfies` last to check
  * the final shape. Carrying `$Target` on every `Schema` interface would add a
  * type parameter to all 25 kinds, and `.as`'s contravariant parameter check is
- * where a variance shift on those interfaces surfaces — `Types.ts`'s `ValueOf`
- * note records that same check breaking from a constraint on `$Schema`. The
- * return is `Schema`, not polymorphic `this`, because `T.date.past` /
- * `T.number.integer` / `T.symbol` are `Schema & { whereby, … }` and a `this`
- * return is not assignable into those extra members — same as `.as()`.
+ * where a variance shift on those interfaces surfaces — `Types.ts`'s
+ * `Fabricated` note records that same check breaking from a constraint on
+ * `$Schema`. The return is `Schema`, not polymorphic `this`, because
+ * `T.date.past` / `T.number.integer` / `T.symbol` are `Schema & { whereby, … }`
+ * and a `this` return is not assignable into those extra members — same as
+ * `.as()`.
  */
 export type SatisfiesThis<$Produced, $Target> = [$Produced] extends [$Target]
   ? unknown
@@ -65,9 +67,9 @@ export function schemaSatisfies<$Receiver>(this: $Receiver): $Receiver {
  * `T.omittable` produces `note?: string` and does.
  */
 export type SatisfiedBy<$Target, $Buildable> =
-  ValueOf<$Buildable> extends $Target
+  Fabricated<$Buildable> extends $Target
     ? true
-    : { produces: ValueOf<$Buildable>; required: $Target };
+    : { produces: Fabricated<$Buildable>; required: $Target };
 
 /**
  * Assert that `buildable` fabricates a value assignable to `$Target`. A
@@ -76,12 +78,12 @@ export type SatisfiedBy<$Target, $Buildable> =
  *
  * `fabricate?: never` on the Schema arm is required. A built Fabricator has no
  * `[Produces]`, and a type that lacks an optional property still matches `{
- * readonly [Produces]?: Produced<$Target> }` — the same trap `ValueOf`
- * documents at `Types.ts`. Without the exclusion, a non-conforming Fabricator
- * would pass the Schema arm unchecked. Ordered overloads do not replace this:
- * overload resolution falls through a failing overload onto the next one, so a
- * Fabricator rejected by `NaiveFabricator<$Target>` would still be accepted by
- * the Schema arm.
+ * readonly [Produces]?: Produced<$Target> }` — the same trap `Types.ts`'s
+ * `Fabricated` documents at `Types.ts`. Without the exclusion, a non-conforming
+ * Fabricator would pass the Schema arm unchecked. Ordered overloads do not
+ * replace this: overload resolution falls through a failing overload onto the
+ * next one, so a Fabricator rejected by `NaiveFabricator<$Target>` would still
+ * be accepted by the Schema arm.
  *
  * The Schema arm matches through the box (`Produced<$Target>`, `../Types.ts`),
  * never `[Produces]?: $Target`: a caller compiling without

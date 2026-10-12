@@ -23,7 +23,7 @@ export const Fixed = Symbol.for("fabricator:fixed");
  *
  * Boxed, the modifier's `undefined` sits beside the box and the value type's
  * sits inside it, so the two never share a union. Stripping `undefined` off
- * `Produced<X> | undefined` is exact under either setting — for `ValueOf`
+ * `Produced<X> | undefined` is exact under either setting — for `Fabricated`
  * (`Schema/Types.ts`), and for anything that matches or infers through the
  * brand, which has to name the box too: `{ readonly [Produces]?: Produced<$T>
  * }`, never `{ readonly [Produces]?: $T }`.

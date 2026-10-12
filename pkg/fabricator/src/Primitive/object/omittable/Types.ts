@@ -1,6 +1,9 @@
 import type { Adaptations } from "../../../Adapter/Types";
 import type { Produce } from "../../../Random/Types";
-import type { AnySchema, ValueOf } from "../../../Schema/Types";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../../Schema/Types";
 import {
   Kind,
   Meta,
@@ -19,7 +22,7 @@ export type Definition = AnySchema;
 export type Fabricated<
   $Definition extends Definition,
   $Bindings extends unknown[] = [],
-> = ValueOf<$Definition, $Bindings>;
+> = FabricatedBy<$Definition, $Bindings>;
 
 /**
  * What an omittable field's Fabricator returns: the wrapped value, or `Omitted`

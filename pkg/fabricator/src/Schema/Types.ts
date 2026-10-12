@@ -58,7 +58,8 @@ export type AnySchema = {
  * this is closer to a de-Bruijn-style resolution environment — kept as a tuple,
  * as TypeBox's is, so a second bound self-reference could occupy index 1 later
  * without restructuring, though nothing today defines what that would mean.
- * `test/ValueOfBindings.types.test.ts` is the only thing asserting any of it.
+ * `test/FabricatedBindings.types.test.ts` is the only thing asserting any of
+ * it.
  *
  * Three details here are load-bearing, and each looks simplifiable:
  *
@@ -76,8 +77,9 @@ export type AnySchema = {
  *   be exact: `Required<>` spares a declared `undefined` only when the consumer
  *   compiles with `exactOptionalPropertyTypes`, and strips it like `Exclude`
  *   when they do not. `Required<…>[typeof Produces]["value"]` is not a way to
- *   keep `Required<>` either — it fails `TS2536`. `test/ValueOf.types.test.ts`,
- *   compiled with the flag off by `tsconfig.inexact.json`, is the guard.
+ *   keep `Required<>` either — it fails `TS2536`.
+ *   `test/Fabricated.types.test.ts`, compiled with the flag off by
+ *   `tsconfig.inexact.json`, is the guard.
  * - **The `extends` guard names the box, and belongs inside, not on the
  *   parameter.** Matched against `{ [Produces]?: unknown }`, the read has no
  *   `"value"` to index (`TS2536`). Constraining `$Schema` instead would force
@@ -85,7 +87,7 @@ export type AnySchema = {
  *   shifts variance enough to break `.as`'s contravariant parameter check in
  *   `Fabrication.types.test.ts`.
  */
-export type ValueOf<$Schema, $Bindings extends unknown[] = []> =
+export type Fabricated<$Schema, $Bindings extends unknown[] = []> =
   $Schema extends NaiveFabricator<infer $T>
     ? $T
     : $Schema extends { readonly [Produces]?: Produced<unknown> }

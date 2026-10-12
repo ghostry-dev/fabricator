@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { initialize, registry } from "@ghostry/fabricator";
-import type { ValueOf } from "@ghostry/fabricator/internal";
+import type { Fabricated } from "@ghostry/fabricator/internal";
 
 /**
  * Compile-time assertions — see `Fabrication.types.test.ts` for why `Equal`/
@@ -24,7 +24,7 @@ const enumerated = combinatorial(schema);
 const covered = coverage(schema);
 
 export type Assertions = [
-  Expect<Equal<typeof enumerated, Iterable<ValueOf<typeof schema>>>>,
+  Expect<Equal<typeof enumerated, Iterable<Fabricated<typeof schema>>>>,
   /**
    * `combinatorial` and `coverage` share one type — strategy and limit are both
    * invisible in the signature.
@@ -35,14 +35,14 @@ export type Assertions = [
    * literal shape, so compare by mutual assignability instead — same idiom
    * `Fabrication.types.test.ts` uses.
    */
-  Expect<Extends<ValueOf<typeof schema>, { a: "x" | "y"; b?: 1 }>>,
-  Expect<Extends<{ a: "x" | "y"; b?: 1 }, ValueOf<typeof schema>>>,
+  Expect<Extends<Fabricated<typeof schema>, { a: "x" | "y"; b?: 1 }>>,
+  Expect<Extends<{ a: "x" | "y"; b?: 1 }, Fabricated<typeof schema>>>,
   /**
    * `T.omittable`'s wrapped key must be a real `?:`, not `b: 1 | undefined`.
    */
   Expect<
     Equal<
-      Equal<ValueOf<typeof schema>, { a: "x" | "y"; b: 1 | undefined }>,
+      Equal<Fabricated<typeof schema>, { a: "x" | "y"; b: 1 | undefined }>,
       false
     >
   >,

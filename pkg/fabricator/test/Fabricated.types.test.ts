@@ -3,7 +3,7 @@ import {
   registry,
   satisfies,
   type SatisfiedBy,
-  type ValueOf,
+  type Fabricated,
 } from "@ghostry/fabricator";
 import type {
   Kind,
@@ -33,7 +33,7 @@ const { T } = initialize({ types: registry });
 /*  With the flag off there is no telling the modifier's `undefined` from     */
 /*  one the value type holds, unless the brand boxes the value type           */
 /*  (`Produced<…>`, `src/Types.ts`) so the two never share a union. Unboxed,  */
-/*  and compiled with the flag off, `ValueOf<typeof T.undefined>` is `never`  */
+/*  and compiled with the flag off, `Fabricated<typeof T.undefined>` is `never`  */
 /*  and every `undefinable` below loses its `undefined`.                      */
 /* -------------------------------------------------------------------------- */
 
@@ -48,12 +48,12 @@ const optional = T.optional(text);
 const omittable = T.omittable(text);
 
 export type WrapperAssertions = [
-  Expect<Equal<ValueOf<typeof nothing>, undefined>>,
-  Expect<Equal<ValueOf<typeof undefinable>, string | undefined>>,
-  Expect<Equal<ValueOf<typeof nullable>, string | null>>,
-  Expect<Equal<ValueOf<typeof nullish>, string | null | undefined>>,
-  Expect<Equal<ValueOf<typeof optional>, string | undefined>>,
-  Expect<Equal<ValueOf<typeof omittable>, string>>,
+  Expect<Equal<Fabricated<typeof nothing>, undefined>>,
+  Expect<Equal<Fabricated<typeof undefinable>, string | undefined>>,
+  Expect<Equal<Fabricated<typeof nullable>, string | null>>,
+  Expect<Equal<Fabricated<typeof nullish>, string | null | undefined>>,
+  Expect<Equal<Fabricated<typeof optional>, string | undefined>>,
+  Expect<Equal<Fabricated<typeof omittable>, string>>,
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -74,12 +74,12 @@ const computed = T.object({ flag: T.boolean }).refine(({ compute }) => ({
 }));
 
 export type OwnUndefinedAssertions = [
-  Expect<Equal<ValueOf<typeof alwaysUndefined>, undefined>>,
-  Expect<Equal<ValueOf<typeof enumerated>, "a" | undefined>>,
-  Expect<Equal<ValueOf<typeof chosen>, string | undefined>>,
-  Expect<Equal<ValueOf<typeof opaque>, Map<string, number> | undefined>>,
-  Expect<Equal<ValueOf<typeof derived>, string | undefined>>,
-  Expect<Equal<ValueOf<typeof computed>["label"], string | undefined>>,
+  Expect<Equal<Fabricated<typeof alwaysUndefined>, undefined>>,
+  Expect<Equal<Fabricated<typeof enumerated>, "a" | undefined>>,
+  Expect<Equal<Fabricated<typeof chosen>, string | undefined>>,
+  Expect<Equal<Fabricated<typeof opaque>, Map<string, number> | undefined>>,
+  Expect<Equal<Fabricated<typeof derived>, string | undefined>>,
+  Expect<Equal<Fabricated<typeof computed>["label"], string | undefined>>,
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -124,7 +124,7 @@ export type NestedAssertions = [
    */
   Expect<
     Equal<
-      ValueOf<typeof inObject>,
+      Fabricated<typeof inObject>,
       {
         nothing: undefined;
         undefinable: string | undefined;
@@ -136,41 +136,43 @@ export type NestedAssertions = [
     >
   >,
 
-  Expect<Equal<ValueOf<typeof inArray.nothing>, undefined[]>>,
-  Expect<Equal<ValueOf<typeof inArray.undefinable>, (string | undefined)[]>>,
-  Expect<Equal<ValueOf<typeof inArray.nullable>, (string | null)[]>>,
-  Expect<Equal<ValueOf<typeof inArray.nullish>, (string | null | undefined)[]>>,
+  Expect<Equal<Fabricated<typeof inArray.nothing>, undefined[]>>,
+  Expect<Equal<Fabricated<typeof inArray.undefinable>, (string | undefined)[]>>,
+  Expect<Equal<Fabricated<typeof inArray.nullable>, (string | null)[]>>,
+  Expect<
+    Equal<Fabricated<typeof inArray.nullish>, (string | null | undefined)[]>
+  >,
 
   Expect<
     Equal<
-      ValueOf<typeof inTuple>,
+      Fabricated<typeof inTuple>,
       [undefined, string | undefined, string | null, string | null | undefined]
     >
   >,
 
-  Expect<Equal<ValueOf<typeof inRecord.nothing>, Record<string, undefined>>>,
+  Expect<Equal<Fabricated<typeof inRecord.nothing>, Record<string, undefined>>>,
   Expect<
     Equal<
-      ValueOf<typeof inRecord.undefinable>,
+      Fabricated<typeof inRecord.undefinable>,
       Record<string, string | undefined>
     >
   >,
   Expect<
-    Equal<ValueOf<typeof inRecord.nullable>, Record<string, string | null>>
+    Equal<Fabricated<typeof inRecord.nullable>, Record<string, string | null>>
   >,
   Expect<
     Equal<
-      ValueOf<typeof inRecord.nullish>,
+      Fabricated<typeof inRecord.nullish>,
       Record<string, string | null | undefined>
     >
   >,
 
-  Expect<Equal<ValueOf<typeof maybeRow>, { id: string } | undefined>>,
-  Expect<Equal<ValueOf<typeof rowWithNullable>, { user: string | null }>>,
-  Expect<Equal<ValueOf<typeof stacked>, string | null | undefined>>,
+  Expect<Equal<Fabricated<typeof maybeRow>, { id: string } | undefined>>,
+  Expect<Equal<Fabricated<typeof rowWithNullable>, { user: string | null }>>,
+  Expect<Equal<Fabricated<typeof stacked>, string | null | undefined>>,
   Expect<
     Equal<
-      ValueOf<typeof deep>,
+      Fabricated<typeof deep>,
       {
         pair: [{ id: string } | undefined, { id: string } | null | undefined];
       }[]
@@ -194,7 +196,7 @@ const tree = T.recursive((self) =>
   }),
 ).whereby({ depth: { max: 2 } });
 
-type Tree = ValueOf<typeof tree>;
+type Tree = Fabricated<typeof tree>;
 
 export type RecursiveAssertions = [
   Expect<Equal<Equal<Tree, unknown>, false>>,
@@ -216,7 +218,7 @@ export type RecursiveAssertions = [
 
 /* -------------------------------------------------------------------------- */
 /*  Everything that matches or infers through the brand, rather than going    */
-/*  through `ValueOf`, has to name the box for the same reason. Unboxed and   */
+/*  through `Fabricated`, has to name the box for the same reason. Unboxed and   */
 /*  with the flag off, each rejection below is silently accepted: a schema    */
 /*  that may produce `undefined` reads as one that never does.                */
 /* -------------------------------------------------------------------------- */

@@ -11,7 +11,8 @@ import {
  * The value a `self` reference resolves to at this position — whatever the
  * enclosing `T.recursive`'s current expansion binds it to. Reads `bindings[0]`,
  * the analogue of TypeBox's `TThis` reading `this['params'][0]`; see
- * `Schema/Types.ts`'s `ValueOf` for what `bindings` is and why it's a tuple.
+ * `Schema/Types.ts`'s `Fabricated` for what `bindings` is and why it's a
+ * tuple.
  *
  * Unlike every other kind, `self` has no type parameter of its own — its whole
  * value comes from outside, threaded in structurally by whatever composite
@@ -24,8 +25,9 @@ export type Meta = Record<string, never>;
 
 /**
  * An `interface`, not a `type` alias, so `this["bindings"]` resolves — the
- * entire mechanism this kind exists for. See `AGENTS.md`'s "`ValueOf`'s
- * `$Bindings`" section for why threading requires this.
+ * entire mechanism this kind exists for. See `AGENTS.md`'s
+ * "`Fabricated<$Schema>`'s `$Bindings`" section for why threading requires
+ * this.
  */
 export interface Core<$Adaptations extends Adaptations = {}> {
   [Kind]: "recursive.self";

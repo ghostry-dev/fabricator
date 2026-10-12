@@ -58,10 +58,10 @@ export type * as Primitive from "./Primitive/namespace";
 
 /**
  * `Schema/Types.ts`'s own value-type resolution, needed by tests asserting
- * `ValueOf<...>` directly rather than through a built Fabricator's
+ * `Fabricated<...>` directly rather than through a built Fabricator's
  * `Fabrication<...>`.
  */
-export type { ValueOf } from "./Schema/Types";
+export type { Fabricated } from "./Schema/Types";
 
 /**
  * `Constructor` is `Instance.Fabricator`'s own type — public in effect (every

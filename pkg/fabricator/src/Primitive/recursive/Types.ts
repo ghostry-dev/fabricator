@@ -1,5 +1,5 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { AnySchema, ValueOf } from "../../Schema/Types";
+import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import {
   Produces,
   type Adaptation,
@@ -11,16 +11,19 @@ import {
 /**
  * Fixed point of a recursive schema. A self-referential alias, normally
  * `TS2456` ("`RecursiveValue` circularly references itself") — legal _only_
- * because `ValueOf`'s second argument is read through an interface member
+ * because `FabricatedBy`'s second argument is read through an interface member
  * (`this["bindings"]` on every composite `Core`), which TypeScript defers. Do
  * not rewrite as a conditional; that reintroduces the error. See `AGENTS.md`'s
- * "`ValueOf`'s `$Bindings`".
+ * "`Fabricated<$Schema>`'s `$Bindings`".
  *
  * Wherever `self` sits in `$Body` (nested through `array`/`object`/`tuple`/
  * etc., each forwarding `this["bindings"]`), it reads `bindings[0]` —
  * `RecursiveValue<$Body>` itself, closing the loop.
  */
-export type RecursiveValue<$Body> = ValueOf<$Body, [RecursiveValue<$Body>]>;
+export type RecursiveValue<$Body> = FabricatedBy<
+  $Body,
+  [RecursiveValue<$Body>]
+>;
 
 export type Fabricated<$Body> = RecursiveValue<$Body>;
 

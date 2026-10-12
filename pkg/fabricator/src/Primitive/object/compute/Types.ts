@@ -1,5 +1,8 @@
 import type { Adaptations } from "../../../Adapter/Types";
-import type { AnySchema, ValueOf } from "../../../Schema/Types";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../../Schema/Types";
 import {
   Kind,
   type Adaptation,
@@ -38,7 +41,7 @@ export type Denoted<$Source> = $Source extends AnySchema
 /**
  * The value a source resolves to: what the Schema it denotes fabricates to.
  */
-export type Resolved<$Source, $Bindings extends unknown[] = []> = ValueOf<
+export type Resolved<$Source, $Bindings extends unknown[] = []> = FabricatedBy<
   Denoted<$Source>,
   $Bindings
 >;

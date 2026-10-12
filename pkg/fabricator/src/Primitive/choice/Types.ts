@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import type { AnySchema, ValueOf } from "../../Schema/Types";
+import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 /** The schemas a `choice` can draw from. */
@@ -20,7 +20,7 @@ export type Items = ReadonlyArray<readonly [number, Item]>;
 export type Fabricated<
   $Items extends Items = Items,
   $Bindings extends unknown[] = [],
-> = ValueOf<$Items[number][1], $Bindings>;
+> = FabricatedBy<$Items[number][1], $Bindings>;
 
 /**
  * Always stored as weighted pairs — `.uniform(...)` (`Registry.ts`) is

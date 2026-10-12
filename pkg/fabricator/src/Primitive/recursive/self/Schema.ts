@@ -31,10 +31,10 @@ export interface Schema<
   /**
    * Check that this schema's fabricated value type is assignable to `$Target`.
    * Identity at runtime; the target is not carried into later chained calls —
-   * see `object/Schema.ts`'s `satisfies`. Outside `ValueOf`'s `$Bindings`,
-   * `Fabricated` is `unknown` — a `self` has no value of its own. Put
-   * `.satisfies` on the enclosing `T.recursive(...).whereby(...)` to check the
-   * tree.
+   * see `object/Schema.ts`'s `satisfies`. Outside `Schema/Types.ts`'s
+   * `$Bindings`, this kind's `Fabricated` is `unknown` — a `self` has no value
+   * of its own. Put `.satisfies` on the enclosing
+   * `T.recursive(...).whereby(...)` to check the tree.
    */
   satisfies<$Target>(
     this: this & SatisfiesThis<Fabricated, $Target>,

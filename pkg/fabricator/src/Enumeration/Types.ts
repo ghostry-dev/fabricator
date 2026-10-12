@@ -1,5 +1,5 @@
 import type { Kind as SchemaKind } from "../Primitive";
-import type { AnySchema, ValueOf } from "../Schema/Types";
+import type { AnySchema, Fabricated } from "../Schema/Types";
 import type { Children, Kind, Meta } from "../Types";
 import type { PlainObject } from "../Utility/Types";
 
@@ -71,11 +71,11 @@ export type Limits = { combinatorial: number };
  * The shape both `combinatorial` and `coverage` share — strategy and limit
  * differ internally, neither visible here. Takes a Schema, not a built
  * Fabricator: `AnySchema` excludes `Fabricator<any>` (which carries no
- * `[Produces]`), so `ValueOf` can't silently degrade to `unknown`.
+ * `[Produces]`), so `Fabricated` can't silently degrade to `unknown`.
  */
 export type Enumerable = <const $Schema extends AnySchema>(
   schema: $Schema,
-) => Iterable<ValueOf<$Schema>>;
+) => Iterable<Fabricated<$Schema>>;
 
 export type Resolvable = {
   [Kind]: SchemaKind;

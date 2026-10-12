@@ -262,7 +262,7 @@ export type ToTypeBox<$Schema> =
   /**
    * An opaque value is whatever its producer returns — nothing for
    * the adapter to constrain. `TUnknown` says that; a lossy guess
-   * would not. `Static<...>` is `unknown` while `ValueOf<...>` is the
+   * would not. `Static<...>` is `unknown` while `Fabricated<...>` is the
    * producer's return type; that divergence widens rather than
    * conflicts, so it is safe. `.adapt(typebox, ...)` is how a caller
    * says more.

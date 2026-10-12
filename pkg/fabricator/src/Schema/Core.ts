@@ -19,7 +19,7 @@ import { type PlainObject } from "../Utility/Types";
  * from (see `Adapter/TypeBox`'s `build`, which walks `[Meta].definition`).
  *
  * `$Produces` is threaded through in the type only (never read or written at
- * runtime) so `ValueOf` stays precise across a `toSchema` call — dropping it
+ * runtime) so `Fabricated` stays precise across a `toSchema` call — dropping it
  * would make every normalized field (e.g. every `object`/`array` element) fall
  * back to `unknown`. It is inferred through the box (`Produced<$Produces>`,
  * `Types.ts`), not as the brand's whole type: inferred against a bare

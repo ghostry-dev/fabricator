@@ -14,10 +14,10 @@ const { T, Fabricator } = initialize({ types: registry });
 
 /* -------------------------------------------------------------------------- */
 /*  The value type is inferred, with no annotation, to arbitrary depth — the   */
-/*  self-referential `RecursiveValue<$Body> = ValueOf<$Body, [RecursiveValue<  */
+/*  self-referential `RecursiveValue<$Body> = Fabricated<$Body, [RecursiveValue<  */
 /*  $Body>]>` alias that makes this possible is legal only because the        */
 /*  recursion routes through an interface member lookup (`this["bindings"]`   */
-/*  on every composite kind's `Core` — see `AGENTS.md`'s "`ValueOf`'s         */
+/*  on every composite kind's `Core` — see `AGENTS.md`'s "`Fabricated`'s         */
 /*  `$Bindings`" section). This file is what would catch a regression back   */
 /*  to `unknown`/`any` if that mechanism ever broke.                          */
 /* -------------------------------------------------------------------------- */

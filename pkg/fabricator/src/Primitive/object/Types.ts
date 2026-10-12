@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import type { AnySchema, ValueOf } from "../../Schema/Types";
+import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import {
   Kind,
   Meta,
@@ -36,7 +36,7 @@ export type Refinements = ReadonlyArray<Definition>;
  * `Fabricated` can mark exactly those `?:` instead of required — matching
  * runtime, where a field whose roll lands on omission never has its key appear
  * (`object/omittable/Fabricator.ts`, `object/optional/Fabricator.ts`).
- * `object.optional`'s `ValueOf` already carries `| undefined` (its
+ * `object.optional`'s `FabricatedBy` already carries `| undefined` (its
  * `Fabricated`), so combined with the `?:` here a field lands on `{ a?: T |
  * undefined }` — omitted, present-as-`undefined`, or present-with-a-value.
  */
@@ -53,12 +53,14 @@ export type Fabricated<
   $Bindings extends unknown[] = [],
 > = Pretty<
   {
-    [$K in Exclude<keyof $Definition, OmittableKeys<$Definition>>]: ValueOf<
+    [
+      $K in Exclude<keyof $Definition, OmittableKeys<$Definition>>
+    ]: FabricatedBy<$Definition[$K], $Bindings>;
+  } & {
+    [$K in OmittableKeys<$Definition>]?: FabricatedBy<
       $Definition[$K],
       $Bindings
     >;
-  } & {
-    [$K in OmittableKeys<$Definition>]?: ValueOf<$Definition[$K], $Bindings>;
   }
 >;
 
@@ -68,8 +70,8 @@ export type Fabricated<
  * `Override` (deep-merge); an `object.omittable` or `object.optional` field
  * additionally accepts `Omitted`, to force that field off rather than only
  * forcing a value on (`object.optional` already accepts `undefined` via
- * `ValueOf`); every other field — including `object.compute` — is a
- * full-replacement leaf, typed as whatever it fabricates to (`ValueOf`).
+ * `FabricatedBy`); every other field — including `object.compute` — is a
+ * full-replacement leaf, typed as whatever it fabricates to (`FabricatedBy`).
  *
  * Checked via a bare structural `[Kind]`/`[Meta]` shape, never `Schema`/
  * `Fabricator` — either carries `refine`'s contravariant use of `$Definition`,
@@ -83,8 +85,8 @@ export type Override<$Definition extends Definition> = Pretty<{
   }
     ? Override<$Nested>
     : $Definition[$K] extends { [Kind]: "object.omittable" | "object.optional" }
-      ? ValueOf<$Definition[$K]> | typeof Omitted
-      : ValueOf<$Definition[$K]>;
+      ? FabricatedBy<$Definition[$K]> | typeof Omitted
+      : FabricatedBy<$Definition[$K]>;
 }>;
 
 /**

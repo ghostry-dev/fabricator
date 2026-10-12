@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import type { AnySchema, ValueOf } from "../../Schema/Types";
+import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 /** The wrapped schema — the value type produced when the roll isn't `undefined`. */
@@ -9,7 +9,7 @@ export type Definition = AnySchema;
 export type Fabricated<
   $Definition extends Definition,
   $Bindings extends unknown[] = [],
-> = ValueOf<$Definition, $Bindings> | undefined;
+> = FabricatedBy<$Definition, $Bindings> | undefined;
 
 export type { Outcome } from "./Outcomes";
 

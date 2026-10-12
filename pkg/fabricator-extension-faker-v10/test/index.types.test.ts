@@ -1,11 +1,6 @@
 import type { Faker } from "@faker-js/faker";
 import { en } from "@faker-js/faker";
-import {
-  initialize,
-  registry,
-  type Fabrication,
-  type ValueOf,
-} from "@ghostry/fabricator";
+import { initialize, registry, type Fabricated } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 import {
   fakerExtension,
@@ -71,7 +66,7 @@ const built = new Fabricator(
   }),
 );
 
-type Built = Fabrication<typeof built>;
+type Built = Fabricated<typeof built>;
 
 export type Assertions = [
   Expect<Equal<Built["name"], string>>,
@@ -127,7 +122,7 @@ type Mutable<$T> = $T extends object
  * decision a compile error instead of a silent bug.
  *
  * For every module/method the mirror covers, it compares the _value_ type the
- * declared builder resolves to (`ValueOf<ReturnType<FakerModules[$M][$K]>>`)
+ * declared builder resolves to (`Fabricated<ReturnType<FakerModules[$M][$K]>>`)
  * against faker's own declared return type (`ReturnType<Faker[$M][$K]>`). That
  * catches a method mapped to the wrong kind, an object entry whose field shape
  * is wrong, an enum missing a member, and a faker release changing a return
@@ -143,7 +138,7 @@ type Mutable<$T> = $T extends object
  */
 type Honest<$M extends ModuleName, $K extends MethodName<$M>> = Equal<
   FakerModules[$M][$K] extends (...args: never[]) => unknown
-    ? Mutable<ValueOf<ReturnType<FakerModules[$M][$K]>>>
+    ? Mutable<Fabricated<ReturnType<FakerModules[$M][$K]>>>
     : never,
   Faker[$M][$K] extends (...args: never[]) => unknown
     ? Mutable<ReturnType<Faker[$M][$K]>>

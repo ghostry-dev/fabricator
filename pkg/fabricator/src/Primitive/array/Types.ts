@@ -1,7 +1,7 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { InputLength, Length } from "../../Bound";
 import type { Produce } from "../../Random/Types";
-import type { AnySchema, ValueOf } from "../../Schema/Types";
+import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 export type Definition = AnySchema;
@@ -9,7 +9,7 @@ export type Definition = AnySchema;
 export type Fabricated<
   $Definition extends Definition,
   $Bindings extends unknown[] = [],
-> = Array<ValueOf<$Definition, $Bindings>>;
+> = Array<FabricatedBy<$Definition, $Bindings>>;
 
 export type InputWhereby = { length: InputLength };
 
