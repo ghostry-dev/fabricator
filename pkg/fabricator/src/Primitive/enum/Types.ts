@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 /**
  * The values an `enum` can draw from — any value at all, for the same reason
@@ -45,6 +45,6 @@ export type Core<
 > = {
   [Kind]: "enum";
   [Meta]: Meta<$Items>;
-  readonly [Produces]?: Fabricated<$Items>;
+  readonly [Produces]?: Produced<Fabricated<$Items>>;
   readonly [Adaptation]?: $Adaptations;
 };

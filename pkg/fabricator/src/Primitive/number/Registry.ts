@@ -4,7 +4,7 @@ import {
   assertNonemptyDiscrete,
   toBound,
 } from "../../Bound";
-import { Adaptation, Kind, Meta, Produces } from "../../Types";
+import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
 import { default as bigint } from "../bigint";
 import { unboundedContinuous, unboundedDiscrete } from "./defaults";
 import { Schema } from "./Schema";
@@ -44,7 +44,7 @@ const registry: ThisRegistry = {
   ...Schema({
     [Kind]: "number",
     [Meta]: {},
-    [Produces]: undefined as unknown as Fabricated,
+    [Produces]: undefined as unknown as Produced<Fabricated>,
     [Adaptation]: undefined as unknown as Adaptations,
   }),
 

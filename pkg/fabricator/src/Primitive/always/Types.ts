@@ -1,5 +1,5 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 /**
  * Any value at all. Deliberately unconstrained: fabricating a fixed value needs
@@ -23,6 +23,6 @@ export type Core<
 > = {
   [Kind]: "always";
   [Meta]: Meta<$Value>;
-  readonly [Produces]?: Fabricated<$Value>;
+  readonly [Produces]?: Produced<Fabricated<$Value>>;
   readonly [Adaptation]?: $Adaptations;
 };

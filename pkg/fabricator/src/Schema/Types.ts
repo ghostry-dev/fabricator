@@ -1,7 +1,7 @@
 import type { Adaptations } from "../Adapter/Types";
 import type { NaiveFabricator } from "../Fabricator/Types";
 import type { Kind as SchemaKind } from "../Primitive";
-import type { Adaptation, Kind, Meta, Produces } from "../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types";
 import type { PlainObject } from "../Utility/Types";
 
 /**
@@ -27,7 +27,8 @@ export type AnySchema = {
  * `fabricate: () => $T` already plays for `NaiveFabricator<infer $T>`, one step
  * earlier, before a Schema has been built. `[Produces]` is always optional
  * (never assigned at runtime — see `DeepMerge`'s handling of optional-only keys
- * for why that matters).
+ * for why that matters), and what it holds is the value type boxed,
+ * `Produced<…>` (`Types.ts`), never the value type itself.
  *
  * A built Fabricator carries no `[Produces]` — its value type lives on
  * `fabricate: () => $T` (`Fabricator/Types.ts`) — yet `toSchema` lets one stand
@@ -62,21 +63,34 @@ export type AnySchema = {
  * Three details here are load-bearing, and each looks simplifiable:
  *
  * - **Indexed access, not a conditional `infer`.** Writing this as `($Schema & {
- *   bindings: $Bindings }) extends { [Produces]?: infer $T } ? ...` fails with
- *   `TS2615` — the bindings do not collapse, and the error surfaces as
- *   `unknown[] & [...]`.
- * - **`Required<>`, never `Exclude<..., undefined>`.** Both strip the `|
- *   undefined` that indexing an optional property adds, but `Exclude` also
- *   strips the _legitimate_ `undefined` out of
- *   `nullish`/`undefinable`/`object.optional`/`undefined`'s own value types.
- * - **The `extends` guard belongs inside, not on the parameter.** Constraining
- *   `$Schema` instead would force `[Produces]` onto `AnySchema` (which
- *   deliberately omits it), and that shifts variance enough to break `.as`'s
- *   contravariant parameter check in `Fabrication.types.test.ts`.
+ *   bindings: $Bindings }) extends { [Produces]?: Produced<infer $T> } ? ...`
+ *   fails with `TS2615` — the bindings do not collapse, and the error surfaces
+ *   as `unknown[] & [...]`.
+ * - **`Exclude<…, undefined>` is applied to the box, never to a value type.**
+ *   Indexing an optional property adds `| undefined`, and `Exclude` strips
+ *   every `undefined` in the union it is handed. That is exact only because the
+ *   union is `Produced<…> | undefined`: the box is never `undefined`, so the
+ *   one stripped is the modifier's, and the _legitimate_ `undefined` in
+ *   `nullish`/`undefinable`/`object.optional`/`undefined`'s own value types
+ *   sits inside the box, out of reach. No reader of an _unboxed_ value type can
+ *   be exact: `Required<>` spares a declared `undefined` only when the consumer
+ *   compiles with `exactOptionalPropertyTypes`, and strips it like `Exclude`
+ *   when they do not. `Required<…>[typeof Produces]["value"]` is not a way to
+ *   keep `Required<>` either — it fails `TS2536`. `test/ValueOf.types.test.ts`,
+ *   compiled with the flag off by `tsconfig.inexact.json`, is the guard.
+ * - **The `extends` guard names the box, and belongs inside, not on the
+ *   parameter.** Matched against `{ [Produces]?: unknown }`, the read has no
+ *   `"value"` to index (`TS2536`). Constraining `$Schema` instead would force
+ *   `[Produces]` onto `AnySchema` (which deliberately omits it), and that
+ *   shifts variance enough to break `.as`'s contravariant parameter check in
+ *   `Fabrication.types.test.ts`.
  */
 export type ValueOf<$Schema, $Bindings extends unknown[] = []> =
   $Schema extends NaiveFabricator<infer $T>
     ? $T
-    : $Schema extends { readonly [Produces]?: unknown }
-      ? Required<$Schema & { bindings: $Bindings }>[typeof Produces]
+    : $Schema extends { readonly [Produces]?: Produced<unknown> }
+      ? Exclude<
+          ($Schema & { bindings: $Bindings })[typeof Produces],
+          undefined
+        >["value"]
       : unknown;

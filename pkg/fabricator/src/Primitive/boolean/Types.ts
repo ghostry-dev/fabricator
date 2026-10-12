@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 export type Fabricated = boolean;
 
@@ -21,6 +21,6 @@ export type Core<
 > = {
   [Kind]: "boolean";
   [Meta]: $Meta;
-  readonly [Produces]?: Fabricated;
+  readonly [Produces]?: Produced<Fabricated>;
   readonly [Adaptation]?: $Adaptations;
 };

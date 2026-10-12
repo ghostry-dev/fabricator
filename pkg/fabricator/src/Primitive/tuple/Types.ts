@@ -1,7 +1,7 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
 import type { AnySchema, ValueOf } from "../../Schema/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 /** The schema occupying a single tuple slot. */
 export type Item = AnySchema;
@@ -62,6 +62,8 @@ export interface Core<
   [Kind]: "tuple";
   [Meta]: Meta<$Items>;
   bindings?: unknown[];
-  readonly [Produces]?: Fabricated<$Items, NonNullable<this["bindings"]>>;
+  readonly [Produces]?: Produced<
+    Fabricated<$Items, NonNullable<this["bindings"]>>
+  >;
   readonly [Adaptation]?: $Adaptations;
 }

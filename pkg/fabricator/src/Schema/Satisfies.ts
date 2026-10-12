@@ -1,5 +1,5 @@
 import type { NaiveFabricator } from "../Fabricator/Types";
-import type { Buildable, Produces } from "../Types";
+import type { Buildable, Produced, Produces } from "../Types";
 import type { ValueOf } from "./Types";
 
 /**
@@ -76,17 +76,26 @@ export type SatisfiedBy<$Target, $Buildable> =
  *
  * `fabricate?: never` on the Schema arm is required. A built Fabricator has no
  * `[Produces]`, and a type that lacks an optional property still matches `{
- * readonly [Produces]?: $Target }` — the same trap `ValueOf` documents at
- * `Types.ts`. Without the exclusion, a non-conforming Fabricator would pass the
- * Schema arm unchecked. Ordered overloads do not replace this: overload
- * resolution falls through a failing overload onto the next one, so a
+ * readonly [Produces]?: Produced<$Target> }` — the same trap `ValueOf`
+ * documents at `Types.ts`. Without the exclusion, a non-conforming Fabricator
+ * would pass the Schema arm unchecked. Ordered overloads do not replace this:
+ * overload resolution falls through a failing overload onto the next one, so a
  * Fabricator rejected by `NaiveFabricator<$Target>` would still be accepted by
  * the Schema arm.
+ *
+ * The Schema arm matches through the box (`Produced<$Target>`, `../Types.ts`),
+ * never `[Produces]?: $Target`: a caller compiling without
+ * `exactOptionalPropertyTypes` reads that optional slot as `$Target |
+ * undefined`, so a schema that may produce `undefined` would pass a target that
+ * excludes it.
  */
 export function satisfies<$Target>(
   buildable:
     | NaiveFabricator<$Target>
-    | (Buildable & { fabricate?: never; readonly [Produces]?: $Target }),
+    | (Buildable & {
+        fabricate?: never;
+        readonly [Produces]?: Produced<$Target>;
+      }),
 ): void {
   void buildable;
 }

@@ -2,7 +2,7 @@ import type { Adaptations } from "../../Adapter/Types";
 import type { Bound, InputBound } from "../../Bound";
 import type { Distribution } from "../../Distribution";
 import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 /**
  * Call-site `{ min, max }` — scalars are inclusive. Either end may be omitted;
@@ -58,6 +58,6 @@ export type Core<
 > = {
   [Kind]: "number";
   [Meta]: $Meta;
-  readonly [Produces]?: Fabricated;
+  readonly [Produces]?: Produced<Fabricated>;
   readonly [Adaptation]?: $Adaptations;
 };

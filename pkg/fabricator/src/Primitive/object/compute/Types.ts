@@ -4,6 +4,7 @@ import {
   Kind,
   type Adaptation,
   type Meta,
+  type Produced,
   type Produces,
 } from "../../../Types";
 
@@ -70,6 +71,8 @@ export interface Core<
   [Kind]: "object.compute";
   [Meta]: Meta<$Fabricated, $Source>;
   bindings?: unknown[];
-  readonly [Produces]?: Resolved<$Source, NonNullable<this["bindings"]>>;
+  readonly [Produces]?: Produced<
+    Resolved<$Source, NonNullable<this["bindings"]>>
+  >;
   readonly [Adaptation]?: $Adaptations;
 }

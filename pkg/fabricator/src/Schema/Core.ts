@@ -1,6 +1,6 @@
 import type { Adaptations } from "../Adapter/Types";
 import type { Kind as SchemaKind } from "../Primitive";
-import { Adaptation, Kind, Meta, type Produces } from "../Types";
+import { Adaptation, Kind, Meta, type Produced, type Produces } from "../Types";
 import { isPlainObject, never } from "../Utility/Core";
 import { type PlainObject } from "../Utility/Types";
 
@@ -18,10 +18,14 @@ import { type PlainObject } from "../Utility/Types";
  * enclosing `object`/`array`, which is where every adapter actually reads it
  * from (see `Adapter/TypeBox`'s `build`, which walks `[Meta].definition`).
  *
- * `$SchemaProduces` is threaded through in the type only (never read or written
- * at runtime) so `ValueOf` stays precise across a `toSchema` call — dropping it
+ * `$Produces` is threaded through in the type only (never read or written at
+ * runtime) so `ValueOf` stays precise across a `toSchema` call — dropping it
  * would make every normalized field (e.g. every `object`/`array` element) fall
- * back to `unknown`.
+ * back to `unknown`. It is inferred through the box (`Produced<$Produces>`,
+ * `Types.ts`), not as the brand's whole type: inferred against a bare
+ * `[Produces]?: $Produces`, a value type's own `undefined` is absorbed into the
+ * optional slot whenever the caller compiles without
+ * `exactOptionalPropertyTypes`.
  */
 export function toSchema<
   $Kind extends string,
@@ -31,12 +35,12 @@ export function toSchema<
 >(value: {
   [Kind]: $Kind;
   [Meta]: $Meta;
-  [Produces]?: $Produces;
+  [Produces]?: Produced<$Produces>;
   [Adaptation]?: $Adaptations;
 }): {
   [Kind]: $Kind;
   [Meta]: $Meta;
-  readonly [Produces]?: $Produces;
+  readonly [Produces]?: Produced<$Produces>;
   readonly [Adaptation]?: $Adaptations;
 } {
   const adaptations = value[Adaptation];

@@ -2,7 +2,7 @@ import type { Adaptations, AdaptationsOf } from "../Adapter/Types";
 import type { Primitive, Kind as SchemaKind } from "../Primitive";
 import type { Algorithm, Trace } from "../Random/Types";
 import type { ValueOf } from "../Schema/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types";
 import type { PlainObject } from "../Utility/Types";
 
 /**
@@ -218,7 +218,7 @@ export type AsFabricator<$Schema> =
   $Schema extends Primitive.nullish.Core
     ? Primitive.nullish.Fabricator<$Schema> :
 
-  $Schema extends { readonly [Produces]?: unknown }
+  $Schema extends { readonly [Produces]?: Produced<unknown> }
     ? Fabricator<ValueOf<$Schema>> :
 
   Fabricator<unknown>;

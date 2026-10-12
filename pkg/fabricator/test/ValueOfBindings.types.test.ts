@@ -2,6 +2,7 @@ import type {
   Kind,
   Meta,
   Primitive,
+  Produced,
   Produces,
   ValueOf,
 } from "@ghostry/fabricator/internal";
@@ -29,10 +30,13 @@ type Expect<_ extends true> = true;
 /*  Three traps, each of which cost an iteration to find:                     */
 /*   - `ValueOf` must read `[Produces]` by INDEXED ACCESS. The conditional     */
 /*     `infer` form fails with TS2615, because the bindings don't collapse.    */
-/*   - It must strip optionality with `Required<>`, never                      */
-/*     `Exclude<…, undefined>` — `Exclude` would also strip the *legitimate*   */
-/*     `undefined` from `nullish`/`undefinable`/`optional`/`T.undefined`.      */
-/*     `Nullish`/`Undefinable` are asserted below for exactly that reason.     */
+/*   - It must strip the optional modifier's `undefined` off the BOX          */
+/*     (`Produced<…>`), never off a value type. Unboxed, the *legitimate*     */
+/*     `undefined` in `nullish`/`undefinable`/`optional`/`T.undefined` goes   */
+/*     with it whenever the reader compiles without                           */
+/*     `exactOptionalPropertyTypes`. `Nullish`/`Undefinable` are asserted     */
+/*     below for exactly that reason; `ValueOf.types.test.ts` is the fuller   */
+/*     account.                                                               */
 /*   - The `$Schema extends …` guard must live inside, not as a constraint on  */
 /*     the parameter: constraining it forces `[Produces]` onto `AnySchema`,    */
 /*     which changes variance and breaks `.as`'s contravariant check.          */
@@ -51,7 +55,7 @@ interface SelfCore {
   [Kind]: "always";
   [Meta]: Record<string, never>;
   bindings?: unknown[];
-  readonly [Produces]?: NonNullable<this["bindings"]>[0];
+  readonly [Produces]?: Produced<NonNullable<this["bindings"]>[0]>;
 }
 
 /** The fixed point, mirroring TypeBox's `RecursiveStatic`. */
@@ -84,8 +88,8 @@ export type ThreadingAssertions = [
   Expect<Equal<R["nul"], R | null>>,
 
   /**
-   * The `Required<>`-not-`Exclude<>` cases: these kinds' value types
-   * legitimately contain `undefined`, which must survive.
+   * The boxed-read cases: these kinds' value types legitimately contain
+   * `undefined`, which must survive.
    */
   Expect<Equal<R["nsh"], R | null | undefined>>,
   Expect<Equal<R["und"], R | undefined>>,

@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["./test/**/*.exact.types.test.ts"],
+  "compilerOptions": { "exactOptionalPropertyTypes": false }
+}

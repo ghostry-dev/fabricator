@@ -1,7 +1,13 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
 import type { AnySchema, ValueOf } from "../../Schema/Types";
-import { Produces, type Adaptation, type Kind, type Meta } from "../../Types";
+import {
+  Produces,
+  type Adaptation,
+  type Kind,
+  type Meta,
+  type Produced,
+} from "../../Types";
 
 /**
  * A Schema usable as a record's keys: any Schema whose fabricated value is a
@@ -14,8 +20,15 @@ import { Produces, type Adaptation, type Kind, type Meta } from "../../Types";
  * `symbol` is included deliberately: symbols are legal property keys. Excluding
  * them would arbitrarily narrow what a record can describe. They do not survive
  * `Adapter/TypeBox` — see its `record` case.
+ *
+ * Matched through the box (`Produced<…>`, `Types.ts`) so that a key schema
+ * which may produce `undefined` is rejected whatever the caller's
+ * `exactOptionalPropertyTypes` — unboxed and with the flag off, the optional
+ * slot already admits `undefined`.
  */
-export type Key = AnySchema & { readonly [Produces]?: string | symbol };
+export type Key = AnySchema & {
+  readonly [Produces]?: Produced<string | symbol>;
+};
 
 export type Value = AnySchema;
 
@@ -96,6 +109,8 @@ export interface Core<
   [Kind]: "record";
   [Meta]: Meta<$Key, $Value>;
   bindings?: unknown[];
-  readonly [Produces]?: Fabricated<$Key, $Value, NonNullable<this["bindings"]>>;
+  readonly [Produces]?: Produced<
+    Fabricated<$Key, $Value, NonNullable<this["bindings"]>>
+  >;
   readonly [Adaptation]?: $Adaptations;
 }

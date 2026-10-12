@@ -1,6 +1,12 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Produce } from "../../Random/Types";
-import { Produces, type Adaptation, type Kind, type Meta } from "../../Types";
+import {
+  Produces,
+  type Adaptation,
+  type Kind,
+  type Meta,
+  type Produced,
+} from "../../Types";
 
 export type Fabricated<$T> = $T;
 
@@ -14,6 +20,6 @@ export type Meta<$T = unknown> = { produce: Produce<$T> };
 export type Core<$T = unknown, $Adaptations extends Adaptations = {}> = {
   [Kind]: "opaque";
   [Meta]: Meta<$T>;
-  readonly [Produces]?: Fabricated<$T>;
+  readonly [Produces]?: Produced<Fabricated<$T>>;
   readonly [Adaptation]?: $Adaptations;
 };

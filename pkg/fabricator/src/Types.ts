@@ -8,6 +8,29 @@ export const Replace = Symbol.for("fabricator:replace");
 export const Fixed = Symbol.for("fabricator:fixed");
 
 /**
+ * What a Schema's phantom `[Produces]` holds: its value type, boxed.
+ *
+ * `[Produces]` is optional, and reading an optional property always yields `|
+ * undefined`. Whether that `undefined` can be told apart from one the value
+ * type itself contains depends on the _reader's_ `exactOptionalPropertyTypes`.
+ * With the flag on, the modifier contributes a distinct "missing" marker that
+ * `Required<>` strips on its own. With it off, the property is a plain `X |
+ * undefined`, and nothing recovers whether `X` held an `undefined` of its own —
+ * `Required<>` strips it exactly as `Exclude<…, undefined>` does, and inferring
+ * `$T` against `{ [Produces]?: $T }` absorbs it into the optional slot. A
+ * consumer compiles this library's declarations under their own tsconfig, so
+ * the flag is not this package's to choose.
+ *
+ * Boxed, the modifier's `undefined` sits beside the box and the value type's
+ * sits inside it, so the two never share a union. Stripping `undefined` off
+ * `Produced<X> | undefined` is exact under either setting — for `ValueOf`
+ * (`Schema/Types.ts`), and for anything that matches or infers through the
+ * brand, which has to name the box too: `{ readonly [Produces]?: Produced<$T>
+ * }`, never `{ readonly [Produces]?: $T }`.
+ */
+export type Produced<$T> = { readonly value: $T };
+
+/**
  * Tags a `Salt` as composing onto whatever base is in effect, rather than
  * replacing it — the reading a bare `salt` has everywhere else in this library.
  * `layer()` (`Random/index.ts`) is the only producer; a caller never names this

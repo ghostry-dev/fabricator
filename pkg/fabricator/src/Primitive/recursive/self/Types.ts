@@ -2,6 +2,7 @@ import type { Adaptations } from "../../../Adapter/Types";
 import {
   Produces,
   type Adaptation,
+  type Produced,
   type Kind,
   type Meta,
 } from "../../../Types";
@@ -30,6 +31,6 @@ export interface Core<$Adaptations extends Adaptations = {}> {
   [Kind]: "recursive.self";
   [Meta]: Meta;
   bindings?: unknown[];
-  readonly [Produces]?: Fabricated<NonNullable<this["bindings"]>>;
+  readonly [Produces]?: Produced<Fabricated<NonNullable<this["bindings"]>>>;
   readonly [Adaptation]?: $Adaptations;
 }

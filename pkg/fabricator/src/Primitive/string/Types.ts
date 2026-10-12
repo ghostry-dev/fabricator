@@ -1,7 +1,7 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { InputLength, Length } from "../../Bound";
 import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 import type { classes } from "./Constants";
 
 /** An inclusive range of Unicode code points. */
@@ -72,6 +72,6 @@ export type Core<
 > = {
   [Kind]: "string";
   [Meta]: $Meta;
-  readonly [Produces]?: Fabricated;
+  readonly [Produces]?: Produced<Fabricated>;
   readonly [Adaptation]?: $Adaptations;
 };

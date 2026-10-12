@@ -6,6 +6,7 @@ import {
   Meta,
   Omitted,
   type Adaptation,
+  type Produced,
   type Produces,
 } from "../../../Types";
 
@@ -68,6 +69,8 @@ export interface Core<
   [Kind]: "object.omittable";
   [Meta]: Meta<$Definition>;
   bindings?: unknown[];
-  readonly [Produces]?: Fabricated<$Definition, NonNullable<this["bindings"]>>;
+  readonly [Produces]?: Produced<
+    Fabricated<$Definition, NonNullable<this["bindings"]>>
+  >;
   readonly [Adaptation]?: $Adaptations;
 }

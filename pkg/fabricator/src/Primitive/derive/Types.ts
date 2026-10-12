@@ -1,6 +1,6 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { ProduceContext } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 import type { Resolved, Source } from "../object/compute/Types";
 import type * as tuple from "../tuple/Types";
 
@@ -44,6 +44,6 @@ export interface Core<
   [Kind]: "derive";
   [Meta]: Meta<$From, $To>;
   bindings?: unknown[];
-  readonly [Produces]?: Resolved<$To, NonNullable<this["bindings"]>>;
+  readonly [Produces]?: Produced<Resolved<$To, NonNullable<this["bindings"]>>>;
   readonly [Adaptation]?: $Adaptations;
 }

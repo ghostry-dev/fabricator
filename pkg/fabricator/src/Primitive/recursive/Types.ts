@@ -1,6 +1,12 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { AnySchema, ValueOf } from "../../Schema/Types";
-import { Produces, type Adaptation, type Kind, type Meta } from "../../Types";
+import {
+  Produces,
+  type Adaptation,
+  type Kind,
+  type Meta,
+  type Produced,
+} from "../../Types";
 
 /**
  * Fixed point of a recursive schema. A self-referential alias, normally
@@ -27,7 +33,9 @@ export type Fabricated<$Body> = RecursiveValue<$Body>;
  * already rejects a wrong terminal (e.g. missing a required field `body` has),
  * and nothing downstream needs `terminal`'s precise type (`Core`'s `[Produces]`
  * depends only on `$Body`). A bare-vs-generic comparison rejects the same wrong
- * terminal either way.
+ * terminal either way. The constraint matches through the box (`Produced<…>`,
+ * `Types.ts`): unboxed, a caller compiling without `exactOptionalPropertyTypes`
+ * could pass a terminal producing `undefined` for any body at all.
  *
  * Omitted, `terminal` is derived from `body` (`Terminate.ts`): every `self`
  * behind a declining kind is rewritten into a stop (empty array/record,
@@ -53,7 +61,7 @@ export type Fabricated<$Body> = RecursiveValue<$Body>;
 export type Whereby<$Body> = {
   depth: { max: number };
   terminal?:
-    | (AnySchema & { readonly [Produces]?: RecursiveValue<$Body> })
+    | (AnySchema & { readonly [Produces]?: Produced<RecursiveValue<$Body>> })
     | undefined;
 };
 
@@ -78,6 +86,6 @@ export type Meta<$Body = unknown> = {
 export type Core<$Body = unknown, $Adaptations extends Adaptations = {}> = {
   [Kind]: "recursive";
   [Meta]: Meta<$Body>;
-  readonly [Produces]?: Fabricated<$Body>;
+  readonly [Produces]?: Produced<Fabricated<$Body>>;
   readonly [Adaptation]?: $Adaptations;
 };

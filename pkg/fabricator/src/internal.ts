@@ -36,7 +36,22 @@ export type { Fabrication, NaiveFabricator } from "./Fabricator/Types";
  * a per-kind stand-in — a second copy of this mapping, susceptible to drift.
  */
 export type { AsFabricator } from "./Fabricator/Types";
-export { Children, Kind, Meta, Produces, type Buildable } from "./Types";
+
+/**
+ * `Produced` travels with `Produces`: `[Produces]` holds a Schema's value type
+ * boxed, so anything outside this package that matches or infers through the
+ * brand has to name the box — `{ readonly [Produces]?: Produced<$T> }`. See
+ * `Types.ts` for why an unboxed `{ readonly [Produces]?: $T }` cannot be read
+ * exactly.
+ */
+export {
+  Children,
+  Kind,
+  Meta,
+  Produces,
+  type Buildable,
+  type Produced,
+} from "./Types";
 export { isArray, isPlainObject } from "./Utility/Core";
 
 export type * as Primitive from "./Primitive/namespace";

@@ -366,7 +366,10 @@ satisfies<number[][]>(nestedStringArrays);
 satisfies<{ value: string; children: never[] }>(recursiveOk);
 
 /* -------------------------------------------------------------------------- */
-/*  `T.optional` vs `T.omittable` under `exactOptionalPropertyTypes`.         */
+/*  `T.optional` vs `T.omittable`. What `T.optional` is _rejected_ by         */
+/*  depends on the reader's `exactOptionalPropertyTypes`, so those            */
+/*  assertions live in `Satisfies.exact.types.test.ts`; these hold either     */
+/*  way.                                                                      */
 /* -------------------------------------------------------------------------- */
 
 type NoteOptional = { id: string; note?: string };
@@ -384,11 +387,6 @@ const optionalNoteWide = T.object({
   id,
   note: T.optional(T.string.whereby({ length: { max: 40 } })),
 }).satisfies<NoteUndefinable>();
-// @ts-expect-error — T.optional produces note?: string | undefined
-const optionalNoteNarrow = T.object({
-  id,
-  note: T.optional(T.string.whereby({ length: { max: 40 } })),
-}).satisfies<NoteOptional>();
 
 /* -------------------------------------------------------------------------- */
 /*  Type-only `SatisfiedBy` + `Expect`.                                          */
@@ -403,18 +401,10 @@ export type SatisfiesAssertions = [
 ];
 
 const incompleteProduct = T.object({ id });
-const optionalNoteSchema = T.object({
-  id,
-  note: T.optional(T.string.whereby({ length: { max: 40 } })),
-});
 
 export type SatisfiesFailure = Expect<
   // @ts-expect-error — missing price
   SatisfiedBy<Product, typeof incompleteProduct>
->;
-export type OptionalSatisfiesFailure = Expect<
-  // @ts-expect-error — T.optional vs note?: string
-  SatisfiedBy<NoteOptional, typeof optionalNoteSchema>
 >;
 
 /**
@@ -484,7 +474,6 @@ export const fixtures = {
   omittableNote,
   omittableNoteWide,
   optionalNoteWide,
-  optionalNoteNarrow,
   rejectBareBuilders,
 };
 

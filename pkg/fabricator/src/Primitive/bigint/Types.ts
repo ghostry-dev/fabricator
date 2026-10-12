@@ -1,7 +1,7 @@
 import type { Adaptations } from "../../Adapter/Types";
 import type { Bound, InputBound } from "../../Bound";
 import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 export type InputWhereby = {
   min?: InputBound<bigint> | undefined;
@@ -29,6 +29,6 @@ export type Core<
 > = {
   [Kind]: "bigint";
   [Meta]: $Meta;
-  readonly [Produces]?: Fabricated;
+  readonly [Produces]?: Produced<Fabricated>;
   readonly [Adaptation]?: $Adaptations;
 };

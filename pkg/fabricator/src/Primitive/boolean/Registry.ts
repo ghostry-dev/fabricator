@@ -1,5 +1,5 @@
 import type { Adaptations } from "../../Adapter/Types";
-import { Adaptation, Kind, Meta, Produces } from "../../Types";
+import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
 import { Schema } from "./Schema";
 import type { Fabricated } from "./Types";
 
@@ -13,7 +13,7 @@ const registry: Schema<{}, Adaptations> = {
   ...Schema({
     [Kind]: "boolean",
     [Meta]: {},
-    [Produces]: undefined as unknown as Fabricated,
+    [Produces]: undefined as unknown as Produced<Fabricated>,
     [Adaptation]: undefined as unknown as Adaptations,
   }),
 };

@@ -6,7 +6,7 @@ import {
   type InputBound,
 } from "../../Bound";
 import { type Distribution } from "../../Distribution";
-import { Adaptation, Kind, Meta, Produces } from "../../Types";
+import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
 import { Schema } from "./Schema";
 import type { Fabricated, InputWhereby, Whereby } from "./Types";
 
@@ -63,7 +63,7 @@ const registry: ThisRegistry = {
   ...Schema({
     [Kind]: "date",
     [Meta]: {},
-    [Produces]: undefined as unknown as Fabricated,
+    [Produces]: undefined as unknown as Produced<Fabricated>,
     [Adaptation]: undefined as unknown as Adaptations,
   }),
 

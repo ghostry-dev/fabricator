@@ -2,7 +2,7 @@ import type { Adaptations } from "../../Adapter/Types";
 import type { Bound, InputBound } from "../../Bound";
 import type { Distribution } from "../../Distribution";
 import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produces } from "../../Types";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
 export type InputWhereby = {
   min?: InputBound<Date> | undefined;
@@ -37,6 +37,6 @@ export type Core<
 > = {
   [Kind]: "date";
   [Meta]: $Meta;
-  readonly [Produces]?: Fabricated;
+  readonly [Produces]?: Produced<Fabricated>;
   readonly [Adaptation]?: $Adaptations;
 };
