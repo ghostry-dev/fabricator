@@ -134,6 +134,7 @@ export default defineConfig({
         { text: "Composition", link: "/guides/composition" },
         { text: "Batches & relationships", link: "/guides/relationships" },
         { text: "Distributions", link: "/guides/distributions" },
+        { text: "Census", link: "/guides/census" },
         { text: "TypeBox", link: "/guides/typebox" },
         { text: "Faker", link: "/guides/faker" },
         { text: "Harness", link: "/guides/harness" },

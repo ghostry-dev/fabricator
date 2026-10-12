@@ -111,3 +111,27 @@ npm install @ghostry/extern @ghostry/extern-extension-fabricator-v0
 :::
 
 See [the Extern guide](/guides/extern) for the setup.
+
+## Optional: a census of real data
+
+A schema's ranges, weights, and distributions are usually guessed. `@ghostry/fabricator-census` reads a sample of real data and suggests them, and builds the PostgreSQL queries to draw that sample with:
+
+:::code-group
+
+```bash [bun]
+bun add -d @ghostry/fabricator-census
+```
+
+```bash [npm]
+npm install --save-dev @ghostry/fabricator-census
+```
+
+:::
+
+```ts
+import { census, report } from "@ghostry/fabricator-census";
+
+console.log(report(census.from(rows)));
+```
+
+See [the Census guide](/guides/census) for reading the suggestions and sampling a table.
