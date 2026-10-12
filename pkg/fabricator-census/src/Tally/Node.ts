@@ -1,4 +1,4 @@
-import { isPlainObject } from "@ghostry/fabricator/internal";
+import { isArray, isPlainObject } from "@ghostry/fabricator/internal";
 import type { Node, TypeCounts } from "../Types";
 import { ArrayTally } from "./Array";
 import { BigIntTally } from "./BigInt";
@@ -86,7 +86,7 @@ export class NodeTally {
       this.dates().add(value);
       return;
     }
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       this.types.array++;
       if (this.atLimit()) this.truncated++;
       else this.arrays().add(value);

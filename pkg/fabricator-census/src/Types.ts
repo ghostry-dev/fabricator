@@ -1,4 +1,5 @@
 import type { CharacterClass, CodepointRange } from "@ghostry/fabricator";
+import type { ColumnFacts } from "./Facts";
 
 /**
  * How a census is taken. Every count-valued option is a memory or resolution
@@ -51,6 +52,14 @@ export type CensusOptions = {
    * other field's sample unchanged. Omitted, a fresh seed is drawn per census.
    */
   seed?: string | undefined;
+
+  /**
+   * Whole-table facts about the top-level fields — each `column` a field of the
+   * object rows — from `collect`, the PostgreSQL builders, or by hand. Recorded
+   * on the census, and merged over the sample's own counts when suggesting:
+   * exact facts first, then estimates, then the sample.
+   */
+  facts?: ReadonlyArray<ColumnFacts> | undefined;
 };
 
 /** {@link CensusOptions} with every default applied, as recorded on a census. */
@@ -84,7 +93,13 @@ export type Accumulator = {
  * unchanged. Values that JSON cannot carry (bigints, Dates) are tagged — see
  * {@link Value}.
  */
-export type Census = { options: ResolvedOptions; root: Node };
+export type Census = {
+  options: ResolvedOptions;
+  root: Node;
+
+  /** The facts the census was given, validated; empty when none were. */
+  facts: ColumnFacts[];
+};
 
 /**
  * What was observed at one position in the data. A tally for a type is present
@@ -446,6 +461,14 @@ export type FitOptions = {
    * but drawn continuously by `T.date`.
    */
   discrete?: boolean | undefined;
+
+  /**
+   * The range to fit over, when it is known to be wider than the tally's own
+   * extremes — a table's exact `min` and `max` around a sample of it. The shape
+   * is still fitted from the tally, as positions inside this range, which is
+   * widened to contain every observed value.
+   */
+  range?: { min: number; max: number } | undefined;
 };
 
 /** How a census is turned into suggestions. */

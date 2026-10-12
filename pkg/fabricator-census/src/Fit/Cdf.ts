@@ -119,5 +119,7 @@ export function toDistribution(
 }
 
 function clamp(t: number): number {
-  return t <= 0 ? 0 : t >= 1 ? 1 : t;
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return t;
 }

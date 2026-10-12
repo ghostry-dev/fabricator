@@ -8,6 +8,7 @@
  */
 
 import { classes, type CharacterClass } from "@ghostry/fabricator";
+import { isArray } from "@ghostry/fabricator/internal";
 import { suggest } from "./Suggest";
 import type {
   Census,
@@ -249,10 +250,11 @@ function render(distribution: FittedDistribution, epoch = false): string {
 }
 
 function compositionText(composition: SuggestedComposition): string {
-  if (!Array.isArray(composition))
+  if (!isArray(composition))
     return `{ ${Object.entries(composition)
       .map(([name, weight]) => `${name}: ${weight}`)
       .join(", ")} }`;
+
   return `[${composition
     .map(([weight, source]) => `[${weight}, ${sourceText(source)}]`)
     .join(", ")}]`;
@@ -265,10 +267,8 @@ function sourceText(
     | ReadonlyArray<{ from: number; to: number }>,
 ): string {
   const hex = (n: number) => `0x${n.toString(16)}`;
-  if (!Array.isArray(source)) {
-    const range = source as { from: number; to: number };
-    return `{ from: ${hex(range.from)}, to: ${hex(range.to)} }`;
-  }
+  if (!isArray(source))
+    return `{ from: ${hex(source.from)}, to: ${hex(source.to)} }`;
   const text = JSON.stringify(source);
   const name = (Object.keys(classes) as CharacterClass[]).find(
     (candidate) => JSON.stringify(classes[candidate]) === text,

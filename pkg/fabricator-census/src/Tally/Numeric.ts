@@ -225,14 +225,7 @@ function histogram(
   bins: number,
 ): Histogram {
   const high = integer ? max + 1 : max;
-  /**
-   * Past 2^53 `max + 1` rounds back to `max`, so the integer span can read as
-   * zero; one bin still holds everything.
-   */
-  const count = Math.max(
-    1,
-    integer ? Math.min(bins, high - min) : min === max ? 1 : bins,
-  );
+  const count = binCount(min, high, integer, bins);
   const counts = Array.from({ length: count }, () => 0);
   const span = high / 2 - min / 2;
 
@@ -242,4 +235,21 @@ function histogram(
     counts[index]!++;
   }
   return { min, max: high, counts };
+}
+
+/**
+ * Bins for a histogram over `[min, high)`: one per integer up to `bins` for
+ * integer data, a single bin when every value is the same, otherwise `bins`.
+ * Past 2^53 `max + 1` rounds back to `max`, so the integer span can read as
+ * zero; one bin still holds everything.
+ */
+function binCount(
+  min: number,
+  high: number,
+  integer: boolean,
+  bins: number,
+): number {
+  if (integer) return Math.max(1, Math.min(bins, high - min));
+  if (min === high) return 1;
+  return bins;
 }

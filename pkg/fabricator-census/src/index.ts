@@ -27,6 +27,23 @@ export { suggest } from "./Suggest";
 export { report } from "./Report";
 
 /**
+ * How many rows a census needs for its statistics to hold to a margin — the
+ * number to sample, from a database or anywhere else.
+ */
+export {
+  sampleSize,
+  type SampleSize,
+  type SampleSizeOptions,
+  type SampleSizeReason,
+} from "./SampleSize";
+
+/**
+ * Whole-table facts about a column, as pushdown aggregates or planner
+ * statistics report them.
+ */
+export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts";
+
+/**
  * Every failure this package raises. Extends core's `FabricatorError`, so one
  * `instanceof` check covers both packages.
  */

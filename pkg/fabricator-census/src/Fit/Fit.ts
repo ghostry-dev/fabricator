@@ -28,12 +28,17 @@ const LOG_RATIO = 100;
 /**
  * Fit a distribution to a numeric tally — a number field, a string or array
  * length, a date's epoch milliseconds. Returns `null` when there is nothing to
- * fit: no finite values, or a single repeated one.
+ * fit: no finite values, or a single value with no wider `range` around it.
  */
 export function fit(numeric: Numeric, options?: FitOptions): Fit | null {
   const summary = numeric.summary;
   if (summary === null) return null;
-  const { min, max } = summary;
+
+  const range = options?.range;
+  const min =
+    range === undefined ? summary.min : Math.min(range.min, summary.min);
+  const max =
+    range === undefined ? summary.max : Math.max(range.max, summary.max);
   if (min === max) return null;
 
   const discrete = options?.discrete ?? numeric.integer;

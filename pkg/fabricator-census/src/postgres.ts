@@ -8,4 +8,40 @@
  * @module
  */
 
-export {};
+export {
+  columns,
+  count,
+  estimate,
+  estimatedFacts,
+  statistics,
+  type Column,
+  type ColumnStatistics,
+} from "./Sql/Postgres/Catalog";
+
+export {
+  sample,
+  type BernoulliSample,
+  type HashSample,
+  type SampleMethod,
+  type SampleOptions,
+  type SystemSample,
+} from "./Sql/Postgres/Sample";
+
+export { aggregates, type AggregateOptions } from "./Sql/Postgres/Aggregate";
+
+/**
+ * Rows and catalog text as the values their column types hold, whatever the
+ * driver returned.
+ */
+export { coerce, parseText } from "./Sql/Postgres/Coerce";
+
+export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts";
+
+export {
+  collect,
+  type Collected,
+  type CollectOptions,
+  type Run,
+} from "./Sql/Postgres/Collect";
+
+export type { Cost, Query, Row, Table } from "./Sql/Types";

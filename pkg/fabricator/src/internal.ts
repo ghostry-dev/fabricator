@@ -37,7 +37,7 @@ export type { Fabrication, NaiveFabricator } from "./Fabricator/Types";
  */
 export type { AsFabricator } from "./Fabricator/Types";
 export { Children, Kind, Meta, Produces, type Buildable } from "./Types";
-export { isPlainObject } from "./Utility/Core";
+export { isArray, isPlainObject } from "./Utility/Core";
 
 export type * as Primitive from "./Primitive/namespace";
 
