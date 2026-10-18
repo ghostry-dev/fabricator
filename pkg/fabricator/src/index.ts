@@ -31,7 +31,9 @@ export function initialize<
      * Bring your own PRNG: a factory that, given a seed, returns a source of
      * randomness — a `() => number` in `[0, 1)`, a drop-in for `Math.random`.
      * The seed is a whole encoded trace, of which `salt` is one slot, not the
-     * `salt` itself. Defaults to the built-in `sfc32` generator.
+     * `salt` itself. Defaults to the built-in `sfc32` generator, which is not
+     * cryptographically secure; a generator that ignores its seed and draws
+     * from `crypto.getRandomValues` is, at the cost of all reproducibility.
      */
     algorithm?: Algorithm;
 
@@ -180,6 +182,11 @@ export type { Adapting } from "./Adapter/Types";
  * programmatically (rather than as an inline literal) can name the type.
  */
 export type { Salt } from "./Random/Types";
+/**
+ * The shape that `initialize({ algorithm })` accepts — a seed in, a `[0, 1)`
+ * generator out.
+ */
+export type { Algorithm } from "./Random/Types";
 /**
  * Reads the value type a Schema produces, via its phantom `[Produces]` marker —
  * before it is built, which is what a helper accepting a Schema needs — or the

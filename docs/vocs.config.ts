@@ -162,7 +162,10 @@ export default defineConfig({
     },
     {
       text: "About",
-      items: [{ text: "Limitations", link: "/about/limitations" }],
+      items: [
+        { text: "Limitations", link: "/about/limitations" },
+        { text: "Security", link: "/about/security" },
+      ],
     },
   ],
 });

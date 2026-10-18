@@ -1,6 +1,6 @@
 # Public API
 
-The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `sample`, `shuffle`, `Fabricated`, `satisfies`, `SatisfiedBy`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
+The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `Algorithm`, `sample`, `shuffle`, `Fabricated`, `satisfies`, `SatisfiedBy`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
 
 ## `initialize(config?)`
 
@@ -8,14 +8,14 @@ The package's `.` entry point — small on purpose, and scoped to _using_ fabric
 function initialize(config?: {
   types?: Registry;
   salt?: Salt;
-  algorithm?: (seed: string) => () => number;
+  algorithm?: Algorithm;
   limits?: { combinatorial: number };
   clock?: Date | "derived";
   stack?: Stack;
 }): Instance;
 ```
 
-Mints one isolated instance. `types` defaults to the built-in `registry`; `salt` defaults to empty if omitted (unless `FABRICATOR_SALT` supplies one — which pins the salt only, not `clock`); `algorithm` defaults to a built-in `sfc32` generator. `limits.combinatorial` caps how many instances `combinatorial(...)` (below) may enumerate before throwing — defaults to `1024`, checked eagerly at `initialize()` time, not on first call. `clock` is what `T.date.past`/`T.date.future` (and any producer reading its `ProduceContext`) resolve "now" against, and the default entropy for the instance: it defaults to the wall-clock instant of this `initialize()` call. Pass a `Date` to pin "now" to a specific instant, or `clock: "derived"` to derive "now" from the instance salt (an instant drawn across the entire representable `Date` range). See [Reproducibility](/guides/reproducibility) and [Custom types](/guides/custom-types).
+Mints one isolated instance. `types` defaults to the built-in `registry`; `salt` defaults to empty if omitted (unless `FABRICATOR_SALT` supplies one — which pins the salt only, not `clock`); `algorithm` defaults to a built-in `sfc32` generator (not cryptographically secure; see [Security](/about/security)). `limits.combinatorial` caps how many instances `combinatorial(...)` (below) may enumerate before throwing — defaults to `1024`, checked eagerly at `initialize()` time, not on first call. `clock` is what `T.date.past`/`T.date.future` (and any producer reading its `ProduceContext`) resolve "now" against, and the default entropy for the instance: it defaults to the wall-clock instant of this `initialize()` call. Pass a `Date` to pin "now" to a specific instant, or `clock: "derived"` to derive "now" from the instance salt (an instant drawn across the entire representable `Date` range). See [Reproducibility](/guides/reproducibility) and [Custom types](/guides/custom-types).
 
 `new Fabricator(schema, { salt })` overrides the salt for one construction. Like every other option here it pins a single `.trace` slot and changes nothing else: the build still takes the next ordinal from the instance's construction counter and still inherits the instance's `clock` (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)). `new Fabricator(schema, { salt: layer(identity) })` pins the same slot but _composes_ `identity` onto the instance's own salt instead of replacing it, so the construction still varies when the instance is re-salted — see [`layer(salt)`](#layersalt) below.
 
@@ -245,6 +245,14 @@ try {
 ## `Stream` (type only)
 
 The parameter type `T.opaque`'s producer receives — exported so a producer written as a named function has something to annotate its parameter with. See [`T.opaque`](/reference/primitives/opaque).
+
+## `Algorithm` (type only)
+
+```ts
+type Algorithm = (seed: string) => () => number;
+```
+
+The type of `initialize({ algorithm })`: given a seed, returns a generator of floats in `[0, 1)`. See [Bring your own PRNG](/guides/reproducibility#bring-your-own-prng), and [Security](/about/security) for the one case where a generator should ignore its seed.
 
 ## `Fabricated<$Schema>` (type only)
 

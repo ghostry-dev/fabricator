@@ -1,0 +1,69 @@
+# Security
+
+Fabricated data is not cryptographically secure.
+
+Do not use it for passwords, tokens, API keys, session IDs, or anything else an attacker benefits from guessing.
+
+If you are generating key material, such as encryption keys, signing keys, or anything a cryptographic protocol consumes, do not use fabricator. Use a tool built for that purpose, such as `crypto.subtle.generateKey`.
+
+## Why
+
+Fabricator is built to reproduce its output. The same inputs give the same data, and those inputs are not secret: the time the run started, an optional salt, and the shape of your schema. Anyone who knows them can produce the same values you did.
+
+A secret salt does not adequately address this. The default PRNG is not designed to resist an attacker.
+
+## Generating data securely
+
+Although fabricator is usually not the right tool for this kind of job, it is technically possible to generate some data securely. The only suitable way of doing it is by passing an `algorithm` that ignores its seed and instead draws from the platform's secure random source.
+
+```ts twoslash
+import { initialize, type Algorithm } from "@ghostry/fabricator";
+
+/**
+ * 32 bits of entropy is low, but a schema will be usually be drawing multiple
+ * times, and since each draw is unrelated to any other, the effective entropy
+ * of the result will be greater than 32 bits.
+ *
+ * For example, a 32-character string over a 62-character alphabet has about 32 × log₂(62) ≈ 190 bits.
+ */
+const secure: Algorithm = () => () => {
+  const [x] = crypto.getRandomValues(new Uint32Array(1));
+  return x / 2 ** 32;
+};
+
+const { T, Fabricator } = initialize({ algorithm: secure });
+```
+
+The CSPRNG algorithm must ignore the seed. A secure generator seeded from guessable inputs is still guessable.
+
+To keep the rest of your data reproducible, give only part of it the secure generator with a fork:
+
+```ts twoslash
+import { initialize, type Algorithm } from "@ghostry/fabricator";
+declare const secure: Algorithm;
+// ---cut---
+const instance = initialize();
+const secrets = instance.fork({ algorithm: secure });
+```
+
+## The schema matters too
+
+A secure `algorithm` makes each draw unpredictable. It does not make a weak schema strong. Securing secret data means making other secure choices as well, and these are the ones fabricator controls:
+
+- Use a string or a bigint for a secret. `T.number`, `T.number.integer`, and `T.date` make one draw per value, so they hold no more than one draw's worth of entropy (32 bits with the generator above), however wide the range.
+- Make a string's `length.min` long enough. Every length in the range is about equally likely, so the shortest one sets the strength. 4 characters from a 62 character alphabet is about 24 bits.
+- Keep characters uniform. A weighted composition or skewed distribution makes some values likelier and easier to guess.
+
+## The cost
+
+You lose reproducibility completely.
+
+- The same configuration produces different data every run.
+- A logged `clock` or `salt` no longer replays anything.
+- `new Fabricator(schema, trace)` no longer replays a node.
+- `clock: "derived"` becomes a random date. Pin a `Date` instead.
+- `combinatorial` and `coverage` still cover every option, but everything else in each instance changes run to run.
+
+## One exception
+
+A producer you pass to `.as(...)` or `T.opaque(...)` that ignores `random` and uses something else, such as `Math.random`, is only as secure as that something else since it is not fully influenced by the secure `algorithm`.

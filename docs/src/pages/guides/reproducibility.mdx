@@ -322,3 +322,5 @@ initialize({ salt: "1234", algorithm: (seed) => myPrng(seed) });
 `algorithm` is a factory: given a seed, it returns a `() => number` in `[0, 1)` — a drop-in replacement for `Math.random`. Defaults to a built-in `sfc32` generator.
 
 The seed it receives is not your `salt`. It's the full encoded description of one leaf — salt, clock, structural path, kind, and ordinal — of which the salt is a single slot. That's why every field in every construction gets its own independent stream from one instance, and why a custom algorithm inherits that isolation for free: it's called once per leaf, with a different seed each time.
+
+Output is not cryptographically secure. See [Security](/about/security).
