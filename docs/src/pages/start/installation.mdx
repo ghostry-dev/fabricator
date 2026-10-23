@@ -1,6 +1,6 @@
 # Installation
 
-fabricator ships as ESM only, with zero runtime dependencies.
+Fabricator is ESM only and has no runtime dependencies.
 
 :::code-group
 
@@ -16,12 +16,12 @@ npm install @ghostry/fabricator
 
 ## Requirements
 
-- An ESM-capable runtime — Bun, Node, Deno, or a bundler that supports ES modules
-- TypeScript — while not strictly required, it is highly recommended (fabricator is TypeScript-first; the value types you get back from `.fabricate()` are inferred from your schema, not hand-annotated)
+- A runtime that supports ES modules: Bun, Node, Deno, or a bundler.
+- TypeScript is not required, but it is strongly recommended. Fabricator is built for it, and the type of every fabricated value is inferred from its schema.
 
 ## Optional: a dynamic data library
 
-By default, fabricator generates fuzzing values, not realistic-looking ones — `T.string.whereby({ length: { max: 20 } })` gives you a random string, not a name. When you want output that reads like real data, add the Faker extension:
+By default, fabricator generates arbitrary (fuzzing) values, not realistic ones. `T.string.whereby({ length: { max: 20 } })` gives you a random string, not a name. For data that looks real, add the Faker extension:
 
 :::code-group
 
@@ -45,16 +45,16 @@ const { T } = initialize({
 });
 
 const schema = T.faker.person.fullName();
-// T.string using faker values when fabricated
+// a T.string that fabricates faker values
 ```
 
-Faker's generators draw from fabricator's own randomness, so those fields replay like every other one. See [the Faker guide](/guides/faker) for the full surface.
+Faker draws from fabricator's randomness, so these fields replay like any other. See [the Faker guide](/guides/faker) for everything it provides.
 
-You can also reach any data library by hand through `.as(...)` or `T.opaque` — see [`T.opaque`](/reference/primitives/opaque), including what it takes to keep such fields reproducible.
+You can also call any data library yourself with `.as(...)` or `T.opaque`. See [`T.opaque`](/reference/primitives/opaque), including how to keep those fields reproducible.
 
 ## Optional: schema adaptation for runtime validation
 
-fabricator doesn't validate — nothing here checks a value against a schema. When you want the same shape to serve as a validator as well as a generator, add the TypeBox adapter:
+Fabricator doesn't validate values against a schema. To use the same shape as a validator too, add the TypeBox adapter:
 
 :::code-group
 
@@ -74,11 +74,11 @@ import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 const TProduct = toTypeBox(ProductSchema);
 ```
 
-It targets `@sinclair/typebox` (0.34.x) specifically — hence the `-v0`. See [the TypeBox guide](/guides/typebox) for the default-mapping table and how to override it per schema.
+It targets `@sinclair/typebox` 0.34.x, which is what the `-v0` means. See [the TypeBox guide](/guides/typebox) for how each primitive maps by default and how to override that per schema.
 
 ## Optional: a test harness
 
-When fabricator feeds a test suite, `@ghostry/harness` wraps your runner's `describe`/`it` so each test draws data derived from its own name — reproducible, and independent of which other tests ran:
+`@ghostry/harness` wraps your test runner's `describe`/`it` so each test draws data based on its own name. That data is reproducible and doesn't depend on which other tests ran:
 
 :::code-group
 
@@ -92,11 +92,11 @@ npm install --save-dev @ghostry/harness
 
 :::
 
-See [the Harness guide](/guides/harness) for the setup module.
+See [the Harness guide](/guides/harness) for setup.
 
 ## Optional: extern blocks
 
-When a `typed` extern block uses a fabricator schema, `@ghostry/extern-extension-fabricator-v0` makes it self-mocking: inside a testing block it fabricates from its own schema instead of requiring a mock.
+`@ghostry/extern-extension-fabricator-v0` lets a `typed` extern block that uses a fabricator schema mock itself. Inside a testing block, it fabricates from its schema, so you don't have to write a mock.
 
 :::code-group
 
@@ -114,7 +114,7 @@ See [the Extern guide](/guides/extern) for the setup.
 
 ## Optional: a census of real data
 
-A schema's ranges, weights, and distributions are usually guessed. `@ghostry/fabricator-census` reads a sample of real data and suggests them, and builds the PostgreSQL queries to draw that sample with:
+A schema's ranges, weights, and distributions are usually guesses. `@ghostry/fabricator-census` reads a sample of real data and suggests them. It can also build the PostgreSQL queries to collect that sample:
 
 :::code-group
 
@@ -134,4 +134,4 @@ import { census, report } from "@ghostry/fabricator-census";
 console.log(report(census.from(rows)));
 ```
 
-See [the Census guide](/guides/census) for reading the suggestions and sampling a table.
+See [the Census guide](/guides/census) for how to read the suggestions and sample a table.

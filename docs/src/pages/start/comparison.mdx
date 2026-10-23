@@ -1,13 +1,13 @@
 ---
 title: Compared to other libraries
-description: Where fabricator sits among schema-derived mocks, factory libraries, and property-based testing.
+description: How fabricator compares to schema-derived mocks, factory libraries, and property-based testing.
 ---
 
 # Compared to other libraries
 
-The libraries nearest to this one fall into three groups — schema-derived mocks, factory libraries, and property-based testing. The differences come down to where the shape is defined, and what the generator is willing to promise about repeating itself.
+Similar libraries fall into three groups: schema-derived mocks, factory libraries, and property-based testing. They differ in where the shape is defined and whether a run can be repeated.
 
-Factory libraries are the nearest neighbors of the three, and the only group where a feature-by-feature reading says much:
+Factory libraries are the closest, and the only group where a feature-by-feature comparison is useful:
 
 |                               | fabricator                                                                                          | `rosie`                    | `factory-girl`              | `fishery`                       | `cooky-cutter`                 | `@factory-js/factory`        | `@travelperksl/fabricator` |
 | ----------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------- | ------------------------------- | ------------------------------ | ---------------------------- | -------------------------- |
@@ -16,28 +16,28 @@ Factory libraries are the nearest neighbors of the three, and the only group whe
 | Unpinned fields vary          | every build                                                                                         | only what you write        | only what you write         | only what you write             | only what you write            | only what you write          | only what you write        |
 | Stated bounds, distribution   | yes                                                                                                 | —                          | —                           | —                               | —                              | —                            | —                          |
 | Replay a run                  | clock (+ optional salt)                                                                             | —                          | —                           | —                               | —                              | —                            | —                          |
-| Counter state                 | per-file streams                                                                                    | global, `resetAll()`       | named, `factory.sequence()` | per-factory, `rewindSequence()` | per-factory, `resetSequence()` | per-factory, `seq()`         | `sequence()`               |
+| Counter state                 | per-instance; per-test with the [harness](/guides/harness)                                          | global, `resetAll()`       | named, `factory.sequence()` | per-factory, `rewindSequence()` | per-factory, `resetSequence()` | per-factory, `seq()`         | `sequence()`               |
 | Enumerate the output space    | `coverage`/`combinatorial`                                                                          | —                          | —                           | —                               | —                              | —                            | —                          |
 | Params kept out of the output | —                                                                                                   | `option`                   | `buildOptions`              | `transient`                     | —                              | `vars`                       | —                          |
 | Async persistence hook        | —                                                                                                   | —                          | `create` + ORM adapters     | `create`/`onCreate`             | —                              | `create` + Prisma            | —                          |
 
-The dashes in the first column are as real as the ones elsewhere. There is no way here to pass a parameter that steers generation without landing in the output, and nothing here persists what it builds.
+The dashes in fabricator's column mean what they mean everywhere else. Fabricator can't pass a parameter that steers generation without it appearing in the output, and it doesn't persist what it builds.
 
 ## Schema-derived mocks
 
-[`@anatine/zod-mock`](https://www.npmjs.com/package/@anatine/zod-mock) generates data from a [Zod](https://zod.dev) schema you already have. If an application already validates with Zod, that is a genuine advantage: one definition serves both validation and test data, at no extra authoring cost.
+[`@anatine/zod-mock`](https://www.npmjs.com/package/@anatine/zod-mock) generates data from a [Zod](https://zod.dev) schema you already have. If your application already validates with Zod, that is a real advantage: one definition serves validation and test data, with nothing extra to write.
 
-The trade-off is that generation is inferred from a schema written for a different purpose. Values are chosen largely by matching the _field's name_ against faker's function names — a field called `email` gets an email because of what it is called, not because the schema says so — and the package's own README lists ten Zod types it does not handle, `ZodTuple` and `ZodUnion` among them.
+The downside is that generation is guessed from a schema written for something else. Values are picked mostly by matching the _field's name_ to faker's function names, so a field called `email` gets an email because of its name, not because the schema says so. Its own README lists ten Zod types it doesn't handle, including `ZodTuple` and `ZodUnion`.
 
-fabricator runs that relationship in the opposite direction. The schema exists to describe generation, so every primitive is generation-complete and the bounds are stated rather than guessed; validation is reached by adapting _outward_, to [TypeBox](/guides/typebox). Reach for zod-mock when Zod schemas already exist and free test data from them is the goal. Reach for this when generation is the schema's actual job.
+Fabricator works the other way around. The schema exists to describe generation, so every primitive fully supports generating, and bounds are stated instead of guessed. For validation, you adapt the schema _outward_ to [TypeBox](/guides/typebox). Use zod-mock when you already have Zod schemas and want test data from them for free. Use fabricator when generating data is the schema's real job.
 
 ## Factory libraries
 
-This is the crowded category, and every library in it is a descendant of the pattern described in [The trouble with factories](/start/why#the-trouble-with-factories). A shape is defined as code — a value or a function per field — and a variation is defined by what it overrides. They differ mostly in how much the type system is asked to participate.
+This is the largest group. Every library in it follows the pattern in [The trouble with factories](/start/why#the-trouble-with-factories): a shape is code, with a value or a function per field, and a variation is defined by what it overrides. They differ mostly in how much they use the type system.
 
 ### The untyped ports
 
-[`rosie`](https://www.npmjs.com/package/rosie) is the one in widest use, and its README calls it "inspired by factory_girl." A factory is registered by name against a global registry and built by name:
+[`rosie`](https://www.npmjs.com/package/rosie) is the most widely used, and its README calls it "inspired by factory_girl." You register a factory by name in a global registry and build it by name:
 
 ```js
 Factory.define("player")
@@ -48,17 +48,17 @@ Factory.define("player")
 Factory.build("player", { position: "pitcher" });
 ```
 
-`.attr(name, deps, fn)` wires one field to another, `.after()` post-processes the built object, and `.option()` declares a build-time parameter that steers generation without appearing in the output.
+`.attr(name, deps, fn)` makes one field depend on another, `.after()` changes the built object after the fact, and `.option()` declares a build parameter that steers generation without appearing in the output.
 
-[`factory-girl`](https://www.npmjs.com/package/factory-girl) is the other direct port of the Ruby original, and takes the same idea to the database. Its distinguishing feature is an adapter layer — Mongoose, Bookshelf, Sequelize — so `factory.create()` persists through your ORM and `factory.cleanUp()` tears it down again, with `factory.assoc()` for associations and `factory.chance()` for lifelike values. Nothing here does any of that. Worth knowing that its last release was in 2018.
+[`factory-girl`](https://www.npmjs.com/package/factory-girl) is the other direct port of the Ruby original, and it extends the idea to the database. Its adapters for Mongoose, Bookshelf, and Sequelize let `factory.create()` save through your ORM and `factory.cleanUp()` remove it again. It also has `factory.assoc()` for associations and `factory.chance()` for realistic values. Fabricator does none of this. Its last release was in 2018.
 
-Neither ships types. rosie's published package is a single `.js` file, and TypeScript users of either install `@types/rosie` or `@types/factory-girl` separately. Both sets check the attributes you _do_ define against a type you supply and never require the rest, so `Factory.define<User>("user").attr("id", 1).build()` is typed `User` while the object produced is `{ id: 1 }`. factory-girl's go a step further in the same direction: `build<T>()` takes its type at the call site, unconnected to whatever the definition said.
+Neither ships types. rosie's published package is a single `.js` file, and TypeScript users install `@types/rosie` or `@types/factory-girl` separately. Both check the attributes you _do_ define against a type you supply, but never require the rest. So `Factory.define<User>("user").attr("id", 1).build()` is typed `User`, but the object it produces is `{ id: 1 }`. factory-girl's types are looser still: `build<T>()` takes its type at the call site, with no connection to the definition.
 
 ### The typed ones
 
 Three libraries close that gap.
 
-[`cooky-cutter`](https://www.npmjs.com/package/cooky-cutter) makes the completeness check its entire pitch — "whenever the entity type changes, the factories become invalid." Its config is a mapped type over every key of the interface you hand it, so omitting one is a compile error:
+[`cooky-cutter`](https://www.npmjs.com/package/cooky-cutter) is built around a completeness check: "whenever the entity type changes, the factories become invalid." Its config is a mapped type over every key of the interface you give it, so leaving one out is a compile error:
 
 ```ts
 const user = define<User>({
@@ -69,35 +69,35 @@ const user = define<User>({
 });
 ```
 
-[`fishery`](https://www.npmjs.com/package/fishery) reaches the same guarantee through a definition function that must return the full type, rejects unknown keys at `build()`, and types its `transient` params and associations along the way. It comes from thoughtbot — the same authors as factory_bot — and carries over the parts of the Ruby original that port well, including a `create()`/`onCreate()` pair for factories that persist what they build.
+[`fishery`](https://www.npmjs.com/package/fishery) gets the same guarantee from a definition function that must return the full type. It rejects unknown keys at `build()` and types its `transient` params and associations. It comes from thoughtbot, the authors of factory_bot, and keeps the parts of the Ruby original that work well in JavaScript, including `create()`/`onCreate()` for factories that save what they build.
 
-[`@factory-js/factory`](https://www.npmjs.com/package/@factory-js/factory) is the interesting one, because it doesn't take a target type at all. `define({ props })` infers the result from the props you wrote, so the type follows the definition rather than being checked against something declared elsewhere — the same direction fabricator runs. It also has `vars` (values that compute props without landing in the output), traits via `.use()`, and a Prisma plugin.
+[`@factory-js/factory`](https://www.npmjs.com/package/@factory-js/factory) stands out because it takes no target type at all. `define({ props })` infers the result from the props you wrote, so the type follows the definition instead of being checked against one declared elsewhere. Fabricator works the same way. It also has `vars` (values used to compute props that don't appear in the output), traits via `.use()`, and a Prisma plugin.
 
-[`@travelperksl/fabricator`](https://www.npmjs.com/package/@travelperksl/fabricator) — no relation, despite the name — is a smaller take on the pattern, and leaves the same gap rosie does: `Fabricator<User>({ id: () => 1 })` type-checks under `strict` and its result is typed `User`.
+[`@travelperksl/fabricator`](https://www.npmjs.com/package/@travelperksl/fabricator) is unrelated, despite the name. It is a smaller version of the pattern and has the same gap as rosie: `Fabricator<User>({ id: () => 1 })` type-checks under `strict` and its result is typed `User`.
 
 ### What none of them do
 
-A field is whatever its function returns, so nothing in a definition states a field's bounds or its distribution — and nothing varies unless you wrote the code that varies it. Where a library does reach for randomness, it reaches for unseeded randomness: rosie's own first README example defines a field as `Math.random()`, and cooky-cutter ships a `random` helper documented as useful "to avoid tests passing as a result of ordering" — which is exactly the coupling [a test depends on what it pins](/start/why#a-test-depends-on-what-it-pins-and-nothing-else) is about. Neither can replay the run that catches one.
+A field is whatever its function returns. Nothing in a definition states a field's bounds or distribution, and nothing varies unless you write code that varies it. rosie's first README example defines a field as `Math.random()`, and cooky-cutter ships a `random` helper documented as useful "to avoid tests passing as a result of ordering." That is the same reason fabricator varies every field you don't pin: a test shouldn't pass because of a value it never set (see [A test depends on what it pins](/start/why#a-test-depends-on-what-it-pins-and-nothing-else)). But their randomness is unseeded, so when it does catch a test like that, the failing run can't be repeated.
 
-What a definition does carry is mutable counter state. Every library here has a sequence, every sequence is a counter held on the factory, and so the `id` a test sees depends on how many objects were built before it. That is why rosie has `resetAll()`, fishery `rewindSequence()`, and cooky-cutter `resetSequence()` — and why factory-js's README warns that under Vitest or Jest, values from `seq` "may not be unique across workers." It is [The trouble with plain random data](/start/why#the-trouble-with-plain-random-data) in a different key: state that survives across tests, so running one test alone hands it different values than running it tenth.
+What a definition does carry is counter state. Every library here has a sequence, each sequence is a counter stored on the factory, and so the `id` a test sees depends on how many objects were built before it. That is why rosie has `resetAll()`, fishery has `rewindSequence()`, and cooky-cutter has `resetSequence()`. It is also why factory-js's README warns that under Vitest or Jest, values from `seq` "may not be unique across workers." This is [the trouble with plain random data](/start/why#the-trouble-with-plain-random-data) again: the counter keeps counting across tests, so the same test gets different values depending on how many tests ran before it.
 
-Underneath all of it is a difference in kind rather than degree. A factory is code that returns an object; a Fabricator Schema is a description of a value space. That is what makes one of them boundable with `.whereby()`, enumerable with [`coverage`/`combinatorial`](/start/why#covering-the-output-space), and replayable from a clock — and leaves the other returning whatever its function happened to return this time. Type inference doesn't bridge it: factory-js derives a type from the definition and still cannot tell you what values a field may take.
+The underlying difference is in kind, not degree. A factory is code that returns an object. A fabricator Schema describes a set of possible values. That is why a Schema can be bounded with `.whereby()`, enumerated with [`coverage`/`combinatorial`](/start/why#covering-the-output-space), and replayed from a clock, while a factory returns whatever its function returned this time. Type inference doesn't close this gap: factory-js derives a type from the definition, but still can't tell you which values a field may take.
 
-The gap runs the other way too. Four of these libraries can pass a parameter that steers generation without landing in the output — rosie's `option`, fishery's `transient`, factory-js's `vars`, factory-girl's `buildOptions` — and fabricator has no equivalent; the nearest thing here is [`.refine()`](/guides/composition), which computes a field _into_ the result. Three of them persist what they build. Nothing here does.
+The gap goes the other way too. Four of these libraries can pass a parameter that steers generation without it appearing in the output: rosie's `option`, fishery's `transient`, factory-js's `vars`, and factory-girl's `buildOptions`. Fabricator has no equivalent. The closest is [`.refine()`](/guides/composition), which computes a field _into_ the result. Three of them save what they build, and fabricator doesn't.
 
 ## Property-based testing
 
-[`fast-check`](https://www.npmjs.com/package/fast-check) answers a different question. It generates inputs in order to _falsify a property_, and when it finds a counterexample it shrinks it to the smallest input that still fails. Shrinking is the whole point, and fabricator has no equivalent.
+[`fast-check`](https://www.npmjs.com/package/fast-check) solves a different problem. It generates inputs to _falsify a property_, and when it finds a failing input it shrinks it to the smallest input that still fails. Shrinking is the core feature, and fabricator has nothing like it.
 
-fabricator's question is what one plausible instance of a shape looks like, and how to get that instance back. The two are complements, not substitutes: if the goal is "this invariant holds for all inputs," reach for fast-check.
+Fabricator answers a different question: what does one plausible instance of a shape look like, and how do you get it back? The two complement each other. If your goal is to show an invariant holds for all inputs, use fast-check.
 
-## When not to reach for this
+## When not to use fabricator
 
-- **This is not a validation library.** Nothing here checks a value against a schema. Fabricated data is well-shaped by construction, and validation is a different feature. You can adapt a Fabricator Schema to a validation library. There is an official adapter for [TypeBox (v0)](/guides/typebox) (and eventually others).
-- **You need uniqueness.** There's no facility that guarantees production of distinct values — not across array elements, nor `T.record` keys. Generate a wider pool and dedupe, or use `T.number.integer.sequence`.
+- **You need validation.** Fabricator doesn't check values against a schema. Fabricated data has the right shape by construction. To validate, adapt the schema to a validation library. There is an official adapter for [TypeBox (v0)](/guides/typebox), with others planned.
+- **You need uniqueness.** Nothing guarantees distinct values, not across array elements and not across `T.record` keys. Generate a larger pool and dedupe it, or use `T.number.integer.sequence`.
 
-[Limitations](/about/limitations) has the full, honest list.
+[Limitations](/about/limitations) has the full list.
 
 ## Next
 
-[Installation](/start/installation), then the [quick start](/start/quick-start) for the whole loop in one page, and [Mental model](/start/mental-model) for why Registry, Schema, and Fabricator are three separate things.
+Go to [installation](/start/installation), then the [quick start](/start/quick-start) for the whole loop on one page. [Mental model](/start/mental-model) explains why Registry, Schema, and Fabricator are separate.

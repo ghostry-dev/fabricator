@@ -1,6 +1,6 @@
 # Quick start
 
-This library is particularly useful for defining test fixtures to exercise your code with inputs that you may not have anticipated. In this way, it facilitates a form of [fuzzing](https://en.wikipedia.org/wiki/Fuzzing).
+Fabricator is most useful for test fixtures that exercise your code with inputs you didn't anticipate. That makes it a form of [fuzzing](https://en.wikipedia.org/wiki/Fuzzing).
 
 ```ts twoslash
 import { initialize } from "@ghostry/fabricator";
@@ -25,21 +25,21 @@ const item = Product.fabricate();
 
 That's the whole loop:
 
-1. `initialize(...)` gives you `T` (a namespace of type builders) and `Fabricator` (a constructor for turning a Schema into something live).
-2. `T.object({ ... })` builds a **Schema** — inert, serializable data describing a shape. Building it draws no randomness.
-3. `new Fabricator(schema)` builds a live **Fabricator** with a `.fabricate()` method.
-4. `.fabricate()` is the only place randomness actually happens.
+1. `initialize(...)` gives you `T`, a set of type builders, and `Fabricator`, a constructor that turns a Schema into something that produces values.
+2. `T.object({ ... })` builds a **Schema**. A Schema is plain data that describes a shape, and building one draws no randomness.
+3. `new Fabricator(schema)` builds a **Fabricator**, which has a `.fabricate()` method.
+4. `.fabricate()` draws the values.
 
-See [Mental model](/start/mental-model) for why this three-layer split exists.
+See [Mental model](/start/mental-model) for why there are three layers.
 
-`initialize()` needs no configuration. It captures the wall-clock instant of the call as its `clock`, and that single number is both what makes every run different and what replays any one of them: log `context.clock` when something fails, pass it back as `clock: new Date(logged)`, and you get that run's data again. See [Reproducibility](/guides/reproducibility).
+`initialize()` needs no configuration. It records the time of the call as its `clock`. That one number makes every run different, and it also replays any run. When something fails, log `context.clock`, then pass it back as `clock: new Date(logged)` to get that run's data again. See [Reproducibility](/guides/reproducibility).
 
 ## Overriding specific fields
 
-Fabricate with everything random except a few fields you care about:
+To keep everything random except the fields you care about, pass those fields to `.fabricate()`:
 
 ```ts
 const item = Product.fabricate({ name: "Widget", inStock: true });
 ```
 
-This uses the Fabricator's own already-drawn randomness for every other field — it's a per-call override, not a new schema. See [Composition](/guides/composition) for the schema-level equivalent, `.override(...)`.
+Every other field still draws from the same Fabricator. This override applies to one call and doesn't create a new schema. To bake overrides into a schema instead, use `.override(...)`. See [Composition](/guides/composition).

@@ -1,6 +1,6 @@
 # Reproducibility
 
-An `initialize()` instance reproduces from one number: its [clock](#the-clock-is-the-entropy). That and an optional [salt](#salt-is-optional) determine every value the instance produces. With no configuration, the clock defaults to the wall-clock instant of the `initialize()` call, so a run varies by process, has realistic dates, and replays from `clock` alone.
+An `initialize()` instance reproduces from one number: its [clock](#the-clock-is-the-entropy). The clock and an optional [salt](#salt-is-optional) determine every value the instance produces. By default, the clock is the time of the `initialize()` call, so each run varies, dates look realistic, and the clock alone replays the run.
 
 ## The clock is the entropy
 
@@ -11,7 +11,7 @@ const { T, Fabricator, context } = initialize();
 context.clock; // log this
 ```
 
-That clock instant is captured once, per `initialize()` call, and it is present in every leaf's trace. Consequently, every run produces different data, and passing the logged number (milliseconds from epoch) back reproduces that run exactly:
+The clock is recorded once per `initialize()` call and is part of every field's trace. So every run produces different data, and passing the logged number (milliseconds since the epoch) back reproduces that run exactly:
 
 ```ts
 initialize(); // wall-clock instant of this call — the default
@@ -19,26 +19,26 @@ initialize({ clock: new Date(logged) }); // replay a recorded run
 initialize({ clock: new Date("2024-06-01") }); // pinned to that instant
 ```
 
-That is the whole reproducibility story for most instances. Nothing else needs configuring.
+For most instances, that is all you need. Nothing else needs configuring.
 
-`clock` is also what "now" means to the library: `T.date.past`/`T.date.future`, and any custom `.as(produce)`/`T.opaque` producer that reads `clock` off its context, resolve against it. Pinning it therefore freezes both the dates and — because it sits in every trace — the rest of the run.
+The clock is also what "now" means to fabricator. `T.date.past`, `T.date.future`, and any `.as(produce)` or `T.opaque` producer that reads `clock` from its context all use it. Pinning the clock freezes the dates, and since the clock is in every trace, it freezes the rest of the run too.
 
-The one other setting is `clock: "derived"`, which computes a fixed instant from the instance [salt](#salt-is-optional) instead of the wall clock. It is drawn across the _entire_ representable `Date` range, so a wildly implausible date is the expected outcome of that policy, not a bug. Reach for it only when you want replay that doesn't depend on wall-clock time at all.
+The only other setting is `clock: "derived"`, which computes a fixed instant from the instance [salt](#salt-is-optional) instead of reading the time. That instant can fall anywhere in the representable `Date` range, so an absurd date is expected, not a bug. Use it only when replay must not depend on the time at all.
 
-`clock` composes the way `fork`/`wrap` already do: a captured or explicit instant is inherited as-is by a `fork`/`wrap` that doesn't override it. An explicit `"derived"` clock is the exception — `fork({ salt: layer(...) })` without also overriding `clock` re-derives "now" from the composed salt.
+A `fork` or `wrap` that doesn't set `clock` inherits its parent's. The exception is an explicit `"derived"` clock: `fork({ salt: layer(...) })` without its own `clock` derives a new "now" from the combined salt.
 
 ## Salt is optional
 
-**Most instances don't need a salt at all**, and the section above is why: the clock already varies every run and already replays any of them.
+**Most instances don't need a salt**, for the reason above: the clock already varies every run and replays any of them.
 
-A salt is not recommended because it adds a _second_ value that must be captured and passed back alongside the clock to ensure reproduction. So reach for it only when it's useful, as it might be in these cases:
+Avoid a salt unless you need one, because it is a _second_ value you have to record and pass back with the clock to reproduce a run. A salt is useful in these cases:
 
-- **Replay that doesn't depend on wall-clock time.** Pair the salt with [`clock: "derived"`](#the-clock-is-the-entropy) and the salt becomes the entire reproducibility unit — one value to record instead of two. The cost is an implausible "now", drawn across the whole representable `Date` range.
-- **One construction drawing from a different universe** than the rest of the instance. For this, you'll usually want a [per-construction salt](#salting-one-construction), not an instance-wide one.
-- **Injecting a mixer from outside**, without hardcoding it — that's what [env-var salting](#env-var-salting) below is for. It pins the salt only; an unpinned `clock` still varies, so replay still needs `context.clock`.
+- **Replay that doesn't depend on the time.** Pair the salt with [`clock: "derived"`](#the-clock-is-the-entropy) and the salt becomes the only value to record. The cost is an absurd "now", drawn from the whole `Date` range.
+- **One construction that should draw different data** from the rest of the instance. For this, you usually want a [per-construction salt](#salting-one-construction), not an instance-wide one.
+- **Setting a salt from outside the code.** That's what [env-var salting](#env-var-salting) is for. It sets the salt only, and an unpinned `clock` still varies, so replay still needs `context.clock`.
 
 :::tip
-Salts are strings, not numbers — `salt: "1234"`, not `salt: 1234`.
+Salts are strings, not numbers: `salt: "1234"`, not `salt: 1234`.
 :::
 
 ```ts
@@ -47,29 +47,29 @@ const { T, Fabricator, salt } = initialize({ salt: "1234" });
 
 ## Env-var salting
 
-If no `salt` is passed to `initialize()`, `FABRICATOR_SALT` supplies one. It never generates a value: unset, the salt stays empty.
+If `initialize()` gets no `salt`, `FABRICATOR_SALT` supplies one. If the variable is unset, the salt stays empty.
 
 ```bash
 FABRICATOR_SALT=repro-1234 bun test
 ```
 
-Useful for pinning a salt across a test run without touching any call site.
+This sets a salt for a whole test run without changing any code.
 
 :::warning
-**This does not make the run reproducible on its own.** It pins the salt; `clock` still captures wall-clock time at each `initialize()`, so the data still moves between runs. To actually hold a run still you need the clock too — either `clock: "derived"` at the call site, an explicit `Date`, or replaying the `context.clock` you logged.
+**This alone does not make a run reproducible.** It sets the salt, but `clock` still records the time at each `initialize()`, so the data still changes between runs. To hold a run still you also need the clock: `clock: "derived"` at the call site, an explicit `Date`, or the `context.clock` you logged.
 :::
 
-That caveat is why the conventional `SEED` and `RANDOM_SEED` names are **not** read. Using those is asking for a stable run, but a salt alone won't give them one (unless clock is set to be derived).Pinning fabricator's salt is a decision about fabricator specifically, so it is supplied by a fabricator-specific variable name, if needed.
+That is why fabricator doesn't read the common `SEED` or `RANDOM_SEED` variables. Someone setting those expects a stable run, and a salt alone won't give them one unless the clock is derived. Setting fabricator's salt is a decision about fabricator, so it has its own variable.
 
 ## Isolation between instances
 
-Each `initialize()` call captures its own seeded generator and its own internal stream state. Independently initialized instances never interfere with each other — safe for parallel tests that each pick their own salt, and safe to run two unrelated fabricators in the same process without one perturbing the other's output.
+Each `initialize()` call has its own generator and its own internal state. Separate instances never affect each other. That makes it safe for parallel tests to each use their own salt, and for two unrelated fabricators to run in the same process.
 
 ## Construction order
 
-Every instance received from calling `initialize()` owns one internal construction counter. Each `new Fabricator(...)` takes the next ordinal from that counter, regardless of which module made the call, so two consecutive constructions never silently receive identical data.
+Every instance has one construction counter. Each `new Fabricator(...)` takes the next number from it, no matter which module makes the call, so two constructions in a row never get identical data.
 
-Adding, removing, or reordering a construction shifts later constructions on the same instance. `fork` and `wrap` each create a fresh source with a fresh counter, which is how an integration or test can partition work more finely. Fields _within_ one construction remain keyed by structural position, so schema edits do not shift their siblings.
+Adding, removing, or reordering a construction shifts the constructions after it on the same instance. `fork` and `wrap` each start a fresh counter, which is how an integration or a test keeps its work separate. Fields _within_ one construction are keyed by their position in the schema, so editing the schema doesn't shift their siblings.
 
 ## Salting one construction
 
@@ -77,11 +77,11 @@ Adding, removing, or reordering a construction shifts later constructions on the
 new Fabricator(schema, { salt: "fixed-user" });
 ```
 
-This overrides the salt for one build and changes nothing else. The construction still takes the next ordinal from the instance's counter and still inherits the instance's clock — everything an unsalted build does.
+This replaces the salt for one build and changes nothing else. The build still takes the next number from the instance's counter and still uses the instance's clock, the same as an unsalted build.
 
-`salt` is not special here. `new Fabricator(schema, options)` accepts every slot of a [`.trace`](#trace), and each one you name simply substitutes into that slot; `salt` is just one of them. So a salted build is an ordinary build that happens to draw from a different universe than its neighbors, not a build that has stepped outside the instance.
+`salt` isn't special. `new Fabricator(schema, options)` accepts every field of a [`.trace`](#trace), and each one you pass replaces that field. A salted build is an ordinary build that happens to draw different data from its neighbors.
 
-That means it is _not_ a way to hold one construction still. It shifts, and is shifted by, the constructions around it exactly as any other does. When you want a build that is genuinely insulated — its own counter, unaffected by whatever else the instance builds — that is what [`fork`](#deriving-a-related-instance-fork) is for:
+So a salt does _not_ hold one construction still. It still shifts, and is shifted by, the constructions around it. For a build with its own counter that nothing else on the instance can affect, use [`fork`](#deriving-a-related-instance-fork):
 
 ```ts
 const forked = instance.fork({ salt: "fixed-user" });
@@ -89,7 +89,7 @@ const forked = instance.fork({ salt: "fixed-user" });
 new forked.Fabricator(schema); // its own counters, its own universe
 ```
 
-A bare salt _replaces_ the instance's salt on that Fabricator, so a construction written this way no longer varies when the surrounding run is re-salted. For an identity that should keep moving with the run — a schema's registered name, a test's own id — wrap it in `layer(...)` to compose instead:
+A plain salt _replaces_ the instance's salt for that Fabricator, so the build no longer changes when the run is given a different salt. For an identity that should still change with the run, such as a schema's name or a test's id, wrap it in `layer(...)` to add to the salt instead:
 
 ```ts
 import { layer } from "@ghostry/fabricator";
@@ -97,11 +97,11 @@ import { layer } from "@ghostry/fabricator";
 new Fabricator(schema, { salt: layer("some-identity") });
 ```
 
-This composes `"some-identity"` onto the instance's own salt (`[...instance.salt, "some-identity"]`) rather than replacing it outright — so the construction still varies when the instance is re-salted, the one thing a bare salt deliberately can't do. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below for the full mechanism, and [Deriving a related instance: fork](#deriving-a-related-instance-fork) for the same idea one level up — applied to a whole derived instance, rather than one construction at a time.
+This adds `"some-identity"` to the instance's salt (`[...instance.salt, "some-identity"]`) instead of replacing it, so the build still changes when the instance's salt does. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) for details, and [Deriving a related instance: fork](#deriving-a-related-instance-fork) for the same idea applied to a whole instance.
 
 ## Deriving a related instance: fork
 
-`initialize()` mints one instance. `fork` mints a related one, laid over the instance it was called on:
+`initialize()` creates an instance. `fork` creates a related one, based on the instance it is called on:
 
 ```ts
 const base = initialize({ salt: "base" });
@@ -110,22 +110,24 @@ const A = base.fork({ salt: "A" });
 A.salt; // ["A"] — replaced
 ```
 
-Anything the overlay names overrides; anything it omits inherits — `algorithm`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value: it has its own `Fabricator`, its own `combinatorial`/`coverage`, and its own `fork`, so forks compose.
+Whatever you pass to `fork` overrides the base, and whatever you leave out is inherited, including `algorithm`, `types`, `limits`, and `clock`. A fork can do everything an `initialize()` result can: it has its own `Fabricator`, its own `combinatorial` and `coverage`, and its own `fork`, so forks can be forked.
 
-**This is the tool to reach for first.** A fork is a configuration you hold as a value: pass it around, name it in a signature, keep it in a module, build through it whenever you like. Each of its receivers means exactly itself, so a call site says which configuration it draws from without you having to know what is open around it. `wrap` ([below](#when-you-cannot-thread-the-scope-wrap)) trades that away for ambience, and is worth it only when the scope cannot reach the code that needs it. A captured wall-clock or explicit `Date` is inherited as-is, regardless of how the salt composes. The exception is an explicit `clock: "derived"`: that sentinel re-derives from whatever salt the fork ends up with (see [The clock is the entropy](#the-clock-is-the-entropy) below), so `fork({ salt: layer(...) })` without also overriding `clock` gets a _different_ `"derived"` clock than its base.
+**Use `fork` first.** A fork is a configuration you hold as a value. You can pass it around, name it in a signature, keep it in a module, and build through it whenever you like. Each call through a fork uses that fork's configuration and nothing else, so you can tell what a call draws from by reading it. [`wrap`](#when-you-cannot-thread-the-scope-wrap) gives that up in exchange for not having to pass the scope around, and is only worth it when you can't.
 
-By default a fork's `salt` _replaces_ the base's outright, as is the case everywhere in this library. To compose onto the base's salt instead, reach for `layer(...)`:
+A fork inherits its base's clock as-is, whatever happens to the salt. The exception is an explicit `clock: "derived"`, which is derived again from the fork's salt (see [The clock is the entropy](#the-clock-is-the-entropy)). So `fork({ salt: layer(...) })` without its own `clock` gets a _different_ derived clock than its base.
+
+A fork's `salt` _replaces_ the base's by default, as it does everywhere in fabricator. To add to the base's salt instead, use `layer(...)`:
 
 ```ts
 const forked = base.fork({ salt: layer("my-fork") });
 forked.salt; // ["base", "my-fork"] — composed
 ```
 
-See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer) below — the same helper works identically at three levels: `fork`, `wrap` ([below](#when-you-cannot-thread-the-scope-wrap)), and a single `new Fabricator(schema, { salt })` call.
+`layer` works the same way in three places: `fork`, [`wrap`](#when-you-cannot-thread-the-scope-wrap), and a single `new Fabricator(schema, { salt })`. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer).
 
 ## Composing instead of replacing: layer(...)
 
-A bare `salt` always means the same thing in this library: replace whatever salt applied before, entirely. `layer(salt)` marks the opposite intent at the call site: append onto whatever salt is already in effect, rather than discard it.
+A plain `salt` always replaces whatever salt applied before. `layer(salt)` does the opposite: it adds to the salt already in effect.
 
 ```ts
 import { initialize, layer } from "@ghostry/fabricator";
@@ -136,21 +138,21 @@ base.fork({ salt: "a" }).salt; // ["a"]  — replaced
 base.fork({ salt: layer("a") }).salt; // ["base", "a"] — composed
 ```
 
-`layer` works identically everywhere a `salt` is accepted against some base:
+`layer` works the same everywhere a `salt` is accepted:
 
-- **`fork({ salt: layer(...) })`** — composes onto the instance's own salt.
-- **`wrap({ salt: layer(...) })`** — composes onto the instance it was called on, exactly as `fork` does ([below](#when-you-cannot-thread-the-scope-wrap)) — so nesting accumulates through the enclosing `scope`.
-- **`new Fabricator(schema, { salt: layer(...) })`** — composes onto the instance's salt (or a visible `wrap` frame's, if the construction happens inside one), for a single construction rather than a whole derived instance.
+- **`fork({ salt: layer(...) })`** adds to the instance's salt.
+- **`wrap({ salt: layer(...) })`** adds to the salt of the instance it is called on, the same as `fork` ([see below](#when-you-cannot-thread-the-scope-wrap)). Nested wraps through the enclosing `scope` keep adding.
+- **`new Fabricator(schema, { salt: layer(...) })`** adds to the instance's salt, or to an active `wrap`'s salt if the build happens inside one. It applies to that one build only.
 
-Reach for `layer(...)` any time an identity — a test's own name (which [the harness integration](/guides/harness) layers for you), a schema's registered name — should still vary when the surrounding run is re-salted. A bare salt is for the opposite case: a fixture that must stay exactly the same no matter what.
+Use `layer(...)` when an identity, such as a test's name or a schema's name, should still change when the run's salt changes. [The harness integration](/guides/harness) does this with each test's name for you. Use a plain salt for the opposite case: data that must stay the same no matter what.
 
 ## When you cannot thread the scope: wrap
 
-`wrap` makes a fork _ambient_ for a block of code, so ordinary calls inside it pick it up with nothing threaded through.
+`wrap` makes a fork apply automatically to a block of code. Ordinary calls inside the block use it without you passing anything.
 
-Reach for it when the scope cannot reasonably reach the code that needs it: a test body or callback you don't own, a deep call stack you won't thread a parameter through, or call sites already written against a destructured `Fabricator`. In those cases ambience is sugar for passing the scope. Everywhere else — where the block can simply use the scope it was handed, or a [`fork`](#deriving-a-related-instance-fork) held as a value — the explicit receiver is easier to read and should be preferred.
+Use it when you can't reasonably get the scope to the code that needs it: a test body or callback you don't own, a deep call stack you don't want to pass a parameter through, or code already written against a destructured `Fabricator`. In those cases, `wrap` saves you from passing the scope. Everywhere else, use the scope the block is given or a [`fork`](#deriving-a-related-instance-fork) you hold as a value. Explicit calls are easier to read.
 
-The price of ambience is that, inside a `wrap`, a receiver no longer tells you which configuration a call draws from. That is not a wart to work around; it is the whole of what a `wrap` does:
+The cost is that inside a `wrap`, the object you call through no longer tells you which configuration the call uses. That is exactly what `wrap` is for, not a flaw:
 
 ```ts
 const { T, Fabricator, combinatorial, wrap } = initialize({ salt: "base" });
@@ -162,9 +164,9 @@ wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-`wrap` governs constructions on the instance it was called on and on that instance's ancestors — see [Ambience governs the receiver and its ancestors](#ambience-governs-the-receiver-and-its-ancestors). The block also receives the fork directly, as `scope`: reach for it when explicit is clearer, or when work needs to outlive the block — a callback stored and invoked later has no frame around it, so only an explicit receiver still carries the wrap's configuration.
+`wrap` applies to builds on the instance it was called on and on that instance's ancestors. See [Ambience governs the receiver and its ancestors](#ambience-governs-the-receiver-and-its-ancestors). The block also gets the fork as `scope`. Use `scope` when being explicit is clearer, or when work has to outlive the block. A callback stored and called later runs outside the block, so only `scope` still carries the wrap's configuration.
 
-A `wrap`'s overlay lays over the instance it was called on, exactly as `fork`'s does, regardless of whether or not another `wrap` is already open around the call. So nesting accumulates when the inner `wrap` goes through the enclosing `scope`, and restates when it goes through a receiver bound outside the block:
+A `wrap` builds on the instance it was called on, just like `fork`, whether or not another `wrap` is already open. So a nested `wrap` called through the enclosing `scope` adds to it, and one called through an instance from outside the block starts over:
 
 ```ts
 wrap({ salt: layer("a") }, (scope) => {
@@ -178,7 +180,7 @@ wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-The second one is worth knowing about, because a destructured `wrap` is permanently bound to the instance it came from. When you want to compose onto whatever is in effect and do not have the enclosing `scope` in hand, go through `context.scope()`:
+The second case matters because a destructured `wrap` is always bound to the instance it came from. To add to whatever is in effect when you don't have the enclosing `scope`, call through `context.scope()`:
 
 ```ts
 wrap({ salt: layer("a") }, () => {
@@ -188,11 +190,11 @@ wrap({ salt: layer("a") }, () => {
 });
 ```
 
-`scope` is a function, not a property, and that is what makes lifting it out of `context` safe — capturing it captures the lookup rather than one answer, so a destructured `scope` still resolves live. The rest are getters, so destructuring one (or spreading the object) freezes it; that only ever costs you a stale value, where a frozen `scope` would have cost you correct-looking code laying over the wrong base. Destructuring `context` itself is fine either way, and is how these examples get it.
+`scope` is a function, not a property, so it is safe to destructure from `context`. A destructured `scope` still looks up the current scope each time you call it. The other members of `context` are getters, so destructuring or spreading them freezes their values. A frozen value is just out of date, but a frozen `scope` would silently build on the wrong instance. Destructuring `context` itself is fine, and is how these examples get it.
 
 ### Ambience governs the receiver and its ancestors
 
-A `wrap` governs constructions on the instance it was called on, and on that instance's ancestors — never on its descendants, its siblings, or another `initialize()`. The innermost governing wrap wins; with none, an instance draws its own configuration.
+A `wrap` applies to builds on the instance it was called on and on that instance's ancestors. It never applies to that instance's descendants, its siblings, or a different `initialize()`. If several wraps apply, the innermost one wins. If none apply, an instance uses its own configuration.
 
 ```ts
 const A = base.fork({ salt: layer("A") });
@@ -205,9 +207,9 @@ B.wrap({ salt: layer("b") }, () => {
 });
 ```
 
-Note the middle line: the receiver says `base`, and the configuration is `B`'s frame. A destructured `Fabricator` is bound to the instance it came from and governed exactly when that instance is, which is what makes it work without plumbing, and exactly why a receiver inside a `wrap` does not tell you what it draws from. If that matters at a given call site, build through a [`fork`](#deriving-a-related-instance-fork) instead of entering a `wrap`.
+Look at the middle line. The call goes through `base`, but the configuration is `B`'s wrap. A destructured `Fabricator` is bound to the instance it came from and is affected whenever that instance is. That is what lets it work without passing anything, and it is also why, inside a `wrap`, you can't tell from the call what it draws from. If that matters at a call site, build through a [`fork`](#deriving-a-related-instance-fork) instead of using `wrap`.
 
-A fork of the receiver — created before the wrap, or during it — draws its own configuration. To carry a wrap's layer onto a derived instance, fork the scope — `scope`, or `base.context.scope()` when it is not in hand:
+A fork of the wrapped instance uses its own configuration, whether it was created before the wrap or during it. To carry a wrap's salt into a new fork, fork the scope: `scope`, or `base.context.scope()` if you don't have it:
 
 ```ts
 base.wrap({ salt: layer("a") }, (scope) => {
@@ -219,7 +221,7 @@ base.wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-Governance follows the line, not the nesting. A wrap on a descendant opened inside a wrap on its ancestor governs that ancestor, while the outer wrap's scope — itself a descendant of `base`, on another branch — keeps its own configuration:
+What a wrap applies to depends on ancestry, not on how the wraps are nested. Below, `B`'s wrap is opened inside `base`'s wrap. `B`'s wrap applies to `base`, because `base` is `B`'s ancestor. The outer wrap's `scope` is a different descendant of `base`, not an ancestor of `B`, so it keeps its own configuration:
 
 ```ts
 base.wrap({ salt: layer("a") }, (scope) => {
@@ -230,15 +232,15 @@ base.wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-`context.depth` counts the wraps governing that instance, so `A.context.depth` is `0` inside `B`'s wrap while `B.context.depth` is `1`. A wrap's own `scope` is a descendant of the receiver, so `scope.context.depth` is `0` — it already holds the wrap's configuration as its own.
+`context.depth` counts the wraps that apply to an instance. Inside `B`'s wrap, `A.context.depth` is `0` and `B.context.depth` is `1`. A wrap's own `scope` is a descendant of the wrapped instance, so `scope.context.depth` is `0`; the wrap's configuration is already its own.
 
-Which instance a lineage started from carries no special weight here. A frame is keyed on the instance `wrap` was called on, whatever its position — so a caller who forks an application-wide configuration and treats that fork as their own root, destructuring from it and never naming the original again, gets the same ambience as anyone else. Being the instance `initialize()` returned is an accident of where that call happened, not a statement about how an instance is used. Forks _of_ that treated-as-root instance are not reached; they draw their own configuration.
+The instance that `initialize()` returned gets no special treatment. A wrap is tied to whichever instance it was called on. If you fork an application-wide configuration and use that fork as your root, destructuring from it and never touching the original again, wraps on it work exactly the same. Forks _of_ that fork are not affected and use their own configuration.
 
-Lineage identity is the instance's, not the carrier's: `a.root === b.root` answers "same lineage?", and two separate `initialize()` calls stay mutually invisible even when handed the same `stack`. Passing `initialize({ stack })` chooses a carrier and nothing else.
+Lineage belongs to the instance, not to the carrier. `a.root === b.root` tells you whether two instances share a lineage, and two separate `initialize()` calls never see each other's wraps, even when given the same `stack`. `initialize({ stack })` only chooses the carrier.
 
 ### Async blocks
 
-`block` may be `async`, and the ambient frame survives `await`:
+`block` can be `async`, and the wrap still applies after `await`:
 
 ```ts
 await wrap({ salt: layer("a") }, async (scope) => {
@@ -249,21 +251,21 @@ await wrap({ salt: layer("a") }, async (scope) => {
 });
 ```
 
-Two `wrap`s running concurrently stay isolated from each other too — neither sees the other's salt, and neither leaks past its own block.
+Two `wrap`s running at the same time stay separate. Neither sees the other's salt, and neither leaks outside its own block.
 
-This works because the ambient frame is carried by [`AsyncLocalStorage`](https://nodejs.org/api/async_context.html) wherever `node:async_hooks` exists, which covers Node, Bun, and Deno. Nothing needs configuring; the right carrier is chosen when the package is imported.
+This works because the wrap is carried by [`AsyncLocalStorage`](https://nodejs.org/api/async_context.html) wherever `node:async_hooks` exists, which includes Node, Bun, and Deno. Nothing needs configuring. Fabricator picks the right carrier when it is imported.
 
 #### Runtime support
 
-A runtime without `node:async_hooks` — a browser bundle, most likely — falls back to a synchronous carrier whose frame _cannot_ outlive the block's first `await`. Rather than silently resolving a later build against the base instance, `wrap` rejects the block outright:
+A runtime without `node:async_hooks`, most likely a browser bundle, falls back to a synchronous carrier. Its wrap ends at the block's first `await`. Instead of letting a later build silently use the base instance, `wrap` rejects the block:
 
 ```ts
 wrap({ salt: layer("a") }, async () => {}); // throws SynchronousStackError
 ```
 
-It throws on any `async` block, including one that only ever uses `scope` because `wrap` has no way to know whether something later will read the ambient frame. `scope` is still the escape hatch there: it's an ordinary `Instance`, unaffected by whether a frame is on the stack, so a synchronous block that hands `scope` to async work keeps the wrap's configuration with no time limit.
+It throws on any `async` block, even one that only uses `scope`, because `wrap` can't know whether later code will rely on the wrap. `scope` still works there. It is an ordinary `Instance` that doesn't depend on the wrap being active, so a synchronous block can hand `scope` to async work and the configuration lasts as long as needed.
 
-To use async blocks on such a runtime, you would need to supply an external carrier that is able to handle async frames:
+To use async blocks on such a runtime, supply your own carrier that supports async:
 
 ```ts
 initialize({ stack: someAsyncCarrier });
@@ -271,7 +273,7 @@ initialize({ stack: someAsyncCarrier });
 
 ### `context`
 
-`instance.context` reads whatever configuration is in effect _right now_ — the active `wrap` frame's, or the instance's own outside any `wrap`:
+`instance.context` reads the configuration in effect _right now_: the active `wrap`'s, or the instance's own when no `wrap` applies.
 
 ```ts
 wrap({ salt: layer("a") }, () => {
@@ -279,39 +281,45 @@ wrap({ salt: layer("a") }, () => {
 });
 ```
 
-It's a live view, not a snapshot: a `context` reference held onto before a `wrap` still reflects it while active, and reverts once the `wrap` ends.
+It is a live view, not a snapshot. A `context` you got before a `wrap` reflects the wrap while it is active and goes back afterward.
 
 ## Which field gets which randomness
 
-Two different questions get asked about reproducibility, and they have different answers:
+There are two separate questions here, with the same answer:
 
-**"Does skipping a field change what other fields produce?"** No. A field's stream is derived from its own structural path within the schema — its field name, its position in a tuple, and so on — never from how many fields were dispatched before it. Adding, removing, reordering, or renaming a field changes nothing about any other field's own randomness.
+**"Does changing a field change what other fields produce?"** No. Each field draws from its own stream, based on its position in the schema, such as its field name or tuple index. It never depends on how many fields came before it. Adding, removing, reordering, or renaming a field doesn't change any other field's randomness.
 
-**"Does skipping a _draw_ at fabricate-time change other fields?"** Also no. Once a field has its own private stream, calling `.fabricate()` conditionally (e.g. an [omittable](/reference/primitives/omittable) field that only draws its inner value when its presence roll says "present") only affects that field's own position in its own stream on the _next_ call. It can't touch any sibling field, because by that point every field already has an independent generator instance. This is why `object.omittable`/`object.optional`/`nullable`/`undefinable` all skip their wrapped value's draw entirely when the roll doesn't need it — it's free, and it costs nothing in reproducibility.
+**"Does skipping a _draw_ change other fields?"** Also no. Some fields only draw sometimes. An [omittable](/reference/primitives/omittable) field, for example, only draws its value when it decides the key is present. Skipping that draw only affects where that field is in its own stream on the _next_ call. It can't affect any other field, because each field already has its own generator. That is why `object.omittable`, `object.optional`, `nullable`, and `undefinable` skip their inner draw when they don't need it: it costs nothing in reproducibility.
 
-The practical upshot: schema edits never perturb unrelated fields, and calling `.fabricate()` fewer times within an already-built Fabricator never does either.
+So editing a schema never changes unrelated fields, and neither does calling `.fabricate()` fewer times on a Fabricator you already built.
 
 ## `.trace`
 
-Every built Fabricator records where its randomness comes from, on a required `trace` property — including nodes that never draw of their own (a bare `T.object`, `T.always`). That is what makes a nested subtree replayable.
+Every built Fabricator records where its randomness comes from in its `trace` property. This includes parts that never draw anything themselves, such as a bare `T.object` or `T.always`. That is what makes a nested part replayable.
 
 ```ts
 const NameField = new Fabricator(T.string.whereby({ length: { max: 20 } }));
 NameField.fabricate();
 
 NameField.trace;
-// { salt: ["default-salt"], clock: 1234567890000, path: [], kind: "string", ordinal: 0 }
+// { salt: [], clock: 1234567890000, path: [], kind: "string", ordinal: 0 }
 ```
 
-The result is the fixed tuple that field's stream was hashed from — `salt` is the _instance's_ salt (not anything derived per field), `clock` is the resolved instant this construction resolves "now" against (see [The clock is the entropy](#the-clock-is-the-entropy) below — every field's stream depends on it, not just a `T.date` field's), `path` is the field's own structural position within its construction (empty here since this Fabricator _is_ the whole construction, but e.g. `["address", "city"]` for a nested field built as part of a larger object), and `ordinal` is which construction on that source this one is (`null` for a `combinatorial`/`coverage` build, which takes no ordinal).
+The trace has five fields, and together they determine that field's stream:
 
-`new Fabricator(schema, trace)` reproduces exactly what that schema produced as a nested node of a larger construction: pass the node's own schema plus `node.trace`. The same sequence of `.fabricate()` calls yields the same values; the trace does not jump to a later draw.
+- `salt` is the _instance's_ salt, not anything specific to the field.
+- `clock` is the instant this build treats as "now" (see [The clock is the entropy](#the-clock-is-the-entropy)). Every field's stream depends on it, not just date fields.
+- `path` is the field's position in its build. It is empty here because this Fabricator is the whole build. A nested field would have something like `["address", "city"]`.
+- `kind` is the field's primitive kind.
+- `ordinal` is which build on the instance this is. It is `null` for `combinatorial` and `coverage` builds, which don't take one.
 
-Three values are not a function of the node's own stream. Replay the parent instead:
+`new Fabricator(schema, trace)` reproduces exactly what that schema produced as part of a larger build. Pass the part's own schema and its `trace`. The same sequence of `.fabricate()` calls then gives the same values, starting from the first draw.
 
-- a `.refine()` compute field — `.fabricate()` throws without the parent object
-- a `recursive.self` node — `.fabricate()` throws without the enclosing `T.recursive`
-- an `.override()` `[Fixed]` field — replaying the field's own schema yields the drawn value the parent discarded
+Three kinds of value don't depend only on their own stream. For these, replay the parent instead:
+
+- a `.refine()` compute field: `.fabricate()` throws without the parent object
+- a `recursive.self` node: `.fabricate()` throws without the enclosing `T.recursive`
+- an `.override()` field: replaying the field's own schema gives the random value the parent threw away
 
 ## Bring your own PRNG
 
@@ -319,8 +327,8 @@ Three values are not a function of the node's own stream. Replay the parent inst
 initialize({ salt: "1234", algorithm: (seed) => myPrng(seed) });
 ```
 
-`algorithm` is a factory: given a seed, it returns a `() => number` in `[0, 1)` — a drop-in replacement for `Math.random`. Defaults to a built-in `sfc32` generator.
+`algorithm` is a function that takes a seed and returns a `() => number` in `[0, 1)`, a drop-in replacement for `Math.random`. The default is a built-in `sfc32` generator.
 
-The seed it receives is not your `salt`. It's the full encoded description of one leaf — salt, clock, structural path, kind, and ordinal — of which the salt is a single slot. That's why every field in every construction gets its own independent stream from one instance, and why a custom algorithm inherits that isolation for free: it's called once per leaf, with a different seed each time.
+The seed it receives is not your `salt`. It describes one whole field: salt, clock, path, kind, and ordinal. That is why every field in every build gets its own independent stream, and why a custom algorithm gets that independence for free. It is called once per field, with a different seed each time.
 
 Output is not cryptographically secure. See [Security](/about/security).

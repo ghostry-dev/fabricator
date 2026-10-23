@@ -1,20 +1,20 @@
 # Mental model
 
-fabricator has three layers, always used in this order:
+Fabricator has three layers, always used in this order:
 
 :::steps
 
 ### Registry
 
-`T`, returned by `initialize({ types })`, is a namespace of builder functions and objects — one per primitive kind. `T.string`, `T.object({ ... })`, `T.array(T.string)`. Calling or accessing one produces a **Schema**.
+`T`, returned by `initialize({ types })`, holds one builder for each primitive kind: `T.string`, `T.object({ ... })`, `T.array(T.string)`, and so on. Calling or accessing a builder produces a **Schema**.
 
 ### Schema
 
-A Schema is inert, serializable data — a plain object tagged with what kind it is and how it's configured. Building a Schema never touches randomness. Schemas compose freely: pass them around, store them, nest them inside `T.object`/`T.array`, or derive new ones with `.extend()`, `.refine()`, `.override()`. None of that produces a value — it just describes one.
+A Schema is plain data. It records what kind of value it describes and how that value is configured. Building a Schema never involves randomness. You can pass Schemas around, store them, nest them inside `T.object` or `T.array`, and derive new ones with `.extend()`, `.refine()`, and `.override()`. None of that produces a value; it only describes one.
 
 ### Fabricator
 
-`new Fabricator(schema)` turns a Schema into something live, with a `.fabricate()` method. This is the point where randomness actually gets drawn. A Schema is a blueprint; a Fabricator is a loaded instance of it, ready to produce values.
+`new Fabricator(schema)` turns a Schema into a Fabricator, which has a `.fabricate()` method. Building it sets up the randomness each field will draw from. A Schema is a blueprint, and a Fabricator is ready to produce values from it.
 
 :::
 
@@ -27,21 +27,21 @@ const UserSchema = T.object({
   name: T.string.whereby({ length: { min: 3, max: 20 } }),
   age: T.number.integer.whereby({ min: 18, max: 99 }),
 });
-// UserSchema is inert data — no randomness has run yet
+// UserSchema is plain data, and nothing random has happened yet
 
 const User = new Fabricator(UserSchema);
-// User is live — it has a .fabricate() method
+// User is ready to produce values with .fabricate()
 
 const user = User.fabricate();
-// only *this* call draws randomness
+// this call draws the values
 ```
 
 ## One instance, one isolated world
 
-`initialize({ clock, types, algorithm, salt })` mints a single self-contained instance: its own source of randomness, its own `T`, its own `Fabricator` constructor. Nothing here is shared module-level state — two `initialize()` calls never perturb each other, which is what makes it safe to salt independently in parallel tests. See [Reproducibility](/guides/reproducibility) for how that isolation actually works, including what `clock` controls for `T.date`.
+`initialize({ clock, types, algorithm, salt })` creates one self-contained instance with its own randomness, its own `T`, and its own `Fabricator` constructor. Instances share no state, so two `initialize()` calls never affect each other. That is what makes it safe to give parallel tests their own salts. See [Reproducibility](/guides/reproducibility) for how the isolation works, including what `clock` controls for `T.date`.
 
 ## Why the split matters
 
-Because a Schema never touches randomness, it can be composed, stored, and reused freely — `ProductSchema.extend(...)`, `Product.schema.override({ ... })` — without ever accidentally drawing a value. Building a Schema is always pure data, no matter how it's assembled or chained.
+A Schema never involves randomness, so you can compose, store, and reuse it without drawing a value by accident. `ProductSchema.extend(...)` and `Product.schema.override({ ... })` only ever produce another schema, however you chain them.
 
-The one draw that isn't schema-shaped: `initialize()` itself captures one instant as `clock` (wall-clock time by default) before any Schema exists — a one-time, instance-level setup step, not something tied to a particular field. Every _field's_ own value, though, is still drawn at exactly one point: when its Fabricator's `.fabricate()` is called.
+`initialize()` does record one value before any Schema exists: its `clock`, which is the current time by default. That is a one-time setup step for the whole instance, not part of any field. Every field's value is still drawn only when `.fabricate()` is called.
