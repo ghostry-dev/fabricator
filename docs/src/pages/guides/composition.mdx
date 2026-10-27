@@ -16,9 +16,9 @@ Combines the base schema's field definitions with the ones you provide. The resu
 
 ```ts
 const WithSlug = ProductSchema.refine(({ compute }) => ({
-  slug: compute(T.string).as(({ fabricated }) =>
-    fabricated.name.toLowerCase().replace(/\s+/g, "-"),
-  ),
+  slug: compute(T.string)
+    .from(["name"])
+    .as(({ fabricated }) => fabricated.name.toLowerCase().replace(/\s+/g, "-")),
 }));
 ```
 
@@ -41,6 +41,15 @@ const widget = new Fabricator(WidgetSchema).fabricate();
 
 Pure Schema → Schema — never touches randomness. The named fields are still fully dispatched when the resulting schema is built (so unrelated fields' random streams stay assigned exactly as they would without the override — see [Reproducibility](/guides/reproducibility)), but their draws are discarded in favor of the fixed value. Values deep-merge into the existing definition, and chained overrides compose (`.override(a).override(b)`, with `b` winning on conflicts).
 
+## `T.pick` and `T.omit` — keep some fields
+
+```ts
+const Summary = T.pick(ProductSchema, ["id", "name"]);
+const WithoutPricing = T.omit(ProductSchema, ["pricing"]);
+```
+
+Both return a new object schema with fewer fields. If a kept computed field reads a field you dropped, that field is still fabricated for it, but it doesn't appear in the result. See [`T.pick`](/reference/primitives/pick).
+
 ## `.fabricate(overrides)` — a per-call override, not a new schema
 
 ```ts
@@ -60,4 +69,4 @@ const ElectronicsSchema = ProductSchema.extend(() => ({
 const laptop = new Fabricator(ElectronicsSchema).fabricate({ name: "Laptop" });
 ```
 
-`.extend()`, `.refine()`, and `.override()` all return ordinary Schemas, so they compose with each other and with `.fabricate(overrides)` freely — a schema-level fixed field (`T.always('electronics')`) and a per-call override (`{ name: 'Laptop' }`) are just two different points in the same pipeline.
+`.extend()`, `.refine()`, `.override()`, `T.pick`, and `T.omit` all return ordinary Schemas, so they compose with each other and with `.fabricate(overrides)` freely — a schema-level fixed field (`T.always('electronics')`) and a per-call override (`{ name: 'Laptop' }`) are just two different points in the same pipeline.

@@ -1,5 +1,5 @@
 import { FabricatorError } from "../../Error";
-import type { Kind as SchemaKind, Primitive } from "../../Primitive";
+import type { Primitive, Kind as SchemaKind } from "../../Primitive";
 import type { AnySchema } from "../../Schema/Types";
 import { Adaptation, Kind, Meta, Omitted } from "../../Types";
 import { never } from "../../Utility/Core";
@@ -82,12 +82,27 @@ function terminateAt(schema: any, path: ReadonlyArray<string>): AnySchema {
 
     case "object": {
       const s = schema as Primitive.object.Schema;
-      const definition = s[Meta].definition;
-      const next: Record<string, AnySchema> = {};
-      for (const key of Object.keys(definition)) {
-        next[key] = terminateAt(definition[key]!, [...path, key]);
-      }
-      return withMeta(s, { ...s[Meta], definition: next });
+
+      const terminateFields = (
+        definition: Primitive.object.Definition,
+      ): Record<string, AnySchema> => {
+        const next: Record<string, AnySchema> = {};
+        for (const key of Object.keys(definition)) {
+          next[key] = terminateAt(definition[key]!, [...path, key]);
+        }
+        return next;
+      };
+
+      const definition = terminateFields(s[Meta].definition);
+      if (!s[Meta].hidden) return withMeta(s, { ...s[Meta], definition });
+
+      /**
+       * A hidden field (`object/Types.ts`'s `Meta`) is dispatched exactly as a
+       * visible one is, so its `self` needs the same stop — or the same
+       * `UnterminableRecursiveError`.
+       */
+      const hidden = terminateFields(s[Meta].hidden);
+      return withMeta(s, { ...s[Meta], definition, hidden });
     }
 
     case "tuple": {
@@ -197,10 +212,8 @@ function containsSelf(schema: any): boolean {
 
     case "object": {
       const s = schema as Primitive.object.Schema;
-      const definition = s[Meta].definition;
-      return Object.keys(definition).some((key) =>
-        containsSelf(definition[key]!),
-      );
+      const all = { ...s[Meta].hidden, ...s[Meta].definition };
+      return Object.keys(all).some((key) => containsSelf(all[key]!));
     }
 
     case "tuple": {

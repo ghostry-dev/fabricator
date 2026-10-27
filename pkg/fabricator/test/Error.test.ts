@@ -39,7 +39,8 @@ test("an unknown-field override exposes the field name and available fields", ()
     caught = e;
   }
 
-  expect((caught as any).name).toBe("UnknownOverrideFieldError");
+  expect((caught as any).name).toBe("UnknownFieldError");
+  expect((caught as any).operation).toBe("override");
   expect((caught as any).field).toBe("nope");
   expect((caught as any).available).toEqual(["name", "age"]);
 });

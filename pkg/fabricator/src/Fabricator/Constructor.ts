@@ -319,52 +319,67 @@ export function Constructor(
       }
       case "object": {
         const s = schema as Primitive.object.Schema;
-        const definition = s[Meta].definition;
-        const fields: Primitive.object.Fields = {};
 
-        for (const key in definition) {
-          const fieldSchema = definition[key]!;
-          const fieldPath = [...path, key];
+        /**
+         * One loop for visible and hidden fields alike (`object/Types.ts`'s
+         * `Meta`), each at `[...path, key]`: a hidden field is dispatched
+         * exactly as it would be visibly, so `T.pick`/`T.omit` leave every
+         * remaining field on the stream it had in the source.
+         */
+        const build = (
+          definition: Primitive.object.Definition,
+        ): Primitive.object.Fields => {
+          const fields: Primitive.object.Fields = {};
 
-          fields[key] = inline(() => {
-            if (Fixed in fieldSchema) {
-              /**
-               * Still dispatched — not for stream-parity: path keying means
-               * skipping a dispatch can't shift any sibling's stream. The
-               * dispatch is only to detect, via the built Fabricator's own
-               * `[Kind]`, whether this field was an `object.compute` field, so
-               * an overridden compute field resolves immediately in phase 1
-               * like any ordinary field instead of deferring to phase 2 (see
-               * below).
-               */
-              const built = make(fieldSchema, fieldPath, context);
-              const value = fieldSchema[Fixed];
+          for (const key in definition) {
+            const fieldSchema = definition[key]!;
+            const fieldPath = [...path, key];
 
-              if (Primitive.object.compute.isObjectComputeFabricator(built)) {
+            fields[key] = inline(() => {
+              if (Fixed in fieldSchema) {
                 /**
-                 * Reassigning `[Kind]` off "object.compute" keeps this field
-                 * out of `object/Core.ts`'s `fabricate()` phase-2 deferral — an
-                 * overridden compute field resolves immediately in phase 1,
-                 * exactly like an ordinary field. `[Meta]` is left as the
-                 * compute shape; nothing reads it off of a `fields` entry.
-                 *
-                 * Source kind is read off the built Fabricator — its `[Meta]`
-                 * is the compute shape, which the field Schema after `toSchema`
-                 * does not expose as `AnySchema`.
+                 * Still dispatched — not for stream-parity: path keying means
+                 * skipping a dispatch can't shift any sibling's stream. The
+                 * dispatch is only to detect, via the built Fabricator's own
+                 * `[Kind]`, whether this field was an `object.compute` field,
+                 * so an overridden compute field resolves immediately in phase
+                 * 1 like any ordinary field instead of deferring to phase 2
+                 * (see below).
                  */
-                return {
-                  ...built,
-                  [Kind]: built[Meta].source[Kind],
-                  fabricate: () => value,
-                };
+                const built = make(fieldSchema, fieldPath, context);
+                const value = fieldSchema[Fixed];
+
+                if (Primitive.object.compute.isObjectComputeFabricator(built)) {
+                  /**
+                   * Reassigning `[Kind]` off "object.compute" keeps this field
+                   * out of `object/Core.ts`'s `fabricate()` phase-2 deferral —
+                   * an overridden compute field resolves immediately in phase
+                   * 1, exactly like an ordinary field. `[Meta]` is left as the
+                   * compute shape; nothing reads it off of a `fields` entry.
+                   *
+                   * Source kind is read off the built Fabricator — its `[Meta]`
+                   * is the compute shape, which the field Schema after
+                   * `toSchema` does not expose as `AnySchema`.
+                   */
+                  return {
+                    ...built,
+                    [Kind]: built[Meta].source[Kind],
+                    fabricate: () => value,
+                  };
+                }
+
+                return { ...built, fabricate: () => value };
               }
 
-              return { ...built, fabricate: () => value };
-            }
+              return make(fieldSchema, fieldPath, context);
+            });
+          }
 
-            return make(fieldSchema, fieldPath, context);
-          });
-        }
+          return fields;
+        };
+
+        const fields = build(s[Meta].definition);
+        const hidden = s[Meta].hidden ? build(s[Meta].hidden) : {};
 
         /**
          * `Primitive.object.rehydrate(s)`, not the bare `s`: `toSchema` (above)
@@ -376,6 +391,7 @@ export function Constructor(
         return Primitive.object.Fabricator(
           { ...common, schema: Primitive.object.rehydrate(s) },
           fields,
+          hidden,
         );
       }
 

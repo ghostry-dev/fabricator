@@ -95,12 +95,34 @@ export type Override<$Definition extends Definition> = Pretty<{
  * `extend`/`refine`/`override` and `ToTypeBox`'s structural derivation keep
  * working, and a prior definition survives `as` for future validation of
  * `produce`.
+ *
+ * `hidden` holds fields that are fabricated but never emitted: the dependencies
+ * of a kept compute field that `T.pick`/`T.omit` (`Registry.ts`) dropped from
+ * `definition`. Absent when there are none. It sits outside `definition` so
+ * that everything reading `definition` — the `Fabricated`/`Override` types,
+ * `.override()`'s key check, `[Children]` (and so enumeration), and every
+ * adapter — never sees a hidden field. Only `Constructor.ts`'s `make`,
+ * `Fabricator.ts`'s `fabricate`, and `recursive/Terminate.ts` read it.
  */
 export type Meta<$Definition extends Definition = Definition> = {
   definition: $Definition;
   refinements: Refinements;
   produce?: Produce<Fabricated<$Definition>>;
+  hidden?: Definition;
 };
+
+/**
+ * What `T.pick`/`T.omit` accept: an `object` Schema or a built `object`
+ * Fabricator — anything already carrying this kind's `[Meta]`, the same input
+ * `Registry.ts`'s `rehydrate` takes.
+ */
+export type Subsettable = {
+  readonly [Kind]: "object";
+  readonly [Meta]: Meta<any>;
+};
+
+export type DefinitionOf<$Source extends Subsettable> =
+  $Source[typeof Meta]["definition"];
 
 export interface Core<
   $Definition extends Definition = Definition,

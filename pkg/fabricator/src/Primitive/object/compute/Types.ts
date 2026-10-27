@@ -60,10 +60,20 @@ export type Resolved<$Source, $Bindings extends unknown[] = []> = FabricatedBy<
  * Unlike every other kind's `Meta`, this one is generic over the _enclosing
  * object's_ fabricated type as well as the source — that is what the resolver
  * is handed.
+ *
+ * `dependencies` is always present, so every compute field has a known set of
+ * fields it reads: the keys named by `.from([...])`, or, without one, every key
+ * of the `.refine()` stage's base — exactly what the resolver's type lets it
+ * read. `object/Fabricator.ts` resolves compute fields in dependency order from
+ * it, and `T.pick`/`T.omit` (`object/Registry.ts`) keep exactly those fields
+ * fabricated. `narrowed` is whether the resolver is handed only its
+ * `dependencies` (from `.from`) or the whole object fabricated so far.
  */
 export type Meta<$Fabricated, $Source extends Source> = {
   source: $Source;
   resolve: (params: { fabricated: $Fabricated }) => Resolved<$Source>;
+  dependencies: ReadonlyArray<string>;
+  narrowed: boolean;
 };
 
 export interface Core<

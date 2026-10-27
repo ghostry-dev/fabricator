@@ -1,0 +1,18 @@
+# T.omit
+
+A [structure](/reference/primitives#structures): a copy of an object schema without the fields you name.
+
+```ts
+const UserSchema = T.object({
+  id: T.number.integer.sequence,
+  name: T.string.whereby({ length: { min: 1, max: 25 } }),
+  password: T.string.whereby({ length: { min: 12, max: 40 } }),
+});
+
+const PublicUserSchema = T.omit(UserSchema, ["password"]);
+// { id: number; name: string }
+```
+
+`T.omit` is [`T.pick`](/reference/primitives/pick) with the selection inverted, and everything on that page applies here. A kept computed field that reads an omitted field still gets it; the field is fabricated and left out of the result.
+
+`T.omit` removes a field from the schema. To make a field sometimes missing from a fabricated object, use [`T.omittable`](/reference/primitives/omittable).

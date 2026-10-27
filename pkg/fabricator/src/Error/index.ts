@@ -254,10 +254,12 @@ export namespace FabricatorError {
   }
 
   /**
-   * An override names a field the object schema does not define — most often a
-   * typo, which is why the known fields are listed.
+   * A key names a field the object schema does not define — most often a typo,
+   * which is why the known fields are listed. One failure reached from four
+   * places: `.override()`, `T.pick`, `T.omit`, and a compute field's
+   * `.from([...])`, told apart by `operation`.
    */
-  export class UnknownOverrideFieldError extends FabricatorError {
+  export class UnknownFieldError extends FabricatorError {
     constructor(
       /**
        * The name that was not found.
@@ -265,17 +267,46 @@ export namespace FabricatorError {
       public readonly field: string,
 
       /**
-       * Every field the schema does define, in definition order.
+       * Every field the schema does define, in definition order. For `"compute
+       * from"`, the fields the enclosing `.refine()` stage can read.
        */
       public readonly available: ReadonlyArray<string>,
+
+      /**
+       * What named the unknown field, worded to read as the message's verb.
+       */
+      public readonly operation: "override" | "pick" | "omit" | "compute from",
     ) {
       super();
-      this.name = "UnknownOverrideFieldError";
+      this.name = "UnknownFieldError";
       this.message =
-        `Cannot override unknown field: "${field}". This object schema defines `
+        `Cannot ${operation} unknown field: "${field}". `
+        + "This object schema defines "
         + (available.length === 0
           ? "no fields."
           : `${available.map((k) => `"${k}"`).join(", ")}.`);
+    }
+  }
+
+  /**
+   * Compute fields whose declared dependencies form a loop, so none of them can
+   * resolve first. A compute field only names fields that already exist, but a
+   * later `.refine()` or `.extend()` can replace one of those with a compute
+   * field that reads it back. Thrown by that call, while building the schema,
+   * never at fabrication.
+   */
+  export class ComputeDependencyCycleError extends FabricatorError {
+    constructor(
+      /**
+       * The compute fields on the loop, in the order they were reached.
+       */
+      public readonly fields: ReadonlyArray<string>,
+    ) {
+      super();
+      this.name = "ComputeDependencyCycleError";
+      this.message =
+        "Computed fields depend on each other in a cycle: "
+        + `${fields.map((k) => `"${k}"`).join(" -> ")}.`;
     }
   }
 

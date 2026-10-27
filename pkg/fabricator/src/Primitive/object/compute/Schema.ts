@@ -11,19 +11,53 @@ import {
   type SatisfiesThis,
 } from "../../../Schema/Satisfies";
 import { Kind } from "../../../Types";
+import type { Pretty } from "../../../Utility/Types";
 import type * as object from "../Types";
 import type { Core, Resolved, Source } from "./Types";
+
+/**
+ * The fields a `.from([...])` resolver is handed: only the named ones, each
+ * keeping its own `?:` (an omittable or optional dependency may be absent).
+ */
+export type Narrowed<
+  $Definition extends object.Definition,
+  $Keys extends keyof $Definition,
+> = Pretty<
+  Pick<
+    object.Fabricated<$Definition>,
+    $Keys & keyof object.Fabricated<$Definition>
+  >
+>;
 
 export type Computer<$Definition extends object.Definition> = <
   const $Source extends Source,
 >(
   source: $Source,
 ) => {
+  /**
+   * Resolve against the whole object fabricated so far. The field depends on
+   * every field of this `.refine()` stage's base, so `T.pick`/`T.omit` keep all
+   * of them fabricated when this field is kept.
+   */
   as: (
     resolve: (params: {
       fabricated: object.Fabricated<$Definition>;
     }) => NoInfer<Resolved<$Source>>,
   ) => Schema<object.Fabricated<$Definition>, $Source>;
+
+  /**
+   * Declare the fields this one reads. The resolver is handed only those, and
+   * they are all `T.pick`/`T.omit` keep fabricated when this field is kept.
+   */
+  from: <const $Keys extends ReadonlyArray<keyof $Definition & string>>(
+    keys: $Keys,
+  ) => {
+    as: (
+      resolve: (params: {
+        fabricated: Narrowed<$Definition, $Keys[number]>;
+      }) => NoInfer<Resolved<$Source>>,
+    ) => Schema<Narrowed<$Definition, $Keys[number]>, $Source>;
+  };
 };
 
 export interface Schema<

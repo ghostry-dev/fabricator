@@ -4,8 +4,8 @@ import type {
   Fabricator as BaseFabricator,
   FabricatorContext,
 } from "../../Fabricator/Types";
-import type { Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
+import type { Trace } from "../../Random/Types";
 import { Children, Kind, Meta, Omitted, type Adaptation } from "../../Types";
 import { isPollutionKey } from "../../Utility/Core";
 import { type PlainObject } from "../../Utility/Types";
@@ -77,14 +77,23 @@ export type Fields = Record<string, BaseFabricator<unknown>>;
  * A compute-kind field (from `.refine()`) needs the rest of the object already
  * fabricated (`object/compute/Fabricator.ts`), which isn't available until
  * every ordinary field has resolved. Two phases: ordinary fields first, then
- * compute fields against the accumulated result, in definition order (a compute
- * field can see an earlier compute field's value, not a later one) — unless
- * covered by `overrides`, in which case it resolves in phase 1 like any other
- * overridden field.
+ * compute fields against the accumulated result, in dependency order — each
+ * after every compute field among its `dependencies` (`compute/Types.ts`) —
+ * unless covered by `overrides`, in which case it resolves in phase 1 like any
+ * other overridden field. Dependency order rather than definition order is what
+ * lets `hidden` live in its own map: a hidden compute field can sit between two
+ * visible ones in the chain, and no fixed visible/hidden order resolves that.
+ *
+ * `hidden` is `[Meta].hidden` built (`Types.ts`'s `Meta`): fabricated in both
+ * phases exactly like `fields`, so compute fields can read them, then deleted
+ * before returning. Per-call `overrides` only reach `fields` — `.override()`
+ * rejects a hidden key, and `{ validate: false }` must not let one through.
+ * `[Children]` stays `fields` alone, so enumeration never pins a hidden field.
  */
 export function Fabricator<$Definition extends Definition>(
   context: FabricatorContext<Schema<$Definition>>,
   fields: Fields,
+  hidden: Fields = {},
 ): Fabricator<Schema<$Definition>> {
   const { schema, algorithm, trace } = context;
   const meta = schema[Meta];
@@ -135,14 +144,19 @@ export function Fabricator<$Definition extends Definition>(
     }
 
     const fabricated: PlainObject = {};
-    const deferred: Array<[string, ComputeFabricator<any, any>]> = [];
+    const deferred = new Map<string, ComputeFabricator<any, any>>();
 
-    for (const [k, v] of Object.entries(fields)) {
+    const entries = [
+      ...Object.entries(hidden).map(([k, v]) => [k, v, false] as const),
+      ...Object.entries(fields).map(([k, v]) => [k, v, true] as const),
+    ];
+
+    for (const [k, v, visible] of entries) {
       if (isPollutionKey(k)) {
         throw new FabricatorError.PrototypePollutionError(k);
       }
 
-      if (overrides && k in overrides) {
+      if (visible && overrides && k in overrides) {
         const value = overrides[k];
         /**
          * Forces this key off entirely — never written, not even as
@@ -166,14 +180,16 @@ export function Fabricator<$Definition extends Definition>(
         const value = v.fabricate();
         if (value !== Omitted) fabricated[k] = value;
       } else if (isObjectComputeFabricator(v)) {
-        deferred.push([k, v]);
+        deferred.set(k, v);
       } else {
         fabricated[k] = v.fabricate();
       }
     }
 
-    for (const [k, v] of deferred) {
-      fabricated[k] = v.fabricate({ fabricated });
+    resolveComputed(deferred, fabricated);
+
+    for (const k of Object.keys(hidden)) {
+      delete fabricated[k];
     }
 
     return fabricated as Fabricated<$Definition>;
@@ -187,4 +203,35 @@ export function Fabricator<$Definition extends Definition>(
     fabricate,
     schema,
   };
+}
+
+/**
+ * Phase 2 of `fabricate`: resolve every deferred compute field into
+ * `fabricated`, each after the deferred compute fields among its
+ * `dependencies`. A dependency that is not deferred — an ordinary field, an
+ * overridden compute field, or a key this object does not define — is already
+ * settled by phase 1. Assumes no cycle: `Registry.ts`'s `make` rejects one when
+ * the Schema is built (`assertAcyclic`).
+ *
+ * @mutates fabricated
+ */
+function resolveComputed(
+  deferred: ReadonlyMap<string, ComputeFabricator<any, any>>,
+  fabricated: PlainObject,
+): void {
+  const resolved = new Set<string>();
+
+  const resolve = (key: string): void => {
+    if (resolved.has(key)) return;
+
+    const field = deferred.get(key);
+    if (!field) return;
+
+    for (const dependency of field[Meta].dependencies) resolve(dependency);
+
+    fabricated[key] = field.fabricate({ fabricated });
+    resolved.add(key);
+  };
+
+  for (const key of deferred.keys()) resolve(key);
 }

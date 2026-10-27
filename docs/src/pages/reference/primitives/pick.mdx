@@ -1,0 +1,42 @@
+# T.pick
+
+A [structure](/reference/primitives#structures): a copy of an object schema with only the fields you name.
+
+```ts
+const UserSchema = T.object({
+  id: T.number.integer.sequence,
+  first: T.string.whereby({ length: { min: 1, max: 12 } }),
+  last: T.string.whereby({ length: { min: 1, max: 12 } }),
+  email: T.string.whereby({ length: { min: 5, max: 30 } }),
+});
+
+const ContactSchema = T.pick(UserSchema, ["id", "email"]);
+// { id: number; email: string }
+```
+
+The source can be an object schema or a built object Fabricator. Naming a field the source doesn't have is a type error, and it throws at runtime too.
+
+Fields keep their order from the source.
+
+## Computed fields
+
+A kept [computed field](/guides/objects#computed-fields) still needs the fields it reads. If you didn't keep them, they are fabricated anyway and left out of the result:
+
+```ts
+const NamedUserSchema = UserSchema.refine(({ compute }) => ({
+  name: compute(T.string)
+    .from(["first", "last"])
+    .as(({ fabricated }) => `${fabricated.first} ${fabricated.last}`),
+}));
+
+T.pick(NamedUserSchema, ["id", "name"]);
+// { id: number; name: string }, with first and last fabricated for `name`
+```
+
+Declare dependencies with `.from` so only those fields are kept. A computed field without `.from` can read the whole object, so every field it could read is kept.
+
+## What doesn't carry over
+
+The result is a new object schema. The source's own `.as(produce)` and any `.adapt(...)` on the whole object are dropped, because both describe the source's full shape. Each kept field keeps its own `.adapt(...)` and `.override(...)` values.
+
+For the inverse, see [`T.omit`](/reference/primitives/omit).

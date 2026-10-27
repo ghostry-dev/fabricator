@@ -65,7 +65,9 @@ const BarOwningFoo = T.object({
   id: T.number.integer.sequence,
   foo: FooSchema,
 }).refine(({ compute }) => ({
-  foo_id: compute(T.number.integer).as(({ fabricated }) => fabricated.foo.id),
+  foo_id: compute(T.number.integer)
+    .from(["foo"])
+    .as(({ fabricated }) => fabricated.foo.id),
 }));
 ```
 

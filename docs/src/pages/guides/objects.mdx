@@ -40,6 +40,26 @@ const IdentifiableProductSchema = ProductSchema.refine(({ compute }) => ({
 
 `compute(source)` takes a schema (or a bare builder like `T.string`, when you just need to name the field's type and don't care about its length/range) and returns something with a single method, `.as(resolve)`. `resolve` receives `{ fabricated }` — the rest of the object, already built — and returns the computed value.
 
+### Declaring dependencies with `.from`
+
+Name the fields a computed field reads with `.from([...])`, before `.as`:
+
+```ts
+const UserSchema = T.object({
+  first: T.string.whereby({ length: { min: 1, max: 12 } }),
+  last: T.string.whereby({ length: { min: 1, max: 12 } }),
+  email: T.string.whereby({ length: { min: 5, max: 30 } }),
+}).refine(({ compute }) => ({
+  name: compute(T.string)
+    .from(["first", "last"])
+    .as(({ fabricated }) => `${fabricated.first} ${fabricated.last}`),
+}));
+```
+
+`fabricated` then holds only `first` and `last`, and reading any other field is a type error. Without `.from`, a computed field can read every field of the object it refines, and [`T.pick`](/reference/primitives/pick) and [`T.omit`](/reference/primitives/omit) have to keep all of those fabricated. With `.from`, they keep only what it names.
+
+A key `.from` names must be a field of the object being refined, or it throws.
+
 This is why `.refine()` needs its own method distinct from `.extend()`: a computed field genuinely needs a second pass, after the ordinary fields resolve. See [Composition](/guides/composition) for the full `extend`/`refine`/`override` picture and the performance trade-off between the two.
 
 For a value computed from other schemas that are not fields of a surrounding object, use [`T.derive`](/reference/primitives/derive) instead.
