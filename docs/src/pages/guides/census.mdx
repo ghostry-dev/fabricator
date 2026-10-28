@@ -1,6 +1,6 @@
 # Census
 
-A schema describes structure you already know. Realistic data also needs the statistical shape of the real thing — how values are distributed, how often a field is missing or `null`, how long strings run, which strings are really enums — and that part is usually guessed. `@ghostry/fabricator-census` takes a census of real data and reports its shape in fabricator's own vocabulary: [`distribution`](/guides/distributions) variants, `whereby` ranges, `.weighted(...)` weights, and string `composition`.
+A schema describes structure you already know. Realistic data also needs statistics of the real thing: how values are spread, how often a field is missing or `null`, how long strings are, and which strings are really enums. That part is usually guessed. `@ghostry/fabricator-census` takes a census of real data and reports those statistics as fabricator config: [`distribution`](/guides/distributions) variants, `whereby` ranges, `.weighted(...)` weights, and string `composition`.
 
 ```ts
 import { census, report } from "@ghostry/fabricator-census";
@@ -10,7 +10,7 @@ const users = census.from(rows);
 console.log(report(users));
 ```
 
-`rows` is any iterable of values already decoded into JS: an array parsed from JSON, rows from a database driver. Nothing has to be declared first — a census reads plain values, never a Schema, and works the structure out as it goes. The report has one line per path, written as the builder call that path suggests:
+`rows` is any iterable of plain JS values, such as an array parsed from JSON or rows from a database driver. You don't declare anything first. A census reads plain values, never a Schema, and works out the structure as it goes. The report has one line per path, written as the builder call it suggests for that path:
 
 ```txt
 Census of 5000 values.
@@ -38,7 +38,7 @@ A census keeps what it observed. Frequencies, enum members, extremes and quantil
 
 ## Taking a census
 
-`census.from(values)` reads an iterable in one pass. For any other source — a driver cursor, a stream, several batches — `census.begin()` returns an accumulator, and the loop is yours:
+`census.from(values)` reads an iterable in one pass. For any other source, such as a driver cursor, a stream, or several batches, `census.begin()` returns an accumulator and you write the loop:
 
 ```ts
 const tally = census.begin();
@@ -48,9 +48,9 @@ for await (const row of cursor) tally.add(row);
 const users = tally.finish();
 ```
 
-That is why there is no async variant: the loop is the only asynchronous part. `finish()` returns the census, and calling `add` after it throws.
+That is why there is no async version: the loop is the only async part. `finish()` returns the census, and calling `add` after it throws.
 
-Every value is counted, so counts, type mixes and presence are exact. Quantiles, histograms and fits are exact too while a field has seen no more than `reservoir` values; past that, they come from a uniform sample of that size.
+Every value is counted, so counts, type mixes, and presence are exact. Quantiles, histograms, and fits are also exact until a field has seen more than `reservoir` values. After that, they come from a uniform sample of that size.
 
 | Option      | Default  | What it bounds                                                                                              |
 | ----------- | -------- | ----------------------------------------------------------------------------------------------------------- |
@@ -63,13 +63,13 @@ Every value is counted, so counts, type mixes and presence are exact. Quantiles,
 | `seed`      | none     | Makes the reservoir sample reproducible for a given input order.                                            |
 | `facts`     | none     | Whole-table facts per top-level field. See [Facts](#facts-what-the-whole-table-knows).                      |
 
-Those caps are what keep memory flat: data keyed by id cannot grow a census without bound, and neither can a deep tree. A suggestion says so wherever one was reached.
+These limits keep memory use flat, so data keyed by id or a deep tree can't make a census grow without bound. A suggestion notes wherever a limit was reached.
 
-A census is plain data. `JSON.stringify` it, store it, and `suggest` from it later; the values JSON cannot carry are tagged, a bigint as `{ type: "bigint", value: "…" }`.
+A census is plain data. You can `JSON.stringify` it, store it, and `suggest` from it later. Values JSON can't hold are tagged, such as a bigint as `{ type: "bigint", value: "…" }`.
 
 ## Reading the suggestions
 
-`suggest(census)` returns the tree that `report` prints: one node per path, tagged with the kind it suggests and holding that builder's arguments as data.
+`suggest(census)` returns the tree that `report` prints. It has one node per path, each naming the kind it suggests and holding that builder's arguments as data.
 
 ```ts
 import { suggest } from "@ghostry/fabricator-census";
@@ -82,7 +82,7 @@ if (suggestion.kind === "object") {
 }
 ```
 
-A suggestion is data — not a Schema, and not source text. You read it and write the schema, which keeps it serializable and leaves the decisions it cannot make to you.
+A suggestion is data, not a Schema and not source code. You read it and write the schema yourself. That keeps it serializable and leaves the decisions it can't make to you.
 
 | Observed                                        | Suggested                                                         |
 | ----------------------------------------------- | ----------------------------------------------------------------- |
@@ -109,30 +109,34 @@ A suggestion is data — not a Schema, and not source text. You read it and writ
 | objects                                         | `T.object({ … })`                                                 |
 | objects with more keys than `fields`            | `T.record(key, value).whereby({ size })`                          |
 
-Weights are the observed counts, unrounded. fabricator's weights are relative, so `{ null: 3742, value: 1258 }` and `{ null: 3, value: 1 }` describe nearly the same schema. A nested wrapper's weights count only what the outer one let through: in `T.omittable(T.nullable(x))`, the inner `null` and `value` add up to the objects that had the key.
+Weights are the observed counts, not rounded. Fabricator's weights are relative, so `{ null: 3742, value: 1258 }` and `{ null: 3, value: 1 }` describe nearly the same schema. A nested wrapper's weights only count what the outer wrapper let through. In `T.omittable(T.nullable(x))`, the inner `null` and `value` add up to the number of objects that had the key.
 
-A string's `length` counts UTF-16 code units, the same budget `T.string` spends, so `"😀".length` is 2 here as it is there.
+A string's `length` counts UTF-16 code units, the same way `T.string` does, so `"😀".length` is 2 in both.
 
 ### Fits
 
-For every range, a census fits each variant the range could take and scores it by the largest gap between the data's cumulative distribution and the candidate's. The `fit:` line lists the candidates, best first.
+For every range, a census tries each distribution that could apply and scores it by the largest gap between the data's cumulative distribution and the candidate's. The `fit:` line lists the candidates, best first.
 
-- **Scores only rank candidates.** Each candidate's parameters were estimated from the same data it is scored against, so a score is not a significance test.
-- **Simpler wins a near-tie.** A candidate with fewer parameters is chosen when its score is within `1.36 / √n` of the best — the "simpler wins within" figure. `uniform` has none, so data with no real shape reads as `uniform` rather than as a faint `normal`, as `nickname`'s length does above.
-- **Whole numbers are scored the way fabricator draws them.** `T.number.integer` and every `length` draw over `[min, max + 1)` and floor, so those fields are scored against exactly those buckets rather than against a continuous curve.
-- **`logarithmic` is tried only where it applies** — a range that starts above zero and spans at least two orders of magnitude.
-- **Two peaks are not fitted.** `multi` and `custom` are never suggested. A bimodal field shows up as every candidate scoring poorly; its histogram is on the census, at `node.number.summary.histogram`.
+- **Scores only rank candidates.** Each candidate's parameters come from the same data it is scored against, so a score is not a significance test.
+- **The simpler candidate wins a near-tie.** A candidate with fewer parameters is chosen when its score is within `1.36 / √n` of the best, which is the "simpler wins within" number. `uniform` has no parameters, so data with no real shape reads as `uniform` instead of a faint `normal`, as `nickname`'s length does above.
+- **Whole numbers are scored the way fabricator draws them.** `T.number.integer` and every `length` are drawn as whole numbers, so those fields are scored against whole-number buckets instead of a continuous curve.
+- **`logarithmic` is only tried where it fits**: a range that starts above zero and spans at least two orders of magnitude.
+- **Two peaks are not fitted.** `multi` and `custom` are never suggested. A field with two peaks shows up as every candidate scoring poorly. Its histogram is on the census, at `node.number.summary.histogram`.
 
-Paste a fitted `distribution` into the [explorer](/guides/distributions#explore) to see the shape it describes. `fit(numeric, options)` is exported as well, for fitting any numeric tally in a census yourself.
+Paste a fitted `distribution` into the [explorer](/guides/distributions#explore) to see its shape. `fit(numeric, options)` is also exported, so you can fit any numeric tally in a census yourself.
 
 ### Notes
 
-Every suggestion carries `notes`: what the builder call alone would not tell you. That every value was distinct, where fabricator has no uniqueness facility and a fabricated range will collide. That `composition` draws uniformly within each character class, so letter frequencies are not reproduced. That an object's keys look like data rather than structure.
+Every suggestion has `notes` for things the builder call alone doesn't tell you. For example:
+
+- Every value was distinct. Fabricator doesn't guarantee uniqueness, so fabricated values in that range will eventually collide.
+- `composition` draws evenly within each character class, so letter frequencies are not reproduced.
+- An object's keys look like data rather than structure.
 
 ### What a census does not detect
 
-- **Cross-field correlations** — `shippedAt` present only when `status` is `"shipped"`. That is [`.refine`](/guides/objects) or [`T.derive`](/reference/primitives/derive).
-- **Discriminated unions.** Objects of different shapes merge into one node with many spurious `T.omittable` fields. A low-cardinality string field whose values split the other fields' presence cleanly gets a note saying so.
+- **Fields that depend on each other**, such as `shippedAt` being present only when `status` is `"shipped"`. Use [`.refine`](/guides/objects#computed-fields) or [`T.derive`](/reference/primitives/derive) for those.
+- **Discriminated unions.** Objects of different shapes merge into one node with many misleading `T.omittable` fields. If a string field with few values cleanly predicts which other fields are present, it gets a note saying so.
 - **Positional tuples.** An array is one merged element and a length.
 - **Recursive schemas.** A tree is described level by level, down to `depth`.
 
@@ -170,15 +174,15 @@ const User = T.object({
 });
 ```
 
-What changed on the way is the judgment a census leaves to you:
+The differences are the judgment calls a census leaves to you:
 
-- **Ranges.** A sample's extremes sit inside the true range. 79 was the oldest user seen; the domain says 90. `3.4e-11` is zero.
-- **Weights and parameters.** Rounded to what the numbers support. A `spread` of 11.95 from 5,000 rows is 12.
+- **Ranges.** A sample's extremes fall inside the true range. 79 was the oldest user seen, but the real limit is 90. `3.4e-11` is really zero.
+- **Weights and parameters.** These are rounded to what the numbers support. A `spread` of 11.95 from 5,000 rows is 12.
 - **Defaults.** `distribution: { kind: "uniform" }` is the default, so it is left out.
 
 ## How many rows
 
-`sampleSize()` answers how large a sample a census needs for its statistics to hold to a margin:
+`sampleSize()` tells you how large a sample a census needs for its statistics to be accurate within a margin:
 
 ```ts
 import { sampleSize } from "@ghostry/fabricator-census";
@@ -190,7 +194,7 @@ sampleSize({ population: 20_000, rare: 0.001 });
 // { n: 3748, reasons: [{ criterion: "shape", n: 3748, … }, …] }
 ```
 
-`n` is the largest of up to three requirements, and `reasons` names each:
+`n` is the largest of up to three requirements, and `reasons` lists each one:
 
 | Criterion    | Guarantees                                                              | At the defaults |
 | ------------ | ----------------------------------------------------------------------- | --------------- |
@@ -198,11 +202,11 @@ sampleSize({ population: 20_000, rare: 0.001 });
 | `proportion` | every presence, null or enum weight within `margin`                     | 2401            |
 | `rare`       | a value of frequency `rare` seen at least once; applies only when given | —               |
 
-`margin` defaults to `0.02` and `confidence` to `0.95`. `population` applies the finite population correction, and caps `n` at the population. The number does not grow with the table: 4,612 rows describe two million as well as they describe twenty thousand.
+`margin` defaults to `0.02` and `confidence` to `0.95`. `population` applies the finite population correction and caps `n` at the population. The number doesn't grow with the table: 4,612 rows describe two million rows as well as twenty thousand.
 
 ## From PostgreSQL
 
-`@ghostry/fabricator-census/postgres` builds the queries a census is fed from — a sample of the right size, and facts about the whole table to go with it. It never opens a connection: every query runs through your own driver.
+`@ghostry/fabricator-census/postgres` builds the queries that feed a census: a sample of the right size, and facts about the whole table. It never opens a connection. Every query runs through your own driver.
 
 ```ts
 import { census, report } from "@ghostry/fabricator-census";
@@ -216,21 +220,21 @@ const { rows, facts } = await collect(run, { table: "users" });
 console.log(report(census.from(rows, { facts })));
 ```
 
-`run` is the whole integration: query text with `$1` placeholders and an array of values in, rows out. The line above is node-postgres and PGlite alike. A table is a name, or `{ schema, table }`.
+`run` is the whole integration: it takes query text with `$1` placeholders and an array of values, and returns rows. The line above works for both node-postgres and PGlite. A table is a name, or `{ schema, table }`.
 
 `collect` runs these, in order:
 
-1. The planner's row estimate, from `pg_class`. A table never analyzed has none, and is counted instead.
+1. The planner's row estimate, from `pg_class`. A table that was never analyzed has none, so its rows are counted instead.
 2. The table's columns and their types.
 3. The planner's statistics, from `pg_stats`, as estimated facts.
 4. A sample, sized by `sampleSize` against the row count.
 5. One aggregate query per column, as exact facts.
 
-It returns the sampled `rows` and the `facts`, along with the `columns`, the `population`, the `size` it chose and every query it ran as `queries`.
+It returns the sampled `rows` and the `facts`, along with the `columns`, the `population`, the `size` it chose, and every query it ran as `queries`.
 
 ### Facts: what the whole table knows
 
-A sample cannot tell you some things reliably, and the database can answer them exactly with one aggregate each. Facts are those answers, per column:
+Some things a sample can't tell you reliably, but the database can answer exactly with one aggregate each. Facts are those answers, per column:
 
 | A sample says                   | A fact says                                                 |
 | ------------------------------- | ----------------------------------------------------------- |
@@ -239,16 +243,16 @@ A sample cannot tell you some things reliably, and the database can answer them 
 | `status` took three values      | `status` has exactly those three, weighted 600k, 300k, 100k |
 | these ids look random           | ids are 1 to the row count with none repeated: a serial     |
 
-Passed as `census.from(rows, { facts })`, they are merged over the sample's own numbers when suggesting: an **exact** fact first, then an **estimated** one, then the sample.
+Pass them as `census.from(rows, { facts })`. When suggesting, an **exact** fact is used first, then an **estimated** one, then the sample.
 
 - **Exact** facts come from the aggregates, which read every row.
-- **Estimated** facts come from the planner's statistics. They cost nothing to read, but `ANALYZE` drew them from a sample of its own, so a suggestion that used one says so in its notes.
+- **Estimated** facts come from the planner's statistics. They are free to read, but `ANALYZE` took them from its own sample, so a suggestion that used one says so in its notes.
 
-Facts set presence weights, ranges, enum members and their weights, and uniqueness. The distribution's shape is still fitted from the sample, as positions inside the table's range, because no aggregate describes a shape. Table extremes only ever widen a range.
+Facts set presence weights, ranges, enum members and their weights, and uniqueness. The distribution's shape is still fitted from the sample, within the table's range, because no aggregate describes a shape. The table's extremes can only widen a range, never narrow it.
 
-Two limits follow from what facts are. They describe top-level columns, so anything nested inside a `json` column comes from the sample alone. And they describe the whole table: `sample.where` narrows the sample without narrowing the facts, so do not combine the two.
+Facts have two limits. They only describe top-level columns, so anything nested inside a `json` column comes from the sample alone. And they describe the whole table, while `sample.where` filters only the sample, so don't use the two together.
 
-`Facts` is plain data with no PostgreSQL in it. They can come from another database, a cache, or your own hand.
+`Facts` is plain data with nothing PostgreSQL-specific in it. You can get facts from another database, a cache, or write them by hand.
 
 ### What it costs
 
@@ -260,15 +264,15 @@ Every query carries a `cost`, and `collect`'s `queries` lists what ran:
 | `sample`  | every page, or a sample of them | the sample                            |
 | `scan`    | every row, once per column      | the aggregates, and a count if needed |
 
-On a large table the scans are the expensive part. Run them against a replica, with a `statement_timeout`, or skip them:
+On a large table, the scans are the expensive part. Run them against a replica, set a `statement_timeout`, or skip them:
 
 ```ts
 await collect(run, { table: "users", budget: "catalog" });
 ```
 
-Under `budget: "catalog"` every fact is an estimate, and a table that was never analyzed is an error rather than a counting scan. A serial column also stops reading as `T.number.integer.sequence`: that takes exact extremes, since the planner's sit inside the true range.
+With `budget: "catalog"`, every fact is an estimate, and a table that was never analyzed is an error instead of being counted. A serial column also stops being suggested as `T.number.integer.sequence`, because that needs exact extremes and the planner's fall inside the true range.
 
-An exact distinct count is the one aggregate left out by default, because `count(DISTINCT …)` is the costliest of them. The planner's estimate stands in; `aggregates: { distinct: "exact" }` asks for the real one.
+An exact distinct count is the one aggregate left out by default, because `count(DISTINCT …)` is the most expensive. The planner's estimate is used instead. Pass `aggregates: { distinct: "exact" }` to get the real count.
 
 ### Choosing a sampling method
 
@@ -285,13 +289,13 @@ await collect(run, {
 | `system`              | only sampled pages | wherever physical order tracks the values    | with a `seed`, while the physical layout is unchanged |
 | `hash`                | every row          | none, but rows sharing a `key` move together | always, and stable as rows are added                  |
 
-`system` is the fast one on a huge table, and the wrong one for an append-only, time-ordered table, where a page holds rows from the same moment. `hash` is the one to use when a census should be repeatable against a table that keeps changing.
+`system` is fastest on a huge table, but wrong for an append-only, time-ordered table, where each page holds rows from the same moment. Use `hash` when a census should be repeatable against a table that keeps changing.
 
-No method uses `LIMIT`: truncating a scan favors whichever rows it reaches first. The row count therefore lands near `n` rather than on it.
+No method uses `LIMIT`, because cutting a scan short favors whichever rows it reaches first. So the row count lands near `n`, not exactly on it.
 
 ### The builders on their own
 
-`collect` is sugar. Each step is a builder returning a `Query` — `text`, `values`, `cost`, `notes`, and a `read` that parses the driver's rows:
+`collect` is a shortcut. Each step is a builder that returns a `Query` with `text`, `values`, `cost`, `notes`, and a `read` function that parses the driver's rows:
 
 ```ts
 import { census, sampleSize } from "@ghostry/fabricator-census";
@@ -332,13 +336,13 @@ for (const query of aggregates("users", described))
 const users = census.from(rows, { facts });
 ```
 
-Taking them apart is how you sample from one connection and aggregate on another, cache the facts, or leave a column out.
+Using the builders directly lets you sample on one connection and aggregate on another, cache the facts, or leave a column out.
 
-Identifiers are always quoted, and numbers always travel as parameters, never in the query text. `sample`'s `where` is the one exception to both: it is raw SQL, for trusted text only.
+Identifiers are always quoted, and numbers are always passed as parameters, never written into the query text. `sample`'s `where` is the one exception: it is raw SQL, so only pass trusted text.
 
 ### How column types are read
 
-Drivers disagree about the types a census cares most about, so `coerce` — which `collect` runs for you — reads each column by its declared type:
+Drivers return some of the types a census cares about differently, so `coerce` reads each column by its declared type. `collect` runs it for you.
 
 | Column                    | Read as                                                                       |
 | ------------------------- | ----------------------------------------------------------------------------- |
@@ -347,10 +351,10 @@ Drivers disagree about the types a census cares most about, so `coerce` — whic
 | `boolean` left as `t`/`f` | a boolean                                                                     |
 | everything else           | whatever the driver returned                                                  |
 
-A few types come with a caveat, which rides along as a note on the suggestion:
+A few types have a caveat, which appears as a note on the suggestion:
 
-- **`timestamp` without time zone** has no offset, so drivers read it in the process's local time zone, and its instants shift with where the census runs.
+- **`timestamp` without time zone** has no offset, so drivers read it in the local time zone, and its values shift depending on where the census runs.
 - **`date`** reads as local or UTC midnight depending on the driver.
-- **Text lengths.** PostgreSQL's `char_length` counts code points where a census counts UTF-16 units. The table's lengths are used when the sample held no character outside the Basic Multilingual Plane; otherwise the sample's stand.
+- **Text lengths.** PostgreSQL's `char_length` counts code points, while a census counts UTF-16 units. The table's lengths are used only when the sample had no characters outside the Basic Multilingual Plane. Otherwise the sample's lengths are used.
 
-SQL rows are flat, and every column is present in every row. A column is therefore never suggested as `T.omittable` — a missing value is a `null`, and reads as `T.nullable`.
+SQL rows are flat, and every column is present in every row. So a column is never suggested as `T.omittable`. A missing value is a `null`, and is suggested as `T.nullable`.

@@ -1,6 +1,6 @@
 # Composition
 
-Three ways to derive one schema from another, plus one way to override an already-built Fabricator for a single call. They compose with each other.
+There are three ways to make one schema from another, two ways to keep only some fields, and one way to override a single call on a Fabricator you already built. They all work together.
 
 ## `.extend()` — add or replace fields
 
@@ -10,7 +10,7 @@ const IdentifiableProductSchema = ProductSchema.extend(({ base }) => ({
 }));
 ```
 
-Combines the base schema's field definitions with the ones you provide. The result is deep-merged: a new field is added, and a field with the same name as an existing one replaces it wholesale (nested objects merge; anything else overrides). `base` is the original definition, handed to the extender in case the new fields need to reference it — return `{}` if you don't need it.
+This combines the base schema's fields with the ones you return. A new field is added. A field with the same name as an existing one replaces it entirely, even if both are objects; their fields are not merged. `base` is the original set of fields, in case the new ones need to refer to it. Ignore it if you don't need it.
 
 ## `.refine()` — add fields computed from fabricated data
 
@@ -22,10 +22,10 @@ const WithSlug = ProductSchema.refine(({ compute }) => ({
 }));
 ```
 
-Same shape as `.extend()`, but the new fields are computed from the _fabricated_ result of the base schema rather than defined statically — see [Objects](/guides/objects) for the full `compute` API. Refine stages chain: a later `.refine()` can reference a field a prior one computed.
+This works like `.extend()`, but the new fields are computed from the base schema's _fabricated_ values. See [Objects](/guides/objects#computed-fields) for how `compute` works. Refine stages chain, so a later `.refine()` can read a field an earlier one computed.
 
 :::note
-Each `.refine()` stage means the base schema has to actually be fabricated to compute the refinement, so it's less performant than `.extend()` at scale. Prefer `.extend()` unless you genuinely need to reference already-fabricated data.
+A computed field needs a second pass after the other fields are fabricated, so `.refine()` costs more than `.extend()` at scale. Use `.extend()` unless you need to read fabricated values.
 :::
 
 ## `.override()` — bake fixed values into a schema
@@ -39,7 +39,7 @@ const WidgetSchema = ProductSchema.override({
 const widget = new Fabricator(WidgetSchema).fabricate();
 ```
 
-Pure Schema → Schema — never touches randomness. The named fields are still fully dispatched when the resulting schema is built (so unrelated fields' random streams stay assigned exactly as they would without the override — see [Reproducibility](/guides/reproducibility)), but their draws are discarded in favor of the fixed value. Values deep-merge into the existing definition, and chained overrides compose (`.override(a).override(b)`, with `b` winning on conflicts).
+This returns a new schema and involves no randomness. The named fields always produce the fixed value. Every other field keeps the same random stream it would have without the override (see [Reproducibility](/guides/reproducibility)). In a nested object like `pricing`, only the fields you name are fixed. Overrides chain: in `.override(a).override(b)`, `b` wins where they conflict.
 
 ## `T.pick` and `T.omit` — keep some fields
 
@@ -48,7 +48,7 @@ const Summary = T.pick(ProductSchema, ["id", "name"]);
 const WithoutPricing = T.omit(ProductSchema, ["pricing"]);
 ```
 
-Both return a new object schema with fewer fields. If a kept computed field reads a field you dropped, that field is still fabricated for it, but it doesn't appear in the result. See [`T.pick`](/reference/primitives/pick).
+Both return a new object schema with fewer fields. If a computed field you kept reads a field you dropped, the dropped field is still fabricated for it but doesn't appear in the result. See [`T.pick`](/reference/primitives/pick).
 
 ## `.fabricate(overrides)` — a per-call override, not a new schema
 
@@ -57,7 +57,7 @@ const Product = new Fabricator(ProductSchema);
 const widget = Product.fabricate({ name: "Widget" });
 ```
 
-The lightweight sibling of `.override()`: instead of producing a new Schema, it overrides one call's result on an _already-built_ Fabricator, using that Fabricator's own already-drawn randomness for every other field. See [Objects](/guides/objects#per-call-overrides) for the `Omitted` sentinel and merge details.
+This is the lightweight version of `.override()`. Instead of making a new schema, it overrides one call on a Fabricator you already built, and every other field is fabricated as usual. See [Objects](/guides/objects#per-call-overrides) for `Omitted` and how nested objects are handled.
 
 ## Extending a subtype
 
@@ -69,4 +69,4 @@ const ElectronicsSchema = ProductSchema.extend(() => ({
 const laptop = new Fabricator(ElectronicsSchema).fabricate({ name: "Laptop" });
 ```
 
-`.extend()`, `.refine()`, `.override()`, `T.pick`, and `T.omit` all return ordinary Schemas, so they compose with each other and with `.fabricate(overrides)` freely — a schema-level fixed field (`T.always('electronics')`) and a per-call override (`{ name: 'Laptop' }`) are just two different points in the same pipeline.
+`.extend()`, `.refine()`, `.override()`, `T.pick`, and `T.omit` all return ordinary schemas, so you can combine them with each other and with `.fabricate(overrides)`. Here, a fixed field in the schema (`T.always("electronics")`) and a per-call override (`{ name: "Laptop" }`) are just two steps in the same chain.

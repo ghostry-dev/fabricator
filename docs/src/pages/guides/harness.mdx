@@ -1,6 +1,8 @@
 # Harness
 
-[`@ghostry/harness`](https://github.com/ghostry-dev/harness) wraps a Jest-compatible test runner — bun, vitest, jest, mocha, `node:test` — so every Ghostry library can reach into each test the same way. fabricator's integration uses that for one thing: each test's data follows from the test's own identity — its `describe` names, its own name, its `.each` row — with nothing threaded through the body and no salt invented by hand.
+[`@ghostry/harness`](https://github.com/ghostry-dev/harness) wraps a Jest-compatible test runner (bun, vitest, jest, mocha, or `node:test`). It gives you the same API on every runner, lets integrations like fabricator's hook into each test, and offers features of its own, such as `attest` (assertions that also narrow TypeScript types). See [its README](https://github.com/ghostry-dev/harness#readme) for everything it does.
+
+Fabricator's integration uses it for one thing: each test's data comes from the test's identity, meaning its `describe` names, its own name, and its `.each` row. You don't pass anything into the test body or make up a salt.
 
 :::code-group
 
@@ -16,7 +18,7 @@ npm install --save-dev @ghostry/harness
 
 ## Setup
 
-One shared module builds both, and every test file imports from it:
+One shared module sets up both, and every test file imports from it:
 
 ```ts
 // test/setup.ts
@@ -54,19 +56,19 @@ describe("users", () => {
 });
 ```
 
-Nothing in the test mentions a salt. Running it twice draws the same user; renaming the test, or moving it under a different `describe`, draws a different one.
+Nothing in the test mentions a salt. Running it twice fabricates the same user. Renaming the test, or moving it under a different `describe`, fabricates a different one.
 
 ## Pin a fixed `Date`
 
-The `clock` in the setup module is not decoration. Leave it out and the instance takes the wall-clock instant of the `initialize()` call, so every run of the suite draws different data and the only way back to a failing run is a `context.clock` someone happened to log. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+The `clock` in the setup module matters. Without it, the instance uses the time of the `initialize()` call, so every run of the suite gets different data, and you can only get back to a failing run if someone logged its `context.clock`. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
 
-A pinned `Date` is inherited unchanged by every test, so the whole suite shares one plausible "now" and only each test's identity varies its data.
+Every test inherits a pinned `Date` unchanged, so the whole suite shares one realistic "now", and only each test's identity changes its data.
 
-`clock: "derived"` also removes the wall-clock dependency, but it is not a substitute here. It derives "now" from the salt, and every test has a different salt — so every test, and every `beforeAll`, gets its own "now," drawn from across the entire representable `Date` range. A `beforeAll` and the tests beneath it then disagree about the present. The integration leaves that alone on purpose: `"derived"` means the salt _is_ the reproducibility unit, and per-test clocks are that request honored. Pin a `Date` unless that is what you want.
+`clock: "derived"` also removes the dependency on the time, but it derives "now" from the salt, and every test has a different salt. So every test, and every `beforeAll`, gets its own "now", which can be any date in the representable range. A `beforeAll` and the tests under it then disagree about the present. The integration does this on purpose: `"derived"` means the salt alone determines everything, and a separate clock per test is the result. Pin a `Date` unless that's what you want.
 
 ## What each test's salt is
 
-Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) with its identity [layered](/guides/reproducibility#composing-instead-of-replacing-layer) onto the instance salt:
+Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap), with its identity [layered](/guides/reproducibility#composing-instead-of-replacing-layer) onto the instance salt:
 
 ```ts
 [...instanceSalt, "test", ...describeNames, testName]; // an ordinary test
@@ -74,15 +76,15 @@ Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#when-
 [...instanceSalt, "suite", ...describeNames, ""]; // beforeAll / afterAll
 ```
 
-Because it layers rather than replaces, `initialize({ salt })` or [`FABRICATOR_SALT`](/guides/reproducibility#env-var-salting) still re-salts the whole suite at once.
+Because the identity is added to the salt instead of replacing it, `initialize({ salt })` or [`FABRICATOR_SALT`](/guides/reproducibility#env-var-salting) still changes the salt for the whole suite at once.
 
-Each `wrap` also gets a fresh [construction counter](/guides/reproducibility#construction-order), so the first `new Fabricator(...)` in every test is that test's construction 0. What another test built, or whether it ran at all, never reaches it: `.only`, name filters, sharding, and `.concurrent` cannot shift a test's data.
+Each `wrap` also starts a fresh [construction counter](/guides/reproducibility#construction-order), so the first `new Fabricator(...)` in every test is that test's construction 0. What other tests built, or whether they ran at all, has no effect. `.only`, name filters, sharding, and `.concurrent` can't change a test's data.
 
 ## Why this uses `wrap`
 
-The [reproducibility guide](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) recommends `fork` over `wrap` in ordinary code, because a fork's receivers each mean exactly themselves. This integration is the case that recommendation exempts: it has to apply a per-test configuration to a body it did not write and cannot thread a parameter into. Ambience is the only way to reach `new Fabricator(User)` inside someone else's test, so `wrap` is the right tool here — and `context.fabricator` is still provided for anywhere you would rather be explicit.
+The [reproducibility guide](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) recommends `fork` over `wrap` in ordinary code, because a call through a fork always uses that fork's configuration. This integration is the exception the guide describes. It has to apply a per-test configuration to a test body it didn't write and can't pass a parameter into. Applying it automatically is the only way to reach `new Fabricator(User)` inside your test, so `wrap` is the right tool here. `context.fabricator` is still there wherever you'd rather be explicit.
 
-The instance you hand `integration(...)` **need not be the one `initialize()` returned.** Forking an application-wide configuration and treating that fork as your own root works exactly the same way:
+The instance you pass to `integration(...)` **doesn't have to be the one `initialize()` returned.** You can fork an application-wide configuration and use that fork as your root, and it works the same way:
 
 ```ts
 const app = initializeFabricator({ clock: new Date("2024-01-01T00:00:00Z") });
@@ -94,13 +96,13 @@ export const { describe, it, expect } = initializeHarness({
 });
 ```
 
-Each test's wrap is entered on the instance in effect — here the fork, since nothing encloses it — so a `Fabricator` destructured off that fork picks up the per-test identity, and the per-test salt simply gains `"testing"` ahead of the identity. Forks _of_ that instance are not reached. Which instance a lineage started from is not relevant here.
+Each test's wrap is opened on the instance in effect, which here is the fork, since nothing else wraps it. So a `Fabricator` destructured from that fork picks up each test's identity, and the per-test salt gets `"testing"` before the identity. Forks _of_ that fork are not affected.
 
-When something _does_ enclose it — [the extern extension](/guides/extern) opens a fabricator scope around every testing block — the per-test salt composes onto that scope rather than replacing it. The integrated instance is an ancestor of that scope, so it is still reached. A fork of the integrated instance is not.
+When something else _does_ wrap it, the per-test salt is added to that scope instead of replacing it. [The extern extension](/guides/extern) does this around every testing block. The integrated instance is an ancestor of that scope, so it is still affected. A fork of the integrated instance is not.
 
 ## Reaching the scope
 
-The integration contributes one key to the test context, `fabricator` — the per-test scoped instance. The same scope is also ambient for the body's duration, so both of these draw from it:
+The integration adds one key to the test context: `fabricator`, the instance for this test. That same instance also applies automatically for the whole test body, so both of these draw from it:
 
 ```ts
 it("builds two users", ({ fabricator: scope }) => {
@@ -109,48 +111,48 @@ it("builds two users", ({ fabricator: scope }) => {
 });
 ```
 
-The two share one construction counter, so those are constructions 0 and 1 of the test, not two construction 0s. Reach for `context.fabricator` to hand the scope to a helper explicitly, or to read `scope.salt` for a log line. To derive per-test data under its own layer, fork the scope — `scope.fork(...)`, or `fabricator.context.scope().fork(...)` where the context is not in hand. A fork of the integrated instance itself is not per test; see [A module-level fork is not per test](#a-module-level-fork-is-not-per-test).
+The two share one construction counter, so they are constructions 0 and 1 of the test, not two construction 0s. Use `context.fabricator` to pass the scope to a helper, or to read `scope.salt` for a log message. To make per-test data with its own extra salt, fork the scope: `scope.fork(...)`, or `fabricator.context.scope().fork(...)` if you don't have the context. A fork of the integrated instance itself is not per test. See [A module-level fork is not per test](#a-module-level-fork-is-not-per-test).
 
-The ambient frame survives `await` on Node, Bun, and Deno. On a runtime without `node:async_hooks`, an `async` test body raises `SynchronousStackError` whichever of the two it uses — see [Runtime support](/guides/reproducibility#runtime-support).
+The automatic scope lasts through `await` on Node, Bun, and Deno. On a runtime without `node:async_hooks`, an `async` test body throws `SynchronousStackError` whichever way it builds. See [Runtime support](/guides/reproducibility#runtime-support).
 
 ## Hooks
 
-`@ghostry/harness` runs `beforeEach`/`afterEach` inside the test itself, so they share the test's scope: the hook's `context.fabricator` is the body's, and data built in a `beforeEach` and in the body continue one construction sequence.
+`@ghostry/harness` runs `beforeEach` and `afterEach` inside the test itself, so they share the test's scope. The hook's `context.fabricator` is the same as the body's, and constructions in a `beforeEach` and in the body share one counter.
 
-`beforeAll`/`afterAll` get a suite scope instead — the `"suite"` salt above — which is stable and distinct from every test's beneath it. A `beforeAll` and an `afterAll` in the same `describe` share that scope deliberately; to give one its own, call `fabricator.wrap({ salt: layer("teardown") }, ...)` inside the hook.
+`beforeAll` and `afterAll` get a suite scope instead, with the `"suite"` salt shown above. It stays the same between runs and differs from every test under it. A `beforeAll` and an `afterAll` in the same `describe` share that scope on purpose. To give one its own, call `fabricator.wrap({ salt: layer("teardown") }, ...)` inside the hook.
 
-What running hooks inside the test costs — a hook failure reported against the test, hook time counted against its timeout — belongs to the harness; see [its README](https://github.com/ghostry-dev/harness#readme).
+Running hooks inside the test has costs: a hook failure is reported against the test, and hook time counts against the test's timeout. Those come from the harness. See [its README](https://github.com/ghostry-dev/harness#readme).
 
 ## Potential surprises
 
 ### A module-level fork is not per test
 
-The per-test wrap reaches the instance handed to `integration(...)` and its ancestors, not forks of it. A fork created as `fabricator.fork({ salt: layer("A") })` at module scope draws the same salt in every test, and its construction counter runs across tests — so which values a test gets depends on which tests ran before it. It presents as tests colliding as a suite and passing under `.only`. Fork `context.fabricator` (or `fabricator.context.scope()`) inside the test instead.
+The per-test wrap applies to the instance passed to `integration(...)` and its ancestors, not to forks of it. A fork made with `fabricator.fork({ salt: layer("A") })` at the top of a file uses the same salt in every test, and its construction counter keeps counting across tests. So the values a test gets depend on which tests ran before it. You'll see tests that fail together as a suite but pass under `.only`. Fork `context.fabricator` (or `fabricator.context.scope()`) inside the test instead.
 
 ### Same path, same data
 
-Identity is the test's path, not its file. Two tests with the same `describe` names and test name draw the same data even in different files — most often a table-driven helper that registers identical names from several files. Each stays deterministic, so nothing breaks, but it is surprising if unexplained. Give them distinguishable names.
+A test's identity is its path, not its file. Two tests with the same `describe` names and test name get the same data, even in different files. This usually happens with a shared helper that registers the same test names from several files. Each test is still deterministic, so nothing breaks, but it can be surprising. Give them different names.
 
-The same applies to `describe.each`: put a placeholder from the row in its title (`describe.each(rows)("case $name", ...)`), or the tests inside two rows share one path.
+The same goes for `describe.each`. Put a placeholder from the row in its title (`describe.each(rows)("case $name", ...)`), or the tests in two rows share one path.
 
 ### A construction salt wants `layer(...)`
 
-A bare [construction salt](/guides/reproducibility#salting-one-construction) replaces the salt in effect — including the test's identity:
+A plain [construction salt](/guides/reproducibility#salting-one-construction) replaces the salt in effect, including the test's identity:
 
 ```ts
 it("a", () => new Fabricator(User, { salt: "fixed" }).fabricate());
 it("b", () => new Fabricator(User, { salt: "fixed" }).fabricate()); // same user as "a"
 ```
 
-Both pin the same salt, share the pinned clock, and — since ordinals restart per test — are each construction 0. That is an identical trace, and so an identical user. `{ salt: layer("fixed") }` composes onto the test's identity instead and keeps them apart.
+Both use the same salt and the same pinned clock, and since the counter restarts per test, both are construction 0. Everything that determines the data is the same, so the user is the same. `{ salt: layer("fixed") }` adds to the test's identity instead and keeps them apart.
 
 ### Retries stop suppressing flakes
 
-A retried test re-runs the same path and draws the same data, so a failure caused by fabricated data fails identically on every attempt. A retry no longer papers over it; it keeps surfacing the real coupling. That is intended, but it changes what a retry buys you.
+A retried test has the same path and gets the same data, so a failure caused by fabricated data fails the same way on every attempt. A retry no longer hides it; it keeps showing the real problem. That is intended, but it changes what retries are good for.
 
 ## Checking your runner
 
-`@ghostry/harness/conformance` registers a suite that checks your runner behaves the way the harness assumes. Give it a test file of its own:
+`@ghostry/harness/conformance` registers a suite that checks that your runner behaves the way the harness expects. Put it in its own test file:
 
 ```ts
 import { conformance } from "@ghostry/harness/conformance";

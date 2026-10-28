@@ -2,7 +2,7 @@ import { DistributionExplorer } from "../../components/distribution";
 
 # Distributions
 
-By default, a range-bound value — `T.number.whereby({ min, max })`, `T.date.whereby({ min, max })`, `T.date.past`, `T.date.future`, `T.string.whereby({ length })`, `T.array(...).whereby({ length })` — draws uniformly: every value in the range is equally likely. A scalar `min`/`max` is inclusive; `{ value, exclusive: true }` excludes that end. A `distribution` shapes the draw inside that interval, so generated data can cluster the way real-world data usually does.
+By default, a value drawn from a range is uniform: every value in the range is equally likely. That covers `T.number.whereby({ min, max })`, `T.date.whereby({ min, max })`, `T.date.past`, `T.date.future`, and the `length` of `T.string` and `T.array`. A plain `min` or `max` is inclusive, and `{ value, exclusive: true }` excludes that end. A `distribution` changes how values spread across the range, so generated data can cluster the way real data does.
 
 ```ts
 T.number.whereby({
@@ -13,14 +13,14 @@ T.number.whereby({
 ```
 
 :::note
-`distribution` is a plain tagged object, not a builder you import — the field is structurally typed, so a matching object literal is accepted with no import at all. Available on any `whereby` that takes a `{ min, max }` range: `T.number.whereby`, `T.number.integer.whereby`, `T.date.whereby`, `T.date.past.whereby`, `T.date.future.whereby`, `T.string.whereby({ length })`, `T.array(...).whereby({ length })`.
+`distribution` is a plain object with a `kind`, not something you import. It works on any `whereby` that takes a `{ min, max }` range: `T.number.whereby`, `T.number.integer.whereby`, `T.date.whereby`, `T.date.past.whereby`, `T.date.future.whereby`, `T.string.whereby({ length })`, and `T.array(...).whereby({ length })`.
 :::
 
 ## Explore
 
-Pick a variant, set the range, and drag its parameters until the shape matches your data. The bars are real draws from `T.number.whereby`, the line is the exact density they follow, and the snippet underneath is the call that produces what you see. A configuration the library rejects shows the library's own error.
+Pick a variant, set the range, and drag its parameters until the shape matches your data. The bars are real draws from `T.number.whereby`, the line is the exact curve they follow, and the code underneath produces what you see. If fabricator rejects a configuration, you see its error.
 
-When you have the data itself, [a census](/guides/census) fits these variants to it and reports the parameters.
+If you have real data, [a census](/guides/census) can fit these variants to it and report the parameters.
 
 <DistributionExplorer
   distribution={{ kind: "normal", mean: 500, spread: 100 }}
@@ -30,25 +30,25 @@ When you have the data itself, [a census](/guides/census) fits these variants to
 
 ### `uniform`
 
-**`{ kind: 'uniform' }`** — the default. Every value in the range equally likely.
+**`{ kind: 'uniform' }`** is the default. Every value in the range is equally likely.
 
 <DistributionExplorer compact distribution="uniform" />
 
 ### `normal`
 
-**`{ kind: 'normal', mean?, spread? }`** — a bell curve truncated to the range. `mean` defaults to the range's center; `spread` (standard deviation) defaults to a sixth of the span, which puts the range's bounds at roughly ±3σ before truncation.
+**`{ kind: 'normal', mean?, spread? }`** is a bell curve truncated to the range. `mean` defaults to the middle of the range. `spread` is the standard deviation and defaults to a sixth of the range, which puts the ends about three standard deviations from the middle.
 
 <DistributionExplorer compact distribution="normal" />
 
 ### `skew`
 
-**`{ kind: 'skew', exponent }`** — a power curve. `exponent > 1` biases toward `min`, `exponent < 1` biases toward `max`, `exponent === 1` is uniform.
+**`{ kind: 'skew', exponent }`** is a power curve. An `exponent` above 1 favors `min`, below 1 favors `max`, and exactly 1 is uniform.
 
 <DistributionExplorer compact distribution={{ kind: "skew", exponent: 3 }} />
 
 ### `triangular`
 
-**`{ kind: 'triangular', mode? }`** — linear ramps peaking at `mode` (defaults to the range's center). Simpler than a normal curve when you just want "values cluster around here, taper off toward the edges" without the bell-curve shape.
+**`{ kind: 'triangular', mode? }`** rises linearly to a peak at `mode` and falls linearly after it. `mode` defaults to the middle of the range. Use it when you want values to cluster around a point and thin out toward the edges, without a bell curve.
 
 <DistributionExplorer
   compact
@@ -57,13 +57,13 @@ When you have the data itself, [a census](/guides/census) fits these variants to
 
 ### `logarithmic`
 
-**`{ kind: 'logarithmic' }`** — log-uniform: density proportional to `1/x`, so values spread evenly across orders of magnitude and cluster toward `min`. Good for things like request latencies or file sizes, where "10 vs 100" and "1000 vs 10000" should feel equally likely. Requires a strictly positive range — the range's `min` must be greater than zero. Toggle the log axis to see the same draws come out flat.
+**`{ kind: 'logarithmic' }`** spreads values evenly across orders of magnitude, so they cluster toward `min`. A value between 10 and 100 is as likely as one between 1,000 and 10,000. It suits things like request latencies or file sizes. The range's `min` must be greater than zero. Switch on the log axis to see the same draws come out flat.
 
 <DistributionExplorer compact distribution="logarithmic" min={1} max={10000} />
 
 ### `multi`
 
-**`{ kind: 'multi', components: [{ weight, distribution }, ...] }`** — a weighted blend of component distributions, each drawn over the same range. Two `normal`s at different means, blended, produce the two separate peaks of a bimodal distribution. Weights are relative and don't need to sum to one. A component with weight `0` is dropped; every component zero throws.
+**`{ kind: 'multi', components: [{ weight, distribution }, ...] }`** blends several distributions over the same range. Two `normal`s with different means give two separate peaks. Weights are relative and don't need to add up to one. A component with weight `0` is ignored, and it throws if every weight is `0`.
 
 ```ts
 {
@@ -91,8 +91,8 @@ When you have the data itself, [a census](/guides/census) fits these variants to
 
 ### `custom`
 
-**`{ kind: 'custom', shape }`** — the escape hatch. `shape` is an inverse CDF: `(u: number) => number`, mapping a uniform draw in `[0, 1)` to a position in `[0, 1)` within the range. The result is clamped to `[0, 1]`, so it always lands within bounds no matter what `shape` returns.
+**`{ kind: 'custom', shape }`** is for any shape the others don't cover. `shape` is an inverse CDF, `(u: number) => number`: it takes a uniform draw in `[0, 1)` and returns a position in the range, where `0` is `min` and `1` is `max`. The result is clamped to `[0, 1]`, so it stays in the range regardless of what `shape` returns.
 
 ## What every variant guarantees
 
-Every distribution, including `custom`, produces a value within `[min, max]` by construction — truncated via inverse CDF rather than rejected or clamped mid-range, so no distribution can silently loop or bias the output by discarding out-of-range draws.
+Every distribution, including `custom`, produces a value inside the range on the first draw. Nothing is redrawn, so no distribution can loop or skew the result by throwing draws away. The built-in variants are cut off at the range's ends, and `custom` is clamped.

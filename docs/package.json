@@ -14,7 +14,6 @@
     "waku": "^1.0.0-rc.1"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.6.0",
     "@ghostry/fabricator": "file:../pkg/fabricator",
     "@types/node": "^26.6.2",
     "@types/react": "^19.3.0",

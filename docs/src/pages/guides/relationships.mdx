@@ -1,12 +1,10 @@
 # Batches and relationships
 
-Fabricator has no factory-style `assoc`.
-
-A batch is an array schema, and a foreign key is an enum over ids you already hold.
+Fabricator has no factory-style `assoc`. A batch is an array schema, and a foreign key is an enum over ids you already have.
 
 ## Batches
 
-`T.array(schema).whereby({ length: N })` is a batch: one element Fabricator, called N times.
+`T.array(schema).whereby({ length: N })` is a batch: one Fabricator for the element, called N times.
 
 ```ts
 const FooSchema = T.object({
@@ -19,18 +17,14 @@ const foos = Foos.fabricate();
 // ids 1 through 10
 ```
 
-Because the array reuses one element Fabricator, a sequence on that element advances across the batch.
-
-A second `.fabricate()` on the same built array continues the sequence, so that call yields 11 through 20.
-
-A fresh `new Fabricator(...)` restarts the sequence at 1.
+The array reuses one Fabricator for every element, so a sequence keeps counting across the batch. A second `.fabricate()` on the same array continues it, giving ids 11 through 20. A new `new Fabricator(...)` starts again at 1.
 
 ```ts
 const Foo = new Fabricator(FooSchema);
 const foos = Array.from({ length: 10 }, () => Foo.fabricate());
 ```
 
-That loop is equivalent at the value level, but the result is not a schema: it cannot nest, and `coverage`/`combinatorial` have no array to walk.
+This loop gives the same kind of values, but the result is not a schema. It can't be nested in another schema, and `coverage`/`combinatorial` have no array to work through.
 
 ## Referencing a pool
 
@@ -50,15 +44,13 @@ const bars = new Fabricator(
 ).fabricate();
 ```
 
-The draw lives in the schema: it is keyed by path, it replays under a salt, and `coverage`/`combinatorial` see the pool as an axis.
+The pick is part of the schema, so it replays like any other field, and `coverage`/`combinatorial` treat each parent id as an option to cover.
 
-Use `.weighted` when some parents should appear more often than others.
-
-Wrap with `T.nullable(T.enum.uniform(ids))` for an optional foreign key.
+Use `.weighted` when some parents should appear more often than others, and `T.nullable(T.enum.uniform(ids))` for an optional foreign key.
 
 ## Owning versus referencing
 
-A child that creates its own parent nests the parent schema and derives the foreign key from it.
+A child that creates its own parent nests the parent schema and computes the foreign key from it.
 
 ```ts
 const BarOwningFoo = T.object({
@@ -71,13 +63,11 @@ const BarOwningFoo = T.object({
 }));
 ```
 
-One-to-many is the other direction: nest `T.array(BarSchema)` on the parent.
-
-See [Computed fields](/guides/objects#computed-fields) for `.refine(({ compute }) => ...)`.
+For one-to-many, go the other way and nest `T.array(BarSchema)` on the parent. See [Computed fields](/guides/objects#computed-fields) for `.refine(({ compute }) => ...)`.
 
 ## Drawing inside a producer
 
-`sample` and `shuffle` from `@ghostry/fabricator` are for a pick that happens inside `.as`, `T.opaque`, or a `T.derive` resolver — where you already hold a `Stream`.
+`sample` and `shuffle` from `@ghostry/fabricator` are for picks made inside `.as`, `T.opaque`, or a `T.derive` resolver, where you already have a `Stream`.
 
 ```ts
 import { shuffle } from "@ghostry/fabricator";
@@ -85,4 +75,4 @@ import { shuffle } from "@ghostry/fabricator";
 T.opaque(({ random }) => shuffle(list, random).slice(0, 2));
 ```
 
-Prefer `T.enum` when the pick can be represented as a schema: it is enumerable and path-keyed, and these helpers are not.
+Use `T.enum` instead when the pick can be a schema. `coverage`/`combinatorial` can enumerate an enum, but not a pick made inside a producer.

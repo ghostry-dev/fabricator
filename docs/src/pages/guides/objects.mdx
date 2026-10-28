@@ -1,10 +1,10 @@
 # Objects
 
-`T.object({ ... })` is the primitive nearly everything else composes inside. This page covers the parts of it that go beyond a flat field list: nested objects, computed fields, sequences, and per-call overrides.
+Most schemas are built inside `T.object({ ... })`. This page covers what goes beyond a flat list of fields: nested objects, sequences, computed fields, and per-call overrides.
 
 ## Nesting
 
-Fields can be any schema, including another `T.object`:
+A field can be any schema, including another `T.object`:
 
 ```ts
 T.object({
@@ -16,7 +16,7 @@ T.object({
 });
 ```
 
-Every field — nested or not — draws from its own independent stream, assigned when the Fabricator is built. See [Reproducibility](/guides/reproducibility) for what that guarantees.
+Every field, nested or not, draws from its own stream, set up when the Fabricator is built. See [Reproducibility](/guides/reproducibility) for what that guarantees.
 
 ## Sequences
 
@@ -24,11 +24,11 @@ Every field — nested or not — draws from its own independent stream, assigne
 T.object({ id: T.number.integer.sequence });
 ```
 
-A monotonically increasing counter starting at 1, fresh per `new Fabricator(schema)` — every `.fabricate()` call on the same Fabricator instance advances it, so ten calls yield ids 1 through 10. A batch of N of these is `T.array(schema).whereby({ length: N })` — see [Batches](/guides/relationships#batches).
+This is a counter that starts at 1 and goes up by one on each `.fabricate()` call, so ten calls give ids 1 through 10. Each `new Fabricator(schema)` starts its own count. For a batch of N, use `T.array(schema).whereby({ length: N })`. See [Batches](/guides/relationships#batches).
 
 ## Computed fields
 
-A computed field derives its value from the rest of the object, once the rest has already been fabricated. It's reached through `.refine(({ compute }) => ({ ... }))`, not through `T.object` directly:
+A computed field gets its value from the rest of the object, after the rest has been fabricated. You add one with `.refine(({ compute }) => ({ ... }))`, not in `T.object` directly:
 
 ```ts
 const IdentifiableProductSchema = ProductSchema.refine(({ compute }) => ({
@@ -38,11 +38,11 @@ const IdentifiableProductSchema = ProductSchema.refine(({ compute }) => ({
 }));
 ```
 
-`compute(source)` takes a schema (or a bare builder like `T.string`, when you just need to name the field's type and don't care about its length/range) and returns something with a single method, `.as(resolve)`. `resolve` receives `{ fabricated }` — the rest of the object, already built — and returns the computed value.
+`compute(source)` takes the field's schema, or a bare builder like `T.string` if you only need to name the type. `.as(resolve)` finishes it. `resolve` receives `{ fabricated }`, the rest of the object, and returns the computed value.
 
 ### Declaring dependencies with `.from`
 
-Name the fields a computed field reads with `.from([...])`, before `.as`:
+Use `.from([...])` before `.as` to name the fields a computed field reads:
 
 ```ts
 const UserSchema = T.object({
@@ -56,13 +56,13 @@ const UserSchema = T.object({
 }));
 ```
 
-`fabricated` then holds only `first` and `last`, and reading any other field is a type error. Without `.from`, a computed field can read every field of the object it refines, and [`T.pick`](/reference/primitives/pick) and [`T.omit`](/reference/primitives/omit) have to keep all of those fabricated. With `.from`, they keep only what it names.
+`fabricated` then holds only `first` and `last`, and reading any other field is a type error. This matters for [`T.pick`](/reference/primitives/pick) and [`T.omit`](/reference/primitives/omit). Without `.from`, a computed field can read every field of the object, so they have to keep fabricating all of them. With `.from`, they only keep the fields it names.
 
-A key `.from` names must be a field of the object being refined, or it throws.
+`.from` throws if it names a field the object doesn't have.
 
-This is why `.refine()` needs its own method distinct from `.extend()`: a computed field genuinely needs a second pass, after the ordinary fields resolve. See [Composition](/guides/composition) for the full `extend`/`refine`/`override` picture and the performance trade-off between the two.
+Computed fields are why `.refine()` is separate from `.extend()`: they need a second pass, after the ordinary fields are fabricated. See [Composition](/guides/composition) for how `extend`, `refine`, and `override` fit together and what each costs.
 
-For a value computed from other schemas that are not fields of a surrounding object, use [`T.derive`](/reference/primitives/derive) instead.
+To compute a value from schemas that aren't fields of an object, use [`T.derive`](/reference/primitives/derive).
 
 ## Per-call overrides
 
@@ -74,7 +74,7 @@ const widget = Product.fabricate({
 });
 ```
 
-Every field you don't name still comes from the Fabricator's own already-drawn randomness — this isn't a new schema, and it doesn't touch any other field's stream. Values are deep-merged into the fabricated result. To force an [omittable](/reference/primitives/omittable) or [optional](/reference/primitives/optional) field off, pass the exported `Omitted` sentinel:
+Every field you don't name is fabricated as usual by the same Fabricator. An override doesn't create a new schema and doesn't affect any other field's stream. In a nested object like `pricing`, only the fields you name are replaced, and the rest are still fabricated. To force an [omittable](/reference/primitives/omittable) or [optional](/reference/primitives/optional) field to be left out, pass `Omitted`:
 
 ```ts
 import { Omitted } from "@ghostry/fabricator";
