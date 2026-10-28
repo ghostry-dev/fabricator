@@ -65,7 +65,7 @@
     "provenance": true
   },
   "devDependencies": {
-    "@ghostry/harness": "^0.0.4"
+    "@ghostry/harness": "^0.0.5"
   },
   "scripts": {
     "build:reset": "rm -rf ./dist",
@@ -79,7 +79,7 @@
     "check": "tsc --noEmit && tsc --noEmit -p ./tsconfig.inexact.json",
     "check:ts5": "bun --bun ../../node_modules/typescript-5/lib/tsc.js --noEmit && bun --bun ../../node_modules/typescript-5/lib/tsc.js --noEmit -p ./tsconfig.inexact.json",
     "check:jsr": "DENO_BIN_PATH=$PWD/../../node_modules/.bin/deno bunx --no-install jsr publish --dry-run --allow-dirty",
-    "format": "bunx --no-install oxfmt .",
+    "format": "bun fmt",
     "test": "bun run check && bun run check:ts5 && bun run check:jsr && bun test"
   },
   "files": [

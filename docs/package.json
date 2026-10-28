@@ -8,21 +8,21 @@
     "preview": "bunx --no-install --bun vocs preview"
   },
   "dependencies": {
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "vocs": "2.10.0",
-    "waku": "^1.0.0-rc.1"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "vocs": "2.12.0",
+    "waku": "^1.0.0-rc.4"
   },
   "devDependencies": {
     "@ghostry/fabricator": "file:../pkg/fabricator",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-react": "^6.1.2",
     "typescript": "^5",
-    "vite": "^8.3.0"
+    "vite": "^8.3.5"
   },
   "patchedDependencies": {
-    "vocs@2.10.0": "patches/vocs@2.10.0.patch"
+    "vocs@2.12.0": "patches/vocs@2.12.0.patch"
   }
 }

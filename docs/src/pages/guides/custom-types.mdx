@@ -71,4 +71,3 @@ const types = registry.extend(({ T }) => ({
 ```
 
 `T.string.as(produce)` replaces how a `string` is generated with your own function. `produce` receives `{ random, clock }`, the same as `T.opaque`'s producer, but it doesn't have to use them. A call like `faker.person.fullName()` above uses faker's own randomness, so that field is **not reproducible**. To keep it reproducible, draw from `random` in the producer. See [`T.opaque`](/reference/primitives/opaque) for producers built around `random`.
-

@@ -101,4 +101,3 @@ There are four cases. All of them are expected, and none is a bug:
 4. **`opaque`.** `Static<TUnknown>` is `unknown`, while the fabricated value has the producer's exact return type.
 
 Only the last is purely wider, and always safe. In the others, the two types say genuinely different things about the same field.
-

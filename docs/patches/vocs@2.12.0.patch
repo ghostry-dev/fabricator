@@ -1,8 +1,8 @@
 diff --git a/dist/internal/vite-plugins.js b/dist/internal/vite-plugins.js
-index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..9c01458e4ea9c85eb6a6cd59d1211b442e671af6 100644
+index dfd0825053073c542533f661fa366f04ea3cda13..ea0b512a8e6bb2fd96cc7ed94091bfb4ea8e33e3 100644
 --- a/dist/internal/vite-plugins.js
 +++ b/dist/internal/vite-plugins.js
-@@ -198,16 +198,26 @@ export function llms(config) {
+@@ -252,16 +252,26 @@ export function llms(config) {
          },
          configureServer(server) {
              let content;
@@ -33,7 +33,7 @@ index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..9c01458e4ea9c85eb6a6cd59d1211b44
                      const result = content.results.find((r) => r.path.replace(/\/$/, '') === pagePath.replace(/\/index$/, ''));
                      if (result) {
                          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-@@ -337,6 +347,15 @@ export function mdx(config) {
+@@ -415,6 +425,15 @@ export function mdx(config) {
   */
  export function sitemap(config) {
      const { baseUrl } = config;
@@ -49,7 +49,7 @@ index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..9c01458e4ea9c85eb6a6cd59d1211b44
      let built = false;
      let viteConfig;
      function getSiteUrl() {
-@@ -347,7 +366,7 @@ export function sitemap(config) {
+@@ -425,7 +444,7 @@ export function sitemap(config) {
              'User-agent: *',
              'Allow: /',
              '',
@@ -58,16 +58,16 @@ index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..9c01458e4ea9c85eb6a6cd59d1211b44
              '',
          ].join('\n');
      }
-@@ -386,7 +405,7 @@ export function sitemap(config) {
+@@ -464,7 +483,7 @@ export function sitemap(config) {
                      .replace(/\/$/, '') || '/';
                  if (!resolveSitemapInclude(config, pagePath, filePath))
                      return;
 -                const loc = `${siteUrl.replace(/\/$/, '')}${pagePath}`;
 +                const loc = `${siteUrl.replace(/\/$/, '')}${basePath}${pagePath}`;
-                 const gitDate = Git.getLastModified(page);
+                 const gitDate = Git.getLastModified(page, pagesDir);
                  const lastmod = gitDate
                      ? gitDate.split('T')[0]
-@@ -425,7 +444,11 @@ export function sitemap(config) {
+@@ -503,7 +522,11 @@ export function sitemap(config) {
          configureServer(server) {
              server.middlewares.use(async (req, res, next) => {
                  const siteUrl = getSiteUrl();
@@ -80,7 +80,7 @@ index ba17f7d688e4c4df6da2abe1b7bf875655a83e79..9c01458e4ea9c85eb6a6cd59d1211b44
                      if (!siteUrl || config.sitemap === false) {
                          res.statusCode = 404;
                          res.end('robots.txt not available: baseUrl is not configured');
-@@ -435,7 +458,7 @@ export function sitemap(config) {
+@@ -513,7 +536,7 @@ export function sitemap(config) {
                      res.end(buildRobotsTxt(siteUrl));
                      return;
                  }

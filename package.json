@@ -14,17 +14,16 @@
     "check:ts5": "bun --cwd=pkg/fabricator run check:ts5 && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check:ts5 && bun --cwd=pkg/fabricator-extension-faker-v10 run check:ts5 && bun --cwd=pkg/fabricator-census run check:ts5",
     "check:jsr": "bun --cwd=pkg/fabricator run check:jsr && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check:jsr && bun --cwd=pkg/fabricator-extension-faker-v10 run check:jsr && bun --cwd=pkg/fabricator-census run check:jsr",
     "test": "bun run build && bun --cwd=pkg/fabricator run test && bun --cwd=pkg/fabricator-adapter-typebox-v0 run test && bun --cwd=pkg/fabricator-extension-faker-v10 run test && bun --cwd=pkg/fabricator-census run test",
-    "format": "bunx --no-install oxfmt .",
+    "format": "bun fmt",
     "docs:dev": "bun --cwd=pkg/fabricator run build && cd ./docs && bun run dev"
   },
   "devDependencies": {
-    "@rsdoctor/rspack-plugin": "^1.6.4",
-    "@rslib/core": "^1.0.1",
-    "@types/bun": "1.4.2",
+    "@rsdoctor/rspack-plugin": "^1.6.5",
+    "@rslib/core": "^1.0.4",
+    "@types/bun": "1.4.4",
     "deno": "2.9.6",
     "jsr": "^0.14.3",
-    "npm": "^12.1.0",
-    "oxfmt": "^0.70.0",
+    "npm": "^12.2.1",
     "typescript": "^7.0.2",
     "typescript-5": "npm:typescript@^5.9.3"
   }
