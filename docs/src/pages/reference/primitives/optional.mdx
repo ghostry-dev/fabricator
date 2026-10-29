@@ -1,21 +1,21 @@
 # T.optional
 
-An [absence](/reference/primitives#absence) primitive: a field that might be missing, present-as-`undefined`, or present with a value. Only meaningful inside `T.object(...)`.
+An [absence](/reference/primitives#absence) primitive: a field that might be left out, present as `undefined`, or present with a value. It only makes sense inside `T.object(...)`.
 
 ```ts
 T.optional(inner); // ~33% omitted, ~33% undefined, ~33% value
 T.optional(inner).weighted({ omitted: 1, undefined: 1, value: 2 });
 ```
 
-Uniform at 1/3 each by default. Reweight any of the three named outcomes; weights are relative proportions. A weight of `0` disables that outcome (`{ omitted: 0 }` is always present — as `undefined` or as a value). Every weight zero throws; negative weights, `NaN`, and `Infinity` are invalid.
+By default, each outcome has a 1/3 chance. You can change the odds of any outcome, and weights are relative. A weight of `0` turns that outcome off, so `{ omitted: 0 }` is always present, either as `undefined` or with a value. It throws if every weight is `0`. Negative weights, `NaN`, and `Infinity` are invalid.
 
-Zeroing changes the _distribution_, not the _type_: `T.optional(x).weighted({ omitted: 0 })` still types the key as optional. A narrower kind (`T.undefinable`, a required field) is still how you change the type.
+A weight of `0` changes the _odds_, not the _type_. `T.optional(x).weighted({ omitted: 0 })` still types the key as optional. To change the type, use a narrower kind, such as `T.undefinable` or a required field.
 
 :::note
-`T.optional` is **not** `T.omittable(T.undefinable(inner))`. Composing those two independent 50/50 rolls gives a 50/25/25 split, not a uniform 33/33/33 — so `T.optional` runs its own dedicated three-way roll instead. If you see uneven odds between omitted/undefined/value from a hand-rolled composition, this is why.
+`T.optional` is **not** `T.omittable(T.undefinable(inner))`. Nesting those two 50/50 picks gives 50% left out, 25% `undefined`, and 25% a value, instead of a third each. So `T.optional` picks between the three outcomes directly. If you nested the two yourself and see uneven odds, this is why.
 :::
 
-Force the field off (e.g. in `.override()` or `.fabricate(overrides)`), use the exported `Omitted` sentinel:
+To force the field to be left out, pass `Omitted` to `.override()` or `.fabricate(overrides)`:
 
 ```ts
 import { Omitted } from "@ghostry/fabricator";
@@ -23,4 +23,4 @@ import { Omitted } from "@ghostry/fabricator";
 WidgetFabricator.fabricate({ nickname: Omitted });
 ```
 
-For omitted-or-present (no `undefined` value), use [`T.omittable`](/reference/primitives/omittable). For a key that's always present with a possibly-`undefined` value, use [`T.undefinable`](/reference/primitives/undefinable).
+For a field that is either left out or present with a value, never `undefined`, use [`T.omittable`](/reference/primitives/omittable). For a key that is always present but whose value may be `undefined`, use [`T.undefinable`](/reference/primitives/undefinable).

@@ -1,6 +1,6 @@
 # T.string
 
-A [scalar](/reference/primitives#scalars). No bare form — there's no natural bound to fuzz a string to, so `.whereby({ length })` is required.
+A [scalar](/reference/primitives#scalars). It can't be used bare, because there's no sensible default length. Call `.whereby({ length })` first.
 
 ```ts
 T.string.whereby({ length: 8 });
@@ -8,13 +8,13 @@ T.string.whereby({ length: { min: 1, max: 25 } });
 T.string.whereby({ length: { min: { value: 0, exclusive: true }, max: 25 } });
 ```
 
-`length` is a bare `N` (exactly N code units) or `{ min?, max, distribution? }`. `length.min` defaults to `0`. Without `distribution` the length is drawn uniformly; a `distribution` shapes that draw (see [Distributions](/guides/distributions)). `length` counts UTF-16 code units, so the result's `.length` equals the chosen length exactly.
+`length` is either a number `N`, for exactly N, or `{ min?, max, distribution? }`. `length.min` defaults to `0`. The length is drawn uniformly unless you add a `distribution` (see [Distributions](/guides/distributions)). `length` counts UTF-16 code units, so the result's `.length` is exactly the drawn length.
 
-`T.string.as(produce, hints?)` layers a custom producer over the schema — see [`T.opaque`](/reference/primitives/opaque).
+`T.string.as(produce, hints?)` replaces how the string is generated with your own function. See [`T.opaque`](/reference/primitives/opaque).
 
 ## Composition
 
-By default, characters span all Unicode scalar values — the full codespace minus surrogates, so the result is always well-formed UTF-16. Control that with `composition`, either a weighting over the built-in classes by name or explicit `[weight, source]` pairs.
+By default, characters can be any Unicode character except unpaired surrogates, so the result is always valid UTF-16. Use `composition` to control which characters appear, either by weighting the built-in classes by name or with `[weight, source]` pairs.
 
 ### Classes
 
@@ -30,9 +30,9 @@ T.string.whereby({ length: 8, composition: { lowercase: 3, digit: 1 } });
 | `symbol`    | ``!"#$%&'()*+,-./:;<=>?@[\]^_`{\|}~`` | U+0021–U+002F, U+003A–U+0040, U+005B–U+0060, U+007B–U+007E |
 | `space`     | the space character only              | U+0020                                                     |
 
-Every class is ASCII, and together the five cover exactly printable ASCII (U+0020–U+007E). `space` holds no tab, newline, or other whitespace — write those as a custom source.
+Every class is ASCII, and together they cover exactly the printable ASCII characters (U+0020–U+007E). `space` is only the space character, with no tab, newline, or other whitespace. Write those as a custom source.
 
-Each character independently picks a class by weight, then a character uniformly within that class. Weights are relative and describe the string's _expected_ makeup, so any one string can stray from the proportions. A class left out never appears, a weight of `0` disables it, and a composition with every weight at `0` throws.
+For each character, a class is picked by weight, then a character is picked evenly within that class. Weights are relative and describe the _average_ makeup, so any one string can differ from the proportions. A class you leave out never appears, a weight of `0` turns a class off, and it throws if every weight is `0`.
 
 ### Custom sources
 
@@ -53,10 +53,12 @@ T.string.whereby({
 });
 ```
 
-The `[weight, source]` form takes arbitrary character sources: a literal string, a code point range `{ from, to }` (inclusive), or a list of ranges. The weighting works the same way: pick a source by weight, then a code point uniformly across all of that source's ranges. Class names aren't accepted here; to mix a class with a custom source, write the class as its ranges from the table above.
+The `[weight, source]` form takes any character source: a string of characters, a code point range `{ from, to }` (including both ends), or a list of ranges. Weights work the same way: a source is picked by weight, then a code point is picked evenly across all of that source's ranges.
 
-A literal string is shorthand for one single-character range per character, so a repeated character is drawn more often — `"aab"` yields `a` twice as often as `b`.
+Class names aren't accepted in this form. To mix a class with a custom source, use the class's ranges from `classes`, exported from `@ghostry/fabricator`, such as `[[3, classes.lowercase], [1, "-_"]]`. `unicode` is exported alongside it, with presets like `unicode.bmp` and `unicode.range(from, to)`.
+
+A string source counts each character separately, so a repeated character is drawn more often: `"aab"` gives `a` twice as often as `b`.
 
 ### Exact length
 
-`length` is honored exactly even when the composition can't fill it. If the drawn character is two units wide (astral) but only one code unit remains, that unit is filled with a well-formed BMP character from outside the composition, inserted at a random character boundary.
+`length` is always met exactly, even when the composition can't fill it. If the drawn character takes two code units but only one is left, that last unit is filled with a single-unit character from outside the composition, inserted at a random position between characters.

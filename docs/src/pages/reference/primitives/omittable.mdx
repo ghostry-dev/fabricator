@@ -1,6 +1,6 @@
 # T.omittable
 
-An [absence](/reference/primitives#absence) primitive: a field that's sometimes missing from the enclosing object entirely. Only meaningful inside `T.object(...)` — it describes whether a key exists, not a value in isolation.
+An [absence](/reference/primitives#absence) primitive: a field that is sometimes missing from its object entirely. It only makes sense inside `T.object(...)`, because it decides whether a key exists, not what a value is.
 
 ```ts
 T.object({
@@ -9,13 +9,13 @@ T.object({
 });
 ```
 
-A 50/50 roll by default: `nickname` either doesn't appear on the fabricated object at all, or holds a fabricated string. Reweight either side:
+By default it is 50/50: `nickname` is either missing from the fabricated object or holds a fabricated string. You can change the odds:
 
 ```ts
 T.omittable(inner).weighted({ omitted: 1, value: 4 }); // present 80% of the time
 ```
 
-Force the field off (e.g. in `.override()` or `.fabricate(overrides)`), use the exported `Omitted` sentinel:
+To force the field to be left out, pass `Omitted` to `.override()` or `.fabricate(overrides)`:
 
 ```ts
 import { Omitted } from "@ghostry/fabricator";
@@ -23,4 +23,4 @@ import { Omitted } from "@ghostry/fabricator";
 WidgetFabricator.fabricate({ nickname: Omitted });
 ```
 
-For a three-way split across omitted / present-as-`undefined` / present with a value, use [`T.optional`](/reference/primitives/optional) — not `T.omittable(T.undefinable(inner))`, which would give 50/25/25. For a key that's always present with a possibly-`undefined` value, use [`T.undefinable`](/reference/primitives/undefinable).
+For a field that can be left out, present as `undefined`, or present with a value, use [`T.optional`](/reference/primitives/optional), not `T.omittable(T.undefinable(inner))`. Nesting the two gives 50% left out, 25% `undefined`, and 25% a value, instead of even odds. For a key that is always present but whose value may be `undefined`, use [`T.undefinable`](/reference/primitives/undefinable).

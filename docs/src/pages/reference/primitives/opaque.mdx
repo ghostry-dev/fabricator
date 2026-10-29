@@ -1,6 +1,6 @@
 # T.opaque
 
-The [escape hatch](/reference/primitives#escape-hatch): values with no dedicated primitive — a `Map`, a `Set`, a `URL`, a class instance.
+The [escape hatch](/reference/primitives#escape-hatch), for values with no primitive of their own, such as a `Map`, a `Set`, a `URL`, or a class instance.
 
 ```ts
 T.opaque(
@@ -12,22 +12,22 @@ T.opaque(
 );
 ```
 
-The field's type is whatever `produce` returns — `T.opaque(({ random }) => new Map<string, number>())` needs no annotation.
+The field's type is whatever the `produce` function returns, so `T.opaque(({ random }) => new Map<string, number>())` needs no annotation.
 
-`produce` is handed `{ random, clock }` — this schema's own seeded stream, and the instance's resolved "now" (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)). Draw from `random.next()` and the field stays reproducible from the salt, exactly like every other primitive; reach for `Math.random()` instead and you silently opt that one field out of reproducibility.
+`produce` receives `{ random, clock }`: this schema's own stream, and "now" for this instance (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)). Draw from `random.next()` and the field replays like every other primitive. If you use `Math.random()` instead, that field silently stops being reproducible.
 
-Why this exists given [`T.always`](/reference/primitives/always) / [`T.enum`](/reference/primitives/enum) already hold arbitrary values: `T.always(someMap)` types correctly but hands back the _same reference_ every call, with no `.as()`. `T.opaque` is the direct way to express "fabricate a fresh value of a kind this library doesn't model."
+[`T.always`](/reference/primitives/always) and [`T.enum`](/reference/primitives/enum) can already hold any value, but `T.always(someMap)` returns the _same object_ on every call and has no `.as()`. `T.opaque` is how you fabricate a new value each time, of a kind fabricator doesn't have.
 
-There's no `.as()` on `T.opaque` — the constructor argument already fully determines production, so there's nothing left to override.
+`T.opaque` has no `.as()`, because `produce` already decides the whole value.
 
 ## `.as(produce)` on the other primitives
 
-Most primitives — `T.string`, `T.number`, `T.bigint`, `T.date`, `T.array`, `T.record`, `T.boolean` — have their own `.as(produce)` for layering a custom producer over an existing kind:
+Most primitives, including `T.string`, `T.number`, `T.bigint`, `T.date`, `T.array`, `T.record`, and `T.boolean`, have their own `.as(produce)`. It replaces how that kind is generated with your own function:
 
 ```ts
 T.string.as(() => crypto.randomUUID(), { format: "uuid" });
 ```
 
-Like `T.opaque`, these producers receive a `{ random, clock }` context too — but unlike `T.opaque`, using it is optional: they're overriding a kind that already draws properly on its own, so the override is meant for one-off custom logic, not a from-scratch generator, and it's entirely reasonable to ignore the context and write `Math.random()` (or call an unseeded library like faker) inside one instead. Do that and that field falls outside the seeded-reproducibility guarantee, not by mistake — see [Custom types](/guides/custom-types) for the common case of pairing this with a data-generation library.
+These producers also receive `{ random, clock }`, but they don't have to use it. They replace a kind that already generates its own values, so they're meant for one-off custom logic. If a producer ignores `random`, for example by calling `crypto.randomUUID()` as above, that field is **not reproducible**. To keep it reproducible, draw from `random`, or use the [faker extension](/guides/faker) for realistic values. See [Custom types](/guides/custom-types) for using `.as()` with a data library.
 
-`hints` (on `string` / `number`) are optional, neutral JSON-Schema-shaped metadata (`format`, `pattern`) — not used for fabrication, only forwarded to schema exporters like [TypeBox](/guides/typebox).
+The optional second argument on `string` and `number` holds JSON Schema hints, such as `format` and `pattern`. Fabrication ignores them. They are only passed on to adapters like [TypeBox](/guides/typebox).

@@ -14,6 +14,6 @@ T.date.past.whereby({ min: new Date("2020-01-01") });
 T.date.future.whereby({ max: new Date("2030-01-01") });
 ```
 
-`.past` / `.future` are usable bare, or refined with their own `.whereby()`. Both accept a `distribution` — see [Distributions](/guides/distributions). Exclusive `min`/`max` drop the excluded millisecond: `Date` stores a whole millisecond, so an exclusive end is the next (or previous) representable instant, not a fractional nudge.
+`.past` and `.future` work bare, or you can narrow them with their own `.whereby()`. Both accept a `distribution`. See [Distributions](/guides/distributions). An exclusive `min` or `max` leaves out that exact millisecond. A `Date` has millisecond precision, so the range starts or ends one millisecond inside the value you gave.
 
-"Now" here means `initialize({ clock })`. By default that is the wall-clock instant of the `initialize()` call — so a bare `T.date.past` / `.future` draws relative to the actual present. Pass `initialize({ clock: someDate })` to freeze "now" to a fixture date, or `clock: "derived"` to derive an arbitrary instant from the instance salt (drawn across the entire representable `Date` range — an implausible date is the expected outcome of that policy). See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+"Now" is the instance's `clock`. By default, that is the time of the `initialize()` call, so a bare `T.date.past` or `.future` is relative to the real present. Pass `initialize({ clock: someDate })` to pin "now" to a fixed date. With `clock: "derived"`, "now" is computed from the salt and can be any date in the representable range, so an absurd date is expected. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).

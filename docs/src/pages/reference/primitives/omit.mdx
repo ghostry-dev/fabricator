@@ -13,6 +13,6 @@ const PublicUserSchema = T.omit(UserSchema, ["password"]);
 // { id: number; name: string }
 ```
 
-`T.omit` is [`T.pick`](/reference/primitives/pick) with the selection inverted, and everything on that page applies here. A kept computed field that reads an omitted field still gets it; the field is fabricated and left out of the result.
+`T.omit` is the opposite of [`T.pick`](/reference/primitives/pick), and everything on that page applies here too. If a computed field you kept reads a field you omitted, it still gets it: the omitted field is fabricated but left out of the result.
 
 `T.omit` removes a field from the schema. To make a field sometimes missing from a fabricated object, use [`T.omittable`](/reference/primitives/omittable).

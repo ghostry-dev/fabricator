@@ -85,7 +85,7 @@ email.adapt(typebox, ({ schema }) =>
 
 Both are read at conversion time, not when `.adapt()` is called, so the producer sees any builder methods chained after it.
 
-## Two kinds that need `.adapt()` more than most
+## Kinds that need `.adapt()` more than most
 
 **A `record` keyed by `T.symbol`** throws. TypeBox's `Type.Record` can't represent a symbol key, and returning a schema nothing can pass would be worse than an error. Use `.adapt(typebox, ...)` to supply your own.
 
@@ -93,7 +93,7 @@ Both are read at conversion time, not when `.adapt()` is called, so the producer
 
 ## Where `Static<ToTypeBox<S>>` and the fabricated value type can legitimately diverge
 
-There are four cases. All of them are expected, and none is a bug:
+These cases are all expected, and none is a bug:
 
 1. **An adaptation.** You told TypeBox something fabricator doesn't follow, so keeping the two compatible is up to you.
 2. **`always`/`enum` over a value TypeBox can't type exactly.** TypeBox has no literal type for a `bigint`, `Date`, `symbol`, or `Uint8Array`, so the static type is the general one, such as `bigint`. TypeBox still checks a `bigint` or `Date` against the exact value at runtime, but it can't check a `symbol` or a `Uint8Array`'s contents.

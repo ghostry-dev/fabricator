@@ -33,17 +33,17 @@ The tempting way to wrap a faker method is `T.opaque(() => faker.person.fullName
 
 Instead, each builder returns the core kind that matches the method's declared return type:
 
-| faker returns          | builder returns                 | via the [TypeBox adapter](/guides/typebox)   |
-| ---------------------- | ------------------------------- | -------------------------------------------- |
-| `string` (207)         | `T.string`                      | `Type.String()`                              |
-| `Date` (7)             | `T.date`                        | `Type.Date()`                                |
-| a record shape (7)     | `T.object({ ... })`             | `Type.Object({ ... })`                       |
-| a literal union (6)    | `T.enum.uniform([...])`         | `Type.Union([Type.Literal(), …])`            |
-| `number` (6)           | `T.number`                      | `Type.Number()`                              |
-| `boolean` (1)          | `T.boolean`                     | `Type.Boolean()`                             |
-| `bigint` (1)           | `T.bigint`                      | `Type.BigInt()`                              |
-| `[number, number]` (1) | `T.tuple([T.number, T.number])` | `Type.Tuple([Type.Number(), Type.Number()])` |
-| `Date[]` (1)           | `T.array(T.date)`               | `Type.Array(Type.Date())`                    |
+| faker returns      | builder returns                 | via the [TypeBox adapter](/guides/typebox)   |
+| ------------------ | ------------------------------- | -------------------------------------------- |
+| `string`           | `T.string`                      | `Type.String()`                              |
+| `Date`             | `T.date`                        | `Type.Date()`                                |
+| a record shape     | `T.object({ ... })`             | `Type.Object({ ... })`                       |
+| a literal union    | `T.enum.uniform([...])`         | `Type.Union([Type.Literal(), …])`            |
+| `number`           | `T.number`                      | `Type.Number()`                              |
+| `boolean`          | `T.boolean`                     | `Type.Boolean()`                             |
+| `bigint`           | `T.bigint`                      | `Type.BigInt()`                              |
+| `[number, number]` | `T.tuple([T.number, T.number])` | `Type.Tuple([Type.Number(), Type.Number()])` |
+| `Date[]`           | `T.array(T.date)`               | `Type.Array(Type.Date())`                    |
 
 So a schema built with faker validates, enumerates, and converts exactly like a hand-written one:
 
@@ -54,7 +54,7 @@ toTypeBox(T.faker.person.sexType());
 // Type.Union([Type.Literal('female'), Type.Literal('generic'), Type.Literal('male')])
 ```
 
-Seventeen string methods always produce output in a known JSON Schema format, whatever options you pass. Those carry the format as a hint, which ends up in the converted schema:
+Some string methods always produce output in a known JSON Schema format, whatever options you pass. Those carry the format as a hint, which ends up in the converted schema:
 
 ```ts
 toTypeBox(T.faker.internet.email()); // Type.String({ format: 'email' })
@@ -69,7 +69,7 @@ Every builder's kind is checked at compile time against faker's declared return 
 
 ## Modules
 
-The extension mirrors twenty-six of faker's data modules, with faker's own method names in each:
+The extension mirrors these faker data modules, with faker's own method names in each:
 
 `airline`, `animal`, `book`, `color`, `commerce`, `company`, `database`, `datatype`, `date`, `finance`, `food`, `git`, `hacker`, `image`, `internet`, `location`, `lorem`, `music`, `number`, `person`, `phone`, `science`, `string`, `system`, `vehicle`, `word`
 
@@ -83,9 +83,9 @@ T.faker.date.past({ years: 3 });
 
 Some faker methods overlap with core, such as `datatype.boolean`, `number.int`, and `string.alphanumeric`. Both versions stay available. Faker's follow its locale and API, while core's are more configurable and can be enumerated. Pick whichever suits the field.
 
-## Three deviations from faker's own API
+## Where the mirror differs from faker
 
-The mirror deliberately differs from faker in three places. Each difference is what lets every builder return a real kind, and they may surprise you if you know faker well.
+The mirror deliberately differs from faker in the places below. Each difference is what lets every builder return a real kind, and they may surprise you if you know faker well.
 
 ### `helpers` is absent
 
@@ -99,9 +99,9 @@ The mirror deliberately differs from faker in three places. Each difference is w
 | `maybe`                                                 | `T.optional` / `T.omittable` / `T.undefinable` |
 | `rangeToNumber`                                         | `T.number.whereby({ min, max })`               |
 
-Eleven of its eighteen methods are generic, so mirrored builders would only type as `unknown` anyway. `slugify`, `mustache`, and `replaceSymbols` transform your own input instead of generating anything. The two with no core equivalent, `fromRegExp` and `fake`, are available through [`use`](#use--for-what-the-mirror-doesnt-cover).
+Most of its methods are generic, so mirrored builders would only type as `unknown` anyway. `slugify`, `mustache`, and `replaceSymbols` transform your own input instead of generating anything. The two with no core equivalent, `fromRegExp` and `fake`, are available through [`use`](#use--for-what-the-mirror-doesnt-cover).
 
-### Seven `color.*` methods are split in two
+### Some `color.*` methods are split in two
 
 `color.rgb()` returns a `string` or a `number[]` depending on `options.format`, and each method has a different default. No single kind can describe that, and choosing the kind from the arguments would make the schema's type depend on a runtime value. So each of these methods becomes two named builders:
 
@@ -112,7 +112,7 @@ T.faker.color.rgb.channels(); // T.array(T.number)
 T.faker.color.rgb.channels({ includeAlpha: true });
 ```
 
-There is deliberately **no bare `T.faker.color.rgb()`**. Every form is named. The same goes for `cmyk`, `hsl`, `hwb`, `lab`, `lch`, and `colorByCSSColorSpace`. `color`'s other four methods are ordinary builders.
+There is deliberately **no bare `T.faker.color.rgb()`**. Every form is named. The same goes for `cmyk`, `hsl`, `hwb`, `lab`, `lch`, and `colorByCSSColorSpace`. `color`'s other methods are ordinary builders.
 
 Channels are `T.array(T.number)` rather than `T.tuple` because the number of channels depends on the options: `includeAlpha` adds one, and `cmyk` has four where the rest have three. A fixed-length tuple would be wrong for the options most likely to be passed.
 
@@ -165,7 +165,7 @@ That includes a `wrap({ clock }, …)` active when you fabricate, because the cl
 
 Everything in [Reproducibility](/guides/reproducibility) applies as-is. The same clock (and salt, if any) gives the same faker output, and each field's stream depends on its position in the schema, so adding or reordering a field leaves the others alone.
 
-Two things follow from that:
+As a result:
 
 **`faker.seed(...)` does nothing.** Fabricator does the seeding here, and a second seed fighting over the same output is the problem this package exists to remove. Change the instance's `clock` (or its `salt`, if it has one) instead.
 

@@ -2,32 +2,36 @@
 
 ## No validation
 
-There's no validation of fabricated data against a schema, and no way to opt out of drawing invalid-shaped data, because none is drawn in the first place. If you need runtime validation, convert to [TypeBox](/guides/typebox) and validate there.
+Fabricator doesn't validate data against a schema. Its own output doesn't need it, since fabricated data always has the right shape. To validate other data at runtime, convert the schema to [TypeBox](/guides/typebox) and validate there.
 
 ## No uniqueness guarantee
 
-Nowhere in this library is there a mechanism to guarantee generated values are unique — not across array elements, not across a fabricated object's fields, and specifically not across `T.record`'s keys, which are drawn independently and collapse into fewer entries on collision (see [`T.record`](/reference/primitives/record)). If you need uniqueness, generate a wider pool than you need and dedupe yourself, or use `T.number.integer.sequence` for a monotonic counter.
+Nothing in fabricator guarantees unique values. Not across array elements, not across an object's fields, and not across `T.record`'s keys, which are drawn independently and collapse into fewer entries when they collide (see [`T.record`](/reference/primitives/record)). If you need unique values, generate a larger pool than you need and dedupe it yourself, or use `T.number.integer.sequence` for a counter.
 
 ## `T.string.uuid` doesn't exist
 
-There's no built-in UUID primitive. The idiom is:
+There's no built-in UUID primitive. Use this instead:
 
 ```ts
 T.string.as(() => crypto.randomUUID(), { format: "uuid" });
 ```
 
-Note this particular field isn't seeded from fabricator's own randomness — not because `.as(produce)` is unseeded (its producer receives the same `{ random, clock }` context `T.opaque`'s does), but because `crypto.randomUUID()` ignores what it was handed and draws from its own source. A producer that consumes `random` replays like anything else. See [`T.opaque`](/reference/primitives/opaque) for the full distinction, or [faker](/guides/faker) for `T.faker.string.uuid()`, which is seeded and carries the same `format` hint.
+This field is not reproducible. `.as(produce)` itself is fine: its producer receives the same `{ random, clock }` context as `T.opaque`'s. But `crypto.randomUUID()` ignores that and uses its own randomness. A producer that draws from `random` replays like anything else. See [`T.opaque`](/reference/primitives/opaque), or use the [faker extension](/guides/faker)'s `T.faker.string.uuid()`, which is reproducible and has the same `format` hint.
 
 ## Schema adaptation is one-way (for now)
 
-An adapter converts a Fabricator Schema _outward_ — `toTypeBox(ProductSchema)` hands back a TypeBox schema. There is no inverse. Nothing here turns an existing TypeBox (or Zod, or JSON Schema) definition into a Fabricator Schema, and nothing fabricates data from one directly.
+An adapter converts a fabricator Schema _outward_: `toTypeBox(ProductSchema)` gives you a TypeBox schema. There is no reverse. Nothing turns an existing TypeBox, Zod, or JSON Schema definition into a fabricator Schema, and nothing fabricates data from one directly.
 
-That falls out of the contract rather than being an unimplemented feature: an `Adapter` is `{ key, convert }`, and `convert` dispatches on _this_ library's primitive kinds (see [The adapter contract](/reference/api#the-adapter-contract)). It knows how to read a Fabricator Schema and nothing else. `.adapt(adapter, produce)` is the same direction — it overrides what a node converts _to_, never what it could be built _from_.
+This follows from how adapters work, not from a missing feature. An `Adapter` is `{ key, convert }`, and `convert` handles _fabricator's_ primitive kinds (see [`@ghostry/fabricator/adapting`](/reference/api#ghostryfabricatoradapting)). It can read a fabricator Schema and nothing else. `.adapt(adapter, produce)` works in the same direction: it changes what a schema converts _to_, never what it can be built _from_.
 
-The practical consequence is that fabricator has to own the shape definition. If the schemas already exist in another library and the goal is test data from them without redefining anything, that is currently unsupported (but likely to be supported in the future).
+So fabricator has to own the shape definition. If your schemas already exist in another library and you want test data from them without redefining anything, that isn't supported yet, though it likely will be eventually.
 
-Conversion isn't always a perfect mirror in the forward direction either. `T.opaque` becomes `Type.Unknown()`, a symbol-keyed `T.record` throws rather than emit a schema nothing can satisfy, and `Static<ToTypeBox<S>>` can legitimately differ from the fabricated value's own type — see [that section of the TypeBox guide](/guides/typebox#where-statictotypeboxs-and-the-fabricated-value-type-can-legitimately-diverge) for when and why.
+Conversion isn't always exact in the forward direction either. `T.opaque` becomes `Type.Unknown()`, a symbol-keyed `T.record` throws instead of producing a schema nothing can pass, and `Static<ToTypeBox<S>>` can differ from the fabricated value's type. See [that section of the TypeBox guide](/guides/typebox#where-statictotypeboxs-and-the-fabricated-value-type-can-legitimately-diverge) for when and why.
 
 ## TypeBox version support
 
-Only `@sinclair/typebox` (0.34.x, the scoped package, likely frozen going forward) has an adapter. The unscoped `typebox` 1.x package is a separate internal rewrite, not a continuation of the scoped one, and would need an adapter of its own — several of the things the current one maps to (`Type.Date`, `Type.Const`, `Type.Uint8Array`, `Type.Recursive`) no longer exist in 1.x. Nothing blocks the two coexisting: an adapter is a value carrying its own key, so a schema can hold an adaptation for each.
+Only `@sinclair/typebox` 0.34.x, the scoped package, has an adapter. It is likely frozen. The unscoped `typebox` 1.x package is a separate rewrite, not a continuation, and would need its own adapter. Several things the current adapter maps to (`Type.Date`, `Type.Const`, `Type.Uint8Array`, `Type.Recursive`) don't exist in 1.x. The two adapters could coexist: each adapter carries its own key, so one schema can hold an override for each.
+
+## Not cryptographically secure
+
+Fabricated data is predictable by design and is not safe to use as a secret. See [Security](/about/security).

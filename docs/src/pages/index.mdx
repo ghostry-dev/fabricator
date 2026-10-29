@@ -1,6 +1,6 @@
 ---
 title: fabricator
-description: Fabricate typed data from composable schemas — full type inference, seeded reproducibility, and composable primitives for TypeScript tests.
+description: Fabricate typed test data from composable schemas, with full type inference and runs you can replay.
 layout: minimal
 outline: false
 content:
@@ -17,8 +17,8 @@ import { Card, Cards, HomePage } from "vocs";
     Fabricate typed data from composable schemas.
   </HomePage.Tagline>
   <HomePage.Description>
-    Define a shape once, get fully typed, randomized, probabilistic test data,
-    perfectly reproducible from a single recorded clock.
+    Define a shape once and get typed, random test data. Every run can be
+    replayed exactly from one recorded number.
   </HomePage.Description>
   <HomePage.Buttons>
     <HomePage.Button href="/start/quick-start" variant="accent">
@@ -67,37 +67,37 @@ const widget = Product.fabricate({ name: "Widget", inStock: true });
     <Card
       icon="type"
       title="Typed all the way through"
-      description="The value type falls out of the schema — no generics to write, no `as` casts, no drift between a fixture and the type it stands in for."
+      description="The value's type comes from the schema. No generics to write, no `as` casts, and no fixture drifting away from its type."
       to="/start/quick-start"
     />
     <Card
       icon="route"
       title="Reproducible by trace"
-      description="Every value is drawn from a stream keyed by clock, file, structural path, and an optional salt. `.trace` describes exactly where a value came from and facilitates replay."
+      description="Every value comes from a stream based on the run's clock, its position in the schema, and an optional salt. `.trace` records exactly where a value came from, so you can replay it."
       to="/guides/reproducibility"
     />
     <Card
       icon="list-tree"
       title="Fixtures that don't churn"
-      description="Data streams are keyed by structural position, so adding, removing, or reordering a field changes _only_ that field's data."
+      description="Each field's data depends on its position in the schema, so adding, removing, or reordering a field changes _only_ that field's data."
       to="/guides/reproducibility"
     />
     <Card
       icon="puzzle"
       title="Compose instead of copy"
-      description="`.extend()`, `.refine()`, and `.override()` build schemas out of schemas. Per-call overrides pin what a test cares about and leave the rest random."
+      description="`.extend()`, `.refine()`, and `.override()` build new schemas from existing ones. Per-call overrides pin what a test cares about and leave the rest random."
       to="/guides/composition"
     />
     <Card
       icon="circle-slash-2"
-      title="Absence, modelled precisely"
-      description="Object key missing, key present as `undefined`, and value `null` are different facts. The `omittable`, `optional`, `nullable`, `nullish`, and `undefinable` primitives allow describing them precisely."
+      title="Absence, modeled precisely"
+      description="A missing key, a key set to `undefined`, and a `null` value are different things. `omittable`, `optional`, `nullable`, `nullish`, and `undefinable` describe each precisely."
       to="/reference/primitives#absence"
     />
     <Card
       icon="door-open"
       title="Escape hatches as needed"
-      description="`T.opaque` and `.as()` cover anything with no primitive; `registry.extend()` brings your own builders; the TypeBox adapter turns a schema into a validator."
+      description="`T.opaque` and `.as()` cover anything without a primitive. `registry.extend()` adds your own builders. The TypeBox adapter turns a schema into a validator."
       to="/guides/custom-types"
     />
   </Cards>

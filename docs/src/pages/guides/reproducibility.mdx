@@ -123,7 +123,7 @@ const forked = base.fork({ salt: layer("my-fork") });
 forked.salt; // ["base", "my-fork"] — composed
 ```
 
-`layer` works the same way in three places: `fork`, [`wrap`](#when-you-cannot-thread-the-scope-wrap), and a single `new Fabricator(schema, { salt })`. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer).
+`layer` works the same way in `fork`, [`wrap`](#when-you-cannot-thread-the-scope-wrap), and a single `new Fabricator(schema, { salt })`. See [Composing instead of replacing: layer(...)](#composing-instead-of-replacing-layer).
 
 ## Composing instead of replacing: layer(...)
 
@@ -315,7 +315,7 @@ The trace has five fields, and together they determine that field's stream:
 
 `new Fabricator(schema, trace)` reproduces exactly what that schema produced as part of a larger build. Pass the part's own schema and its `trace`. The same sequence of `.fabricate()` calls then gives the same values, starting from the first draw.
 
-Three kinds of value don't depend only on their own stream. For these, replay the parent instead:
+Some kinds of value don't depend only on their own stream. For these, replay the parent instead:
 
 - a `.refine()` compute field: `.fabricate()` throws without the parent object
 - a `recursive.self` node: `.fabricate()` throws without the enclosing `T.recursive`

@@ -194,7 +194,7 @@ sampleSize({ population: 20_000, rare: 0.001 });
 // { n: 3748, reasons: [{ criterion: "shape", n: 3748, … }, …] }
 ```
 
-`n` is the largest of up to three requirements, and `reasons` lists each one:
+`n` is the largest of the requirements below, and `reasons` lists each one:
 
 | Criterion    | Guarantees                                                              | At the defaults |
 | ------------ | ----------------------------------------------------------------------- | --------------- |
@@ -250,7 +250,7 @@ Pass them as `census.from(rows, { facts })`. When suggesting, an **exact** fact 
 
 Facts set presence weights, ranges, enum members and their weights, and uniqueness. The distribution's shape is still fitted from the sample, within the table's range, because no aggregate describes a shape. The table's extremes can only widen a range, never narrow it.
 
-Facts have two limits. They only describe top-level columns, so anything nested inside a `json` column comes from the sample alone. And they describe the whole table, while `sample.where` filters only the sample, so don't use the two together.
+Facts have limits. They only describe top-level columns, so anything nested inside a `json` column comes from the sample alone. And they describe the whole table, while `sample.where` filters only the sample, so don't use the two together.
 
 `Facts` is plain data with nothing PostgreSQL-specific in it. You can get facts from another database, a cache, or write them by hand.
 

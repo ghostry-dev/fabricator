@@ -1,6 +1,6 @@
 # T.recursive
 
-A [structure](/reference/primitives#structures): a schema that references itself — a tree, a linked structure, or a generic JSON value.
+A [structure](/reference/primitives#structures): a schema that refers to itself, such as a tree, a linked structure, or a generic JSON value.
 
 ```ts
 const CategorySchema = T.recursive((self) =>
@@ -11,20 +11,27 @@ const CategorySchema = T.recursive((self) =>
 ).whereby({ depth: { max: 3 } });
 ```
 
-`body` is handed a `self` placeholder standing for "recurse here." The value type — `children: CategorySchema[]`, in the example above — is inferred with no annotation, to whatever depth is actually reached.
+`body` receives a `self` placeholder that means "recurse here". The value type, such as `children` being an array of categories in the example above, is inferred with no annotation, to any depth.
 
-`.whereby({ depth })` is required, unlike most primitives' `.whereby()` — a recursive schema with no bound would never terminate. At `depth.max`, fabrication swaps in a _terminal_ schema in place of `body`. That terminal is derived from `body` when you omit it: every `self` behind a kind that can stop recursing is rewritten into a stop — an empty array or record, the remaining non-`self` arms of a [`T.choice`](/reference/primitives/choice), [`T.null`](/reference/primitives/null) / [`T.undefined`](/reference/primitives/undefined) for [`T.nullable`](/reference/primitives/nullable) / [`T.undefinable`](/reference/primitives/undefinable) / [`T.nullish`](/reference/primitives/nullish), or an omitted key for [`T.omittable`](/reference/primitives/omittable) / [`T.optional`](/reference/primitives/optional). A required `self` (an object field, a tuple slot, or the body itself) cannot be derived — `.whereby()` throws, and `terminal` is the way out.
+`.whereby({ depth })` is required, because a recursive schema with no limit would never stop. At `depth.max`, fabrication uses a _terminal_ schema instead of `body`. If you don't give one, it is built from `body` by turning every `self` that can stop into a stop:
 
-`terminal` is optional, and when given it _replaces_ that derivation wholesale — a custom leaf value, or a JSON `choice` narrowed to one arm — rather than patching `self` sites inside `body`.
+- inside a `T.array` or `T.record`: an empty collection
+- inside a [`T.choice`](/reference/primitives/choice): the remaining options that aren't `self`
+- inside [`T.nullable`](/reference/primitives/nullable), [`T.undefinable`](/reference/primitives/undefinable), or [`T.nullish`](/reference/primitives/nullish): [`T.null`](/reference/primitives/null) or [`T.undefined`](/reference/primitives/undefined)
+- inside [`T.omittable`](/reference/primitives/omittable) or [`T.optional`](/reference/primitives/optional): a left-out key
 
-`depth` reads `{ max }` only, not `{ min, max }` — deliberately. [`T.array`](/reference/primitives/array) / [`T.record`](/reference/primitives/record) / [`T.string`](/reference/primitives/string) actually _draw_ a count, so a `min` is a floor on that draw. Recursive expansion does not: `depth.max` is a ceiling on an _emergent_ quantity. How deep any given `fabricate()` goes is decided by whichever kinds sit between `self` occurrences declining to recurse — an array or record rolling a count of 0, a choice picking a non-`self` option, an omittable / optional / undefinable resolving absent. The recursive node has no draw of its own to floor. Forcing `body` while depth is below some `min` is already what happens below `max`. A genuine floor would mean coercing those intervening kinds' draws, which is a different feature than a second number here. The derived terminal may empty a collection whose `body` said `length.min > 0`: the ceiling has to stop somehow.
+A `self` that is required, such as an object field, a tuple slot, or the whole body, can't be turned into a stop. Then `.whereby()` throws, and you must give a `terminal`.
+
+A `terminal` you give _replaces_ the built one entirely, for example a custom leaf value or a JSON `choice` narrowed to one option. It doesn't patch the `self` spots inside `body`.
+
+`depth` only has `max`, not `min`, on purpose. `T.array`, `T.record`, and `T.string` draw a count, so a `min` sets a floor on that draw. A recursive schema has no draw of its own. How deep a value goes depends on the kinds between `self` spots choosing not to recurse: an array drawing a length of 0, a choice picking a non-`self` option, or an optional field coming out absent. A real minimum would mean forcing those kinds' draws, which is a different feature. At `depth.max` the recursion has to stop, so the built terminal may empty a collection even if `body` set `length.min` above 0.
 
 :::warning
-A hand-written `terminal` that empties a collection field needs [`T.opaque(() => [])`](/reference/primitives/opaque), not [`T.always([])`](/reference/primitives/always). The terminal needs an empty array typed as the same element type the recursive field uses, but that type isn't nameable while the schema is still being defined — and `T.always([])` would hand back the _same array reference_ to every leaf, a live mutation hazard if any caller ever pushes to it. Derived terminals already use a fresh empty collection per leaf; this only matters when you supply `terminal` yourself.
+If your own `terminal` empties a collection field, use [`T.opaque(() => [])`](/reference/primitives/opaque), not [`T.always([])`](/reference/primitives/always). `T.always([])` returns the _same array_ to every leaf, so pushing to one changes all of them. The built terminal already uses a new empty collection for each leaf. This only matters when you write `terminal` yourself.
 :::
 
 :::danger
-`self` is only valid inside the `body` closure it was created for. Capturing it and reusing it in an unrelated `T.recursive` call, or outside any recursion, throws — it isn't silently tolerated. There is no `T.self`.
+`self` only works inside the `body` it was given to. Using it in a different `T.recursive` call, or outside any recursion, throws. There is no `T.self`.
 :::
 
-A doubly-recursive body (two fields, each `self`) costs `2^depth` in the worst case — keep `depth.max` small, 3–4, unless you have a specific reason not to.
+A body with two `self` fields, such as `left` and `right`, can produce `2^depth` nodes. Keep `depth.max` small, around 3 or 4, unless you have a reason not to.

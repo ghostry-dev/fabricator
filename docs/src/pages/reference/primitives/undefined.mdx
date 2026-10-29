@@ -1,5 +1,5 @@
 # T.undefined
 
-An [absence](/reference/primitives#absence) primitive: always exactly `undefined`, with nothing to roll.
+An [absence](/reference/primitives#absence) primitive: always exactly `undefined`. Nothing is random.
 
-Useful as one branch of a [`T.choice`](/reference/primitives/choice), or as the `terminal` value of a field you want to disable entirely. For a value that might be `undefined` _or_ something else, use [`T.undefinable`](/reference/primitives/undefinable). For a field that might be missing from the object entirely, use [`T.omittable`](/reference/primitives/omittable).
+Use it as one option of a [`T.choice`](/reference/primitives/choice), or for a field that should always be `undefined`. For a value that might be `undefined` _or_ something else, use [`T.undefinable`](/reference/primitives/undefinable). For a field that might be left off the object, use [`T.omittable`](/reference/primitives/omittable).

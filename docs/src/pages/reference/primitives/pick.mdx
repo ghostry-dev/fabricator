@@ -14,13 +14,11 @@ const ContactSchema = T.pick(UserSchema, ["id", "email"]);
 // { id: number; email: string }
 ```
 
-The source can be an object schema or a built object Fabricator. Naming a field the source doesn't have is a type error, and it throws at runtime too.
-
-Fields keep their order from the source.
+The source can be an object schema or a built object Fabricator. Naming a field the source doesn't have is a type error, and it also throws at runtime. Fields keep their order from the source.
 
 ## Computed fields
 
-A kept [computed field](/guides/objects#computed-fields) still needs the fields it reads. If you didn't keep them, they are fabricated anyway and left out of the result:
+A [computed field](/guides/objects#computed-fields) you keep still needs the fields it reads. If you didn't keep those, they are fabricated anyway and left out of the result:
 
 ```ts
 const NamedUserSchema = UserSchema.refine(({ compute }) => ({
@@ -33,10 +31,10 @@ T.pick(NamedUserSchema, ["id", "name"]);
 // { id: number; name: string }, with first and last fabricated for `name`
 ```
 
-Declare dependencies with `.from` so only those fields are kept. A computed field without `.from` can read the whole object, so every field it could read is kept.
+Use `.from` to declare what a computed field reads, so only those fields are fabricated for it. Without `.from`, a computed field can read the whole object, so every field it could read is still fabricated.
 
 ## What doesn't carry over
 
-The result is a new object schema. The source's own `.as(produce)` and any `.adapt(...)` on the whole object are dropped, because both describe the source's full shape. Each kept field keeps its own `.adapt(...)` and `.override(...)` values.
+The result is a new object schema. An `.as(produce)` or `.adapt(...)` on the source object as a whole is dropped, because both describe the source's full shape. Each field you keep keeps its own `.adapt(...)` and `.override(...)` values.
 
-For the inverse, see [`T.omit`](/reference/primitives/omit).
+For the opposite, see [`T.omit`](/reference/primitives/omit).

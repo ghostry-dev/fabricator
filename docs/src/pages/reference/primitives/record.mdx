@@ -1,6 +1,6 @@
 # T.record
 
-A [collection](/reference/primitives#collections): fuzzed keys, both sides schema-driven.
+A [collection](/reference/primitives#collections): random keys and values, each from its own schema.
 
 ```ts
 T.record(
@@ -9,10 +9,11 @@ T.record(
 ).whereby({ size: { max: 6, minTried: 2 } });
 ```
 
-For keys you don't know when you write the schema — a metadata bag, an i18n map, a lookup keyed by generated id. Both the keys and the values are fabricated from schemas, so a key's format is as controllable as any other value's.
+Use it for keys you don't know when you write the schema, such as a metadata bag, a translation map, or a lookup by generated id. Keys and values both come from schemas, so you control a key's format like any other value.
 
-`size` reads `{ max, minTried }`, not `{ max, min }` — deliberately. Keys are drawn independently, so two can come out identical and collapse into a single entry. `max` is a real upper bound; the lower number is only ever _attempted_, never guaranteed. Give the key schema enough room (a wide string, say) and collisions stop mattering in practice; make it narrow (a single digit) and you'll reliably get fewer entries than you asked for. There's no facility anywhere in this library to redraw a colliding key — the collapse is the answer, not a bug to route around.
+`size` is `{ max, minTried }`, not `{ max, min }`, on purpose. Keys are drawn independently, so two can come out the same and collapse into one entry. `max` is a real upper bound, but the lower number is only _tried_, never guaranteed. With a wide key schema, such as a long string, collisions rarely matter. With a narrow one, such as a single digit, you'll often get fewer entries than you asked for. Fabricator never redraws a colliding key. Collapsing is the intended behavior.
 
 :::warning
-A `record` keyed only by `T.symbol` (or a union including it) throws when adapted to TypeBox — TypeBox's `Type.Record` has no way to represent a symbol-keyed object and would otherwise silently return a schema (`TNever`) that nothing validates against. See [TypeBox](/guides/typebox).
+A `record` whose key schema can produce a symbol throws when converted to TypeBox. TypeBox's `Type.Record` can't represent symbol keys, and would otherwise silently return a schema (`TNever`) that nothing can pass. See [TypeBox](/guides/typebox).
+
 :::

@@ -99,8 +99,10 @@ export { layer } from "./Random";
 export type { Layered } from "./Random/Types";
 /**
  * Every failure this library raises is an instance of this class — see
- * `src/Error/index.ts` for the full hierarchy. Only the base is public;
- * subclasses are distinguished by `.name`.
+ * `src/Error/index.ts` for the full hierarchy. Every subclass is a member of
+ * the merged `FabricatorError` namespace, so this one export carries all of
+ * them: `e instanceof FabricatorError.InvalidOverrideValueError` works, and
+ * `.name` names the same failure.
  */
 export { FabricatorError } from "./Error";
 /**

@@ -1,6 +1,12 @@
 # Public API
 
-The package's `.` entry point — small on purpose, and scoped to _using_ fabricator: every primitive is reached through `T`, not imported directly, and everything here either drives that loop (`initialize`, `registry`), supports it (`Trace`, `Omitted`, `FabricatorError`, `Stream`, `Algorithm`, `sample`, `shuffle`, `Fabricated`, `satisfies`, `SatisfiedBy`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, `Stack`), or is what an ordinary `.adapt(adapter, produce)` call needs (`Adapting`). _Extending_ fabricator is each its own entry point — `@ghostry/fabricator/adapting` for implementing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, `@ghostry/fabricator/internal` for the structural tools an adapter needs.
+The package's main entry point, `.`, is small on purpose and covers _using_ fabricator. You reach every primitive through `T`, not by importing it. The exports fall into these groups:
+
+- **Setup:** `initialize` and `registry`, which give you `T`, `Fabricator`, and the rest of an instance.
+- **Supporting values and types:** `Trace`, `Omitted`, `FabricatorError`, `Stream`, `Algorithm`, `sample`, `shuffle`, `Fabricated`, `satisfies`, `SatisfiedBy`, `layer`, `Layered`, `Config`, `Overlay`, `Context`, and `Stack`.
+- **Adapting:** `Adapting`, the type of an `.adapt(adapter, produce)` producer's argument.
+
+_Extending_ fabricator has separate entry points: `@ghostry/fabricator/adapting` for writing a schema adapter, `@ghostry/fabricator/harnessing` for integrating with a test runner through `@ghostry/harness`, and `@ghostry/fabricator/internal` for the low-level types an adapter needs.
 
 ## `initialize(config?)`
 
@@ -15,30 +21,38 @@ function initialize(config?: {
 }): Instance;
 ```
 
-Mints one isolated instance. `types` defaults to the built-in `registry`; `salt` defaults to empty if omitted (unless `FABRICATOR_SALT` supplies one — which pins the salt only, not `clock`); `algorithm` defaults to a built-in `sfc32` generator (not cryptographically secure; see [Security](/about/security)). `limits.combinatorial` caps how many instances `combinatorial(...)` (below) may enumerate before throwing — defaults to `1024`, checked eagerly at `initialize()` time, not on first call. `clock` is what `T.date.past`/`T.date.future` (and any producer reading its `ProduceContext`) resolve "now" against, and the default entropy for the instance: it defaults to the wall-clock instant of this `initialize()` call. Pass a `Date` to pin "now" to a specific instant, or `clock: "derived"` to derive "now" from the instance salt (an instant drawn across the entire representable `Date` range). See [Reproducibility](/guides/reproducibility) and [Custom types](/guides/custom-types).
+Creates one isolated instance.
 
-`new Fabricator(schema, { salt })` overrides the salt for one construction. Like every other option here it pins a single `.trace` slot and changes nothing else: the build still takes the next ordinal from the instance's construction counter and still inherits the instance's `clock` (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)). `new Fabricator(schema, { salt: layer(identity) })` pins the same slot but _composes_ `identity` onto the instance's own salt instead of replacing it, so the construction still varies when the instance is re-salted — see [`layer(salt)`](#layersalt) below.
+- `types` defaults to the built-in `registry`. See [Custom types](/guides/custom-types).
+- `salt` defaults to empty, unless `FABRICATOR_SALT` sets one. That variable sets the salt only, not the clock.
+- `algorithm` defaults to a built-in `sfc32` generator, which is not cryptographically secure. See [Security](/about/security).
+- `limits.combinatorial` is the max that `combinatorial(...)` may produce before it throws. It defaults to `1024` and is checked when you call `initialize()`.
+- `clock` is "now" for `T.date.past`, `T.date.future`, and any producer that reads `clock` from its context. It is also what makes runs differ. It defaults to the time of this `initialize()` call. Pass a `Date` to pin "now", or `"derived"` to compute "now" from the salt, which can give any date in the representable range. See [Reproducibility](/guides/reproducibility).
+- `stack` replaces the carrier behind [`wrap`](#instancewrapoverlay-block), and you will almost never need it. By default, a runtime with `node:async_hooks` gets an `AsyncLocalStorage` carrier that lasts through `await`, and any other runtime gets a synchronous one. Pass your own `Stack` to support async `wrap` blocks on a runtime that would otherwise fall back, or to force the synchronous carrier.
 
-`stack` overrides the ambient carrier backing [`wrap`](#instancewrapoverlay-block), and is almost never worth setting. Left alone, the right one is chosen when the package is imported: every runtime with `node:async_hooks` gets an `AsyncLocalStorage` carrier whose frames survive `await`, and anything else gets a synchronous one. Supply your own — anything satisfying `Stack` — to bring async-capable `wrap` to a runtime that would otherwise fall back, or to force the synchronous carrier deliberately.
+`new Fabricator(schema, options)` accepts every field of a `Trace`: `salt`, `clock`, `path`, `kind`, and `ordinal`. Each one you pass replaces that field and nothing else.
 
-`salt` is one of these; `new Fabricator(schema, options)` accepts every slot of a captured `Trace` — `salt`, `clock`, `path`, `kind`, `ordinal` — so `new Fabricator(schema, built.trace)` replays that node. A given `ordinal` — including `null`, which `combinatorial`/`coverage` builds record in place of one — is taken verbatim and does not advance the instance's construction counter, which is what makes the replay exact. `kind` must match the schema or the constructor throws. A nested node's `path` is the base `make` extends for descendants, so replaying a nested `object` reproduces its subtree. See [Reproducibility](/guides/reproducibility) for the full trade-offs, including the cases that still need the parent (`.refine()` compute fields, `recursive.self`, `.override()` `[Fixed]` fields).
+- `{ salt }` replaces the salt for one build. The build still takes the next number from the instance's construction counter and still uses the instance's `clock` (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)). `{ salt: layer(identity) }` adds `identity` to the instance's salt instead of replacing it, so the build still changes when the instance's salt does. See [`layer(salt)`](#layersalt).
+- `new Fabricator(schema, built.trace)` replays that node. A given `ordinal`, including the `null` that `combinatorial`/`coverage` builds record, is used as-is and doesn't advance the counter, which is what makes the replay exact. `kind` must match the schema, or the constructor throws. Replaying a nested `object` with its `path` reproduces everything under it.
+
+Some values still need their parent to replay: `.refine()` compute fields, `recursive.self`, and `.override()` fields. See [Reproducibility](/guides/reproducibility#trace).
 
 ## `Instance`
 
 The shape `initialize()` returns:
 
-- **`T`** — the registry of type builders, `types` (or the default) as passed
-- **`Fabricator`** — a constructor: `new Fabricator(schema)` turns a Schema into a live Fabricator
-- **`salt`** — this instance's salt, always an array; empty if you didn't supply one (and no env var did)
-- **`combinatorial(schema)`** — every combination of every enumerable node in `schema` (every enum member, both sides of an optional field, and so on), as a lazy cartesian product. Throws eagerly, before producing anything, if the count would exceed `limits.combinatorial`.
-- **`coverage(schema)`** — the minimum set of instances such that every option of every enumerable node in `schema` appears at least once — count equal to the widest single axis, not the product, with narrower axes cycling to fill it. Unbounded by design: its count can never exceed the schema as written, so unlike `combinatorial` it carries no limit.
-- **`fork(overlay?)`** — derives a new, related `Instance`, the ordinary way to vary configuration. See [`Instance.fork(overlay?)`](#instanceforkoverlay) below.
-- **`wrap(overlay, block)`** — makes a fork ambient for a block of code, for when the scope cannot reach the code that needs it. See [`Instance.wrap(overlay, block)`](#instancewrapoverlay-block) below.
-- **`root`** — the head of this instance's lineage, for identity. See [`Instance.root`](#instanceroot) below.
-- **`context`** — what is in effect right now. See [`Instance.context`](#instancecontext) below.
-- **`ancestry`** — this instance's position in its lineage, as an opaque chain of per-instance tokens. Exposed so a caller can reason about which frames an instance's calls resolve against; for "same lineage?", compare `root`.
+- **`T`**: the type builders, from `types` or the default registry.
+- **`Fabricator`**: a constructor. `new Fabricator(schema)` turns a Schema into a Fabricator.
+- **`salt`**: this instance's salt, always an array. It is empty if neither you nor `FABRICATOR_SALT` set one.
+- **`combinatorial(schema)`**: every combination of every enumerable part of `schema` (each enum member, both outcomes of an optional field, and so on). It throws before producing anything if the count would exceed `limits.combinatorial`.
+- **`coverage(schema)`**: the smallest set of values in which every option of every enumerable part of `schema` appears at least once. Its size is the widest single axis, not the product, and narrower axes repeat to fill it. It has no limit, because its size can't exceed what the schema already contains.
+- **`fork(overlay?)`**: creates a related `Instance`. This is the usual way to change configuration. See [`Instance.fork(overlay?)`](#instanceforkoverlay).
+- **`wrap(overlay, block)`**: applies a fork automatically for a block of code, for when you can't pass the scope to the code that needs it. See [`Instance.wrap(overlay, block)`](#instancewrapoverlay-block).
+- **`root`**: the first instance in this instance's lineage. See [`Instance.root`](#instanceroot).
+- **`context`**: the configuration in effect right now. See [`Instance.context`](#instancecontext).
+- **`ancestry`**: this instance's position in its lineage, as an opaque chain of tokens. It is there so you can reason about which wraps apply to an instance. To check "same lineage?", compare `root` instead.
 
-Both `combinatorial` and `coverage` return a lazy, re-iterable `Iterable` — safe to iterate more than once, each pass drawing fresh randomness for whatever the enumeration didn't pin.
+`combinatorial` and `coverage` both return a lazy `Iterable` you can iterate more than once. Each pass draws fresh randomness for anything the enumeration didn't pin.
 
 ## `Instance.fork(overlay?)`
 
@@ -46,9 +60,9 @@ Both `combinatorial` and `coverage` return a lazy, re-iterable `Iterable` — sa
 function fork(overlay?: Overlay): Instance;
 ```
 
-The ordinary way to vary configuration, and the one to reach for before `wrap`: a fork is a value, so every receiver means exactly itself and nothing depends on what is open around the call site.
+The usual way to change configuration, and the one to use before `wrap`. A fork is a value, so a call through it always uses its configuration, whatever else is going on around the call.
 
-Derives a new `Instance` laid over the one `fork` was called on: whatever `overlay` names overrides, whatever it omits inherits — `salt`, `algorithm`, `types`, `limits`, `clock`, all included. A fork is a full peer of an `initialize()` return value in every respect, including its own `fork`/`wrap`. A captured wall-clock or explicit `Date` is inherited as-is; an inherited `"derived"` clock re-derives from whichever salt the fork ends up with — see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+`fork` creates a new `Instance` based on the one it is called on. Whatever `overlay` sets overrides the base, and whatever it leaves out is inherited, including `salt`, `algorithm`, `types`, `limits`, and `clock`. A fork can do everything an `initialize()` result can, including its own `fork` and `wrap`. A wall-clock or explicit `Date` clock is inherited as-is. An inherited `"derived"` clock is derived again from the fork's salt. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
 
 ```ts
 const base = initialize({ salt: "base" });
@@ -69,9 +83,9 @@ function wrap<$Return>(
 ): $Return;
 ```
 
-Prefer [`fork`](#instanceforkoverlay) unless the scope cannot reach the code that needs it — a callback you don't own, a deep call stack, or call sites already written against a destructured `Fabricator`. Inside a `wrap`, a receiver no longer tells you which configuration a call draws from; that is what a `wrap` is for, and the reason it is not the default recommendation.
+Use [`fork`](#instanceforkoverlay) unless you can't get the scope to the code that needs it: a callback you don't own, a deep call stack, or code already written against a destructured `Fabricator`. Inside a `wrap`, the object you call through no longer tells you which configuration a call uses. That is exactly what `wrap` is for, and why it isn't the default choice.
 
-`fork(overlay)`, made ambient for the extent of `block`: every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached while `block` runs — on the instance `wrap` was called on, and on that instance's ancestors — resolves against the fork automatically, with nothing threaded through. `block` also receives the fork directly, as `scope`, for explicit use:
+`wrap` is `fork(overlay)` applied automatically while `block` runs. Every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` call on the instance `wrap` was called on, or on its ancestors, uses the fork without you passing anything. `block` also receives the fork as `scope`, for explicit use:
 
 ```ts
 const { T, Fabricator, wrap } = initialize({ salt: "base" });
@@ -82,7 +96,7 @@ wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-The overlay lays over the instance `wrap` was called on, exactly as `fork`'s does, whether or not a `wrap` is already open around the call. So a nested `wrap` accumulates when it is reached through the enclosing `scope`, and restates when it is reached through a receiver bound outside — which a destructured `wrap` always is:
+A `wrap` builds on the instance it was called on, just like `fork`, whether or not another `wrap` is already open. So a nested `wrap` called through the enclosing `scope` adds to it, and one called through an instance from outside the block starts over. A destructured `wrap` is always from outside:
 
 ```ts
 wrap({ salt: layer("a") }, (scope) => {
@@ -96,11 +110,11 @@ wrap({ salt: layer("a") }, (scope) => {
 });
 ```
 
-To compose onto whatever is in effect without holding the enclosing `scope`, go through [`context.scope()`](#instancecontext). A bare (non-layered) `salt` replaces outright either way.
+To add to whatever is in effect when you don't have the enclosing `scope`, call through [`context.scope()`](#instancecontext). A plain `salt` without `layer` replaces the salt either way.
 
-Which calls resolve against the frame: the instance `wrap` was called on, and that instance's ancestors up to the root — never a descendant (a fork of the receiver, or the wrap's own scope), a sibling, or another `initialize()`. See [Ambience governs the receiver and its ancestors](/guides/reproducibility#ambience-governs-the-receiver-and-its-ancestors).
+A `wrap` applies to calls on the instance it was called on and that instance's ancestors. It never applies to a descendant (a fork of that instance, or the wrap's own `scope`), a sibling, or a different `initialize()`. See [Ambience governs the receiver and its ancestors](/guides/reproducibility#ambience-governs-the-receiver-and-its-ancestors).
 
-`block` may be `async`. On any runtime with `node:async_hooks` — Node, Bun, Deno — the ambient frame is carried by `AsyncLocalStorage`, so it survives `await`, and two concurrent `wrap`s never see each other's configuration:
+`block` can be `async`. On any runtime with `node:async_hooks` (Node, Bun, and Deno), the wrap is carried by `AsyncLocalStorage`, so it lasts through `await`, and two `wrap`s running at once never see each other's configuration:
 
 ```ts
 await wrap({ salt: layer("a") }, async () => {
@@ -109,9 +123,9 @@ await wrap({ salt: layer("a") }, async () => {
 });
 ```
 
-Anywhere else — a browser bundle, or an `initialize({ stack })` given a synchronous carrier — a frame cannot outlive the block's first `await`. Rather than let a later build resolve against the base instance unannounced, `wrap` throws `SynchronousStackError` as soon as it sees `block` return a promise. The check is on the block, not on what it does: it fires even if the block only ever touches `scope`, because whether something later reads the ambient frame is not knowable from `wrap`. Keep the block synchronous, or hand `initialize({ stack })` an async-capable carrier.
+Anywhere else, such as a browser bundle or an `initialize({ stack })` with a synchronous carrier, the wrap ends at the block's first `await`. Instead of letting a later build silently use the base instance, `wrap` throws `SynchronousStackError` as soon as `block` returns a promise. It throws even if the block only uses `scope`, because `wrap` can't know whether later code will rely on the wrap. Keep the block synchronous, or pass `initialize({ stack })` a carrier that supports async.
 
-See [When you cannot thread the scope: wrap](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) for the full walkthrough, including why `fork` is the better default choice.
+See [When you cannot thread the scope: wrap](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) for the full guide, including why `fork` is the better default.
 
 ## `Instance.root`
 
@@ -119,9 +133,9 @@ See [When you cannot thread the scope: wrap](/guides/reproducibility#when-you-ca
 readonly root: Instance;
 ```
 
-The instance at the head of this lineage — the one `initialize()` returned. A root's own `root` is itself, so it is never `undefined` and no caller has to handle absence.
+The first instance in this lineage, the one `initialize()` returned. A root's `root` is itself, so it is never `undefined`.
 
-Its job is identity. `a.root === b.root` answers "same lineage?", which `fork`/`wrap` descent preserves and which two separate `initialize()` calls never share, even when handed the same `stack`:
+It is for identity. `a.root === b.root` tells you whether two instances share a lineage. Forks and wraps keep the same root, and two separate `initialize()` calls never share one, even when given the same `stack`:
 
 ```ts
 const base = initialize({ salt: "base" });
@@ -132,11 +146,11 @@ base.root === base; // true — a root names itself
 initialize({ salt: "base" }).root === base; // false
 ```
 
-It is **not** a way to reach "the ambient instance" — every instance in a lineage resolves against the frames on its own line, so there is nothing to reach for. Nor is it the configuration to build against in preference to the one you hold: `root`'s config is where the lineage started, not what is in effect now. For that, see [`context.scope()`](#instancecontext).
+It is **not** a way to reach "the active instance". Each instance in a lineage already sees the wraps that apply to it, so there is nothing extra to reach. It is also not the configuration to build with: `root`'s configuration is where the lineage started, not what is in effect now. For that, use [`context.scope()`](#instancecontext).
 
-Typed as `Instance` with an unparameterized registry. A root's registry is fixed at `initialize` and nothing later changes it — a `fork({ types })` mints a new instance and leaves the root alone. What a descendant loses is the ability to _name_ it: after such a fork its own `$Registry` is the fork's, so the root's is no longer recoverable from it. Recovering it would mean threading a second type parameter through `fork` and `wrap`, which is not worth it for an accessor whose job is identity — if you mean to build, you want the registry of the instance you hold. So `root.T` is untyped; `root.Fabricator` is unaffected, carrying no registry parameter.
+`root` is typed as `Instance` with a generic registry, so `root.T` is untyped. `root.Fabricator` works normally. A root's registry never changes, since `fork({ types })` creates a new instance and leaves the root alone. But after such a fork, the descendant's type no longer records the root's registry. Keeping it would take a second type parameter on `fork` and `wrap`, which isn't worth it for something meant for identity. To build, use the registry of the instance you have.
 
-This is a different situation from [`context.scope()`](#instancecontext), whose registry depends on which instance entered the innermost visible frame and so cannot be known statically at all.
+[`context.scope()`](#instancecontext) is different: its registry depends on which instance opened the innermost wrap, so it can't be known at compile time at all.
 
 ## `Instance.context`
 
@@ -150,9 +164,9 @@ readonly context: {
 };
 ```
 
-What is in effect right now: the innermost `wrap` frame this instance can see, or the instance itself outside any. A live view, not a snapshot — a `context` reference held onto before a `wrap` still reflects it while active, and reverts once the `wrap` ends. `clock` is always a resolved epoch-millisecond number, even under `"derived"` — see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+The configuration in effect right now: the innermost `wrap` that applies to this instance, or the instance itself if none does. It is a live view, not a snapshot. A `context` you got before a `wrap` reflects the wrap while it is active and goes back afterward. `clock` is always a number of milliseconds since the epoch, even with `"derived"`. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
 
-`scope()` returns that configuration as a usable `Instance` — the frame's own scope, or this instance outside one. It is how to compose against whatever is active from a receiver bound elsewhere:
+`scope()` returns that configuration as an `Instance`: the active wrap's scope, or this instance if there is none. Use it to build on whatever is active from code that holds a different instance:
 
 ```ts
 const { wrap, context } = initialize({ salt: "base" });
@@ -164,18 +178,18 @@ wrap({ salt: layer("a") }, () => {
 });
 ```
 
-Unlike rebuilding an overlay out of `context.salt` by hand, it carries `types`, `limits`, `algorithm` and `clock` across as well.
+Unlike building an overlay from `context.salt` yourself, it also carries over `types`, `limits`, `algorithm`, and `clock`.
 
-`depth` is how many wraps currently govern this instance, `0` outside any. A wrap's own `scope` is a descendant of the receiver, so its depth inside that wrap is 0 — it already holds the wrap's configuration as its own. A frame entered on a sibling or an ancestor does not count toward it.
+`depth` is how many wraps currently apply to this instance, or `0` if none do. A wrap's own `scope` is a descendant of the wrapped instance, so its depth inside that wrap is `0`; the wrap's configuration is already its own. A wrap on a sibling or an ancestor doesn't count.
 
-The four value properties are getters, so **destructure `context` itself, never those**. Holding the object keeps the live view; pulling one out calls its getter once and freezes the result, as does spreading (`{ ...context }`):
+The four value properties are getters, so **destructure `context` itself, not its properties**. Keeping the object keeps the live view. Pulling a property out, or spreading the object (`{ ...context }`), reads it once and freezes the value:
 
 ```ts
 const { context } = initialize({ salt: "base" }); // live
 const { salt } = instance.context; // a snapshot, taken right now
 ```
 
-`scope` is exempt, and is a function for exactly that reason. It is the one member you _act through_ rather than read, so freezing it would not show up as an obviously stale value — an ambient build through the captured instance would still be correct while `wrap`/`fork` on it laid over the wrong base. Capturing a function captures the lookup instead, so this stays live:
+`scope` is the exception, and it is a function for exactly that reason. You build through it rather than read it, so a frozen `scope` wouldn't look out of date. Builds through it would quietly use the wrong base for `wrap` and `fork`. A function looks up the current scope each time you call it, so this stays live:
 
 ```ts
 const { scope } = instance.context;
@@ -184,7 +198,7 @@ wrap({ salt: layer("a") }, () => {
 });
 ```
 
-The `Instance` that `scope()` hands back is fixed, like any other instance. Holding that result across a frame change is a caller saying they wanted that one; holding `scope` keeps you live.
+The `Instance` that `scope()` returns is fixed, like any other instance. If you keep that result after the active wrap changes, you get that instance. Keep `scope` itself to stay live.
 
 ## `layer(salt)`
 
@@ -192,7 +206,7 @@ The `Instance` that `scope()` hands back is fixed, like any other instance. Hold
 function layer(salt: Salt): Layered;
 ```
 
-Tags a salt as composing onto whatever base is in effect, rather than replacing it outright — the reading a bare `salt` has everywhere else in this library. Works identically wherever a `salt` is accepted against a base: `Instance.fork`, `Instance.wrap`, and a single `new Fabricator(schema, { salt })` call. See [Composing instead of replacing: layer(...)](/guides/reproducibility#composing-instead-of-replacing-layer) for the full picture.
+Marks a salt to be added to the salt in effect, instead of replacing it the way a plain `salt` does everywhere else. It works the same in `Instance.fork`, `Instance.wrap`, and `new Fabricator(schema, { salt })`. See [Composing instead of replacing: layer(...)](/guides/reproducibility#composing-instead-of-replacing-layer).
 
 ## `sample(list, stream)` / `shuffle(list, stream)`
 
@@ -201,15 +215,15 @@ function sample<T>(list: ReadonlyArray<T>, stream: Stream): T;
 function shuffle<T>(items: ReadonlyArray<T>, stream: Stream): T[];
 ```
 
-Helpers for a producer that already holds a `Stream` — `.as(produce)`, `T.opaque`, a `T.derive` resolver — and needs to pick from a list it already has.
+Helpers for a producer that already has a `Stream`, such as `.as(produce)`, `T.opaque`, or a `T.derive` resolver, and needs to pick from a list.
 
-`sample` is a uniform pick, one `stream.next()` per call, and does not mutate `list`. An empty list throws a `FabricatorError` named `EmptyItemsError`. `shuffle` returns a new array in uniformly random order and does not mutate `items`; an empty list shuffles to an empty list.
+`sample` picks one item uniformly, using one `stream.next()` per call, and doesn't change `list`. An empty list throws `FabricatorError.EmptyItemsError`. `shuffle` returns a new array in random order and doesn't change `items`. An empty list shuffles to an empty list.
 
-Prefer `T.enum` when the pick can be represented as a schema: it is enumerable and keyed by path, so `coverage`/`combinatorial` see it and a salt replays it without a producer. See [Drawing inside a producer](/guides/relationships#drawing-inside-a-producer).
+Use `T.enum` instead when the pick can be a schema. `coverage`/`combinatorial` can enumerate an enum, but not a pick made inside a producer. See [Drawing inside a producer](/guides/relationships#drawing-inside-a-producer).
 
 ## `registry`
 
-The default set of type builders, exported so it can be extended via `registry.extend(({ T }) => ({ ... }))` before being passed to `initialize({ types })`. See [Custom types](/guides/custom-types).
+The default type builders. It is exported so you can extend it with `registry.extend(({ T }) => ({ ... }))` and pass the result to `initialize({ types })`. See [Custom types](/guides/custom-types).
 
 ## `fabricator.trace`
 
@@ -217,17 +231,21 @@ The default set of type builders, exported so it can be extended via `registry.e
 readonly trace: Trace;
 ```
 
-Every built Fabricator records how its stream is derived: the instance salt, the resolved clock this construction resolves "now" against (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)), its structural path within that construction, its kind, and which construction on the source it belongs to. Recording is unconditional — a bare `object` or `always` still has a `trace`, so a nested node can be rebuilt with `new Fabricator(schema, node.trace)`. Minting a stream from that trace is still paid only by nodes that draw. See [Reproducibility](/guides/reproducibility).
+Every built Fabricator records where its randomness comes from: the instance salt, the build's "now" (see [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy)), its position in the build, its kind, and which build on the instance it belongs to. Every node has a `trace`, even a bare `object` or `always`, so you can rebuild a nested node with `new Fabricator(schema, node.trace)`. See [Reproducibility](/guides/reproducibility#trace).
 
-Three values are not a function of the node's own stream, so replaying the node standalone does not reproduce them: a `.refine()` compute field (throws without the parent object), a `recursive.self` node (throws without the enclosing `T.recursive`), and an `.override()` `[Fixed]` field (replays the drawn value the parent discarded). Replay the parent.
+Some kinds of value don't depend only on the node's own stream, so replaying the node alone doesn't reproduce them. Replay the parent instead:
+
+- a `.refine()` compute field throws without the parent object
+- a `recursive.self` node throws without the enclosing `T.recursive`
+- an `.override()` field replays the random value the parent threw away
 
 ## `Omitted`
 
-A sentinel value. Pass it to `.override(...)` or `.fabricate(overrides)` to force an [omittable](/reference/primitives/omittable) or [optional](/reference/primitives/optional) field off.
+A special value. Pass it to `.override(...)` or `.fabricate(overrides)` to force an [omittable](/reference/primitives/omittable) or [optional](/reference/primitives/optional) field to be left out.
 
 ## `FabricatorError`
 
-Every failure this library raises is an instance of this class — a schema-baked or per-call override rejected, a detached `self` reused outside its own `T.recursive` callback, an unrepresentable adaptation, and so on. Only the base class is exported; a specific failure is distinguished by `.name`, not by importing a subclass directly:
+Every error fabricator throws is an instance of this class: a rejected override, a `self` used outside its own `T.recursive` callback, an adaptation that can't be represented, and so on. Each specific error is a subclass on `FabricatorError` itself, such as `FabricatorError.InvalidOverrideValueError`, so one import covers all of them. Check a specific one with `instanceof` or by its `.name`:
 
 ```ts
 import { FabricatorError } from "@ghostry/fabricator";
@@ -236,15 +254,17 @@ try {
   // `name` is a `T.string` field — a number violates its kind
   Product.fabricate({ name: 5 as unknown as string });
 } catch (e) {
-  if (e instanceof FabricatorError) {
-    // e.name, e.message — every subclass narrows the same way
+  if (e instanceof FabricatorError.InvalidOverrideValueError) {
+    // this specific failure
+  } else if (e instanceof FabricatorError) {
+    // any other fabricator failure: e.name, e.message
   }
 }
 ```
 
 ## `Stream` (type only)
 
-The parameter type `T.opaque`'s producer receives — exported so a producer written as a named function has something to annotate its parameter with. See [`T.opaque`](/reference/primitives/opaque).
+The type of `random` in a producer's context, for `T.opaque` and every `.as(produce)`. It is exported so you can annotate a producer written as a named function. See [`T.opaque`](/reference/primitives/opaque).
 
 ## `Algorithm` (type only)
 
@@ -256,7 +276,7 @@ The type of `initialize({ algorithm })`: given a seed, returns a generator of fl
 
 ## `Fabricated<$Schema>` (type only)
 
-Reads the value type a Schema produces. Works on a Schema before it's built, which is useful for a helper that accepts a Schema directly, and on a built Fabricator:
+Gives the type of value a Schema produces. It works on a Schema before it is built, which helps when a function takes a Schema directly, and on a built Fabricator:
 
 ```ts
 import type { Fabricated } from "@ghostry/fabricator";
@@ -275,11 +295,11 @@ function seedDb(p: ProductValue) {
 
 ## `.satisfies<$Target>()`
 
-The chainable check that a schema produces a value assignable to a type that already exists elsewhere — an API response, a database model, a generated client. The type still comes from the schema; this is an optional check against a supplied `T`, not a second definition to keep in sync.
+Checks that a schema produces a value assignable to a type defined somewhere else, such as an API response, a database model, or a generated client. The type still comes from the schema. This is an optional check, not a second definition to keep in sync.
 
-Assignable-to, not exact equality: extra fields pass. The method returns the same schema, unchanged at runtime, so it can sit inline. The target is not carried forward — a later `.extend` that changes a field's type is not re-checked. Put `.satisfies` last to check the final shape.
+The check is "assignable to", not exact equality, so extra fields pass. The method returns the same schema, unchanged at runtime, so you can call it inline. The check isn't carried forward: a later `.extend` that changes a field's type isn't checked again. Put `.satisfies` last to check the final shape.
 
-Call it on any schema, at any depth. A nested field that drifts errors on that field's line rather than on the outer object:
+You can call it on any schema, at any depth. If a nested field drifts, the error is on that field's line, not on the outer object:
 
 ```ts
 import { initialize, registry } from "@ghostry/fabricator";
@@ -309,13 +329,13 @@ const Orders = new Fabricator(OrderSchema);
 Orders.fabricate(); // typed exactly as before — `.satisfies` changes nothing at runtime
 ```
 
-Bare builders are not schemas: `T.string.satisfies<string>()` is not a method; `T.string.whereby({ length: { max: 8 } }).satisfies<string>()` is.
+Bare builders are not schemas. `T.string.satisfies<string>()` doesn't exist, but `T.string.whereby({ length: { max: 8 } }).satisfies<string>()` does.
 
-Under `exactOptionalPropertyTypes`, `T.optional` produces `note?: string | undefined` (present, present-as-`undefined`, or omitted) and does **not** satisfy `note?: string`. `T.omittable` produces `note?: string` and does. Widen the target to `note?: string | undefined`, or use `T.omittable`.
+With `exactOptionalPropertyTypes` on, `T.optional` produces `note?: string | undefined` (present, present as `undefined`, or left out), so it does **not** satisfy `note?: string`. `T.omittable` produces `note?: string`, so it does. Either widen the target to `note?: string | undefined` or use `T.omittable`.
 
 ### `satisfies<$Target>(buildable)`
 
-The function is available standalone for use anywhere you want to check the type. It is a type-level statement and a no-op at runtime. It also accepts a Schema, which is the form to use when the schema comes from somewhere you don't want to edit:
+There is also a standalone function, for checking anywhere. It only operates at the type level; it does nothing at runtime. It accepts a built Fabricator or a Schema, which is useful when the schema comes from code you don't want to edit:
 
 ```ts
 import { satisfies } from "@ghostry/fabricator";
@@ -332,11 +352,11 @@ satisfies<Product>(ProductFabricator);
 satisfies<Product>(ProductSchema);
 ```
 
-If the type is not satisfied, a typecheck error is raised.
+If the type doesn't match, it is a type error.
 
 ### `SatisfiedBy<$Target, $Buildable>` (type only)
 
-Resolves to `true` when the Schema or built Fabricator produces a value assignable to `$Target`, and otherwise to an object naming both sides. Assert it with the `satisfies` operator, no helper needed:
+Resolves to `true` when the Schema or built Fabricator produces a value assignable to `$Target`, and otherwise to an object showing both types. Check it with TypeScript's `satisfies` operator, with no helper needed:
 
 ```ts
 import type { SatisfiedBy } from "@ghostry/fabricator";
@@ -349,7 +369,7 @@ A failure reads `Type 'boolean' does not satisfy the expected type '{ produces: 
 
 ## Calling `.adapt(adapter, produce)`
 
-**`Adapting<$Schema>`** — `{ schema, meta }`, the parameter type of every kind's `.adapt(adapter, produce)` producer. Exported from `.`, not `./adapting`, despite the name overlap: calling `.adapt()` to override one schema's mapping is an ordinary caller's business, not an adapter author's — the same reason `Stream`/`ProduceContext` are exported from `.` for `.as(produce)`. `meta` is the kind's own config, reachable here without importing the `Meta` well-known symbol from `./internal`.
+**`Adapting<$Schema>`** is `{ schema, meta }`, the parameter type of every `.adapt(adapter, produce)` producer. It is exported from `.`, not `./adapting`, despite the similar name, because overriding one schema's mapping is something any user does, not just adapter authors. `meta` is the schema's own config.
 
 ```ts
 const email = T.string.adapt(typebox, ({ meta }) =>
@@ -357,32 +377,32 @@ const email = T.string.adapt(typebox, ({ meta }) =>
 );
 ```
 
-See [Adapting to an external schema library](/guides/typebox) for the full walkthrough.
+See [the TypeBox guide](/guides/typebox#when-the-default-is-wrong) for details.
 
 ## `@ghostry/fabricator/adapting`
 
-A separate entry point for _authoring_ a schema adapter (e.g. [`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0)) — not re-exported from `.`, since ordinary schema composition never needs it. Named for the activity rather than the `Adapter` noun, the same pattern `@ghostry/fabricator/harnessing` follows for supplying a test-framework integration. This package names no external schema library and depends on none: every mapping, and every dependency it needs, belongs to the adapter.
+A separate entry point for _writing_ a schema adapter, such as [`@ghostry/fabricator-adapter-typebox-v0`](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0). It isn't exported from `.`, because ordinary use never needs it. Fabricator itself doesn't know about or depend on any schema library. Every mapping, and every dependency, belongs to the adapter.
 
-- **`Adapter<$Key, $Context, $Returnable>`** — the shape an adapter itself is: `{ key, convert }`. `convert` is the per-kind dispatch a conversion entry point (e.g. `toTypeBox`) calls.
-- **`walk(adapter, schema, context)`** — walks a schema with an adapter, checking whether each node declared an adaptation for that adapter's `key` before falling back to the adapter's own `convert`.
-- **`Recurse<$Context, $Returnable>`** — the callback `walk` hands an adapter's `convert` so nested schema nodes (an object field, an array element) get the same adaptation lookup as the root.
-- **`Adaptation`** — the well-known symbol a Schema stores its per-adapter overrides under; read only by an adapter.
-- **`Adaptations`** / **`AdaptationsOf<$Schema>`** — the runtime shape of that map, and the type-level read of what a given Schema declared.
+- **`Adapter<$Key, $Context, $Returnable>`**: what an adapter is, `{ key, convert }`. `convert` handles each kind, and a conversion function like `toTypeBox` calls it.
+- **`walk(adapter, schema, context)`**: walks a schema with an adapter. At each node, it uses the node's override for that adapter's `key` if there is one, and otherwise calls the adapter's `convert`.
+- **`Recurse<$Context, $Returnable>`**: the callback `walk` passes to `convert`, so nested nodes (an object field, an array element) get the same override check as the root.
+- **`Adaptation`**: the symbol a Schema stores its per-adapter overrides under. Only adapters read it.
+- **`Adaptations`** / **`AdaptationsOf<$Schema>`**: the runtime shape of that map, and the type of what a given Schema declared.
 
 ## `@ghostry/fabricator/harnessing`
 
-The entry point [`@ghostry/harness`](https://github.com/ghostry-dev/harness) integrates through — not re-exported from `.`, since only a test setup module needs it. Neither package depends on the other: the types here are fabricator's own copy of the part of that contract it uses, satisfied structurally. See [Harness](/guides/harness) for the setup.
+The entry point [`@ghostry/harness`](https://github.com/ghostry-dev/harness) uses to integrate fabricator. It isn't exported from `.`, because only a test setup module needs it. Neither package depends on the other. The types here are fabricator's own copy of the part of harness's contract it uses. See [Harness](/guides/harness) for setup.
 
-- **`integration(instance)`** — decorates an existing instance as an integration; it never mints one, so the caller's `initialize(...)` owns the configuration, `clock` especially. Each test body runs inside `context.scope().wrap({ salt: layer(...) }, ...)`, salted from that test's `Identity` as `[kind, ...path, name, row?]`, and no clock is ever set. Overlaying the scope in effect rather than the instance it was handed is what lets the per-test salt compose onto an enclosing `wrap` — another integration's, say — instead of replacing it.
-- **`Integration<$Context, $Established>`** — `{ name, provides, frame }`, what `integration(...)` returns. `frame` is a generator with one suspension point: the wrapper it yields encloses the test body and returns the body's value unchanged.
-- **`Identity`** — `{ kind, path, name, row }`: `"test"` or `"suite"`, the enclosing `describe` names outer → inner, the test name (`""` for a suite hook), and the `.each` row index or `undefined`. It carries no file.
-- **`Frame<$Established>`** / **`Wrapper<$Established>`** — the generator `frame` returns, and the optional value it yields. `Wrapper` is generic in its return and hands the body's value back unchanged, which is what keeps a synchronous test synchronous and lets frames nest.
-- **`FrameArgs`** / **`ProviderArgs<$Established>`** — what each hook is handed, always as one object rather than positional arguments: `{ identity }` for `frame`, the same plus `established` for a provider.
-- **`Provider<$Value, $Established>`** / **`Provides<$Context, $Established>`** — one provider per context key, each handed `{ identity, established }`, where `established` is whatever this integration's own wrapper passed forward; `provides` is the only source of an integration's keys.
-- **`FabricatorTestContext<$Registry>`** — `{ fabricator }`, the per-test scoped `Instance` a test body receives.
+- **`integration(instance)`**: turns an existing instance into a harness integration. It never creates an instance, so your `initialize(...)` call controls the configuration, especially `clock`. Each test body runs inside `context.scope().wrap({ salt: layer(...) }, ...)`, salted from the test's `Identity` as `[kind, ...path, name, row?]`. It never sets a clock. Wrapping the scope in effect, not the instance it was given, is what lets the per-test salt add to an enclosing `wrap`, such as another integration's, instead of replacing it.
+- **`Integration<$Context, $Established>`**: `{ name, provides, frame }`, what `integration(...)` returns. `frame` is a generator with one `yield`. The wrapper it yields runs the test body inside it and returns the body's value unchanged.
+- **`Identity`**: `{ kind, path, name, row }`. That is `"test"` or `"suite"`, the enclosing `describe` names from outer to inner, the test name (`""` for a suite hook), and the `.each` row index or `undefined`. It doesn't include the file.
+- **`Frame<$Established>`** / **`Wrapper<$Established>`**: the generator `frame` returns, and the optional function it yields. `Wrapper` returns the body's value unchanged, which keeps a synchronous test synchronous and lets frames nest.
+- **`FrameArgs`** / **`ProviderArgs<$Established>`**: what each hook receives, always as one object: `{ identity }` for `frame`, and the same plus `established` for a provider.
+- **`Provider<$Value, $Established>`** / **`Provides<$Context, $Established>`**: one provider per context key. Each receives `{ identity, established }`, where `established` is whatever this integration's wrapper passed along. `provides` is the only place an integration's keys come from.
+- **`FabricatorTestContext<$Registry>`**: `{ fabricator }`, the per-test `Instance` a test body receives.
 
-Reading `provides.fabricator` outside that integration's own frame throws a `FabricatorError` named `HarnessingProviderError`. Only a composer breaking the contract does that; `@ghostry/harness` never does.
+Reading `provides.fabricator` outside the integration's own frame throws `FabricatorError.HarnessingProviderError`. That only happens if something calls the integration incorrectly; `@ghostry/harness` never does.
 
 ## `@ghostry/fabricator/internal`
 
-Another entry point — deliberately _not_ re-exported from `.` — for adapter authors who need to dispatch on a primitive kind's structural shape directly (`Kind`, `Meta`, `Buildable`, `Fabrication`, and each kind's own `Core` type). If you're writing an adapter like the TypeBox one, this is where its dispatch tables come from; ordinary schema authoring never needs it.
+Another entry point, deliberately _not_ exported from `.`, for adapter authors who need to handle each primitive kind by its shape (`Kind`, `Meta`, `Buildable`, `Fabrication`, and each kind's `Core` type). If you're writing an adapter like the TypeBox one, this is what it builds on. Ordinary use never needs it.
