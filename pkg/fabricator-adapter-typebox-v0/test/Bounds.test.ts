@@ -54,6 +54,14 @@ test("date bounds map to timestamp keywords", () => {
   expect(schema.exclusiveMaximumTimestamp).toBe(max.getTime());
 });
 
+test("a one-sided date range maps only the end that was named", () => {
+  const min = new Date("2000-01-01T00:00:00.000Z");
+  const schema = toTypeBox(T.date.whereby({ min }));
+  expect(schema.minimumTimestamp).toBe(min.getTime());
+  expect(schema.maximumTimestamp).toBeUndefined();
+  expect(schema.exclusiveMaximumTimestamp).toBeUndefined();
+});
+
 test("a bare string length is minLength = maxLength = N", () => {
   const schema = toTypeBox(T.string.whereby({ length: 8 }));
   expect(schema.minLength).toBe(8);

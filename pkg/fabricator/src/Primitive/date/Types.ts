@@ -4,12 +4,22 @@ import type { Distribution } from "../../Distribution";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
+/**
+ * Call-site `{ min, max }` — scalars are inclusive. Either end may be omitted;
+ * a missing `min` is the earliest representable instant and a missing `max` the
+ * latest, the same span as a bare `T.date`.
+ */
 export type InputWhereby = {
   min?: InputBound<Date> | undefined;
   max?: InputBound<Date> | undefined;
   distribution?: Distribution | undefined;
 };
 
+/**
+ * Stored `{ min, max }` — each present end is a canonical {@link Bound}. An
+ * omitted end stays omitted (fabricate fills `Defaults.ts`'s `unboundedEpoch`;
+ * adapters forward only the ends that were named).
+ */
 export type Whereby = {
   min?: Bound<Date> | undefined;
   max?: Bound<Date> | undefined;

@@ -6,7 +6,7 @@ import {
 } from "../../Bound";
 import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
 import { default as bigint } from "../bigint";
-import { unboundedContinuous, unboundedDiscrete } from "./defaults";
+import { unboundedContinuous, unboundedDiscrete } from "./Defaults";
 import { Schema } from "./Schema";
 import type { Fabricated, InputWhereby, Whereby } from "./Types";
 

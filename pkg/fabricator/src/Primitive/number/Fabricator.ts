@@ -8,7 +8,7 @@ import type {
 import { toStreamFromTrace } from "../../Random";
 import type { Trace } from "../../Random/Types";
 import { Kind, Meta, type Adaptation } from "../../Types";
-import { unboundedContinuous, unboundedDiscrete } from "./defaults";
+import { unboundedContinuous, unboundedDiscrete } from "./Defaults";
 import { Schema } from "./Schema";
 import type { Fabricated, Meta as ThisMeta } from "./Types";
 

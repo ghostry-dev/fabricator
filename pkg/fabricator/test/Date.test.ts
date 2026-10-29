@@ -125,6 +125,52 @@ test("an empty date range throws at whereby", () => {
   ).toThrow(FabricatorError.EmptyRangeError);
 });
 
+/**
+ * The open end fills to the edge of the representable range, so every draw is a
+ * valid `Date` — an end left as `NaN` or `±Infinity` would surface as an
+ * Invalid Date here.
+ */
+test("T.date.whereby({ min }) stays at or after min, up to the latest instant", () => {
+  const { T, Fabricator } = initialize({ salt: "date-whereby-min-only" });
+  const min = new Date("2000-01-01T00:00:00.000Z");
+  const built = new Fabricator(T.date.whereby({ min }));
+
+  for (let i = 0; i < 2000; i++) {
+    const value = built.fabricate().getTime();
+    expect(Number.isNaN(value)).toBe(false);
+    expect(value).toBeGreaterThanOrEqual(min.getTime());
+  }
+});
+
+test("T.date.whereby({ max }) stays at or before max, down to the earliest instant", () => {
+  const { T, Fabricator } = initialize({ salt: "date-whereby-max-only" });
+  const max = new Date("2000-01-01T00:00:00.000Z");
+  const built = new Fabricator(T.date.whereby({ max }));
+
+  for (let i = 0; i < 2000; i++) {
+    const value = built.fabricate().getTime();
+    expect(Number.isNaN(value)).toBe(false);
+    expect(value).toBeLessThanOrEqual(max.getTime());
+  }
+});
+
+/**
+ * A one-sided exclusive end at the edge of the representable range leaves no
+ * instant, and that is caught at `.whereby()` like a two-sided empty range.
+ */
+test("a one-sided date range with no instant left throws at whereby", () => {
+  const { T } = initialize({ salt: "date-empty-one-sided" });
+  const latest = new Date(8.64e15);
+  const earliest = new Date(-8.64e15);
+
+  expect(() =>
+    T.date.whereby({ min: { value: latest, exclusive: true } }),
+  ).toThrow(FabricatorError.EmptyRangeError);
+  expect(() =>
+    T.date.whereby({ max: { value: earliest, exclusive: true } }),
+  ).toThrow(FabricatorError.EmptyRangeError);
+});
+
 /** A bare `T.date` spans the entire representable range, both sides of now. */
 test("a bare T.date spans both past and future", () => {
   const { T, Fabricator } = initialize({ salt: "date-bare" });

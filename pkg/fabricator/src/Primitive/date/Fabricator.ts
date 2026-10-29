@@ -13,6 +13,7 @@ import type {
 import type { Stream, Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
 import { Kind, MAX_TIME, Meta, type Adaptation } from "../../Types";
+import { unboundedEpoch } from "./Defaults";
 import { Schema } from "./Schema";
 import type { Fabricated, Meta as ThisMeta, Whereby } from "./Types";
 
@@ -54,9 +55,7 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     const fabricate = whereby
       ? drawPastOrFuture(
           {
-            min: whereby.min
-              ? epochBound(whereby.min)
-              : { value: -MAX_TIME, exclusive: false },
+            min: whereby.min ? epochBound(whereby.min) : unboundedEpoch.min,
             max: { value: clock, exclusive: false },
           },
           "T.date.past",
@@ -78,9 +77,7 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
       ? drawPastOrFuture(
           {
             min: { value: clock, exclusive: false },
-            max: whereby.max
-              ? epochBound(whereby.max)
-              : { value: MAX_TIME, exclusive: false },
+            max: whereby.max ? epochBound(whereby.max) : unboundedEpoch.max,
           },
           "T.date.future",
           whereby.distribution,
@@ -98,7 +95,10 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
 
   const fabricate = whereby
     ? draw(
-        { min: epochBound(whereby.min!), max: epochBound(whereby.max!) },
+        {
+          min: whereby.min ? epochBound(whereby.min) : unboundedEpoch.min,
+          max: whereby.max ? epochBound(whereby.max) : unboundedEpoch.max,
+        },
         whereby.distribution,
         stream,
       )
