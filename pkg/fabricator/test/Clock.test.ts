@@ -1,12 +1,12 @@
-import { initialize, layer } from "@ghostry/fabricator";
+import { FabricatorError, initialize, layer } from "@ghostry/fabricator";
 import { expect, test } from "bun:test";
 
 /**
  * `clock` is what `T.date.past`/`T.date.future` (and any producer reading
- * `ProduceContext.clock`) resolve "now" against — an epoch-millisecond instant.
- * The unconfigured default is the wall-clock instant of `initialize()` itself;
- * `"derived"` is the explicit opt-in that derives that instant from the
- * instance salt instead.
+ * `ProduceContext.clock`) resolve "now" against — an epoch-millisecond instant,
+ * given as a `Date` or as that number directly. The unconfigured default is the
+ * wall-clock instant of `initialize()` itself; `"derived"` is the explicit
+ * opt-in that derives that instant from the instance salt instead.
  */
 
 test("an unconfigured instance captures wall-clock time and an empty salt", () => {
@@ -23,11 +23,58 @@ test("an unconfigured instance replays from its captured clock alone", () => {
   const first = initialize();
   const run = new first.Fabricator(first.T.number).fabricate();
 
-  const replay = initialize({
-    salt: first.salt,
-    clock: new Date(first.context.clock),
-  });
+  const replay = initialize({ salt: first.salt, clock: first.context.clock });
   expect(new replay.Fabricator(replay.T.number).fabricate()).toBe(run);
+});
+
+test("a number clock is the same instant as the equivalent Date", () => {
+  const instant = Date.UTC(2020, 0, 1);
+  const viaNumber = initialize({ salt: "clock-number", clock: instant });
+  const viaDate = initialize({
+    salt: "clock-number",
+    clock: new Date(instant),
+  });
+
+  expect(viaNumber.context.clock).toBe(instant);
+  expect(viaDate.context.clock).toBe(instant);
+  expect(new viaNumber.Fabricator(viaNumber.T.date.past).fabricate()).toEqual(
+    new viaDate.Fabricator(viaDate.T.date.past).fabricate(),
+  );
+});
+
+test("fork({ clock }) and wrap({ clock }, ...) accept a number", () => {
+  const instance = initialize({ salt: "clock-number-overlay", clock: 0 });
+  const instant = Date.UTC(2010, 0, 1);
+
+  expect(instance.fork({ clock: instant }).context.clock).toBe(instant);
+  expect(instance.wrap({ clock: instant }, () => instance.context.clock)).toBe(
+    instant,
+  );
+});
+
+test("the ends of the representable Date range are valid clocks", () => {
+  expect(initialize({ clock: 8.64e15 }).context.clock).toBe(8.64e15);
+  expect(initialize({ clock: -8.64e15 }).context.clock).toBe(-8.64e15);
+});
+
+/**
+ * A clock is rejected rather than adjusted whenever a `Date` would not hold it
+ * unchanged: `TimeClip` would truncate `1.5` and turn the rest into `NaN`.
+ */
+test.each([
+  ["a fractional number", 1.5],
+  ["NaN", Number.NaN],
+  ["Infinity", Number.POSITIVE_INFINITY],
+  ["-Infinity", Number.NEGATIVE_INFINITY],
+  ["a number past the Date range", 8.64e15 + 1],
+  ["an invalid Date", new Date(Number.NaN)],
+])("%s is rejected as a clock", (_, clock) => {
+  expect(() => initialize({ clock })).toThrow(
+    FabricatorError.InvalidClockError,
+  );
+  expect(() => initialize().fork({ clock })).toThrow(
+    FabricatorError.InvalidClockError,
+  );
 });
 
 test('clock: "derived" derives from the instance salt, not wall-clock time', () => {

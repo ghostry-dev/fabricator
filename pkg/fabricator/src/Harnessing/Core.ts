@@ -56,13 +56,13 @@ import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
  * running providers outside the frame it opened, and raises
  * `HarnessingProviderError` rather than quietly providing the base instance.
  *
- * Nothing here sets `clock`. A pinned `Date` (the recommended setup) and the
- * wall-clock default are already concrete numbers by the time `overlay()` sees
- * them, so they inherit through every `wrap` — the frame in effect's included:
- * salt varies per test, "now" does not. `clock: "derived"` is left alone on
- * purpose — that policy's documented meaning is that the salt _is_ the
- * reproducibility unit, so per-test clocks are the request honored, not a bug
- * to override.
+ * Nothing here sets `clock`. A pinned `Date` or number (the recommended setup)
+ * and the wall-clock default are already concrete numbers by the time
+ * `overlay()` sees them, so they inherit through every `wrap` — the frame in
+ * effect's included: salt varies per test, "now" does not. `clock: "derived"`
+ * is left alone on purpose — that policy's documented meaning is that the salt
+ * _is_ the reproducibility unit, so per-test clocks are the request honored,
+ * not a bug to override.
  */
 export function integration<$Registry extends PlainObject>(
   instance: Instance<$Registry>,

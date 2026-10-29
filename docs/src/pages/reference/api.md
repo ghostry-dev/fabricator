@@ -16,7 +16,7 @@ function initialize(config?: {
   salt?: Salt;
   algorithm?: Algorithm;
   limits?: { combinatorial: number };
-  clock?: Date | "derived";
+  clock?: Date | number | "derived";
   stack?: Stack;
 }): Instance;
 ```
@@ -27,7 +27,7 @@ Creates one isolated instance.
 - `salt` defaults to empty, unless `FABRICATOR_SALT` sets one. That variable sets the salt only, not the clock.
 - `algorithm` defaults to a built-in `sfc32` generator, which is not cryptographically secure. See [Security](/about/security).
 - `limits.combinatorial` is the max that `combinatorial(...)` may produce before it throws. It defaults to `1024` and is checked when you call `initialize()`.
-- `clock` is "now" for `T.date.past`, `T.date.future`, and any producer that reads `clock` from its context. It is also what makes runs differ. It defaults to the time of this `initialize()` call. Pass a `Date` to pin "now", or `"derived"` to compute "now" from the salt, which can give any date in the representable range. See [Reproducibility](/guides/reproducibility).
+- `clock` is "now" for `T.date.past`, `T.date.future`, and any producer that reads `clock` from its context. It is also what makes runs differ. It defaults to the time of this `initialize()` call. Pass a `Date`, or the same instant as milliseconds since the epoch, to pin "now". A number must be one a `Date` can hold exactly, so a fraction or a value outside the `Date` range throws `InvalidClockError`, and so does an invalid `Date`. Pass `"derived"` to compute "now" from the salt, which can give any date in the representable range. See [Reproducibility](/guides/reproducibility).
 - `stack` replaces the carrier behind [`wrap`](#instancewrapoverlay-block), and you will almost never need it. By default, a runtime with `node:async_hooks` gets an `AsyncLocalStorage` carrier that lasts through `await`, and any other runtime gets a synchronous one. Pass your own `Stack` to support async `wrap` blocks on a runtime that would otherwise fall back, or to force the synchronous carrier.
 
 `new Fabricator(schema, options)` accepts every field of a `Trace`: `salt`, `clock`, `path`, `kind`, and `ordinal`. Each one you pass replaces that field and nothing else.
@@ -62,7 +62,7 @@ function fork(overlay?: Overlay): Instance;
 
 The usual way to change configuration, and the one to use before `wrap`. A fork is a value, so a call through it always uses its configuration, whatever else is going on around the call.
 
-`fork` creates a new `Instance` based on the one it is called on. Whatever `overlay` sets overrides the base, and whatever it leaves out is inherited, including `salt`, `algorithm`, `types`, `limits`, and `clock`. A fork can do everything an `initialize()` result can, including its own `fork` and `wrap`. A wall-clock or explicit `Date` clock is inherited as-is. An inherited `"derived"` clock is derived again from the fork's salt. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
+`fork` creates a new `Instance` based on the one it is called on. Whatever `overlay` sets overrides the base, and whatever it leaves out is inherited, including `salt`, `algorithm`, `types`, `limits`, and `clock`. A fork can do everything an `initialize()` result can, including its own `fork` and `wrap`. A wall-clock, `Date`, or number clock is inherited as-is. An inherited `"derived"` clock is derived again from the fork's salt. See [The clock is the entropy](/guides/reproducibility#the-clock-is-the-entropy).
 
 ```ts
 const base = initialize({ salt: "base" });

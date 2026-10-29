@@ -32,7 +32,7 @@ That's the whole loop:
 
 See [Mental model](/start/mental-model) for why there are three layers.
 
-`initialize()` needs no configuration. It records the time of the call as its `clock`. That one number makes every run different, and it also replays any run. When something fails, log `context.clock`, then pass it back as `clock: new Date(logged)` to get that run's data again. See [Reproducibility](/guides/reproducibility).
+`initialize()` needs no configuration. It records the time of the call as its `clock`. That one number makes every run different, and it also replays any run. When something fails, log `context.clock`, then pass it back as `clock` to get that run's data again. See [Reproducibility](/guides/reproducibility).
 
 ## Overriding specific fields
 

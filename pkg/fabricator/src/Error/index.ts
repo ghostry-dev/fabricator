@@ -63,6 +63,28 @@ export namespace FabricatorError {
   }
 
   /**
+   * `initialize({ clock })`, `fork({ clock })`, or `wrap({ clock }, …)` given
+   * an instant a `Date` cannot hold exactly — a fractional or non-finite
+   * number, one past ±8.64e15, or an invalid `Date`. Rejected rather than
+   * adjusted the way `Date`'s own `TimeClip` would, so the clock a run records
+   * is the clock the caller passed.
+   */
+  export class InvalidClockError extends FabricatorError {
+    constructor(
+      /**
+       * The rejected clock, as given — a number or a `Date`.
+       */
+      public readonly clock: unknown,
+    ) {
+      super();
+      this.name = "InvalidClockError";
+      this.message =
+        "clock requires a valid Date or an integer number of epoch "
+        + `milliseconds within ±8.64e15; received ${String(clock)}.`;
+    }
+  }
+
+  /**
    * A `self` placeholder resolved with no `T.recursive` expanding around it —
    * only reachable by holding a `self` reference outside the `T.recursive(...)`
    * callback it was handed to.

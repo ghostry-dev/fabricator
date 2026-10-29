@@ -14,8 +14,8 @@ import type { PlainObject } from "../Utility/Types";
  * milliseconds) or the unresolved `"derived"` policy — never collapsed to a
  * number by `overlay()` when `"derived"`, because that policy must re-derive
  * whenever the salt it composes changes (a `fork({ salt: layer(...) })`). The
- * unconfigured default is a wall- clock number, inherited as-is like an
- * explicit `Date`. `resolveClock` (`Instance/Core.ts`) is the one place that
+ * unconfigured default is a wall-clock number, inherited as-is like an explicit
+ * `Date` or number. `resolveClock` (`Instance/Core.ts`) is the one place that
  * resolves `"derived"` to a number, called fresh wherever the clock actually
  * matters (`instantiate`, the `context.clock` getter) rather than once here.
  */
@@ -35,11 +35,12 @@ export type Config<$Registry extends PlainObject> = {
  * (`[...base.salt, ...salt]`) — the shape a wrapping integration wants, and
  * what `ConstructorOptions`' layered form is for a single construction.
  * Omitting `salt` inherits the base's unchanged. `clock` similarly accepts the
- * caller-facing `Date | "derived"` rather than `Config`'s own resolved `number
- * | "derived"`, so a caller can hand in a literal instant without converting it
- * to epoch milliseconds themselves. `"derived"` is the explicit opt-in that
- * derives "now" from the instance salt; omitting `clock` at the root captures
- * wall-clock time instead.
+ * caller-facing `Date | number | "derived"` rather than `Config`'s own resolved
+ * `number | "derived"`, so a caller can hand in a literal instant without
+ * converting it to epoch milliseconds themselves, or hand back a logged
+ * `context.clock` without wrapping it in a `Date`. `"derived"` is the explicit
+ * opt-in that derives "now" from the instance salt; omitting `clock` at the
+ * root captures wall-clock time instead.
  *
  * `initialize`'s own parameter keeps a plain `salt?: Salt`, so passing
  * `layer(...)` there is a compile error: there is no base to layer onto at the
@@ -49,7 +50,7 @@ export type Overlay<$Registry extends PlainObject> = Partial<
   Omit<Config<$Registry>, "salt" | "clock">
 > & {
   readonly salt?: Salt | Layered;
-  readonly clock?: Date | "derived" | undefined;
+  readonly clock?: Date | number | "derived" | undefined;
 };
 
 declare const Brand: unique symbol;

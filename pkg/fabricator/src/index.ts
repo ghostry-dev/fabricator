@@ -52,14 +52,18 @@ export function initialize<
      * every leaf's trace, the default entropy for the instance. Defaults to the
      * wall-clock instant of this `initialize()` call, so an unconfigured run
      * has realistic dates and varies by process, and replays from
-     * `context.clock` (with the same empty or supplied `salt`). Pass a fixed
-     * `Date` to freeze "now" (and the rest of the run, unless `salt` also
-     * differs). Pass `"derived"` to derive "now" from the instance salt instead
-     * — an instant drawn across the whole representable `Date` span, so an
-     * implausible date is the expected outcome of that policy, not a bug.
-     * `"derived"` is what makes `salt` alone the reproducibility unit.
+     * `context.clock` (with the same empty or supplied `salt`) handed back here
+     * as-is. Pass a fixed `Date`, or the same instant as epoch milliseconds, to
+     * freeze "now" (and the rest of the run, unless `salt` also differs). A
+     * number must be one a `Date` holds unchanged — an integer within ±8.64e15
+     * — or this throws `InvalidClockError` rather than adjusting it; an invalid
+     * `Date` throws the same way. Pass `"derived"` to derive "now" from the
+     * instance salt instead — an instant drawn across the whole representable
+     * `Date` span, so an implausible date is the expected outcome of that
+     * policy, not a bug. `"derived"` is what makes `salt` alone the
+     * reproducibility unit.
      */
-    clock?: Date | "derived";
+    clock?: Date | number | "derived";
 
     /**
      * The ambient carrier backing `wrap` for this lineage — override only to

@@ -15,7 +15,7 @@ The clock is recorded once per `initialize()` call and is part of every field's 
 
 ```ts
 initialize(); // wall-clock instant of this call — the default
-initialize({ clock: new Date(logged) }); // replay a recorded run
+initialize({ clock: logged }); // replay a recorded run
 initialize({ clock: new Date("2024-06-01") }); // pinned to that instant
 ```
 

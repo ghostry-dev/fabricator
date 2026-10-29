@@ -48,6 +48,26 @@ function resolveCombinatorialLimit(limit: number | undefined): number {
 }
 
 /**
+ * A caller-given `clock` as epoch milliseconds, accepted only when a `Date`
+ * holds it unchanged. `new Date(given)` applies `TimeClip`, which truncates a
+ * fractional number and turns a non-finite or out-of-range one into `NaN`;
+ * comparing its result against `given` rejects every value `TimeClip` would
+ * have adjusted, and `NaN !== NaN` rejects an invalid `Date` by the same
+ * comparison. A valid `Date` always round-trips, since its time value is
+ * already clipped.
+ */
+function resolveInstant(clock: Date | number): number {
+  const given = clock.valueOf();
+  const instant = new Date(given).valueOf();
+
+  if (instant !== given) {
+    throw new FabricatorError.InvalidClockError(clock);
+  }
+
+  return instant;
+}
+
+/**
  * Resolve a `Config`'s `clock` to an epoch-millisecond instant: an
  * already-resolved number passes through; the unresolved `"derived"` policy
  * derives fresh from this exact `config`'s own `algorithm`/`salt`. Called
@@ -100,13 +120,15 @@ function mint(): Token {
  * inherited, or defaulted), so a bad limit fails at `fork()`/`initialize()`
  * time rather than at first use. `clock` follows the given → inherited →
  * default shape `algorithm` does, but stays _unresolved_ only for the explicit
- * `"derived"` sentinel: an explicit `Date` and the unconfigured wall-clock
- * default are stored as epoch milliseconds (a stated instant, inherited as-is
- * from then on), while `"derived"` is left as the sentinel rather than
- * collapsed to a number, so `resolveClock` can re-derive it from whichever
- * `salt` is actually in effect at read time. An omitted `clock` on a
- * `fork`/`wrap` whose salt changed therefore keeps the parent's instant unless
- * that parent was itself `"derived"`.
+ * `"derived"` sentinel: an explicit `Date` or number and the unconfigured
+ * wall-clock default are stored as epoch milliseconds (a stated instant,
+ * inherited as-is from then on; an explicit one is checked by `resolveInstant`,
+ * so a `fork()`/`wrap()` rejects a bad clock as eagerly as `initialize()`
+ * does), while `"derived"` is left as the sentinel rather than collapsed to a
+ * number, so `resolveClock` can re-derive it from whichever `salt` is actually
+ * in effect at read time. An omitted `clock` on a `fork`/`wrap` whose salt
+ * changed therefore keeps the parent's instant unless that parent was itself
+ * `"derived"`.
  */
 export function overlay<$Registry extends PlainObject>(
   base: Partial<Config<PlainObject>>,
@@ -121,7 +143,7 @@ export function overlay<$Registry extends PlainObject>(
 
   const clock = inline((): number | "derived" => {
     if (over.clock === "derived") return "derived";
-    if (typeof over.clock !== "undefined") return over.clock.valueOf();
+    if (typeof over.clock !== "undefined") return resolveInstant(over.clock);
     return base.clock ?? Date.now();
   });
 
