@@ -1,6 +1,6 @@
 import type { Adaptations, AdaptationsOf } from "../Adapter/Types";
 import type { Primitive, Kind as SchemaKind } from "../Primitive";
-import type { Algorithm, Trace } from "../Random/Types";
+import type { Algorithm, RandomSource, Salt, Trace } from "../Random/Types";
 import type { Fabricated } from "../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types";
 import type { PlainObject } from "../Utility/Types";
@@ -27,8 +27,17 @@ import type { PlainObject } from "../Utility/Types";
  *
  * `algorithm` rather than the `RandomSource` itself: stream derivation depends
  * on no per-source state, and a leaf has no business with
- * `toConstructionTrace`/`fork`. `clock` is not a field of its own — it is
- * always `trace.clock`.
+ * `toConstructionTrace`. `clock` is not a field of its own — it is always
+ * `trace.clock`.
+ *
+ * `fork` mints `T.recursive`'s private source, and is bound to this
+ * construction's _resolved_ algorithm and clock rather than the instance's: an
+ * active `wrap` frame's, or a pinned clock from a replayed {@link Trace}. A
+ * fork carries only its parent's algorithm and clock forward (its salt is the
+ * argument), so those two are all that make one fork differ from another, and
+ * the instance's own `source.fork` would silently give a recursive expansion
+ * the instance's "now" inside `wrap({ clock })`. An expansion rebinds it to its
+ * private source's `fork`, which carries the same pair.
  *
  * `self` is what makes `case "recursive.self"` resolve to "recurse one level
  * deeper, right now" — absent outside any active recursion, which is how `case
@@ -37,6 +46,7 @@ import type { PlainObject } from "../Utility/Types";
 export type ConstructionContext = {
   toTrace: (path: ReadonlyArray<string>, kind: string) => Trace;
   algorithm: Algorithm;
+  fork: (salt: Salt) => RandomSource;
   self?: (() => unknown) | undefined;
 };
 

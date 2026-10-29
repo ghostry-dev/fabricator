@@ -207,11 +207,11 @@ export function toRandomSource(options: Options): RandomSource {
    * source's construction counter starts at zero (declared above, private to
    * each `toRandomSource` call), so nothing here is shared with the parent.
    * `clock` is threaded through unchanged: a fork is a statement about salt
-   * identity, not about "now," so `T.recursive`'s private source and an
-   * explicitly salted build both resolve "now" exactly as their parent does
-   * (see `Fabricator/Constructor.ts`'s `toConstructionContext`, which reads a
-   * construction's clock straight off its resolved trace rather than threading
-   * a separate value).
+   * identity, not about "now," so an explicitly salted build resolves "now"
+   * exactly as its parent does. `T.recursive`'s private source does not come
+   * from here: `Fabricator/Constructor.ts`'s `toConstructionContext` builds it
+   * with this factory from the construction's resolved clock, which may be a
+   * `wrap` frame's or a pin rather than this source's.
    */
   function fork(childSalt: Salt): RandomSource {
     return toRandomSource({ salt: childSalt, algorithm, clock });

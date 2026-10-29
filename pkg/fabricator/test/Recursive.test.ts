@@ -383,3 +383,33 @@ test("a naked self body cannot derive a terminal", () => {
     expect((e as FabricatorError.UnterminableRecursiveError).path).toEqual([]);
   }
 });
+
+/**
+ * A pinned `clock` (here passed directly; a replayed `Trace` pins the same
+ * slot) reaches every lazy expansion, not just the outer node: the private
+ * source an expansion resolves on is forked with the construction's resolved
+ * clock, not the instance's.
+ */
+test("a pinned clock reaches every T.recursive expansion", () => {
+  const { T, Fabricator } = initialize({
+    salt: "recursive-pinned-clock",
+    clock: 1000,
+  });
+
+  type Node = { at: number; children: Node[] };
+  const tree = T.recursive((self) =>
+    T.object({
+      at: T.opaque(({ clock }) => clock),
+      children: T.array(self).whereby({ length: 1 }),
+    }),
+  ).whereby({ depth: { max: 3 } });
+
+  const collect = (node: Node): number[] => [
+    node.at,
+    ...node.children.flatMap(collect),
+  ];
+
+  const ats = collect(new Fabricator(tree, { clock: 7000 }).fabricate());
+
+  expect(ats).toEqual([7000, 7000, 7000, 7000]);
+});

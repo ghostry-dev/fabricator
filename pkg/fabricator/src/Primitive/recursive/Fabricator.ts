@@ -35,13 +35,15 @@ export type Fabricator<
  * how deep this `fabricate()` goes — so no structural path distinguishes
  * sibling expansions at the same depth (an `array` of three `self` children
  * calls `fabricateAt` three times on one shared element Fabricator; the schema
- * does not tell them apart). `forkSource` mints an isolated `RandomSource`
- * salted from this node's draw, and each `fabricateAt` resolves a
- * `ConstructionTrace` on it (`RandomSource.toConstructionTrace`), recorded on
- * each expansion's `trace`. The private source's construction counter orders
- * expansions; nothing to increment here. Isolation also keeps this node's
- * data-dependent draws from perturbing (or being perturbed by) an unrelated
- * Fabricator from the same `initialize()` instance.
+ * does not tell them apart). `forkSource` — the outer construction's
+ * `ConstructionContext.fork`, carrying its resolved algorithm and clock — mints
+ * an isolated `RandomSource` salted from this node's draw, and each
+ * `fabricateAt` resolves a `ConstructionTrace` on it
+ * (`RandomSource.toConstructionTrace`), recorded on each expansion's `trace`.
+ * The private source's construction counter orders expansions; nothing to
+ * increment here. Isolation also keeps this node's data-dependent draws from
+ * perturbing (or being perturbed by) an unrelated Fabricator from the same
+ * `initialize()` instance.
  *
  * Each `self` gets its own independently-dispatched expansion — calling
  * `context.self` twice (two array slots) is two `fabricateAt` calls, each with
@@ -74,13 +76,16 @@ export function Fabricator<$Body>(
     const context: ConstructionContext = {
       toTrace: (path, kind) => ({ ...construction, path, kind }),
       /**
-       * `privateSource` is a fork of the outer construction's `source` (see
-       * this function's doc). `fork` threads `clock` unchanged
+       * `privateSource` comes from the outer construction's `context.fork`,
+       * bound to that construction's resolved clock — an active `wrap` frame's
+       * or a pinned one, not the instance's (`Constructor.ts`'s
+       * `toConstructionContext`). `fork` threads `clock` unchanged
        * (`Random/index.ts`), so `construction.clock` is the parent
        * construction's resolved "now" for every lazy expansion, however deep
        * `fabricateAt` recurses — each node's own `trace` carries it.
        */
       algorithm,
+      fork: privateSource.fork,
       self: atMax ? undefined : () => fabricateAt(depth + 1),
     };
 
