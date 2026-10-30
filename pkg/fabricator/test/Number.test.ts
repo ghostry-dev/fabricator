@@ -3,9 +3,9 @@ import { FabricatorError, initialize } from "@ghostry/fabricator";
 import { Meta } from "@ghostry/fabricator/internal";
 
 /**
- * `Distribution`'s builder functions aren't exported (see
- * `docs/about/limitations.md`), but the shape they build is a plain,
- * structurally-typed tagged object — usable without an import.
+ * `Distribution`'s builder functions aren't exported (see `ghostry-dev/docs`'s
+ * `src/pages/fabricator/about/limitations.md`), but the shape they build is a
+ * plain, structurally-typed tagged object — usable without an import.
  */
 const skewToward = (exponent: number) => ({ kind: "skew" as const, exponent });
 

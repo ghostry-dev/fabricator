@@ -50,4 +50,4 @@ const item = Product.fabricate();
 const widget = Product.fabricate({ name: "Widget", inStock: true });
 ```
 
-`initialize()` takes no required configuration. Its `clock` (by default, the wall-clock instant of the call) is the run's entropy, so every run differs, and passing that one number back as `clock` replays the run exactly. See the [docs site](https://docs.ghostry.dev/fabricator/) for the full guide: the mental model behind Schemas and Fabricators, composing and overriding schemas, custom types, distributions, and the [TypeBox adapter](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0).
+`initialize()` takes no required configuration. Its `clock` (by default, the wall-clock instant of the call) is the run's entropy, so every run differs, and passing that one number back as `clock` replays the run exactly. See the [docs site](https://docs.ghostry.dev/fabricator) for the full guide: the mental model behind Schemas and Fabricators, composing and overriding schemas, custom types, distributions, and the [TypeBox adapter](https://www.npmjs.com/package/@ghostry/fabricator-adapter-typebox-v0).

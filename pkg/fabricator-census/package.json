@@ -23,7 +23,7 @@
     "url": "git+https://github.com/ghostry-dev/fabricator",
     "directory": "pkg/fabricator-census"
   },
-  "homepage": "https://docs.ghostry.dev/fabricator/",
+  "homepage": "https://docs.ghostry.dev/fabricator",
   "bugs": "https://github.com/ghostry-dev/fabricator/issues",
   "type": "module",
   "sideEffects": false,

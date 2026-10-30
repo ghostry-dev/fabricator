@@ -22,7 +22,3 @@ jobs:
       actions: read
     with:
       build-run-id: ${{ needs.build.outputs.run-id }}
-
-  docs:
-    name: Docs
-    uses: ./.github/workflows/docs.yml

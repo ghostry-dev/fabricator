@@ -4,7 +4,8 @@ import { expect, test } from "bun:test";
 /**
  * Pins the batch-and-pool idiom the docs teach: `T.array` for a batch,
  * `T.enum.uniform(pool.map(...))` for a foreign key. If this file and
- * `docs/src/pages/guides/relationships.mdx` disagree, the docs have drifted.
+ * `ghostry-dev/docs`'s `src/pages/fabricator/guides/relationships.mdx`
+ * disagree, the docs have drifted.
  *
  * `BarSchema` declares `foo_id` itself so the child stays fabricable on its
  * own, exactly as the guide writes it — which also makes the pool assertion

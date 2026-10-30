@@ -1,7 +1,0 @@
-# T.object
-
-A [structure](/reference/primitives#structures): what most schemas are built inside.
-
-See [Objects](/guides/objects) for nesting, computed fields, sequences, and overrides, and [Composition](/guides/composition) for `.extend`, `.refine`, and `.override`. To keep only some fields, see [`T.pick`](/reference/primitives/pick) and [`T.omit`](/reference/primitives/omit).
-
-Some rules only make sense for a field inside an object: [`T.omittable`](/reference/primitives/omittable), [`T.optional`](/reference/primitives/optional), and `compute`, which you get from `.refine(({ compute }) => ...)`. There is no `T.compute`. For a schema that refers to itself, see [`T.recursive`](/reference/primitives/recursive).

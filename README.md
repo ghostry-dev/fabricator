@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/public/logo.png" alt="fabricator" width="96" height="96">
+<img src="https://docs.ghostry.dev/fabricator/logo.png" alt="fabricator" width="96" height="96">
 
 # @ghostry/fabricator
 
@@ -16,7 +16,7 @@ Full type inference, seeded reproducibility, and fixtures that don't churn when 
 [![bun](https://img.shields.io/badge/bun-ffffff?style=for-the-badge&color=000000&logo=bun&logoColor=FBF0DF)](#)
 [![node](https://img.shields.io/badge/node-ffffff?style=for-the-badge&color=000000&logo=nodedotjs&logoColor=5FA04E)](#)
 
-[**Documentation**](https://docs.ghostry.dev/fabricator/) &nbsp;·&nbsp; [**Guides**](https://docs.ghostry.dev/fabricator/guides/composition) &nbsp;·&nbsp; [**API Reference**](https://docs.ghostry.dev/fabricator/reference/api)
+[**Documentation**](https://docs.ghostry.dev/fabricator) &nbsp;·&nbsp; [**Guides**](https://docs.ghostry.dev/fabricator/guides/composition) &nbsp;·&nbsp; [**API Reference**](https://docs.ghostry.dev/fabricator/reference/api)
 
 </div>
 
@@ -56,7 +56,7 @@ const item = Product.fabricate();
 // { name: "...", price: ..., inStock: ... }
 ```
 
-See the [docs site](https://docs.ghostry.dev/fabricator/) for the full guide.
+See the [docs site](https://docs.ghostry.dev/fabricator) for the full guide.
 
 ## License
 

@@ -14,8 +14,7 @@
     "check:ts5": "bun --cwd=pkg/fabricator run check:ts5 && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check:ts5 && bun --cwd=pkg/fabricator-extension-faker-v10 run check:ts5 && bun --cwd=pkg/fabricator-census run check:ts5",
     "check:jsr": "bun --cwd=pkg/fabricator run check:jsr && bun --cwd=pkg/fabricator-adapter-typebox-v0 run check:jsr && bun --cwd=pkg/fabricator-extension-faker-v10 run check:jsr && bun --cwd=pkg/fabricator-census run check:jsr",
     "test": "bun run build && bun --cwd=pkg/fabricator run test && bun --cwd=pkg/fabricator-adapter-typebox-v0 run test && bun --cwd=pkg/fabricator-extension-faker-v10 run test && bun --cwd=pkg/fabricator-census run test",
-    "format": "bun fmt",
-    "docs:dev": "bun --cwd=pkg/fabricator run build && cd ./docs && bun run dev"
+    "format": "bun fmt"
   },
   "devDependencies": {
     "@rsdoctor/rspack-plugin": "^1.6.5",
