@@ -17,20 +17,20 @@
     },
     "pkg/fabricator": {
       "name": "@ghostry/fabricator",
-      "version": "0.0.11",
+      "version": "0.0.12",
       "devDependencies": {
         "@ghostry/harness": "^0.0.5",
       },
     },
     "pkg/fabricator-adapter-typebox-v0": {
       "name": "@ghostry/fabricator-adapter-typebox-v0",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "devDependencies": {
         "@ghostry/fabricator": "workspace:*",
         "@sinclair/typebox": "^0.34.52",
       },
       "peerDependencies": {
-        "@ghostry/fabricator": ">=0.0.3 <0.1.0",
+        "@ghostry/fabricator": ">=0.0.8 <0.1.0",
         "@sinclair/typebox": "^0.34.52",
       },
     },
