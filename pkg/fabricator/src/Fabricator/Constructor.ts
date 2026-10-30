@@ -2,7 +2,7 @@ import { FabricatorError } from "../Error";
 import { toInnermostFrame } from "../Instance/Stack/Visible";
 import type { Ancestry, Stack } from "../Instance/Types";
 import { Primitive } from "../Primitive";
-import { isLayered, normalizeSalt } from "../Random";
+import { isLayered, normalizeSalt, toRandomSource } from "../Random";
 import type {
   ConstructionPins,
   ConstructionTrace,
@@ -216,29 +216,29 @@ export function Constructor(
       }
       /**
        * The one kind that dispatches _itself_ lazily rather than eagerly — see
-       * `recursive/Fabricator.ts`. `forkSource` mints a brand new, fully
+       * `recursive/Fabricator.ts`. `context.fork` mints a brand new, fully
        * isolated `RandomSource` salted from this node's own draw, so however
        * many times (or however deeply) later `fabricate()` calls end up
        * dispatching `body`/`terminal`, none of it ever touches — or is touched
-       * by — this `Constructor()` call's shared, global `source`. Each lazy
-       * expansion opens its own scope on that private source (see
+       * by — this `Constructor()` call's shared `source`. Each lazy expansion
+       * opens its own scope on that private source (see
        * `recursive/Fabricator.ts`), so path resets to `[]` beneath it —
        * structural position inside `body`/`terminal` is only meaningful
        * relative to one expansion, not to this node's own outer position.
        *
-       * `source.fork`, not `context`'s, even when nested inside another
-       * recursive schema's own body: a `T.recursive` nested inside another
-       * one's body is out of scope for this design (see `recursive/Types.ts`)
-       * and forking from the outermost global source rather than the enclosing
-       * recursive node's private one is the harmless side of that gap — it
-       * costs isolation between the two nested recursive schemas' internals,
-       * not correctness of either on its own.
+       * `context.fork`, never the closed-over `source.fork`: a fork inherits
+       * its parent's clock and algorithm, and `context.fork` is bound to the
+       * ones `resolveScope` picked for this construction — an active `wrap`
+       * frame's, or a pinned clock. `source.fork` would hand every expansion
+       * the instance's own "now" inside `wrap({ clock })`. Nested inside
+       * another recursive schema's body, `context.fork` is that node's private
+       * source's `fork`, which carries the same pair.
        */
       case "recursive": {
         const s = schema as Primitive.recursive.Schema;
         return Primitive.recursive.Fabricator(
           { ...common, schema: s },
-          source.fork,
+          context.fork,
           make,
         );
       }
@@ -486,6 +486,10 @@ export function Constructor(
  * reaches this point. `algorithm` is read off `resolved`, not
  * `config.algorithm`: an active `wrap` frame's source may carry a different
  * one.
+ *
+ * `fork` is built from the same pair, not `resolved.fork`: a fork threads its
+ * parent source's clock, and `trace.clock` may be a pin `resolved` knows
+ * nothing about (a replayed {@link Trace}, or `{ clock }` on this build).
  */
 function toConstructionContext(
   source: RandomSource,
@@ -503,6 +507,12 @@ function toConstructionContext(
   return {
     toTrace: (path, kind) => ({ ...trace, path, kind }),
     algorithm: resolved.algorithm,
+    fork: (salt) =>
+      toRandomSource({
+        salt,
+        algorithm: resolved.algorithm,
+        clock: trace.clock,
+      }),
   };
 }
 

@@ -1021,3 +1021,40 @@ test("a fork treated as its own root is reached by a wrap entered on it, through
   expect(ownSalt).toEqual(expected);
   expect(lineageSalt).toEqual(expected);
 });
+
+/**
+ * `T.recursive` expands lazily inside `fabricate()` on a private forked source,
+ * and a fork inherits its parent's clock — so that fork has to come from the
+ * source the construction resolved against, not the instance's. Every expansion
+ * depth is checked, since depth 0 alone is still on the outer construction's
+ * context.
+ */
+test("T.recursive expansions inside wrap({ clock }) resolve against the wrap's clock", () => {
+  const instance = initialize({ salt: "wrap-recursive-clock", clock: 1000 });
+  const { T } = instance;
+
+  type Node = { at: number; children: Node[] };
+  const tree = T.recursive((self) =>
+    T.object({
+      at: T.opaque(({ clock }) => clock),
+      children: T.array(self).whereby({ length: 1 }),
+    }),
+  ).whereby({ depth: { max: 3 } });
+
+  const flat = T.object({ at: T.opaque(({ clock }) => clock) });
+
+  const collect = (node: Node): number[] => [
+    node.at,
+    ...node.children.flatMap(collect),
+  ];
+
+  let flatAt: number | undefined;
+  let treeAts: number[] = [];
+  instance.wrap({ clock: 5000 }, () => {
+    flatAt = new instance.Fabricator(flat).fabricate().at;
+    treeAts = collect(new instance.Fabricator(tree).fabricate());
+  });
+
+  expect(flatAt).toBe(5000);
+  expect(treeAts).toEqual([5000, 5000, 5000, 5000]);
+});
