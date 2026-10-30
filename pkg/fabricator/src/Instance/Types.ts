@@ -1,5 +1,6 @@
 import type { Enumerable, Limits } from "../Enumeration/Types";
 import type { Constructor } from "../Fabricator/Constructor";
+import type { Fabricate } from "../Fabricator/Fabricate";
 import type { Algorithm, Layered, RandomSource, Salt } from "../Random/Types";
 import type { PlainObject } from "../Utility/Types";
 
@@ -278,6 +279,20 @@ export interface Instance<$Registry extends PlainObject> extends Pick<
   Fabricator: Constructor;
 
   /**
+   * `new Fabricator(schema).fabricate()` in one call. The first call with a
+   * schema builds; every later call with the same schema object continues that
+   * Fabricator, taking no new construction ordinal — so it is safe in a loop.
+   *
+   * The cache follows the scope in effect, like `new Fabricator` does: inside a
+   * `wrap` this instance can see, the frame's source is used and its entries
+   * are its own, so each per-test scope starts fresh. The key is identity: hold
+   * an overridden or configured schema in a variable to reuse it. Writing
+   * `.override(...)` or `.whereby(...)` inline at the call site makes a new
+   * schema, and a new build, on every call. See `Fabricator/Fabricate.ts`.
+   */
+  fabricate: Fabricate;
+
+  /**
    * Every combination of every enumerable node in `schema` — every enum member,
    * both sides of an optional field, and so on — as a cartesian product,
    * lazily. Throws eagerly, before producing anything, if the count exceeds
@@ -306,13 +321,13 @@ export interface Instance<$Registry extends PlainObject> extends Pick<
 
   /**
    * `fork(overlay)`, made ambient for the synchronous extent of `block`: every
-   * `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` reached
-   * inside — on this instance, and on this instance's ancestors — resolves
-   * against the fork instead, with nothing threaded through. The fork is also
-   * passed to `block`: use it explicitly where that reads better, and
-   * _necessarily_ for any async work, which the ambient frame does not survive
-   * — a build reached after an `await` inside `block` sees this instance's own
-   * configuration again, not the wrap's.
+   * `new Fabricator(...)`, `fabricate(...)`, `combinatorial(...)`, and
+   * `coverage(...)` reached inside — on this instance, and on this instance's
+   * ancestors — resolves against the fork instead, with nothing threaded
+   * through. The fork is also passed to `block`: use it explicitly where that
+   * reads better, and _necessarily_ for any async work, which the ambient frame
+   * does not survive — a build reached after an `await` inside `block` sees
+   * this instance's own configuration again, not the wrap's.
    *
    * The overlay lays over _this instance's_ config, exactly as `fork`'s does,
    * whether or not a frame is already open. So a nested `wrap` accumulates when

@@ -1,5 +1,5 @@
 import { FabricatorError } from "../Error";
-import { toInnermostFrame } from "../Instance/Stack/Visible";
+import { toEffectiveSource } from "../Instance/Stack/Visible";
 import type { Ancestry, Stack } from "../Instance/Types";
 import { Primitive } from "../Primitive";
 import { isLayered, normalizeSalt, toRandomSource } from "../Random";
@@ -560,7 +560,7 @@ function resolveScope(
   stack: Stack,
   ancestry: Ancestry,
 ): { source: RandomSource; trace: ConstructionTrace } {
-  const base = toInnermostFrame(stack, ancestry)?.source ?? source;
+  const base = toEffectiveSource(source, stack, ancestry);
 
   const salt = inline((): ReadonlyArray<string> | undefined => {
     if (!options.salt) return undefined;

@@ -43,6 +43,7 @@ The shape `initialize()` returns:
 
 - **`T`**: the type builders, from `types` or the default registry.
 - **`Fabricator`**: a constructor. `new Fabricator(schema)` turns a Schema into a Fabricator.
+- **`fabricate(schema)`**: fabricates one value. Repeat calls with the same schema continue one cached Fabricator. See [`Instance.fabricate(schema)`](#instancefabricateschema).
 - **`salt`**: this instance's salt, always an array. It is empty if neither you nor `FABRICATOR_SALT` set one.
 - **`combinatorial(schema)`**: every combination of every enumerable part of `schema` (each enum member, both outcomes of an optional field, and so on). It throws before producing anything if the count would exceed `limits.combinatorial`.
 - **`coverage(schema)`**: the smallest set of values in which every option of every enumerable part of `schema` appears at least once. Its size is the widest single axis, not the product, and narrower axes repeat to fill it. It has no limit, because its size can't exceed what the schema already contains.
@@ -53,6 +54,34 @@ The shape `initialize()` returns:
 - **`ancestry`**: this instance's position in its lineage, as an opaque chain of tokens. It is there so you can reason about which wraps apply to an instance. To check "same lineage?", compare `root` instead.
 
 `combinatorial` and `coverage` both return a lazy `Iterable` you can iterate more than once. Each pass draws fresh randomness for anything the enumeration didn't pin.
+
+## `Instance.fabricate(schema)`
+
+```ts
+const { T, fabricate } = initialize();
+
+const User = T.object({ name: T.string.whereby({ length: 8 }) });
+
+fabricate(User); // builds, then draws
+fabricate(User); // draws again from the same Fabricator
+```
+
+`fabricate(schema)` does what `new Fabricator(schema).fabricate()` does, but it only builds once. The first call with a schema builds a Fabricator and takes one [construction](/guides/reproducibility#construction-order). Later calls with the same schema draw from that Fabricator and take none. A loop over `fabricate(User)` is as cheap as a loop over one Fabricator's `.fabricate()`.
+
+The cache follows the configuration in effect. Inside a [`wrap`](#instancewrapoverlay-block), `fabricate` uses the wrap's own cache, so every wrap starts empty. Under [the harness integration](/guides/harness) that means every test starts empty, and what other tests fabricated has no effect. The instance `wrap` was called on and the wrap's `scope` share one cache.
+
+The cache is keyed by the schema object, not by what it describes. A schema stored in a variable is reused. A schema written at the call site is a new object every time, so it builds another Fabricator every time:
+
+```ts
+const Admin = User.override({ name: "admin" });
+fabricate(Admin); // builds
+fabricate(Admin); // reuses
+
+fabricate(User.override({ name: "admin" })); // builds
+fabricate(User.override({ name: "admin" })); // builds another!
+```
+
+The same goes for an inline `.whereby(...)`. To override fields, call `.override(...)` on the schema. `fabricate` takes no other arguments. For [construction options](#initializeconfig) such as `salt`, use `new Fabricator(schema, options)`.
 
 ## `Instance.fork(overlay?)`
 
@@ -85,7 +114,7 @@ function wrap<$Return>(
 
 Use [`fork`](#instanceforkoverlay) unless you can't get the scope to the code that needs it: a callback you don't own, a deep call stack, or code already written against a destructured `Fabricator`. Inside a `wrap`, the object you call through no longer tells you which configuration a call uses. That is exactly what `wrap` is for, and why it isn't the default choice.
 
-`wrap` is `fork(overlay)` applied automatically while `block` runs. Every `new Fabricator(...)`, `combinatorial(...)`, and `coverage(...)` call on the instance `wrap` was called on, or on its ancestors, uses the fork without you passing anything. `block` also receives the fork as `scope`, for explicit use:
+`wrap` is `fork(overlay)` applied automatically while `block` runs. Every `new Fabricator(...)`, `fabricate(...)`, `combinatorial(...)`, and `coverage(...)` call on the instance `wrap` was called on, or on its ancestors, uses the fork without you passing anything. `block` also receives the fork as `scope`, for explicit use:
 
 ```ts
 const { T, Fabricator, wrap } = initialize({ salt: "base" });

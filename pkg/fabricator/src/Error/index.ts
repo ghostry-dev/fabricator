@@ -658,6 +658,45 @@ export namespace FabricatorError {
   }
 
   /**
+   * `fabricate(...)` handed anything but a Schema: a built Fabricator, a bare
+   * builder that still needs configuring (`T.array(x)`, `T.recursive(f)`), or a
+   * value that is no schema at all. Its type already rejects each; this is the
+   * runtime guard for an untyped caller.
+   */
+  export class FabricateArgumentError extends FabricatorError {
+    constructor(
+      /**
+       * What `fabricate(...)` was handed.
+       */
+      public readonly argument: unknown,
+    ) {
+      super();
+      this.name = "FabricateArgumentError";
+      this.message = describe(argument);
+
+      function describe(given: unknown): string {
+        if (
+          typeof given === "object"
+          && given !== null
+          && "fabricate" in given
+        ) {
+          return (
+            "fabricate(...) takes a Schema, not a built Fabricator. Call "
+            + "`.fabricate()` on the Fabricator you have, or pass its "
+            + "`.schema` to fabricate(...)."
+          );
+        }
+
+        return (
+          `fabricate(...) takes a Schema, but was handed a ${typeof given}. `
+          + "A builder that still needs configuring, such as `T.array(x)`, "
+          + "becomes a Schema once you call `.whereby(...)` on it."
+        );
+      }
+    }
+  }
+
+  /**
    * `wrap(overlay, block)` handed an `async` block while the lineage's ambient
    * carrier is the synchronous one (`Instance/Stack/Sync.ts`).
    *

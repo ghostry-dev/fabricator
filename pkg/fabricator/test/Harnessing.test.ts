@@ -209,6 +209,31 @@ test("construction ordinals restart per run, so registration order is irrelevant
   expect(aThenB[1]).toBe(bThenA[0]);
 });
 
+/**
+ * `fabricate`'s cache is keyed by the source in effect, so a module-level
+ * schema fabricated in one run does not carry its stream into the next: each
+ * run's first `fabricate(S)` is the same whether or not another ran first.
+ */
+test("fabricate's cache is per run, so a module-level schema stays order-independent", () => {
+  const instance = initialize({ salt: "testing-fabricate", clock: CLOCK });
+  const wired = integration(instance);
+  const { T, fabricate } = instance;
+  const S = T.number;
+
+  const draw = (identity: typeof idA) =>
+    run(wired, identity, ({ fabricator }) => [
+      fabricate(S),
+      fabricator.fabricate(S),
+    ]);
+
+  const aThenB = [draw(idA), draw(idB)];
+  const bThenA = [draw(idB), draw(idA)];
+
+  expect(aThenB[0]).toEqual(bThenA[1]);
+  expect(aThenB[1]).toEqual(bThenA[0]);
+  expect(aThenB[0]).not.toEqual(aThenB[1]);
+});
+
 test("the salt composes onto initialize({ salt }) rather than replacing it", () => {
   const instance = initialize({ salt: "testing-salt-shape", clock: CLOCK });
   const wired = integration(instance);

@@ -1,7 +1,7 @@
 import { shuffle } from "../Distribution";
 import { FabricatorError } from "../Error";
 import { Constructor } from "../Fabricator/Constructor";
-import { toInnermostFrame } from "../Instance/Stack/Visible";
+import { toEffectiveSource } from "../Instance/Stack/Visible";
 import type { Ancestry, Stack } from "../Instance/Types";
 import { toStreamFromTrace } from "../Random";
 import type { RandomSource, Salt } from "../Random/Types";
@@ -54,7 +54,7 @@ export function enumerables(
    * (`Instance/Stack/Visible.ts`).
    */
   function effectiveSource(): RandomSource {
-    return toInnermostFrame(stack, ancestry)?.source ?? source;
+    return toEffectiveSource(source, stack, ancestry);
   }
 
   /**

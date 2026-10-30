@@ -1,6 +1,7 @@
 import { enumerables } from "../Enumeration/Enumerate";
 import { FabricatorError } from "../Error";
 import { Constructor } from "../Fabricator/Constructor";
+import { Fabricate, type FabricatorCache } from "../Fabricator/Fabricate";
 import {
   defaultAlgorithm,
   deriveClock,
@@ -178,7 +179,10 @@ export function overlay<$Registry extends PlainObject>(
  *
  * `parent` describes the instance this one is derived from, and its absence is
  * the single marker of a root: `initialize` passes none, every `fork`/`wrap`
- * passes the receiver's.
+ * passes the receiver's. Its three fields always travel together: `ancestry`
+ * and `root` place this instance in its lineage, and `fabricatorCache` is the
+ * lineage's one `fabricate` cache, created here at the root and handed to every
+ * descendant (see `Fabricator/Fabricate.ts` for why it is shared).
  *
  * A fresh token is minted either way, so no two instances share an identity,
  * and the `ancestry` built here is _this_ instance's: the parent's plus one.
@@ -186,7 +190,11 @@ export function overlay<$Registry extends PlainObject>(
 export function instantiate<$Registry extends PlainObject>(
   config: Config<$Registry>,
   stack: Stack,
-  parent?: { ancestry: Ancestry; root: Instance<PlainObject> },
+  parent?: {
+    ancestry: Ancestry;
+    root: Instance<PlainObject>;
+    fabricatorCache: FabricatorCache;
+  },
 ): { instance: Instance<$Registry>; source: RandomSource } {
   const ancestry: Ancestry =
     typeof parent === "undefined" ? [mint()] : [...parent.ancestry, mint()];
@@ -203,6 +211,17 @@ export function instantiate<$Registry extends PlainObject>(
     config.limits,
     stack,
     ancestry,
+  );
+
+  const fabricatorCache: FabricatorCache =
+    parent?.fabricatorCache ?? new WeakMap();
+
+  const fabricate = Fabricate(
+    Fabricator,
+    source,
+    stack,
+    ancestry,
+    fabricatorCache,
   );
 
   /**
@@ -224,6 +243,7 @@ export function instantiate<$Registry extends PlainObject>(
       ...instantiate<$Derived>(derived, stack, {
         ancestry,
         root: instance.root,
+        fabricatorCache,
       }),
       config: derived,
     };
@@ -342,6 +362,7 @@ export function instantiate<$Registry extends PlainObject>(
       return parent?.root ?? instance;
     },
     Fabricator,
+    fabricate,
     combinatorial,
     coverage,
     salt: source.salt,

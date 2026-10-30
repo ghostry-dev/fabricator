@@ -1,3 +1,4 @@
+import type { RandomSource } from "../../Random/Types";
 import type { Ancestry, Frame, Stack } from "../Types";
 
 /**
@@ -49,4 +50,20 @@ export function toInnermostFrame(
   const frames = stack.visible(ancestry);
 
   return frames[frames.length - 1];
+}
+
+/**
+ * The `RandomSource` a construction reached right now draws from: the innermost
+ * visible frame's, or `source` (the reader's own) outside any. One definition
+ * for every consumer that needs it — `resolveScope` takes its ordinal from it,
+ * `enumerables` derives its salts from it, and `fabricate` keys its cache by it
+ * — so the cache key and the source a cached build drew its ordinal from cannot
+ * disagree.
+ */
+export function toEffectiveSource(
+  source: RandomSource,
+  stack: Stack,
+  ancestry: Ancestry,
+): RandomSource {
+  return toInnermostFrame(stack, ancestry)?.source ?? source;
 }

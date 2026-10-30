@@ -41,7 +41,7 @@ export const { describe, it, expect } = initializeHarness({
 // test/user.test.ts
 import { describe, expect, fabricator, it } from "./setup";
 
-const { T, Fabricator } = fabricator;
+const { T, fabricate } = fabricator;
 
 const User = T.object({
   name: T.string.whereby({ length: { min: 1, max: 25 } }),
@@ -50,7 +50,7 @@ const User = T.object({
 
 describe("users", () => {
   it("has a name", () => {
-    const user = new Fabricator(User).fabricate();
+    const user = fabricate(User);
     expect(user.name.length).toBeGreaterThan(0);
   });
 });
@@ -78,11 +78,11 @@ Every test body runs inside [`instance.wrap(...)`](/guides/reproducibility#when-
 
 Because the identity is added to the salt instead of replacing it, `initialize({ salt })` or [`FABRICATOR_SALT`](/guides/reproducibility#env-var-salting) still changes the salt for the whole suite at once.
 
-Each `wrap` also starts a fresh [construction counter](/guides/reproducibility#construction-order), so the first `new Fabricator(...)` in every test is that test's construction 0. What other tests built, or whether they ran at all, has no effect. `.only`, name filters, sharding, and `.concurrent` can't change a test's data.
+Each `wrap` also starts a fresh [construction counter](/guides/reproducibility#construction-order), so the first build in every test is that test's construction 0. [`fabricate`](/reference/api#instancefabricateschema)'s cache starts empty in every test too, so a `User` defined at the top of the file doesn't carry over from one test to the next. What other tests built, or whether they ran at all, has no effect. `.only`, name filters, sharding, and `.concurrent` can't change a test's data.
 
 ## Why this uses `wrap`
 
-The [reproducibility guide](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) recommends `fork` over `wrap` in ordinary code, because a call through a fork always uses that fork's configuration. This integration is the exception the guide describes. It has to apply a per-test configuration to a test body it didn't write and can't pass a parameter into. Applying it automatically is the only way to reach `new Fabricator(User)` inside your test, so `wrap` is the right tool here. `context.fabricator` is still there wherever you'd rather be explicit.
+The [reproducibility guide](/guides/reproducibility#when-you-cannot-thread-the-scope-wrap) recommends `fork` over `wrap` in ordinary code, because a call through a fork always uses that fork's configuration. This integration is the exception the guide describes. It has to apply a per-test configuration to a test body it didn't write and can't pass a parameter into. Applying it automatically is the only way to reach `fabricate(User)` inside your test, so `wrap` is the right tool here. `context.fabricator` is still there wherever you'd rather be explicit.
 
 The instance you pass to `integration(...)` **doesn't have to be the one `initialize()` returned.** You can fork an application-wide configuration and use that fork as your root, and it works the same way:
 
@@ -96,7 +96,7 @@ export const { describe, it, expect } = initializeHarness({
 });
 ```
 
-Each test's wrap is opened on the instance in effect, which here is the fork, since nothing else wraps it. So a `Fabricator` destructured from that fork picks up each test's identity, and the per-test salt gets `"testing"` before the identity. Forks _of_ that fork are not affected.
+Each test's wrap is opened on the instance in effect, which here is the fork, since nothing else wraps it. So a `fabricate` or `Fabricator` destructured from that fork picks up each test's identity, and the per-test salt gets `"testing"` before the identity. Forks _of_ that fork are not affected.
 
 When something else _does_ wrap it, the per-test salt is added to that scope instead of replacing it. [The extern extension](/guides/extern) does this around every testing block. The integrated instance is an ancestor of that scope, so it is still affected. A fork of the integrated instance is not.
 
@@ -106,12 +106,12 @@ The integration adds one key to the test context: `fabricator`, the instance for
 
 ```ts
 it("builds two users", ({ fabricator: scope }) => {
-  new Fabricator(User).fabricate(); // ambient
-  new scope.Fabricator(User).fabricate(); // explicit, same scope
+  fabricate(User); // ambient
+  scope.fabricate(User); // explicit, same scope
 });
 ```
 
-The two share one construction counter, so they are constructions 0 and 1 of the test, not two construction 0s. Use `context.fabricator` to pass the scope to a helper, or to read `scope.salt` for a log message. To make per-test data with its own extra salt, fork the scope: `scope.fork(...)`, or `fabricator.context.scope().fork(...)` if you don't have the context. A fork of the integrated instance itself is not per test. See [A module-level fork is not per test](#a-module-level-fork-is-not-per-test).
+The two share one cache, so the second call draws the test's second user from the same Fabricator, not a second copy of the first. `new Fabricator(User)` and `new scope.Fabricator(User)` share one construction counter the same way. Use `context.fabricator` to pass the scope to a helper, or to read `scope.salt` for a log message. To make per-test data with its own extra salt, fork the scope: `scope.fork(...)`, or `fabricator.context.scope().fork(...)` if you don't have the context. A fork of the integrated instance itself is not per test. See [A module-level fork is not per test](#a-module-level-fork-is-not-per-test).
 
 The automatic scope lasts through `await` on Node, Bun, and Deno. On a runtime without `node:async_hooks`, an `async` test body throws `SynchronousStackError` whichever way it builds. See [Runtime support](/guides/reproducibility#runtime-support).
 
