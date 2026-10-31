@@ -2,8 +2,8 @@ import { toEffectiveSource } from "../Instance/Stack/Visible";
 import type { Ancestry, Stack } from "../Instance/Types";
 import type { RandomSource } from "../Random/Types";
 import { FabricatorError } from "../Error";
+import { isSchema } from "../Schema/Core";
 import type { AnySchema, Fabricated } from "../Schema/Types";
-import { Kind, Meta } from "../Types";
 import type { Constructor } from "./Constructor";
 import type { NaiveFabricator } from "./Types";
 
@@ -36,21 +36,6 @@ export type Fabricate = <
 >(
   schema: $Schema,
 ) => Fabricated<$Schema>;
-
-/**
- * Whether `fabricate` may take `candidate`: an object carrying a `[Kind]` tag
- * and a `[Meta]`, and not a built Fabricator. A bare builder that is a function
- * (`T.array`, `T.recursive`) fails the first test; one that is an object but
- * has no `[Kind]` fails the second. `T.string` and `T.bigint` carry `[Kind]` so
- * they can name a compute source, but have no `[Meta]` until `.whereby(...)`,
- * and fail the third rather than reaching the build without one.
- */
-function isSchema(candidate: unknown): candidate is AnySchema {
-  if (typeof candidate !== "object" || candidate === null) return false;
-  if (typeof (candidate as Partial<AnySchema>)[Kind] !== "string") return false;
-  if (!(Meta in candidate)) return false;
-  return !("fabricate" in candidate);
-}
 
 /**
  * Every cached Fabricator of one lineage, keyed first by the `RandomSource`

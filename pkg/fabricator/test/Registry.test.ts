@@ -1,12 +1,8 @@
 import { initialize, registry } from "@ghostry/fabricator";
-import { isPlainObject, Kind, Meta } from "@ghostry/fabricator/internal";
+import { isPlainObject, isSchema } from "@ghostry/fabricator/internal";
 import { expect, test } from "bun:test";
 
 const { T } = initialize({ salt: "registry" });
-
-function isSchema(value: unknown): boolean {
-  return isPlainObject(value) && Kind in value && Meta in value;
-}
 
 /**
  * Every path under `node` holding a Schema, each checked to read as a distinct

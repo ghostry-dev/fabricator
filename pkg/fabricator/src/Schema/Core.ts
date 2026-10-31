@@ -1,8 +1,16 @@
 import type { Adaptations } from "../Adapter/Types";
 import type { Kind as SchemaKind } from "../Primitive";
-import { Adaptation, Kind, Meta, type Produced, type Produces } from "../Types";
+import {
+  Adaptation,
+  Kind,
+  Meta,
+  type Buildable,
+  type Produced,
+  type Produces,
+} from "../Types";
 import { isPlainObject, never } from "../Utility/Core";
 import { type PlainObject } from "../Utility/Types";
+import type { AnySchema } from "./Types";
 
 /**
  * Normalize a Schema, a builder namespace, or an already-built Fabricator into
@@ -48,6 +56,28 @@ export function toSchema<
   return adaptations
     ? { [Kind]: value[Kind], [Meta]: value[Meta], [Adaptation]: adaptations }
     : { [Kind]: value[Kind], [Meta]: value[Meta] };
+}
+
+/**
+ * Whether `candidate` is something `new Fabricator(...)` can build: a Schema or
+ * a built Fabricator, which both carry a `[Kind]` tag and a `[Meta]`. A bare
+ * builder that is a function (`T.array`, `T.recursive`) fails the first test;
+ * one that is an object but has no `[Kind]` fails the second. `T.string` and
+ * `T.bigint` carry `[Kind]` so they can name a compute source, but have no
+ * `[Meta]` until `.whereby(...)`, and fail the third.
+ */
+export function isBuildable(candidate: unknown): candidate is Buildable {
+  if (typeof candidate !== "object" || candidate === null) return false;
+  if (typeof (candidate as Partial<AnySchema>)[Kind] !== "string") return false;
+  return Meta in candidate;
+}
+
+/**
+ * {@link isBuildable}, excluding a built Fabricator: a Schema is inert, and only
+ * a Fabricator has `fabricate`.
+ */
+export function isSchema(candidate: unknown): candidate is AnySchema {
+  return isBuildable(candidate) && !("fabricate" in candidate);
 }
 
 /**

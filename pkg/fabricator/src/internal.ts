@@ -54,6 +54,13 @@ export {
 } from "./Types";
 export { isArray, isPlainObject } from "./Utility/Core";
 
+/**
+ * The runtime counterparts of `Buildable` and `AnySchema`, for an integration
+ * that takes either from an untyped caller — `@ghostry/extern`'s fabricator
+ * extension accepts any `Buildable` as a block identity.
+ */
+export { isBuildable, isSchema } from "./Schema/Core";
+
 export type * as Primitive from "./Primitive/namespace";
 
 /**
