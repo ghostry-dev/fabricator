@@ -257,12 +257,14 @@ const misterminated = T.recursive(
  * The shape a downstream reader takes — `@ghostry/extern-extension-fabricator-
  * v0`'s `Schema<$T>` is one — inferring `$T` back out of the brand, as a
  * conditional type and at a call site. Both have to recover the value type's
- * own `undefined`.
+ * own `undefined`. `fabricate?: never` is part of that shape, keeping a built
+ * Fabricator out, and must not disturb the inference.
  */
 type Branded<$T> = {
   readonly [Kind]: unknown;
   readonly [Meta]: unknown;
   readonly [Produces]?: Produced<$T>;
+  readonly fabricate?: never;
 };
 type Inferred<$Schema> = $Schema extends Branded<infer $T> ? $T : never;
 

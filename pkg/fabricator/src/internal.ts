@@ -56,8 +56,10 @@ export { isArray, isPlainObject } from "./Utility/Core";
 
 /**
  * The runtime counterparts of `Buildable` and `AnySchema`, for an integration
- * that takes either from an untyped caller — `@ghostry/extern`'s fabricator
- * extension accepts any `Buildable` as a block identity.
+ * that takes one from an untyped caller. `@ghostry/extern`'s fabricator
+ * extension claims a block identity with `isSchema`: a built Fabricator is not
+ * an identity, since a block could either continue its streams or build afresh
+ * from its schema.
  */
 export { isBuildable, isSchema } from "./Schema/Core";
 
