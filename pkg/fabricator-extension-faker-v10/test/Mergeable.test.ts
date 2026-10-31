@@ -1,5 +1,6 @@
 import { en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
+import { isPlainObject } from "@ghostry/fabricator/internal";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
 import { expect, test } from "bun:test";
 
@@ -11,16 +12,6 @@ import { expect, test } from "bun:test";
  * silently swallow any `.extend()` aimed at it, since `deepMerge` would treat
  * it as an opaque leaf and replace it wholesale instead of merging into it.
  */
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return (
-    value !== null
-    && typeof value === "object"
-    && (Object.getPrototypeOf(value) === Object.prototype
-      || Object.getPrototypeOf(value) === null)
-  );
-}
-
 test("every node of the mirror is a plain object or a function with no own enumerable properties", () => {
   const { T } = initialize({
     types: registry.extend(fakerExtension({ locale: en })),

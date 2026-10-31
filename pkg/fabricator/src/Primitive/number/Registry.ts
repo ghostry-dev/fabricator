@@ -34,43 +34,56 @@ type ThisRegistry = Schema<{}, Adaptations> & {
   };
 };
 
-const registry: ThisRegistry = {
-  /**
-   * Keep `[Produces]` and `[Adaptation]` assigned here — see AGENTS.md's
-   * "declaration-emit trap." Both are optional and symbol-keyed, so this
-   * top-level spread is the one place declaration emit needs them actually
-   * written to have a name to print.
-   */
-  ...Schema({
-    [Kind]: "number",
-    [Meta]: {},
-    [Produces]: undefined as unknown as Produced<Fabricated>,
-    [Adaptation]: undefined as unknown as Adaptations,
-  }),
-
-  whereby: (whereby: InputWhereby) =>
-    Schema({
+/**
+ * A function, not the Schema itself: `Schema/Registry.ts` installs it as the
+ * `T.number` getter, so every read is a distinct Schema. `integer` and
+ * `integer.sequence` are getters for the same reason; `big` is a builder, not a
+ * Schema, so it stays a plain property — see AGENTS.md's "Registry entries are
+ * getters."
+ */
+function registry(): ThisRegistry {
+  return {
+    /**
+     * Keep `[Produces]` and `[Adaptation]` assigned here — see AGENTS.md's
+     * "declaration-emit trap." Both are optional and symbol-keyed, so this
+     * top-level spread is the one place declaration emit needs them actually
+     * written to have a name to print.
+     */
+    ...Schema({
       [Kind]: "number",
-      [Meta]: { whereby: toWhereby(whereby, false) },
+      [Meta]: {},
+      [Produces]: undefined as unknown as Produced<Fabricated>,
+      [Adaptation]: undefined as unknown as Adaptations,
     }),
-
-  integer: {
-    ...Schema({ [Kind]: "number", [Meta]: { integer: true } }),
 
     whereby: (whereby: InputWhereby) =>
       Schema({
         [Kind]: "number",
-        [Meta]: { integer: true, whereby: toWhereby(whereby, true) },
+        [Meta]: { whereby: toWhereby(whereby, false) },
       }),
 
-    sequence: Schema({
-      [Kind]: "number",
-      [Meta]: { sequence: true, integer: true },
-    }),
+    get integer() {
+      return {
+        ...Schema({ [Kind]: "number", [Meta]: { integer: true } }),
 
-    big: bigint,
-  },
-};
+        whereby: (whereby: InputWhereby) =>
+          Schema({
+            [Kind]: "number",
+            [Meta]: { integer: true, whereby: toWhereby(whereby, true) },
+          }),
+
+        get sequence() {
+          return Schema({
+            [Kind]: "number",
+            [Meta]: { sequence: true, integer: true },
+          });
+        },
+
+        big: bigint,
+      };
+    },
+  };
+}
 
 export default registry;
 

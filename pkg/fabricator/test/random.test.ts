@@ -363,13 +363,13 @@ test("calling construct() again reproduces a schema imported from another file �
   expect(a).toEqual(b);
 });
 
-test(".extend() overrides survive construct() — the actual bug this refactor fixes", () => {
+test(".extend() overrides survive construct() over a getter-backed built-in", () => {
   /**
    * A hand-built custom `number` Schema, registered as an override the same way
-   * a user's `.extend()` callback would. Today's getter-based registry
-   * hardcoded `get number() { return number(); }`, reconstructing the original
-   * built-in and silently ignoring any override — this is exactly the scenario
-   * that broke.
+   * a user's `.extend()` callback would. The built-in `T.number` is a getter,
+   * and the override must reach the merged result through it: a getter
+   * installed after the merge would rebuild the built-in on every read and
+   * silently ignore the override.
    */
   const fixed = { [Kind]: "number" as const, [Meta]: { produce: () => 42 } };
   const T2 = registry.extend(() => ({ number: fixed }));

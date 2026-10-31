@@ -7,23 +7,30 @@ type ThisRegistry = Schema<{}, Adaptations> & {
   keyed: (key: string) => Schema<{ key: string }>;
 };
 
-const registry: ThisRegistry = {
-  /**
-   * Keep `[Produces]` and `[Adaptation]` assigned here — see AGENTS.md's
-   * "declaration-emit trap." Both are optional and symbol-keyed, so this
-   * top-level spread is the one place declaration emit needs them actually
-   * written to have a name to print.
-   */
-  ...Schema({
-    [Kind]: "symbol",
-    [Meta]: {},
-    [Produces]: undefined as unknown as Produced<Fabricated>,
-    [Adaptation]: undefined as unknown as Adaptations,
-  }),
+/**
+ * A function, not the Schema itself: `Schema/Registry.ts` installs it as the
+ * `T.symbol` getter, so every read is a distinct Schema — see AGENTS.md's
+ * "Registry entries are getters."
+ */
+function registry(): ThisRegistry {
+  return {
+    /**
+     * Keep `[Produces]` and `[Adaptation]` assigned here — see AGENTS.md's
+     * "declaration-emit trap." Both are optional and symbol-keyed, so this
+     * top-level spread is the one place declaration emit needs them actually
+     * written to have a name to print.
+     */
+    ...Schema({
+      [Kind]: "symbol",
+      [Meta]: {},
+      [Produces]: undefined as unknown as Produced<Fabricated>,
+      [Adaptation]: undefined as unknown as Adaptations,
+    }),
 
-  keyed: (key: string) => {
-    return Schema({ [Kind]: "symbol", [Meta]: { key } });
-  },
-};
+    keyed: (key: string) => {
+      return Schema({ [Kind]: "symbol", [Meta]: { key } });
+    },
+  };
+}
 
 export default registry;

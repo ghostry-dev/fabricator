@@ -52,66 +52,78 @@ type ThisRegistry = Schema<{}, Adaptations> & {
   };
 };
 
-const registry: ThisRegistry = {
-  /**
-   * Keep `[Produces]` and `[Adaptation]` assigned here — see AGENTS.md's
-   * "declaration-emit trap." Both are optional and symbol-keyed, so this
-   * top-level spread is the one place declaration emit needs them actually
-   * written to have a name to print.
-   */
-  ...Schema({
-    [Kind]: "date",
-    [Meta]: {},
-    [Produces]: undefined as unknown as Produced<Fabricated>,
-    [Adaptation]: undefined as unknown as Adaptations,
-  }),
-
-  whereby: (whereby: InputWhereby) => {
-    const converted = toWhereby(whereby);
-
+/**
+ * A function, not the Schema itself: `Schema/Registry.ts` installs it as the
+ * `T.date` getter, so every read is a distinct Schema. `past` and `future` are
+ * getters for the same reason — see AGENTS.md's "Registry entries are
+ * getters."
+ */
+function registry(): ThisRegistry {
+  return {
     /**
-     * `Date` stores a whole millisecond (`TimeClip`). Exclusive ends are empty
-     * exactly when no integer ms remains, not when no float sits between the
-     * stated instants — `new Date` would collapse those floats back onto the
-     * excluded endpoint. An omitted end is judged against the fabricate-time
-     * cap, so a one-sided exclusive end that leaves no instant still fails
-     * here, not at `new Fabricator(...)`.
+     * Keep `[Produces]` and `[Adaptation]` assigned here — see AGENTS.md's
+     * "declaration-emit trap." Both are optional and symbol-keyed, so this
+     * top-level spread is the one place declaration emit needs them actually
+     * written to have a name to print.
      */
-    assertNonemptyDiscrete(
-      "T.date.whereby",
-      converted.min ? epochBound(converted.min) : unboundedEpoch.min,
-      converted.max ? epochBound(converted.max) : unboundedEpoch.max,
-    );
+    ...Schema({
+      [Kind]: "date",
+      [Meta]: {},
+      [Produces]: undefined as unknown as Produced<Fabricated>,
+      [Adaptation]: undefined as unknown as Adaptations,
+    }),
 
-    return Schema({ [Kind]: "date", [Meta]: { whereby: converted } });
-  },
+    whereby: (whereby: InputWhereby) => {
+      const converted = toWhereby(whereby);
 
-  past: {
-    ...Schema({ [Kind]: "date", [Meta]: { mode: "past" } }),
+      /**
+       * `Date` stores a whole millisecond (`TimeClip`). Exclusive ends are
+       * empty exactly when no integer ms remains, not when no float sits
+       * between the stated instants — `new Date` would collapse those floats
+       * back onto the excluded endpoint. An omitted end is judged against the
+       * fabricate-time cap, so a one-sided exclusive end that leaves no instant
+       * still fails here, not at `new Fabricator(...)`.
+       */
+      assertNonemptyDiscrete(
+        "T.date.whereby",
+        converted.min ? epochBound(converted.min) : unboundedEpoch.min,
+        converted.max ? epochBound(converted.max) : unboundedEpoch.max,
+      );
 
-    whereby: (whereby: {
-      min?: InputBound<Date> | undefined;
-      distribution?: Distribution | undefined;
-    }) =>
-      Schema({
-        [Kind]: "date",
-        [Meta]: { mode: "past", whereby: toWhereby(whereby) },
-      }),
-  },
+      return Schema({ [Kind]: "date", [Meta]: { whereby: converted } });
+    },
 
-  future: {
-    ...Schema({ [Kind]: "date", [Meta]: { mode: "future" } }),
+    get past() {
+      return {
+        ...Schema({ [Kind]: "date", [Meta]: { mode: "past" } }),
 
-    whereby: (whereby: {
-      max?: InputBound<Date> | undefined;
-      distribution?: Distribution | undefined;
-    }) =>
-      Schema({
-        [Kind]: "date",
-        [Meta]: { mode: "future", whereby: toWhereby(whereby) },
-      }),
-  },
-};
+        whereby: (whereby: {
+          min?: InputBound<Date> | undefined;
+          distribution?: Distribution | undefined;
+        }) =>
+          Schema({
+            [Kind]: "date",
+            [Meta]: { mode: "past", whereby: toWhereby(whereby) },
+          }),
+      };
+    },
+
+    get future() {
+      return {
+        ...Schema({ [Kind]: "date", [Meta]: { mode: "future" } }),
+
+        whereby: (whereby: {
+          max?: InputBound<Date> | undefined;
+          distribution?: Distribution | undefined;
+        }) =>
+          Schema({
+            [Kind]: "date",
+            [Meta]: { mode: "future", whereby: toWhereby(whereby) },
+          }),
+      };
+    },
+  };
+}
 
 export default registry;
 

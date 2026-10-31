@@ -33,14 +33,16 @@ test("repeated fabricate(schema) takes one construction ordinal, however many ca
   const instance = initialize({ salt: "fabricate-ordinal" });
   const { T, fabricate, Fabricator } = instance;
 
-  for (let i = 0; i < 10; i++) fabricate(T.boolean);
+  const B = T.boolean;
+  for (let i = 0; i < 10; i++) fabricate(B);
 
   expect(new Fabricator(T.number).trace.ordinal).toBe(1);
 });
 
 /**
  * Identity is the key, so two structurally equal schema objects are two builds
- * — the inline `.whereby(...)` / `.override(...)` cost the docs name.
+ * — the inline `.whereby(...)` / `.override(...)` cost the docs name. A bare
+ * registry entry is inline too: every read of `T.number` is a fresh Schema.
  */
 test("structurally equal but distinct schema objects each build", () => {
   const instance = initialize({ salt: "fabricate-identity" });
@@ -48,8 +50,10 @@ test("structurally equal but distinct schema objects each build", () => {
 
   fabricate(T.string.whereby({ length: 4 }));
   fabricate(T.string.whereby({ length: 4 }));
+  fabricate(T.number);
+  fabricate(T.number);
 
-  expect(new Fabricator(T.number).trace.ordinal).toBe(2);
+  expect(new Fabricator(T.number).trace.ordinal).toBe(4);
 });
 
 test("an override held in a variable is reused; one written inline builds every call", () => {
@@ -85,6 +89,14 @@ test("anything but a Schema is rejected, at the type and at runtime", () => {
   );
   // @ts-expect-error a bare builder still needs `.whereby(...)`
   expect(() => fabricate(T.array(T.number))).toThrow(
+    FabricatorError.FabricateArgumentError,
+  );
+  // @ts-expect-error carries `[Kind]`, but no `[Meta]` until `.whereby(...)`
+  expect(() => fabricate(T.string)).toThrow(
+    FabricatorError.FabricateArgumentError,
+  );
+  // @ts-expect-error carries `[Kind]`, but no `[Meta]` until `.whereby(...)`
+  expect(() => fabricate(T.bigint)).toThrow(
     FabricatorError.FabricateArgumentError,
   );
   // @ts-expect-error not a schema at all

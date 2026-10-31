@@ -3,7 +3,7 @@ import type { Ancestry, Stack } from "../Instance/Types";
 import type { RandomSource } from "../Random/Types";
 import { FabricatorError } from "../Error";
 import type { AnySchema, Fabricated } from "../Schema/Types";
-import { Kind } from "../Types";
+import { Kind, Meta } from "../Types";
 import type { Constructor } from "./Constructor";
 import type { NaiveFabricator } from "./Types";
 
@@ -16,8 +16,10 @@ import type { NaiveFabricator } from "./Types";
  * The key is the schema's identity. A schema held in a variable — including an
  * overridden one, `const Admin = User.override({ ... })` — is reused. One
  * written at the call site — `fabricate(User.override({ ... }))`, an inline
- * `.whereby(...)` — is a new object on every call, so every call builds and
- * takes an ordinal, exactly as `new Fabricator(...).fabricate()` would.
+ * `.whereby(...)`, a bare registry entry like `fabricate(T.number)`, whose
+ * every read is a fresh Schema — is a new object on every call, so every call
+ * builds and takes an ordinal, exactly as `new Fabricator(...).fabricate()`
+ * would.
  *
  * A Schema only, never a built Fabricator: given one, neither reusing it nor
  * caching a fresh build of it is the obvious reading, so the type rejects it
@@ -36,14 +38,17 @@ export type Fabricate = <
 ) => Fabricated<$Schema>;
 
 /**
- * Whether `fabricate` may take `candidate`: an object carrying a `[Kind]` tag,
- * and not a built Fabricator. A bare builder that is a function (`T.array`,
- * `T.recursive`) fails the first test; one that is an object but has no
- * `[Kind]` fails the second.
+ * Whether `fabricate` may take `candidate`: an object carrying a `[Kind]` tag
+ * and a `[Meta]`, and not a built Fabricator. A bare builder that is a function
+ * (`T.array`, `T.recursive`) fails the first test; one that is an object but
+ * has no `[Kind]` fails the second. `T.string` and `T.bigint` carry `[Kind]` so
+ * they can name a compute source, but have no `[Meta]` until `.whereby(...)`,
+ * and fail the third rather than reaching the build without one.
  */
 function isSchema(candidate: unknown): candidate is AnySchema {
   if (typeof candidate !== "object" || candidate === null) return false;
   if (typeof (candidate as Partial<AnySchema>)[Kind] !== "string") return false;
+  if (!(Meta in candidate)) return false;
   return !("fabricate" in candidate);
 }
 
