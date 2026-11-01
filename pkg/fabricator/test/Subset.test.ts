@@ -167,13 +167,16 @@ test("an unknown key throws", () => {
 
   expect(() => T.pick(User, ["nope"] as any)).toThrow(
     expect.objectContaining({
-      name: "UnknownFieldError",
+      name: "@ghostry/fabricator:UnknownFieldError",
       field: "nope",
       operation: "pick",
     }),
   );
   expect(() => T.omit(User, ["nope"] as any)).toThrow(
-    expect.objectContaining({ name: "UnknownFieldError", operation: "omit" }),
+    expect.objectContaining({
+      name: "@ghostry/fabricator:UnknownFieldError",
+      operation: "omit",
+    }),
   );
 });
 
@@ -214,7 +217,10 @@ test("a hidden field cannot be overridden", () => {
   const picked = T.pick(User, ["name"]);
 
   expect(() => picked.override({ first: "Ada" } as any)).toThrow(
-    expect.objectContaining({ name: "UnknownFieldError", available: ["name"] }),
+    expect.objectContaining({
+      name: "@ghostry/fabricator:UnknownFieldError",
+      available: ["name"],
+    }),
   );
 
   const result = new Fabricator(picked).fabricate({ first: "Ada" } as any, {

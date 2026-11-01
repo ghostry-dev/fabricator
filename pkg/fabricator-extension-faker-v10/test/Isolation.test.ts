@@ -112,4 +112,9 @@ test("calling the bridged faker instance directly, outside of fabricate(), throw
   expect(() => handle!.person.fullName()).toThrow(
     FakerExtensionError.NoActiveScopeError,
   );
+  expect(() => handle!.person.fullName()).toThrow(
+    expect.objectContaining({
+      name: "@ghostry/fabricator-extension-faker-v10:NoActiveScopeError",
+    }),
+  );
 });

@@ -58,7 +58,7 @@ test("sample([]) throws a FabricatorError named EmptyItemsError", () => {
   }
 
   expect(caught).toBeInstanceOf(FabricatorError);
-  expect((caught as Error).name).toBe("EmptyItemsError");
+  expect((caught as Error).name).toBe("@ghostry/fabricator:EmptyItemsError");
 });
 
 test("shuffle returns a permutation, does not mutate its input, and replays under salt", () => {

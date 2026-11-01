@@ -78,7 +78,7 @@ test("a `.from` key outside the refine stage's base throws", () => {
     })),
   ).toThrow(
     expect.objectContaining({
-      name: "UnknownFieldError",
+      name: "@ghostry/fabricator:UnknownFieldError",
       field: "nope",
       available: ["a"],
       operation: "compute from",
@@ -146,7 +146,7 @@ test("a later `.refine()` that closes a dependency cycle throws while building t
     })),
   ).toThrow(
     expect.objectContaining({
-      name: "ComputeDependencyCycleError",
+      name: "@ghostry/fabricator:ComputeDependencyCycleError",
       fields: ["y", "x", "y"],
     }),
   );

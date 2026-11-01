@@ -3,7 +3,8 @@
  * exports that name, and importing both into one scope would collide. Follows
  * core's `FabricatorError` shape (abstract base plus a merged namespace of
  * subclasses) so `e instanceof FabricatorError` still catches everything either
- * package throws.
+ * package throws. A `name` is prefixed with this package's name, as core's are
+ * with its own.
  */
 
 import { FabricatorError } from "@ghostry/fabricator";
@@ -11,7 +12,7 @@ import { FabricatorError } from "@ghostry/fabricator";
 export abstract class FakerExtensionError extends FabricatorError {
   constructor() {
     super();
-    this.name = "FakerExtensionError";
+    this.name = "@ghostry/fabricator-extension-faker-v10:FakerExtensionError";
   }
 }
 
@@ -26,7 +27,7 @@ export namespace FakerExtensionError {
   export class NoActiveScopeError extends FakerExtensionError {
     constructor() {
       super();
-      this.name = "NoActiveScopeError";
+      this.name = "@ghostry/fabricator-extension-faker-v10:NoActiveScopeError";
       this.message =
         "A faker builder was invoked outside of fabricate(). Faker builders "
         + "only draw randomness while the schema they belong to is being "

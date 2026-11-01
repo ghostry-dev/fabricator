@@ -394,6 +394,11 @@ describe("accumulator", () => {
     const first = accumulator.finish();
     expect(() => accumulator.add(2)).toThrow(CensusError.FinishedError);
     expect(() => accumulator.add(2)).toThrow(FabricatorError);
+    expect(() => accumulator.add(2)).toThrow(
+      expect.objectContaining({
+        name: "@ghostry/fabricator-census:FinishedError",
+      }),
+    );
     expect(accumulator.finish()).toBe(first);
   });
 });

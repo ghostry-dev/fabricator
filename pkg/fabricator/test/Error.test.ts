@@ -39,7 +39,7 @@ test("an unknown-field override exposes the field name and available fields", ()
     caught = e;
   }
 
-  expect((caught as any).name).toBe("UnknownFieldError");
+  expect((caught as any).name).toBe("@ghostry/fabricator:UnknownFieldError");
   expect((caught as any).operation).toBe("override");
   expect((caught as any).field).toBe("nope");
   expect((caught as any).available).toEqual(["name", "age"]);
@@ -57,7 +57,9 @@ test("an invalid override value exposes the field, kind, and rejected value", ()
     caught = e;
   }
 
-  expect((caught as any).name).toBe("InvalidOverrideValueError");
+  expect((caught as any).name).toBe(
+    "@ghostry/fabricator:InvalidOverrideValueError",
+  );
   expect((caught as any).field).toBe("name");
   expect((caught as any).kind).toBe("string");
   expect((caught as any).value).toBe(5);

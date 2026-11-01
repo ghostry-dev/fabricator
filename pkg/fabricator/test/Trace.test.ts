@@ -241,5 +241,7 @@ test("TraceKindMismatchError on a kind mismatch, and it is instanceof Fabricator
   }
 
   expect(caught).toBeInstanceOf(FabricatorError);
-  expect((caught as FabricatorError).name).toBe("TraceKindMismatchError");
+  expect((caught as FabricatorError).name).toBe(
+    "@ghostry/fabricator:TraceKindMismatchError",
+  );
 });

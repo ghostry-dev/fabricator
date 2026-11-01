@@ -12,6 +12,13 @@
  * stands on its own: a consumer reading only `.message` should not need a field
  * to understand the failure. Fields are for programmatic access, and for detail
  * too bulky to inline.
+ *
+ * A `name` is the package and the class,
+ * `"@ghostry/fabricator:UnknownFieldError"`, so it identifies an error where
+ * `instanceof` cannot: across two installed copies of this package, or after
+ * the error is serialized. `:`, not `/`, which would read as a subpath export.
+ * A package extending {@link FabricatorError} prefixes its own errors with its
+ * own name.
  */
 
 /**
@@ -20,7 +27,7 @@
 export abstract class FabricatorError extends Error {
   constructor() {
     super();
-    this.name = "FabricatorError";
+    this.name = "@ghostry/fabricator:FabricatorError";
   }
 }
 
@@ -55,7 +62,7 @@ export namespace FabricatorError {
       public readonly limit: unknown,
     ) {
       super();
-      this.name = "InvalidCombinatorialLimitError";
+      this.name = "@ghostry/fabricator:InvalidCombinatorialLimitError";
       this.message =
         `initialize({ limits: { combinatorial } }) requires a positive safe `
         + `integer; received ${String(limit)}.`;
@@ -77,7 +84,7 @@ export namespace FabricatorError {
       public readonly clock: unknown,
     ) {
       super();
-      this.name = "InvalidClockError";
+      this.name = "@ghostry/fabricator:InvalidClockError";
       this.message =
         "clock requires a valid Date or an integer number of epoch "
         + `milliseconds within ±8.64e15; received ${String(clock)}.`;
@@ -97,7 +104,7 @@ export namespace FabricatorError {
       public readonly during: Phase,
     ) {
       super();
-      this.name = "DetachedSelfError";
+      this.name = "@ghostry/fabricator:DetachedSelfError";
       this.message =
         "`self` was used outside any active `T.recursive` while "
         + `${phrase(during)} — it can only appear inside the body (or terminal) `
@@ -123,7 +130,7 @@ export namespace FabricatorError {
       public readonly path: ReadonlyArray<string>,
     ) {
       super();
-      this.name = "UnterminableRecursiveError";
+      this.name = "@ghostry/fabricator:UnterminableRecursiveError";
       const where =
         path.length === 0 ? "the recursive body itself" : `"${path.join(".")}"`;
       this.message =
@@ -154,7 +161,7 @@ export namespace FabricatorError {
       public readonly during: Phase,
     ) {
       super();
-      this.name = "UnknownKindError";
+      this.name = "@ghostry/fabricator:UnknownKindError";
       this.message =
         `Cannot dispatch a Schema of unknown kind "${kind}" while `
         + `${phrase(during)}.`;
@@ -185,7 +192,7 @@ export namespace FabricatorError {
       public readonly noun: string,
     ) {
       super();
-      this.name = "EmptyItemsError";
+      this.name = "@ghostry/fabricator:EmptyItemsError";
       this.message = `${label} requires at least one ${noun}.`;
     }
   }
@@ -203,7 +210,7 @@ export namespace FabricatorError {
       public readonly key: string,
     ) {
       super();
-      this.name = "PrototypePollutionError";
+      this.name = "@ghostry/fabricator:PrototypePollutionError";
       this.message =
         `Potential prototype pollution blocked for key: ${key}. An object `
         + "schema cannot define a field named `__proto__`, `constructor`, or "
@@ -219,7 +226,7 @@ export namespace FabricatorError {
   export class DetachedComputeError extends FabricatorError {
     constructor() {
       super();
-      this.name = "DetachedComputeError";
+      this.name = "@ghostry/fabricator:DetachedComputeError";
       this.message =
         "A `.refine()`-computed field can only be fabricated as part of its "
         + "parent object, which supplies the already-fabricated fields its "
@@ -244,7 +251,7 @@ export namespace FabricatorError {
       public readonly value: unknown,
     ) {
       super();
-      this.name = "ComputeResultMismatchError";
+      this.name = "@ghostry/fabricator:ComputeResultMismatchError";
       this.message =
         "A `.refine()`-computed field's resolver returned a value of type "
         + `${typeof value} that does not match its "${kind}" source schema.`;
@@ -268,7 +275,7 @@ export namespace FabricatorError {
       public readonly value: unknown,
     ) {
       super();
-      this.name = "DeriveResultMismatchError";
+      this.name = "@ghostry/fabricator:DeriveResultMismatchError";
       this.message =
         "A T.derive resolver returned a value of type "
         + `${typeof value} that does not match its \`to\` schema ("${kind}").`;
@@ -300,7 +307,7 @@ export namespace FabricatorError {
       public readonly operation: "override" | "pick" | "omit" | "compute from",
     ) {
       super();
-      this.name = "UnknownFieldError";
+      this.name = "@ghostry/fabricator:UnknownFieldError";
       this.message =
         `Cannot ${operation} unknown field: "${field}". `
         + "This object schema defines "
@@ -325,7 +332,7 @@ export namespace FabricatorError {
       public readonly fields: ReadonlyArray<string>,
     ) {
       super();
-      this.name = "ComputeDependencyCycleError";
+      this.name = "@ghostry/fabricator:ComputeDependencyCycleError";
       this.message =
         "Computed fields depend on each other in a cycle: "
         + `${fields.map((k) => `"${k}"`).join(" -> ")}.`;
@@ -357,7 +364,7 @@ export namespace FabricatorError {
       public readonly value: unknown,
     ) {
       super();
-      this.name = "InvalidOverrideValueError";
+      this.name = "@ghostry/fabricator:InvalidOverrideValueError";
       this.message =
         `Cannot override field "${field}": a value of type ${typeof value} does `
         + `not match its "${kind}" schema.`;
@@ -382,7 +389,7 @@ export namespace FabricatorError {
       public readonly kind: string,
     ) {
       super();
-      this.name = "IllegalOmittedOverrideError";
+      this.name = "@ghostry/fabricator:IllegalOmittedOverrideError";
       this.message =
         `Cannot override field "${field}" with Omitted: a "${kind}" field is `
         + "neither omittable nor optional, so it has no absent outcome to "
@@ -407,7 +414,7 @@ export namespace FabricatorError {
       public readonly width: bigint,
     ) {
       super();
-      this.name = "EnumerationIndexError";
+      this.name = "@ghostry/fabricator:EnumerationIndexError";
       this.message =
         `Enumeration index ${index} is out of range for an axis of width `
         + `${width}.`;
@@ -426,7 +433,7 @@ export namespace FabricatorError {
       public readonly kind: string,
     ) {
       super();
-      this.name = "UnpinnableKindError";
+      this.name = "@ghostry/fabricator:UnpinnableKindError";
       this.message =
         `resolve() received a pin for kind "${kind}", which plan() never gives `
         + "one to.";
@@ -452,7 +459,7 @@ export namespace FabricatorError {
       public readonly limit: number,
     ) {
       super();
-      this.name = "CombinatorialLimitExceededError";
+      this.name = "@ghostry/fabricator:CombinatorialLimitExceededError";
       this.message =
         `combinatorial(...) would enumerate ${width} instances which is over the `
         + `configured limit of ${limit}. Raise it with initialize({ limits: `
@@ -474,7 +481,7 @@ export namespace FabricatorError {
       public readonly kind: string,
     ) {
       super();
-      this.name = "UnrepresentableRecordKeyError";
+      this.name = "@ghostry/fabricator:UnrepresentableRecordKeyError";
       this.message =
         `Cannot map a "record" schema keyed by "${kind}" to an external schema: `
         + "the target has no record with keys of that type. Use "
@@ -512,7 +519,7 @@ export namespace FabricatorError {
       },
     ) {
       super();
-      this.name = "EmptyRangeError";
+      this.name = "@ghostry/fabricator:EmptyRangeError";
       this.message =
         `${label} produces an empty range (min=${describeBound(min)}, `
         + `max=${describeBound(max)}).`;
@@ -550,7 +557,7 @@ export namespace FabricatorError {
       public readonly max: number,
     ) {
       super();
-      this.name = "InvalidDistributionBoundError";
+      this.name = "@ghostry/fabricator:InvalidDistributionBoundError";
       this.message =
         `The ${distribution} distribution requires min > 0 (received `
         + `min=${min}, max=${max}); its density is proportional to 1/x and `
@@ -590,7 +597,7 @@ export namespace FabricatorError {
       public readonly entry: WeightEntry,
     ) {
       super();
-      this.name = "InvalidWeightError";
+      this.name = "@ghostry/fabricator:InvalidWeightError";
 
       const where =
         entry.kind === "index"
@@ -623,7 +630,7 @@ export namespace FabricatorError {
       public readonly noun: string,
     ) {
       super();
-      this.name = "NoDrawableOutcomesError";
+      this.name = "@ghostry/fabricator:NoDrawableOutcomesError";
       this.message =
         `${label} leaves no drawable ${noun}. Zeroing an outcome disables `
         + "it, so at least one must keep a positive weight.";
@@ -648,7 +655,7 @@ export namespace FabricatorError {
       public readonly given: string,
     ) {
       super();
-      this.name = "TraceKindMismatchError";
+      this.name = "@ghostry/fabricator:TraceKindMismatchError";
       this.message =
         `Cannot build from a trace for kind "${given}": this schema's `
         + `kind is "${expected}". A trace reproduces the node it was `
@@ -671,7 +678,7 @@ export namespace FabricatorError {
       public readonly argument: unknown,
     ) {
       super();
-      this.name = "FabricateArgumentError";
+      this.name = "@ghostry/fabricator:FabricateArgumentError";
       this.message = describe(argument);
 
       function describe(given: unknown): string {
@@ -715,7 +722,7 @@ export namespace FabricatorError {
   export class SynchronousStackError extends FabricatorError {
     constructor() {
       super();
-      this.name = "SynchronousStackError";
+      this.name = "@ghostry/fabricator:SynchronousStackError";
       this.message =
         "`wrap` received an async block, but this instance's ambient stack "
         + "cannot carry a frame across `await` — a build after the first "
@@ -742,7 +749,7 @@ export namespace FabricatorError {
   export class HarnessingProviderError extends FabricatorError {
     constructor() {
       super();
-      this.name = "HarnessingProviderError";
+      this.name = "@ghostry/fabricator:HarnessingProviderError";
       this.message =
         "The `fabricator` provider was called outside its integration's "
         + "frame, so there is no per-test scope to provide. A composer must "

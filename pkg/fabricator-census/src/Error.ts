@@ -1,7 +1,8 @@
 /**
  * Every failure this package raises. Follows core's `FabricatorError` shape
  * (abstract base plus a merged namespace of subclasses), and extends it, so `e
- * instanceof FabricatorError` still catches everything census throws.
+ * instanceof FabricatorError` still catches everything census throws. A `name`
+ * is prefixed with this package's name, as core's are with its own.
  *
  * @module
  */
@@ -11,7 +12,7 @@ import { FabricatorError } from "@ghostry/fabricator";
 export abstract class CensusError extends FabricatorError {
   constructor() {
     super();
-    this.name = "CensusError";
+    this.name = "@ghostry/fabricator-census:CensusError";
   }
 }
 
@@ -28,7 +29,7 @@ export namespace CensusError {
       public readonly expected: string,
     ) {
       super();
-      this.name = "InvalidOptionError";
+      this.name = "@ghostry/fabricator-census:InvalidOptionError";
       this.message = `Census option \`${option}\` must be ${expected}; received ${String(value)}.`;
     }
   }
@@ -42,7 +43,7 @@ export namespace CensusError {
   export class FinishedError extends CensusError {
     constructor() {
       super();
-      this.name = "FinishedError";
+      this.name = "@ghostry/fabricator-census:FinishedError";
       this.message =
         "Cannot add to a census after finish(). Begin a new census for further values.";
     }
@@ -56,7 +57,7 @@ export namespace CensusError {
   export class NonIntegerFitError extends CensusError {
     constructor() {
       super();
-      this.name = "NonIntegerFitError";
+      this.name = "@ghostry/fabricator-census:NonIntegerFitError";
       this.message =
         "A discrete fit needs integer data; this tally holds non-integer values. Fit it as continuous instead.";
     }
@@ -70,7 +71,7 @@ export namespace CensusError {
   export class InvalidIdentifierError extends CensusError {
     constructor(public readonly identifier: string) {
       super();
-      this.name = "InvalidIdentifierError";
+      this.name = "@ghostry/fabricator-census:InvalidIdentifierError";
       this.message = `${JSON.stringify(identifier)} cannot be used as a SQL identifier: it is empty or contains a NUL character.`;
     }
   }
@@ -83,7 +84,7 @@ export namespace CensusError {
   export class UnknownTableError extends CensusError {
     constructor(public readonly table: string) {
       super();
-      this.name = "UnknownTableError";
+      this.name = "@ghostry/fabricator-census:UnknownTableError";
       this.message = `No table ${table} is visible to this connection.`;
     }
   }
@@ -98,7 +99,7 @@ export namespace CensusError {
       public readonly value: unknown,
     ) {
       super();
-      this.name = "UnexpectedRowError";
+      this.name = "@ghostry/fabricator-census:UnexpectedRowError";
       this.message = `Result field \`${field}\` held ${String(value)}, which this query's reader cannot parse. Was it given another query's rows?`;
     }
   }
@@ -110,7 +111,7 @@ export namespace CensusError {
   export class UnanalyzedTableError extends CensusError {
     constructor(public readonly table: string) {
       super();
-      this.name = "UnanalyzedTableError";
+      this.name = "@ghostry/fabricator-census:UnanalyzedTableError";
       this.message = `${table} has never been analyzed, so the catalog has no row estimate. Run ANALYZE on it, or allow a scan to count its rows.`;
     }
   }
