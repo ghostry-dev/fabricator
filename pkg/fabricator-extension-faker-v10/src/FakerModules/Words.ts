@@ -1,13 +1,17 @@
 /**
  * Faker 10's `lorem` and `word` method bodies, minus the word-list copy.
  *
- * With no `length`, faker's shared `filterWordListByLength` returns
- * `[...wordList]`, so every `lorem.word()` and `word.<category>()` copies a
- * whole locale list (about 1,000 entries in `en`) to index one element, and
- * `lorem.sentence`/`paragraph`/`text` do that once per word. Each word then
- * goes through `helpers.arrayElement` → `number.int({ max })`, which parses an
- * options bag per draw. Every builder in `./Build.ts`'s `lorem`/`word` modules
- * draws through this file instead and never calls faker's own method.
+ * Faker's per-word path has two costs. With no `length`, its shared
+ * `filterWordListByLength` returns `[...wordList]`, copying a whole locale list
+ * (up to 1,000 entries in `en`) to index one element. That copy is close to
+ * free where the engine shares a literal array's storage on spread (Node 22–26
+ * and Bun 1.4.4 with faker's bundled locales), but costs about a microsecond
+ * per word on Bun 1.2.14, and on any engine when a locale's lists are built at
+ * runtime. Each word then goes through `helpers.arrayElement` → `number.int`,
+ * which parses an options object per draw and is most of what remains where the
+ * copy is free. `lorem.sentence`/`paragraph`/`text` pay both once per word.
+ * Every builder in `./Build.ts`'s `lorem`/`word` modules draws through this
+ * file instead and never calls faker's own method.
  *
  * The copy is reported upstream as
  * https://github.com/faker-js/faker/issues/4242. A faker release that drops it

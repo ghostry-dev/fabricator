@@ -30,9 +30,10 @@
  *   whose _first_ overload takes `format?: StringColorFormat` and returns
  *   `string`. `'decimal'` is `NumberColorFormat`'s sole member, so naming it is
  *   exact.
- * - `lorem`'s and `word`'s builders never call faker's own method: faker copies a
- *   whole word list per word drawn, so they draw through `./Words.ts`, which
- *   reproduces faker's output exactly from the same stream.
+ * - `lorem`'s and `word`'s builders never call faker's own method: faker's
+ *   per-word path copies the word list and parses an options object for every
+ *   word drawn, so they draw through `./Words.ts`, which reproduces faker's
+ *   output exactly from the same stream.
  *
  * Every node is a plain object or a bare builder function, never a function
  * carrying properties — the invariant `deepMerge` needs to recurse through an
