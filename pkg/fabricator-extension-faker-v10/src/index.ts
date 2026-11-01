@@ -112,13 +112,19 @@ function toFaker(options: Options): Faker {
  * to "none". Sound only because faker is synchronous and a producer runs
  * synchronously inside `fabricate()` — an async faker method on a future major
  * is a re-examination, not a tweak.
+ *
+ * `produce` is handed the same `context` for a builder that draws from `random`
+ * directly rather than through faker's randomizer (`FakerModules/Words.ts`);
+ * both read one stream, so the two can interleave within a single producer.
  */
-function draw<$T>(produce: () => $T): (context: ProduceContext) => $T {
+function draw<$T>(
+  produce: (context: ProduceContext) => $T,
+): (context: ProduceContext) => $T {
   return (context) => {
     const previous = scope;
     scope = context;
     try {
-      return produce();
+      return produce(context);
     } finally {
       scope = previous;
     }

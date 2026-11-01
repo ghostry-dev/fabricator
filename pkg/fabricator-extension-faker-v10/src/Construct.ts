@@ -27,7 +27,9 @@ import type { FakerExtension, Registry } from "./Types";
 export function construct(
   T: Registry,
   faker: Faker,
-  draw: <$T>(produce: () => $T) => (context: ProduceContext) => $T,
+  draw: <$T>(
+    produce: (context: ProduceContext) => $T,
+  ) => (context: ProduceContext) => $T,
 ): FakerExtension {
   return {
     ...build(T, faker, draw),

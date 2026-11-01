@@ -9,7 +9,7 @@
  * the faker-bump workflow; an entry added or changed here needs the matching
  * edit there, and vice versa.
  *
- * Three shapes before editing:
+ * Shapes before editing:
  *
  * - Every builder spreads faker's `Parameters<...>` rather than taking a single
  *   `options?`. Faker's zero-parameter methods (`animal.bear()`) and its
@@ -30,25 +30,34 @@
  *   whose _first_ overload takes `format?: StringColorFormat` and returns
  *   `string`. `'decimal'` is `NumberColorFormat`'s sole member, so naming it is
  *   exact.
+ * - `lorem`'s and `word`'s builders never call faker's own method: faker copies a
+ *   whole word list per word drawn, so they draw through `./Words.ts`, which
+ *   reproduces faker's output exactly from the same stream.
  *
  * Every node is a plain object or a bare builder function, never a function
  * carrying properties — the invariant `deepMerge` needs to recurse through an
  * extended registry, guarded by `test/Mergeable.test.ts`.
+ *
+ * @module
  */
+
 import type { Faker } from "@faker-js/faker";
 import type { ProduceContext } from "@ghostry/fabricator";
 import type { Registry } from "../Types";
 import type { FakerModules } from "./Types";
+import { toWords } from "./Words";
 
 /**
  * `src/index.ts`'s `draw`, by type — the save/restore wrapper that binds a
- * producer to the leaf's own `random`/`clock`. Named here rather than imported
- * so this file stays type-only in its dependencies.
+ * producer to the leaf's own `random`/`clock`. Named here rather than imported,
+ * since `src/index.ts` imports this file.
  */
-type Draw = <$T>(produce: () => $T) => (context: ProduceContext) => $T;
+type Draw = <$T>(
+  produce: (context: ProduceContext) => $T,
+) => (context: ProduceContext) => $T;
 
 export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
-  const [f, d] = [faker, draw];
+  const [f, d, w] = [faker, draw, toWords(faker)];
 
   /**
    * A string field inside an object builder whose own `.as(produce)` supplies
@@ -661,23 +670,23 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
     },
     lorem: {
       lines: (...args: Parameters<Faker["lorem"]["lines"]>) =>
-        T.string.as(d(() => f.lorem.lines(...args))),
+        T.string.as(d(w.lorem.lines(...args))),
       paragraph: (...args: Parameters<Faker["lorem"]["paragraph"]>) =>
-        T.string.as(d(() => f.lorem.paragraph(...args))),
+        T.string.as(d(w.lorem.paragraph(...args))),
       paragraphs: (...args: Parameters<Faker["lorem"]["paragraphs"]>) =>
-        T.string.as(d(() => f.lorem.paragraphs(...args))),
+        T.string.as(d(w.lorem.paragraphs(...args))),
       sentence: (...args: Parameters<Faker["lorem"]["sentence"]>) =>
-        T.string.as(d(() => f.lorem.sentence(...args))),
+        T.string.as(d(w.lorem.sentence(...args))),
       sentences: (...args: Parameters<Faker["lorem"]["sentences"]>) =>
-        T.string.as(d(() => f.lorem.sentences(...args))),
+        T.string.as(d(w.lorem.sentences(...args))),
       slug: (...args: Parameters<Faker["lorem"]["slug"]>) =>
-        T.string.as(d(() => f.lorem.slug(...args))),
+        T.string.as(d(w.lorem.slug(...args))),
       text: (...args: Parameters<Faker["lorem"]["text"]>) =>
-        T.string.as(d(() => f.lorem.text(...args))),
+        T.string.as(d(w.lorem.text(...args))),
       word: (...args: Parameters<Faker["lorem"]["word"]>) =>
-        T.string.as(d(() => f.lorem.word(...args))),
+        T.string.as(d(w.lorem.word(...args))),
       words: (...args: Parameters<Faker["lorem"]["words"]>) =>
-        T.string.as(d(() => f.lorem.words(...args))),
+        T.string.as(d(w.lorem.words(...args))),
     },
     music: {
       album: (...args: Parameters<Faker["music"]["album"]>) =>
@@ -841,23 +850,23 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
     },
     word: {
       adjective: (...args: Parameters<Faker["word"]["adjective"]>) =>
-        T.string.as(d(() => f.word.adjective(...args))),
+        T.string.as(d(w.word.adjective(...args))),
       adverb: (...args: Parameters<Faker["word"]["adverb"]>) =>
-        T.string.as(d(() => f.word.adverb(...args))),
+        T.string.as(d(w.word.adverb(...args))),
       conjunction: (...args: Parameters<Faker["word"]["conjunction"]>) =>
-        T.string.as(d(() => f.word.conjunction(...args))),
+        T.string.as(d(w.word.conjunction(...args))),
       interjection: (...args: Parameters<Faker["word"]["interjection"]>) =>
-        T.string.as(d(() => f.word.interjection(...args))),
+        T.string.as(d(w.word.interjection(...args))),
       noun: (...args: Parameters<Faker["word"]["noun"]>) =>
-        T.string.as(d(() => f.word.noun(...args))),
+        T.string.as(d(w.word.noun(...args))),
       preposition: (...args: Parameters<Faker["word"]["preposition"]>) =>
-        T.string.as(d(() => f.word.preposition(...args))),
+        T.string.as(d(w.word.preposition(...args))),
       sample: (...args: Parameters<Faker["word"]["sample"]>) =>
-        T.string.as(d(() => f.word.sample(...args))),
+        T.string.as(d(w.word.sample(...args))),
       verb: (...args: Parameters<Faker["word"]["verb"]>) =>
-        T.string.as(d(() => f.word.verb(...args))),
+        T.string.as(d(w.word.verb(...args))),
       words: (...args: Parameters<Faker["word"]["words"]>) =>
-        T.string.as(d(() => f.word.words(...args))),
+        T.string.as(d(w.word.words(...args))),
     },
   };
 }

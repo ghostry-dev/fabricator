@@ -41,6 +41,9 @@
  *    union rather than a bare `string`.
  * 4. A reordered overload set changes `Parameters<...>` here, which the matching
  *    builder's `...args` forwarding then fails to accept.
+ * 5. A change to how `lorem` or `word` draws fails `test/Parity.test.ts`, at `bun
+ *    test` rather than `check`: those builders reimplement faker's method
+ *    bodies in `./Words.ts`, which must then be brought back in line.
  *
  * Fix the entry in **both** files; the annotation on `build` fails until they
  * agree.
