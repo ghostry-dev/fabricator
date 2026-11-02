@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
 /**

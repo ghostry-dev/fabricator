@@ -1,6 +1,6 @@
 import { initialize, registry } from "@ghostry/fabricator";
 import { isPlainObject, isSchema } from "@ghostry/fabricator/internal";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 const { T } = initialize({ salt: "registry" });
 

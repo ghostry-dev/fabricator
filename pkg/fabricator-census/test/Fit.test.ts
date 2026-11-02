@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from ".";
 import { FabricatorError, initialize, registry } from "@ghostry/fabricator";
 import {
   census,

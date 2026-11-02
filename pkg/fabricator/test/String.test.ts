@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
 test("a bare length is an exact code-unit count", () => {

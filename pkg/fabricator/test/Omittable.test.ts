@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { Omitted, initialize } from "@ghostry/fabricator";
 
 test("an omittable field's key is genuinely omitted on the roll that comes up empty, not present-as-undefined", () => {

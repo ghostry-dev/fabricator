@@ -19,7 +19,7 @@
       "name": "@ghostry/fabricator",
       "version": "0.0.13",
       "devDependencies": {
-        "@ghostry/harness": "^0.0.5",
+        "@ghostry/harness": "^0.0.6",
       },
     },
     "pkg/fabricator-adapter-typebox-v0": {
@@ -27,6 +27,7 @@
       "version": "0.0.3",
       "devDependencies": {
         "@ghostry/fabricator": "workspace:*",
+        "@ghostry/harness": "^0.0.6",
         "@sinclair/typebox": "^0.34.52",
       },
       "peerDependencies": {
@@ -40,6 +41,7 @@
       "devDependencies": {
         "@electric-sql/pglite": "^0.5.12",
         "@ghostry/fabricator": "workspace:*",
+        "@ghostry/harness": "^0.0.6",
       },
       "peerDependencies": {
         "@ghostry/fabricator": ">=0.0.11 <0.1.0",
@@ -52,6 +54,7 @@
         "@faker-js/faker": "^10.6.0",
         "@ghostry/fabricator": "workspace:*",
         "@ghostry/fabricator-adapter-typebox-v0": "workspace:*",
+        "@ghostry/harness": "^0.0.6",
         "@sinclair/typebox": "^0.34.52",
       },
       "peerDependencies": {
@@ -118,7 +121,7 @@
 
     "@ghostry/fabricator-extension-faker-v10": ["@ghostry/fabricator-extension-faker-v10@workspace:pkg/fabricator-extension-faker-v10"],
 
-    "@ghostry/harness": ["@ghostry/harness@0.0.5", "", {}, "sha512-B4YMlx4JYK/L43afWIvhx3LLT+t3iOpDG9PCzi/93gGaVFBBW094rc7mZqlJ/Pmi6HRgfMV8pjYrAH3rAqmYoQ=="],
+    "@ghostry/harness": ["@ghostry/harness@0.0.6", "", {}, "sha512-+BrqhVpMYvNV8pkH2lK3sm+cc4hOOpbTkhbIjrRuHXH5UbRxlChBqqvGwDu0bsthdWqiCJLPlPamPNkzdF8ibg=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.2.2", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1 || ^2.0.0-alpha.3", "@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.3" } }, "sha512-JfB4kuJQjaoHuCTseIINHtHWeJnvgEcxjwA5t/Y00ZgaOO1Crz3fjT/p8kT28zA/Caz7oiUMn3d6H2yOVCVwuw=="],
 

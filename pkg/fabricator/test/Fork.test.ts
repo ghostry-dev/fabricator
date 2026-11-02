@@ -4,7 +4,7 @@ import {
   layer,
   registry,
 } from "@ghostry/fabricator";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 test("fork() with no overlay inherits the salt unchanged", () => {
   const instance = initialize({ salt: "fork-base" });

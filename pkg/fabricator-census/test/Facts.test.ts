@@ -6,7 +6,7 @@ import {
   type Facts,
   type Suggestion,
 } from "@ghostry/fabricator-census";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from ".";
 
 /** One column's suggestion, from rows `{ [column]: value }` and its facts. */
 function column(
@@ -84,7 +84,7 @@ describe("the facts option", () => {
       { column: "c", facts: { count: 1, nulls: 0, source: "guess" } },
     ],
     ["no column name", { facts: exact({ count: 1, nulls: 0 }) }],
-  ])("%s is rejected", (_, entry) => {
+  ])("%s is rejected", ({ row: [, entry] }) => {
     expect(() =>
       census.begin({ facts: [entry as unknown as ColumnFacts] }),
     ).toThrow(CensusError.InvalidOptionError);

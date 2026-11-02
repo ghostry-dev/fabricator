@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from ".";
 import { classes } from "@ghostry/fabricator";
 import {
   census,
@@ -48,7 +48,7 @@ describe("presence", () => {
       "nullish",
       { null: 1, undefined: 1, value: 1 },
     ],
-  ] as const)("%s → %s", (_, rows, kind, weights) => {
+  ] as const)("%s → %s", ({ row: [, rows, kind, weights] }) => {
     const a = field(suggested(repeat([...rows], 10)), "a");
     expect(a.kind).toBe(kind);
     const actual: unknown = "weights" in a ? a.weights : null;

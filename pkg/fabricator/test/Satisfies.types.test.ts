@@ -5,7 +5,7 @@ import {
   type SatisfiedBy,
   type Fabricated,
 } from "@ghostry/fabricator";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * One-directional equality, paired up where `Pretty` adds an irrelevant `& {}`

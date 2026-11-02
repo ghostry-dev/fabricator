@@ -1,7 +1,7 @@
 import { de, en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 test("a non-en locale yields locale-specific values", () => {
   const { T, Fabricator } = initialize({

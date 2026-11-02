@@ -1,4 +1,4 @@
-import { beforeAll, expect, test } from "bun:test";
+import { beforeAll, expect, test } from ".";
 import { classes, initialize } from "@ghostry/fabricator";
 import { census, suggest, type Suggestion } from "@ghostry/fabricator-census";
 

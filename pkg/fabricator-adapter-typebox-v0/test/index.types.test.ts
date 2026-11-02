@@ -27,7 +27,7 @@ import {
   type TUnknown,
 } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * Compile-time assertions — see `Fabrication.types.test.ts` for why `Equal`/

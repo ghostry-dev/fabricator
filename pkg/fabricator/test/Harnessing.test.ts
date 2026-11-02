@@ -4,7 +4,7 @@ import {
   type FabricatorTestContext,
   type Identity,
 } from "@ghostry/fabricator/harnessing";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import {
   compose,
   run,

@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { attest, expect, test } from ".";
 import { initialize, FabricatorError } from "@ghostry/fabricator";
 
 /**
@@ -16,15 +16,11 @@ test("a validation failure is an instance of FabricatorError", () => {
 
   const schema = T.object({ name: T.always("x") });
 
-  let caught: unknown;
-  try {
-    schema.override({ nope: "y" } as any);
-  } catch (e) {
-    caught = e;
-  }
+  const error = attest.throws(FabricatorError, () =>
+    schema.override({ nope: "y" } as any),
+  );
 
-  expect(caught).toBeInstanceOf(FabricatorError);
-  expect(caught).toBeInstanceOf(Error);
+  expect(error).toBeInstanceOf(Error);
 });
 
 test("an unknown-field override exposes the field name and available fields", () => {
@@ -32,17 +28,14 @@ test("an unknown-field override exposes the field name and available fields", ()
 
   const schema = T.object({ name: T.always("x"), age: T.always(1) });
 
-  let caught: unknown;
-  try {
-    schema.override({ nope: "y" } as any);
-  } catch (e) {
-    caught = e;
-  }
+  const error = attest.throws(FabricatorError.UnknownFieldError, () =>
+    schema.override({ nope: "y" } as any),
+  );
 
-  expect((caught as any).name).toBe("@ghostry/fabricator:UnknownFieldError");
-  expect((caught as any).operation).toBe("override");
-  expect((caught as any).field).toBe("nope");
-  expect((caught as any).available).toEqual(["name", "age"]);
+  expect(error.name).toBe("@ghostry/fabricator:UnknownFieldError");
+  expect(error.operation).toBe("override");
+  expect(error.field).toBe("nope");
+  expect(error.available).toEqual(["name", "age"]);
 });
 
 test("an invalid override value exposes the field, kind, and rejected value", () => {
@@ -50,17 +43,12 @@ test("an invalid override value exposes the field, kind, and rejected value", ()
 
   const schema = T.object({ name: T.string.whereby({ length: { max: 3 } }) });
 
-  let caught: unknown;
-  try {
-    schema.override({ name: 5 as unknown as string });
-  } catch (e) {
-    caught = e;
-  }
-
-  expect((caught as any).name).toBe(
-    "@ghostry/fabricator:InvalidOverrideValueError",
+  const error = attest.throws(FabricatorError.InvalidOverrideValueError, () =>
+    schema.override({ name: 5 as unknown as string }),
   );
-  expect((caught as any).field).toBe("name");
-  expect((caught as any).kind).toBe("string");
-  expect((caught as any).value).toBe(5);
+
+  expect(error.name).toBe("@ghostry/fabricator:InvalidOverrideValueError");
+  expect(error.field).toBe("name");
+  expect(error.kind).toBe("string");
+  expect(error.value).toBe(5);
 });

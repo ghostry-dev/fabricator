@@ -4,7 +4,7 @@ import {
   initialize,
   layer,
 } from "@ghostry/fabricator";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * The equivalence `fabricate` promises: repeated calls with one schema object

@@ -65,6 +65,7 @@
   },
   "devDependencies": {
     "@ghostry/fabricator": "workspace:*",
+    "@ghostry/harness": "^0.0.6",
     "@sinclair/typebox": "^0.34.52"
   }
 }

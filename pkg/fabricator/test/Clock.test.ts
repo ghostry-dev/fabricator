@@ -1,5 +1,5 @@
 import { FabricatorError, initialize, layer } from "@ghostry/fabricator";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * `clock` is what `T.date.past`/`T.date.future` (and any producer reading
@@ -68,7 +68,7 @@ test.each([
   ["-Infinity", Number.NEGATIVE_INFINITY],
   ["a number past the Date range", 8.64e15 + 1],
   ["an invalid Date", new Date(Number.NaN)],
-])("%s is rejected as a clock", (_, clock) => {
+] as const)("%s is rejected as a clock", ({ row: [, clock] }) => {
   expect(() => initialize({ clock })).toThrow(
     FabricatorError.InvalidClockError,
   );

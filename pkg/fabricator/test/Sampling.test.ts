@@ -4,7 +4,7 @@ import {
   sample,
   shuffle,
 } from "@ghostry/fabricator";
-import { expect, test } from "bun:test";
+import { attest, expect, test } from ".";
 
 /**
  * `sample`/`shuffle` are public so a producer that already holds a `Stream` can
@@ -50,15 +50,9 @@ test("sample([]) throws a FabricatorError named EmptyItemsError", () => {
   const empty: string[] = [];
   const built = new Fabricator(T.opaque(({ random }) => sample(empty, random)));
 
-  let caught: unknown;
-  try {
-    built.fabricate();
-  } catch (e) {
-    caught = e;
-  }
+  const error = attest.throws(FabricatorError, () => built.fabricate());
 
-  expect(caught).toBeInstanceOf(FabricatorError);
-  expect((caught as Error).name).toBe("@ghostry/fabricator:EmptyItemsError");
+  expect(error.name).toBe("@ghostry/fabricator:EmptyItemsError");
 });
 
 test("shuffle returns a permutation, does not mutate its input, and replays under salt", () => {

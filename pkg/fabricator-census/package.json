@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.12",
-    "@ghostry/fabricator": "workspace:*"
+    "@ghostry/fabricator": "workspace:*",
+    "@ghostry/harness": "^0.0.6"
   }
 }

@@ -13,7 +13,7 @@ import {
   type SampleMethod,
   type SampleOptions,
 } from "@ghostry/fabricator-census/postgres";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from ".";
 
 const column = (name: string, base: string, category: string): Column => ({
   name,
@@ -69,7 +69,7 @@ describe("parameters", () => {
 
   test.each(["bernoulli", "system", "hash"] as const)(
     "%s sampling keeps every caller number out of the text",
-    (method) => {
+    ({ row: method }) => {
       const q = sample("t", byMethod[method]);
       for (const number of spelled) expect(q.text).not.toContain(number);
       expect(q.values).toContain(98765);
@@ -403,7 +403,7 @@ describe("array literals", () => {
     ['{"say \\"hi\\""}', ['say "hi"']],
     ['{"a\\\\b"}', ["a\\b"]],
     ['{"{1,2}","{3}"}', ["{1,2}", "{3}"]],
-  ] as const)("%s parses", (literal, expected) => {
+  ] as const)("%s parses", ({ row: [literal, expected] }) => {
     expect(histogram(literal)).toEqual([...expected]);
   });
 
@@ -418,7 +418,7 @@ describe("array literals", () => {
     '{"a\\}',
     "{{a,b}}",
     "{a{b}",
-  ])("%s is rejected", (literal) => {
+  ])("%s is rejected", ({ row: literal }) => {
     expect(() => histogram(literal)).toThrow(CensusError.UnexpectedRowError);
   });
 

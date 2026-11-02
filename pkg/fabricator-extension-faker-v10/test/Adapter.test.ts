@@ -3,7 +3,7 @@ import { initialize, registry } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
 import { Kind as TypeBoxKind } from "@sinclair/typebox";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * The acceptance test for the whole premise: nothing in the mirror itself is

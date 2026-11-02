@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { attest, expect, test } from ".";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 import {
   Children,
@@ -233,15 +233,10 @@ test("TraceKindMismatchError on a kind mismatch, and it is instanceof Fabricator
     clock: "derived",
   });
 
-  let caught: unknown;
-  try {
-    new Fabricator(T.number, { kind: "string" });
-  } catch (e) {
-    caught = e;
-  }
-
-  expect(caught).toBeInstanceOf(FabricatorError);
-  expect((caught as FabricatorError).name).toBe(
-    "@ghostry/fabricator:TraceKindMismatchError",
+  const error = attest.throws(
+    FabricatorError,
+    () => new Fabricator(T.number, { kind: "string" }),
   );
+
+  expect(error.name).toBe("@ghostry/fabricator:TraceKindMismatchError");
 });

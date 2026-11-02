@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from ".";
 import { FabricatorError } from "@ghostry/fabricator";
 import {
   census,
@@ -421,7 +421,7 @@ describe("options", () => {
     ["bins", 1.5],
     ["points", 1],
     ["depth", -1],
-  ] as const)("%s = %p is rejected", (option, value) => {
+  ] as const)("%s = %p is rejected", ({ row: [option, value] }) => {
     expect(() => census.begin({ [option]: value })).toThrow(
       CensusError.InvalidOptionError,
     );

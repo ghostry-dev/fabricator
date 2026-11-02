@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { Omitted, initialize } from "@ghostry/fabricator";
 
 test("an optional field's roll lands on all three outcomes: omitted, present-as-undefined, present-with-a-value", () => {

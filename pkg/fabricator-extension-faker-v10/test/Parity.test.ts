@@ -14,7 +14,7 @@ import { base, en, FakerError, ko } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import type { FakerTypes } from "@ghostry/fabricator-extension-faker-v10";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
-import { describe, expect, test } from "bun:test";
+import { attest, describe, expect, test } from ".";
 
 type Builder = (F: FakerTypes) => ReturnType<FakerTypes["lorem"]["word"]>;
 type Case = readonly [
@@ -36,7 +36,7 @@ function parity(
   cases: ReadonlyArray<Case>,
   { T, Fabricator }: ReturnType<typeof instance>,
 ) {
-  test.each(cases)("%s", (_, ours, theirs) => {
+  test.each(cases)("%s", ({ row: [, ours, theirs] }) => {
     for (const salt of salts) {
       const pin = { salt, ordinal: 0 };
       const a = new Fabricator(ours(T.faker), pin);
@@ -204,15 +204,6 @@ describe("a locale missing word categories", () => {
 });
 
 describe("errors", () => {
-  const caught = (fabricate: () => unknown): unknown => {
-    try {
-      fabricate();
-    } catch (error) {
-      return error;
-    }
-    return undefined;
-  };
-
   test.each([
     [
       "a length no word meets, under the default strategy",
@@ -228,17 +219,15 @@ describe("errors", () => {
     ],
   ] as const)(
     "%s throws faker's own error from fabricate(), not from the builder",
-    (_, { T, Fabricator }, ours, theirs) => {
+    ({ row: [, { T, Fabricator }, ours, theirs] }) => {
       const schema = ours(T.faker);
       const a = new Fabricator(schema);
       const b = new Fabricator(T.faker.use.string(theirs));
 
-      const expected = caught(() => b.fabricate());
-      const actual = caught(() => a.fabricate());
+      const expected = attest.throws(FakerError, () => b.fabricate());
+      const actual = attest.throws(FakerError, () => a.fabricate());
 
-      expect(expected).toBeInstanceOf(FakerError);
-      expect(actual).toBeInstanceOf(FakerError);
-      expect((actual as Error).message).toBe((expected as Error).message);
+      expect(actual.message).toBe(expected.message);
     },
   );
 });

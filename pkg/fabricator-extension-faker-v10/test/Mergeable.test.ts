@@ -2,7 +2,7 @@ import { en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import { isPlainObject } from "@ghostry/fabricator/internal";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * The structural invariant every node of the mirror upholds: a plain object

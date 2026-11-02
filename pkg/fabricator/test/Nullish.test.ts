@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { initialize } from "@ghostry/fabricator";
 
 test("a nullish field's key is always present, its value sometimes null or undefined", () => {

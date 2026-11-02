@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { attest, expect, test } from ".";
 import { FabricatorError, initialize, registry } from "@ghostry/fabricator";
 
 /**
@@ -341,17 +341,13 @@ test("a derived terminal nulls a nullable self field", () => {
 test("a required self field cannot derive a terminal", () => {
   const { T } = initialize({ salt: "recursive-unterminable-field" });
 
-  try {
+  const error = attest.throws(FabricatorError.UnterminableRecursiveError, () =>
     T.recursive((self) => T.object({ next: self })).whereby({
       depth: { max: 1 },
-    });
-    expect.unreachable();
-  } catch (e) {
-    expect(e).toBeInstanceOf(FabricatorError.UnterminableRecursiveError);
-    expect((e as FabricatorError.UnterminableRecursiveError).path).toEqual([
-      "next",
-    ]);
-  }
+    }),
+  );
+
+  expect(error.path).toEqual(["next"]);
 });
 
 test("a tuple slot that is self cannot derive a terminal", () => {
@@ -375,13 +371,11 @@ test("a choice whose every option contains self cannot derive a terminal", () =>
 test("a naked self body cannot derive a terminal", () => {
   const { T } = initialize({ salt: "recursive-unterminable-root" });
 
-  try {
-    T.recursive((self) => self).whereby({ depth: { max: 1 } });
-    expect.unreachable();
-  } catch (e) {
-    expect(e).toBeInstanceOf(FabricatorError.UnterminableRecursiveError);
-    expect((e as FabricatorError.UnterminableRecursiveError).path).toEqual([]);
-  }
+  const error = attest.throws(FabricatorError.UnterminableRecursiveError, () =>
+    T.recursive((self) => self).whereby({ depth: { max: 1 } }),
+  );
+
+  expect(error.path).toEqual([]);
 });
 
 /**

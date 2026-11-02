@@ -1,7 +1,7 @@
 import { en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * Mirrors `pkg/fabricator/test/StructuralKeying.test.ts`: a faker builder's

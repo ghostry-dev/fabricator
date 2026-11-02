@@ -1,5 +1,5 @@
 import { Omitted, initialize, registry } from "@ghostry/fabricator";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import {
   combinatorialFromHere,
   enumerableSharedSchema,

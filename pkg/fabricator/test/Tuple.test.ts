@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { initialize } from "@ghostry/fabricator";
 
 test("a tuple fabricates exactly its declared arity, each slot matching its own schema", () => {

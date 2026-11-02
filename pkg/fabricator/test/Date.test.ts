@@ -1,5 +1,5 @@
 import { FabricatorError, initialize } from "@ghostry/fabricator";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * These four tests assert boundedness relative to "now" — under the default

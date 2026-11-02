@@ -22,7 +22,7 @@ import type {
   TUnion,
   TUnknown,
 } from "@sinclair/typebox";
-import { test } from "bun:test";
+import { test } from ".";
 
 /**
  * Compile-time assertions — see `pkg/fabricator/test/Fabrication.types.test.ts`

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { initialize, registry } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 

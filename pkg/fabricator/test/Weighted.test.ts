@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { initialize } from "@ghostry/fabricator";
 import {
   defaultAlgorithm,

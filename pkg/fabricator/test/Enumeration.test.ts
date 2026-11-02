@@ -6,7 +6,7 @@ import {
   type Pin,
   type Resolvable,
 } from "@ghostry/fabricator/internal";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * Drives `plan`/`resolve` directly — no public API exists yet (that's phases

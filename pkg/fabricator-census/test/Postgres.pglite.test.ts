@@ -7,7 +7,7 @@ import {
   type Suggestion,
 } from "@ghostry/fabricator-census";
 import { collect, type Run } from "@ghostry/fabricator-census/postgres";
-import { beforeAll, describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from ".";
 
 /**
  * The whole PostgreSQL path against a real PostgreSQL, in process: seed a table

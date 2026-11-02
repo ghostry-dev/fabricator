@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { initialize } from "@ghostry/fabricator";
 
 test("an overridden field's fixed value never disturbs its object's other randomness", () => {

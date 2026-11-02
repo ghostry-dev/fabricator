@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from ".";
 import { CensusError, sampleSize } from "@ghostry/fabricator-census";
 
 function reason(
@@ -73,7 +73,7 @@ describe("options", () => {
     ["rare", 0],
     ["population", -1],
     ["population", 2.5],
-  ] as const)("%s = %p is rejected", (option, value) => {
+  ] as const)("%s = %p is rejected", ({ row: [option, value] }) => {
     expect(() => sampleSize({ [option]: value })).toThrow(
       CensusError.InvalidOptionError,
     );

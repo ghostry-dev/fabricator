@@ -67,6 +67,7 @@
     "@ghostry/fabricator": "workspace:*",
     "@ghostry/fabricator-adapter-typebox-v0": "workspace:*",
     "@faker-js/faker": "^10.6.0",
+    "@ghostry/harness": "^0.0.6",
     "@sinclair/typebox": "^0.34.52"
   }
 }

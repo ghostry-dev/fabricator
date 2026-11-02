@@ -10,7 +10,7 @@ import {
   toStreamFromTrace,
   type Algorithm,
 } from "@ghostry/fabricator/internal";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import {
   fabricateSharedSchemaHere,
   sharedSchema,

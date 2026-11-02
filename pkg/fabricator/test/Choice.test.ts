@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 import { initialize } from "@ghostry/fabricator";
 
 test("T.choice.uniform builds and fabricates standalone, drawing every option across enough draws", () => {

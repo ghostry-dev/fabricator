@@ -2,7 +2,7 @@ import { en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
 import { Kind } from "@ghostry/fabricator/internal";
-import { expect, test } from "bun:test";
+import { expect, test } from ".";
 
 /**
  * The mirror's shape is deliberate, not incidental — see the deviation policy
