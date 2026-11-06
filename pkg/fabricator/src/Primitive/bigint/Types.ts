@@ -3,9 +3,13 @@ import type { Bound, InputBound } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
+/**
+ * Call-site `{ min?, max }`. Either end may be a `number` that is a safe
+ * integer (`Bound.ts`'s `toBigintBound`), stored as a `bigint`.
+ */
 export type InputWhereby = {
-  min?: InputBound<bigint> | undefined;
-  max: InputBound<bigint>;
+  min?: InputBound<bigint | number> | undefined;
+  max: InputBound<bigint | number>;
 };
 
 export type Whereby = { min: Bound<bigint>; max: Bound<bigint> };

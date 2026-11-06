@@ -1,4 +1,4 @@
-import { assertNonemptyDiscreteBigint, toBound } from "../../Bound";
+import { assertNonemptyDiscreteBigint, toBigintBound } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import { Kind, Meta } from "../../Types";
 import { Schema } from "./Schema";
@@ -62,11 +62,11 @@ export const unique: UniqueRegistry = {
 };
 
 function toWhereby(label: string, input: InputWhereby): Whereby {
-  const max = toBound(input.max);
+  const max = toBigintBound(label, "max", input.max);
   const min =
     input.min === undefined
       ? { value: -max.value, exclusive: false }
-      : toBound(input.min);
+      : toBigintBound(label, "min", input.min);
   assertNonemptyDiscreteBigint(label, min, max);
   return { min, max };
 }

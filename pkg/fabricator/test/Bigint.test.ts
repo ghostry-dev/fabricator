@@ -1,5 +1,6 @@
-import { expect, test } from ".";
+import { attest, expect, test } from ".";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
+import { Meta } from "@ghostry/fabricator/internal";
 
 test("T.bigint.whereby is inclusive at both bounds", () => {
   const { T, Fabricator } = initialize({ salt: "bigint-bounds" });
@@ -99,4 +100,42 @@ test("fabricated values are bigints", () => {
   for (let i = 0; i < 50; i++) {
     expect(typeof built.fabricate()).toBe("bigint");
   }
+});
+
+test("a number bound converts and draws as its bigint twin", () => {
+  const left = initialize({ salt: "bigint-number", clock: "derived" });
+  const right = initialize({ salt: "bigint-number", clock: "derived" });
+
+  const numbers = new left.Fabricator(
+    left.T.bigint.whereby({ min: -3, max: { value: 9, exclusive: true } }),
+  );
+  const bigints = new right.Fabricator(
+    right.T.bigint.whereby({
+      min: BigInt(-3),
+      max: { value: BigInt(9), exclusive: true },
+    }),
+  );
+
+  expect(Array.from({ length: 50 }, () => numbers.fabricate())).toEqual(
+    Array.from({ length: 50 }, () => bigints.fabricate()),
+  );
+  expect(left.T.bigint.whereby({ min: 0, max: 5 })[Meta].whereby).toEqual({
+    min: { value: BigInt(0), exclusive: false },
+    max: { value: BigInt(5), exclusive: false },
+  });
+});
+
+test("a number bound that is not a safe integer throws at whereby", () => {
+  const { T } = initialize({ salt: "bigint-number-invalid" });
+
+  for (const value of [5.5, 2 ** 60, Number.NaN, Infinity]) {
+    const error = attest.throws(FabricatorError.InvalidBoundError, () =>
+      T.bigint.whereby({ max: value }),
+    );
+    expect(error.end).toBe("max");
+    expect(error.label).toBe("T.bigint.whereby");
+  }
+  expect(() => T.unique.bigint.whereby({ min: 0.5, max: 3 })).toThrow(
+    FabricatorError.InvalidBoundError,
+  );
 });

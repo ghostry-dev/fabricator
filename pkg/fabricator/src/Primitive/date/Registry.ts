@@ -1,5 +1,5 @@
 import type { Adaptations } from "../../Adapter/Types";
-import { assertNonemptyDiscrete, epochBound, toBound } from "../../Bound";
+import { assertNonemptyDiscrete, epochBound, toDateBound } from "../../Bound";
 import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
 import { toRedraws, type Redraws } from "../../Unique/Strategy";
 import { unboundedEpoch } from "./Defaults";
@@ -88,7 +88,10 @@ function registry(): ThisRegistry {
         whereby: (whereby: InputPastWhereby) =>
           Schema({
             [Kind]: "date",
-            [Meta]: { mode: "past", whereby: toWhereby(whereby) },
+            [Meta]: {
+              mode: "past",
+              whereby: toWhereby("T.date.past.whereby", whereby),
+            },
           }),
       };
     },
@@ -100,7 +103,10 @@ function registry(): ThisRegistry {
         whereby: (whereby: InputFutureWhereby) =>
           Schema({
             [Kind]: "date",
-            [Meta]: { mode: "future", whereby: toWhereby(whereby) },
+            [Meta]: {
+              mode: "future",
+              whereby: toWhereby("T.date.future.whereby", whereby),
+            },
           }),
       };
     },
@@ -177,7 +183,7 @@ export function unique(): UniqueRegistry {
               unique: true,
               whereby: withRedraws(
                 "T.unique.date.past.whereby",
-                toWhereby(whereby),
+                toWhereby("T.unique.date.past.whereby", whereby),
                 whereby,
               ),
             },
@@ -197,7 +203,7 @@ export function unique(): UniqueRegistry {
               unique: true,
               whereby: withRedraws(
                 "T.unique.date.future.whereby",
-                toWhereby(whereby),
+                toWhereby("T.unique.date.future.whereby", whereby),
                 whereby,
               ),
             },
@@ -216,7 +222,7 @@ export function unique(): UniqueRegistry {
  * that leaves no instant still fails here, not at `new Fabricator(...)`.
  */
 function toCheckedWhereby(label: string, input: InputWhereby): Whereby {
-  const converted = toWhereby(input);
+  const converted = toWhereby(label, input);
 
   assertNonemptyDiscrete(
     label,
@@ -237,9 +243,11 @@ function withRedraws(label: string, whereby: Whereby, input: Redraws): Whereby {
  * `future` close their range against the clock, which is not known until
  * `Fabricator.ts` builds them.
  */
-function toWhereby(input: InputWhereby): Whereby {
-  const min = input.min === undefined ? undefined : toBound(input.min);
-  const max = input.max === undefined ? undefined : toBound(input.max);
+function toWhereby(label: string, input: InputWhereby): Whereby {
+  const min =
+    input.min === undefined ? undefined : toDateBound(label, "min", input.min);
+  const max =
+    input.max === undefined ? undefined : toDateBound(label, "max", input.max);
 
   return input.distribution === undefined
     ? { min, max }

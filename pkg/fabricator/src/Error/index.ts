@@ -526,6 +526,40 @@ export namespace FabricatorError {
     }
   }
 
+  /**
+   * A bound given as a `number` for a kind stored in another type (`bigint`,
+   * `Date`) that does not convert exactly — a fractional or unsafe integer for
+   * a `bigint`, an instant `Date` cannot hold, or a non-finite value where an
+   * end must be finite.
+   */
+  export class InvalidBoundError extends FabricatorError {
+    constructor(
+      /**
+       * The registry entry that was called, e.g. `"T.bigint.whereby"`.
+       */
+      public readonly label: string,
+
+      /**
+       * Which end was rejected.
+       */
+      public readonly end: "min" | "max",
+
+      /**
+       * The rejected value, as given.
+       */
+      public readonly value: number,
+
+      /**
+       * What the end accepts, in words — e.g. `"a safe integer or a bigint"`.
+       */
+      public readonly expected: string,
+    ) {
+      super();
+      this.name = "@ghostry/fabricator:InvalidBoundError";
+      this.message = `${label}'s ${end} must be ${expected}; received ${String(value)}.`;
+    }
+  }
+
   function describeBound(bound: {
     readonly value: unknown;
     readonly exclusive: boolean;

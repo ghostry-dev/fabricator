@@ -8,23 +8,24 @@ import type { Redraws } from "../../Unique/Strategy";
 /**
  * Call-site `{ min, max }` — scalars are inclusive. Either end may be omitted;
  * a missing `min` is the earliest representable instant and a missing `max` the
- * latest, the same span as a bare `T.date`.
+ * latest, the same span as a bare `T.date`. Either end may be epoch
+ * milliseconds (`Bound.ts`'s `toDateBound`), stored as a `Date`.
  */
 export type InputWhereby = {
-  min?: InputBound<Date> | undefined;
-  max?: InputBound<Date> | undefined;
+  min?: InputBound<Date | number> | undefined;
+  max?: InputBound<Date | number> | undefined;
   distribution?: Distribution | undefined;
 };
 
 /** `T.date.past.whereby`: `past` closes its upper end at the clock. */
 export type InputPastWhereby = {
-  min?: InputBound<Date> | undefined;
+  min?: InputBound<Date | number> | undefined;
   distribution?: Distribution | undefined;
 };
 
 /** `T.date.future.whereby`: `future` closes its lower end at the clock. */
 export type InputFutureWhereby = {
-  max?: InputBound<Date> | undefined;
+  max?: InputBound<Date | number> | undefined;
   distribution?: Distribution | undefined;
 };
 

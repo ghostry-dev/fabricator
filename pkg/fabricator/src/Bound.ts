@@ -144,6 +144,60 @@ export function constrainContinuous(
   };
 }
 
+/**
+ * A `bigint` end that may be written as a `number`, so a call site needs no
+ * `BigInt(...)` where `5n` does not compile. A `number` must be a safe integer:
+ * beyond ±2^53 a literal has already rounded before it arrives, so the exact
+ * value is only expressible as a `bigint`.
+ */
+export function toBigintBound(
+  label: string,
+  end: "min" | "max",
+  input: InputBound<bigint | number>,
+): Bound<bigint> {
+  const bound = toBound(input);
+  if (typeof bound.value === "bigint") {
+    return { value: bound.value, exclusive: bound.exclusive };
+  }
+  if (!Number.isSafeInteger(bound.value)) {
+    throw new FabricatorError.InvalidBoundError(
+      label,
+      end,
+      bound.value,
+      "a bigint, or a number that is a safe integer",
+    );
+  }
+  return { value: BigInt(bound.value), exclusive: bound.exclusive };
+}
+
+/**
+ * A `Date` end that may be written as epoch milliseconds, as `initialize({
+ * clock })` accepts. A `number` must be one a `Date` holds unchanged — the test
+ * `Instance/Core.ts`'s `resolveInstant` applies — so a fractional, non-finite,
+ * or out-of-range number throws rather than being adjusted the way `Date`'s
+ * `TimeClip` would.
+ */
+export function toDateBound(
+  label: string,
+  end: "min" | "max",
+  input: InputBound<Date | number>,
+): Bound<Date> {
+  const bound = toBound(input);
+  if (bound.value instanceof Date) {
+    return { value: bound.value, exclusive: bound.exclusive };
+  }
+  const date = new Date(bound.value);
+  if (date.valueOf() !== bound.value) {
+    throw new FabricatorError.InvalidBoundError(
+      label,
+      end,
+      bound.value,
+      "a Date, or an integer number of epoch milliseconds within ±8.64e15",
+    );
+  }
+  return { value: date, exclusive: bound.exclusive };
+}
+
 export function epochBound(bound: Bound<Date>): Bound<number> {
   return { value: bound.value.getTime(), exclusive: bound.exclusive };
 }

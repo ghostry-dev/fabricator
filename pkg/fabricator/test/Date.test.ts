@@ -1,5 +1,6 @@
 import { FabricatorError, initialize } from "@ghostry/fabricator";
-import { expect, test } from ".";
+import { Meta } from "@ghostry/fabricator/internal";
+import { attest, expect, test } from ".";
 
 /**
  * These four tests assert boundedness relative to "now" — under the default
@@ -188,4 +189,47 @@ test("a bare T.date spans both past and future", () => {
 
   expect(past).toBeGreaterThan(0);
   expect(future).toBeGreaterThan(0);
+});
+
+test("an epoch-millisecond bound converts and draws as its Date twin", () => {
+  const left = initialize({ salt: "date-number", clock: "derived" });
+  const right = initialize({ salt: "date-number", clock: "derived" });
+  const min = Date.UTC(2000, 0, 1);
+  const max = Date.UTC(2030, 0, 1);
+
+  const numbers = new left.Fabricator(
+    left.T.date.whereby({ min, max: { value: max, exclusive: true } }),
+  );
+  const dates = new right.Fabricator(
+    right.T.date.whereby({
+      min: new Date(min),
+      max: { value: new Date(max), exclusive: true },
+    }),
+  );
+
+  expect(Array.from({ length: 50 }, () => numbers.fabricate())).toEqual(
+    Array.from({ length: 50 }, () => dates.fabricate()),
+  );
+  expect(left.T.date.past.whereby({ min })[Meta].whereby?.min).toEqual({
+    value: new Date(min),
+    exclusive: false,
+  });
+});
+
+test("an epoch-millisecond bound a Date cannot hold throws at whereby", () => {
+  const { T } = initialize({ salt: "date-number-invalid" });
+
+  for (const value of [0.5, 8.64e15 + 1, Number.NaN, -Infinity]) {
+    const error = attest.throws(FabricatorError.InvalidBoundError, () =>
+      T.date.whereby({ min: value }),
+    );
+    expect(error.end).toBe("min");
+    expect(error.label).toBe("T.date.whereby");
+  }
+  expect(() => T.date.future.whereby({ max: 1.5 })).toThrow(
+    FabricatorError.InvalidBoundError,
+  );
+  expect(() => T.unique.date.past.whereby({ min: Infinity })).toThrow(
+    FabricatorError.InvalidBoundError,
+  );
 });
