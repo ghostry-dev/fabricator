@@ -63,6 +63,8 @@ export { isArray, isPlainObject } from "./Utility/Core";
  */
 export { isBuildable, isSchema } from "./Schema/Core";
 
+export { toKeyer, type Keyer } from "./Unique/Key";
+
 export type * as Primitive from "./Primitive/namespace";
 
 /**

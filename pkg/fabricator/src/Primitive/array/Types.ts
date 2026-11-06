@@ -3,6 +3,7 @@ import type { InputLength, Length } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Redraws } from "../../Unique/Strategy";
 
 export type Definition = AnySchema;
 
@@ -13,7 +14,18 @@ export type Fabricated<
 
 export type InputWhereby = { length: InputLength };
 
-export type Whereby = { length: Length };
+/** `T.unique.array`'s `.whereby`: the same `length`, plus {@link Redraws}. */
+export type InputUniqueWhereby = InputWhereby & Redraws;
+
+export type Whereby = { length: Length; redraws?: number | undefined };
+
+/**
+ * `T.unique.array`'s marker on `[Meta]`: members are distinct within each
+ * fabricated array. `by` projects a member to what must be distinct, and is
+ * typed to the element at the builder (`Registry.ts`'s `unique`); stored here
+ * as `any` so `Meta` stays covariant in `$Definition`.
+ */
+export type Unique = { by?: ((element: any) => unknown) | undefined };
 
 /**
  * `whereby` (a length spec — no natural bound to fuzz to, so unlike
@@ -25,10 +37,16 @@ export type Whereby = { length: Length };
  * either way.
  */
 export type Meta<$Definition extends Definition = Definition> =
-  | { definition: $Definition; whereby: Whereby; produce?: never }
+  | {
+      definition: $Definition;
+      whereby: Whereby;
+      unique?: Unique;
+      produce?: never;
+    }
   | {
       definition: $Definition;
       whereby?: Whereby;
+      unique?: Unique;
       produce: Produce<Fabricated<$Definition>>;
     };
 

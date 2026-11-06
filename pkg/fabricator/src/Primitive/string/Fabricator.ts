@@ -7,7 +7,8 @@ import type {
 } from "../../Fabricator/Types";
 import type { Stream, Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
-import { Kind, Meta, type Adaptation } from "../../Types";
+import { Claim, Kind, Meta, type Adaptation } from "../../Types";
+import { toLifetimeScope, trackedByKey } from "../../Unique/Strategy";
 import { inline } from "../../Utility/Core";
 import { classes, unicode } from "./Constants";
 import { Schema } from "./Schema";
@@ -28,6 +29,8 @@ export type Fabricator<
   [Meta]: $Schema[typeof Meta];
   readonly trace: Trace;
   readonly [Adaptation]?: AdaptationsOf<$Schema>;
+  /** Present on a `T.unique.string` only — see `Types.ts`'s `Claim`. */
+  readonly [Claim]?: (value: unknown) => void;
   schema: Schema<$Schema[typeof Meta], AdaptationsOf<$Schema>>;
 };
 
@@ -37,7 +40,7 @@ export type Fabricator<
  * per `construct()`, never from inside the returned `fabricate`.
  */
 export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
-  const { schema, algorithm, trace } = context;
+  const { schema, algorithm, trace, exhaustion } = context;
   const meta = schema[Meta];
   const rehydrated = Schema(schema);
 
@@ -119,6 +122,33 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
 
     return pieces.join("");
   };
+
+  /**
+   * Tracked by hashed key (`Unique/Key.ts`), so memory per produced string is
+   * one number however long the string. No capacity: counting the strings a
+   * length and composition can spell is left undone, so exhaustion surfaces
+   * through the redraws cap.
+   */
+  if (meta.unique) {
+    const scope = toLifetimeScope(
+      trackedByKey({
+        label: "T.unique.string",
+        kind: "string",
+        draw: fabricate,
+        redraws: whereby.redraws,
+      }),
+      exhaustion,
+    );
+
+    return {
+      [Kind]: "string",
+      [Meta]: meta,
+      trace,
+      fabricate: () => scope.draw() as string,
+      [Claim]: scope.claim,
+      schema: rehydrated,
+    };
+  }
 
   return {
     [Kind]: "string",

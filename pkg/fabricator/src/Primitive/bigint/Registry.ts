@@ -15,7 +15,7 @@ export default {
   whereby: (whereby: InputWhereby): Schema<{ whereby: Whereby }> => {
     return Schema({
       [Kind]: "bigint",
-      [Meta]: { whereby: toWhereby(whereby) },
+      [Meta]: { whereby: toWhereby("T.bigint.whereby", whereby) },
     });
   },
 
@@ -26,12 +26,47 @@ export default {
   },
 };
 
-function toWhereby(input: InputWhereby): Whereby {
+type UniqueRegistry = {
+  /** See the default export's `[Kind]`. */
+  [Kind]: "bigint";
+
+  /**
+   * A bigint the built Fabricator never repeats, drawn from `[min, max]` like
+   * `T.bigint.whereby`. The range is yielded as a random permutation at any
+   * width, so it produces every value exactly once and the draw after the last
+   * throws `UniqueExhaustedError`.
+   */
+  whereby: (
+    whereby: InputWhereby,
+  ) => Schema<{ whereby: Whereby; unique: true }>;
+};
+
+/**
+ * `T.unique.bigint` (and `T.unique.number.integer.big`), assembled into the
+ * namespace by `Primitive/unique`. No `as`: a producer replaces the draw, so it
+ * would discard the one thing this builder adds.
+ */
+export const unique: UniqueRegistry = {
+  [Kind]: "bigint",
+
+  whereby: (
+    whereby: InputWhereby,
+  ): Schema<{ whereby: Whereby; unique: true }> =>
+    Schema({
+      [Kind]: "bigint",
+      [Meta]: {
+        whereby: toWhereby("T.unique.bigint.whereby", whereby),
+        unique: true,
+      },
+    }),
+};
+
+function toWhereby(label: string, input: InputWhereby): Whereby {
   const max = toBound(input.max);
   const min =
     input.min === undefined
       ? { value: -max.value, exclusive: false }
       : toBound(input.min);
-  assertNonemptyDiscreteBigint("T.bigint.whereby", min, max);
+  assertNonemptyDiscreteBigint(label, min, max);
   return { min, max };
 }

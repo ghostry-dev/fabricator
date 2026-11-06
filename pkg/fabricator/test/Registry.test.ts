@@ -43,6 +43,11 @@ test("every registry entry that is a Schema is a fresh object on each read", () 
       "T.number.integer.sequence",
       "T.symbol",
       "T.undefined",
+      "T.unique.number",
+      "T.unique.number.integer",
+      "T.unique.date",
+      "T.unique.date.past",
+      "T.unique.date.future",
     ]),
   );
 });

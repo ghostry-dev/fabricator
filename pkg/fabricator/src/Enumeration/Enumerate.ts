@@ -43,7 +43,7 @@ export function enumerables(
   stack: Stack,
   ancestry: Ancestry,
 ): { combinatorial: Enumerable; coverage: Enumerable } {
-  const Fabricator = Constructor(source, stack, ancestry);
+  const Fabricator = Constructor(source, stack, ancestry, "cycle");
 
   /**
    * The innermost frame this instance can see, when there is one, else its own

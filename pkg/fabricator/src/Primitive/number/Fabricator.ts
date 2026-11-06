@@ -7,7 +7,9 @@ import type {
 } from "../../Fabricator/Types";
 import { toStreamFromTrace } from "../../Random";
 import type { Trace } from "../../Random/Types";
-import { Kind, Meta, type Adaptation } from "../../Types";
+import { Claim, Kind, Meta, type Adaptation } from "../../Types";
+import { toNumberStrategy } from "../../Unique/Distinct";
+import { toLifetimeScope } from "../../Unique/Strategy";
 import { unboundedContinuous, unboundedDiscrete } from "./Defaults";
 import { Schema } from "./Schema";
 import type { Fabricated, Meta as ThisMeta } from "./Types";
@@ -21,11 +23,13 @@ export type Fabricator<
   [Meta]: $Schema[typeof Meta];
   readonly trace: Trace;
   readonly [Adaptation]?: AdaptationsOf<$Schema>;
+  /** Present on a `T.unique.number` only — see `Types.ts`'s `Claim`. */
+  readonly [Claim]?: (value: unknown) => void;
   schema: Schema<$Schema[typeof Meta], AdaptationsOf<$Schema>>;
 };
 
 export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
-  const { schema, algorithm, trace } = context;
+  const { schema, algorithm, trace, exhaustion } = context;
   const meta = schema[Meta];
   const rehydrated = Schema({ ...schema, [Meta]: meta });
 
@@ -62,17 +66,39 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
   };
   const distribution = range.distribution ?? Distribution.uniform();
 
-  if (meta.integer) {
-    const draw = discreteSampler(
-      distribution,
-      effectiveDiscrete(range.min, range.max),
-      stream,
+  const draw = meta.integer
+    ? discreteSampler(
+        distribution,
+        effectiveDiscrete(range.min, range.max),
+        stream,
+      )
+    : constrainContinuous(
+        sampler(
+          distribution,
+          { min: range.min.value, max: range.max.value },
+          stream,
+        ),
+        range.min,
+        range.max,
+      );
+
+  /**
+   * `draw` is built either way but only called on the tracked path — an exact
+   * permutation draws its positions from `stream` itself, and a sampler that is
+   * never called consumes nothing.
+   */
+  if (meta.unique) {
+    const scope = toLifetimeScope(
+      toNumberStrategy({ label: "T.unique.number", meta, stream, draw }),
+      exhaustion,
     );
+
     return {
       [Kind]: "number",
       [Meta]: meta,
       trace,
-      fabricate: () => draw(),
+      fabricate: () => scope.draw() as number,
+      [Claim]: scope.claim,
       schema: rehydrated,
     };
   }
@@ -81,15 +107,7 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     [Kind]: "number",
     [Meta]: meta,
     trace,
-    fabricate: constrainContinuous(
-      sampler(
-        distribution,
-        { min: range.min.value, max: range.max.value },
-        stream,
-      ),
-      range.min,
-      range.max,
-    ),
+    fabricate: draw,
     schema: rehydrated,
   };
 }

@@ -182,8 +182,13 @@ function axisFor(node: Resolvable, planning: Planning): Axis {
    * An `.as(...)`-supplied producer replaces a kind's own schema-driven logic
    * before anything else runs (see every kind's `Fabricator.ts`), so its value
    * set is opaque regardless of what `[Meta]` otherwise says.
+   *
+   * A `T.unique.*` node is never pinned either. A pin is a per-call override,
+   * which skips the draw, so pinning a unique enum would schedule repeats that
+   * the node exists to prevent. Left to draw, the node stays distinct across
+   * every enumerated instance, since enumeration reuses one built Fabricator.
    */
-  if (node[Meta]?.produce) return leaf();
+  if (node[Meta]?.produce || node[Meta]?.unique) return leaf();
 
   const kind: SchemaKind = node[Kind];
 

@@ -758,4 +758,160 @@ export namespace FabricatorError {
         + "`@ghostry/harness` does.";
     }
   }
+
+  /**
+   * Where a unique leaf that ran out sits directly inside a plain collection —
+   * the element of a `T.array` or the key of a `T.record`. Such a leaf stays
+   * distinct across every value the collection makes, which is easy to mistake
+   * for distinct within one, so the message names `T.unique.array`/
+   * `T.unique.record`.
+   */
+  export type UniqueWithin = "array" | "record";
+
+  function within(collection: UniqueWithin | undefined): string {
+    switch (collection) {
+      case undefined:
+        return "";
+      case "array":
+        return (
+          " It is the element of a T.array, which reuses one element across "
+          + "every array it makes, so its values stay distinct across all of "
+          + "them. For members distinct within each array, use T.unique.array."
+        );
+      case "record":
+        return (
+          " It is the key of a T.record, which reuses one key across every "
+          + "record it makes, so its keys stay distinct across all of them. For "
+          + "keys distinct within each record, use T.unique.record."
+        );
+    }
+  }
+
+  /**
+   * A `T.unique.*` leaf asked for one more value than its domain holds. Thrown
+   * on draw n + 1 of an n-value domain whatever the salt, since a domain with a
+   * known size is counted rather than searched (`Unique/Distinct.ts`).
+   */
+  export class UniqueExhaustedError extends FabricatorError {
+    constructor(
+      /**
+       * The `[Kind]` of the exhausted schema.
+       */
+      public readonly kind: string,
+
+      /**
+       * How many distinct values the domain holds — every one of them already
+       * produced or claimed.
+       */
+      public readonly capacity: bigint,
+
+      /**
+       * The plain collection the leaf sits directly inside, when it does.
+       */
+      public readonly collection?: UniqueWithin,
+    ) {
+      super();
+      this.name = "@ghostry/fabricator:UniqueExhaustedError";
+      this.message =
+        `A unique "${kind}" has produced all ${capacity} of its distinct `
+        + "values, so another draw cannot be unique. Widen its domain, or "
+        + "build a fresh Fabricator to start over."
+        + within(collection);
+    }
+  }
+
+  /**
+   * A unique draw over a domain of unknown size kept landing on values it had
+   * already produced, and forfeited after its redraws ran out rather than loop
+   * forever. Either the domain is used up, or it is skewed enough that its
+   * remaining values are rare — a higher `redraws` is for the second case.
+   */
+  export class UniqueRedrawsError extends FabricatorError {
+    constructor(
+      /**
+       * The registry entry or call site, e.g. `"T.unique.array"`.
+       */
+      public readonly label: string,
+
+      /**
+       * How many redraws the draw was allowed after its first, each of which
+       * also repeated a value already produced.
+       */
+      public readonly redraws: number,
+
+      /**
+       * How many distinct values the scope had produced when it gave up.
+       */
+      public readonly produced: number,
+
+      /**
+       * The plain collection a unique leaf sits directly inside, when it does.
+       */
+      public readonly collection?: UniqueWithin,
+    ) {
+      super();
+      this.name = "@ghostry/fabricator:UniqueRedrawsError";
+      this.message =
+        `${label} gave up after ${redraws} redraws without finding a value `
+        + `it had not already produced (it had produced ${produced}). The `
+        + "domain is used up, or its remaining values are too rare to find. "
+        + "Widen the domain, or raise `redraws` if its distribution is skewed."
+        + within(collection);
+    }
+  }
+
+  /**
+   * A unique collection could draw more members than its member schema has
+   * distinct values. Thrown at construction, so the draw that would run out
+   * never depends on the salt.
+   */
+  export class UniqueCapacityError extends FabricatorError {
+    constructor(
+      /**
+       * The registry entry, e.g. `"T.unique.array"`.
+       */
+      public readonly label: string,
+
+      /**
+       * How many distinct values the member schema has.
+       */
+      public readonly capacity: bigint,
+
+      /**
+       * The largest member count the collection may draw.
+       */
+      public readonly requested: number,
+    ) {
+      super();
+      this.name = "@ghostry/fabricator:UniqueCapacityError";
+      this.message =
+        `${label} may draw up to ${requested} distinct members, but its `
+        + `member schema has only ${capacity} distinct values. Lower the `
+        + "maximum, or widen the member schema.";
+    }
+  }
+
+  /**
+   * `redraws` on a unique builder is not a whole number from `0` up, so it
+   * could never be a count of retries.
+   */
+  export class InvalidRedrawsError extends FabricatorError {
+    constructor(
+      /**
+       * The registry entry, e.g. `"T.unique.array.whereby"`.
+       */
+      public readonly label: string,
+
+      /**
+       * The rejected value.
+       */
+      public readonly redraws: number,
+    ) {
+      super();
+      this.name = "@ghostry/fabricator:InvalidRedrawsError";
+      this.message =
+        `${label} got redraws: ${redraws}, which is not a count of retries. `
+        + "Pass a whole number, 0 or more.";
+    }
+  }
 }

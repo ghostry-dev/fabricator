@@ -25,6 +25,7 @@ export { default as string } from "./string";
 export { default as symbol } from "./symbol";
 export { default as tuple } from "./tuple";
 export { default as undefinable } from "./undefinable";
+export { default as unique } from "./unique";
 export { default as undefined } from "./undefined";
 
 export { Primitive };

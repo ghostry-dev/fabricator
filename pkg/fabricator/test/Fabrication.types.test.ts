@@ -418,3 +418,50 @@ test("a compute source with no buildable recipe (e.g. bare T.string) still build
 
   expect(fabricated.sku).toBe("SKU-1");
 });
+
+/* -------------------------------------------------------------------------- */
+/*  `T.unique.*` builds ordinary Schemas of their own kind, so their value     */
+/*  types are that kind's; `.by(...)` sees the element type.                   */
+/* -------------------------------------------------------------------------- */
+
+const uniqueEnum = new Fabricator(T.unique.enum.uniform(["a", "b"]));
+const uniqueWeighted = new Fabricator(
+  T.unique.enum.weighted([
+    [2, "a"],
+    [1, 3],
+  ]),
+);
+const uniqueNumber = new Fabricator(T.unique.number.whereby({ min: 0 }));
+const uniqueInteger = new Fabricator(T.unique.number.integer);
+const uniqueBigint = new Fabricator(
+  T.unique.bigint.whereby({ max: BigInt(9) }),
+);
+const uniqueArrayBuilder = T.unique.array(
+  T.object({ email: T.always("e"), age: T.number }),
+);
+type ByParameter = Parameters<Parameters<typeof uniqueArrayBuilder.by>[0]>[0];
+const uniqueArray = new Fabricator(
+  uniqueArrayBuilder.by((user) => user.email).whereby({ length: 2 }),
+);
+const uniqueRecord = new Fabricator(
+  T.unique.record(T.enum.uniform(["a", "b"]), T.number).whereby({ size: 2 }),
+);
+
+export type UniqueAssertions = [
+  Expect<Equal<Fabrication<typeof uniqueEnum>, "a" | "b">>,
+  Expect<Equal<Fabrication<typeof uniqueWeighted>, "a" | 3>>,
+  Expect<Equal<Fabrication<typeof uniqueNumber>, number>>,
+  Expect<Equal<Fabrication<typeof uniqueInteger>, number>>,
+  Expect<Equal<Fabrication<typeof uniqueBigint>, bigint>>,
+  Expect<Equal<ByParameter, { email: "e"; age: number }>>,
+  Expect<
+    Equal<Fabrication<typeof uniqueArray>, Array<{ email: "e"; age: number }>>
+  >,
+  Expect<
+    Equal<Fabrication<typeof uniqueRecord>, Partial<Record<"a" | "b", number>>>
+  >,
+];
+
+test("unique builders type-check", () => {
+  expect(uniqueEnum).toBeDefined();
+});

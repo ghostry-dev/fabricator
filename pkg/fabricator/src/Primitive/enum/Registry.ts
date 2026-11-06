@@ -38,10 +38,48 @@ type Weighted<$Items extends ReadonlyArray<Item>> = {
 type NonEmpty<$Items extends ReadonlyArray<unknown>> =
   $Items extends readonly [] ? never : unknown;
 
-function assertNonEmpty(items: ReadonlyArray<unknown>): void {
+function assertNonEmpty(label: string, items: ReadonlyArray<unknown>): void {
   if (items.length === 0) {
-    throw new FabricatorError.EmptyItemsError("T.enum", "member");
+    throw new FabricatorError.EmptyItemsError(label, "member");
   }
+}
+
+/**
+ * `T.enum`'s and `T.unique.enum`'s shared bodies, differing only in the label
+ * errors name and the `unique` flag on `[Meta]`. Each registry entry calls
+ * these with an explicit type argument: inferred from `$Items &
+ * NonEmpty<$Items>`, `$Items` would absorb the guard and leak it into the
+ * Schema's type, which the `.as` parameter then rejects.
+ */
+type Flag = { unique?: true };
+
+function uniform<const $Items extends ReadonlyArray<Item>>(
+  label: string,
+  flag: Flag,
+  items: $Items,
+): Schema<Weighted<$Items>> {
+  assertNonEmpty(label, items);
+
+  /**
+   * `.map()` itself only returns `Array<...>`, not the tuple-preserving
+   * `Weighted<$Items>` — the cast is safe because the runtime shape (one `[1,
+   * item]` pair per input position, same order) already matches it exactly;
+   * only `.map()`'s own generic signature is too loose to say so.
+   */
+  const weighted = items.map((x) => [1, x] as const) as Weighted<$Items>;
+
+  return Schema({ [Kind]: "enum", [Meta]: { items: weighted, ...flag } });
+}
+
+function weighted<const $Items extends Items>(
+  label: string,
+  flag: Flag,
+  items: $Items,
+): Schema<$Items> {
+  assertNonEmpty(label, items);
+  assertDrawableWeights(`${label}.weighted`, "member", items);
+
+  return Schema<$Items>({ [Kind]: "enum", [Meta]: { items, ...flag } });
 }
 
 export default {
@@ -53,35 +91,42 @@ export default {
    */
   uniform: <const $Items extends ReadonlyArray<Item>>(
     items: $Items & NonEmpty<$Items>,
-  ): Schema<Weighted<$Items>> => {
-    assertNonEmpty(items);
-
-    /**
-     * `.map()` itself only returns `Array<...>`, not the tuple-preserving
-     * `Weighted<$Items>` — the cast is safe because the runtime shape (one `[1,
-     * item]` pair per input position, same order) already matches it exactly;
-     * only `.map()`'s own generic signature is too loose to say so.
-     */
-    const weighted = items.map((x) => [1, x] as const) as Weighted<$Items>;
-
-    return Schema({ [Kind]: "enum", [Meta]: { items: weighted } });
-  },
+  ): Schema<Weighted<$Items>> => uniform<$Items>("T.enum", {}, items),
 
   /**
    * Relative probability across members, given as `[weight, item]` pairs — the
    * same tuple shape `weighted()` (`Distribution/index.ts`) itself accepts, not
    * an object keyed by member.
+   *
+   * Widened back to `$Items`: the `NonEmpty<$Items>` intersection is only a
+   * call-site guard, and left in place it would leak into the Schema's type.
    */
   weighted: <const $Items extends Items>(
     items: $Items & NonEmpty<$Items>,
-  ): Schema<$Items> => {
-    assertNonEmpty(items);
-    assertDrawableWeights("T.enum.weighted", "member", items);
+  ): Schema<$Items> => weighted<$Items>("T.enum", {}, items),
+};
 
-    /**
-     * Widened back to `$Items`: the `NonEmpty<$Items>` intersection is only a
-     * call-site guard, and left in place it would leak into the Schema's type.
-     */
-    return Schema<$Items>({ [Kind]: "enum", [Meta]: { items } });
-  },
+/**
+ * `T.unique.enum`, assembled into the namespace by `Primitive/unique`.
+ */
+export const unique = {
+  /**
+   * Equal probability across the members the built Fabricator has not yet
+   * produced: it never repeats a member, and the draw after the last throws
+   * `UniqueExhaustedError`.
+   */
+  uniform: <const $Items extends ReadonlyArray<Item>>(
+    items: $Items & NonEmpty<$Items>,
+  ): Schema<Weighted<$Items>> =>
+    uniform<$Items>("T.unique.enum", { unique: true }, items),
+
+  /**
+   * Relative probability across the members the built Fabricator has not yet
+   * produced, given as `[weight, item]` pairs: it never repeats a member, and
+   * the draw after the last throws `UniqueExhaustedError`.
+   */
+  weighted: <const $Items extends Items>(
+    items: $Items & NonEmpty<$Items>,
+  ): Schema<$Items> =>
+    weighted<$Items>("T.unique.enum", { unique: true }, items),
 };

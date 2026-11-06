@@ -1,4 +1,5 @@
 import type { Adaptations } from "../../Adapter/Types";
+import type { InputLength, Length } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import {
@@ -8,6 +9,7 @@ import {
   type Meta,
   type Produced,
 } from "../../Types";
+import type { Redraws } from "../../Unique/Strategy";
 
 /**
  * A Schema usable as a record's keys: any Schema whose fabricated value is a
@@ -54,8 +56,12 @@ type IsKeyspaceOpen<$Key> = string extends $Key
  *
  * A finite literal key set (`enum`/`always`/`choice`) is `Partial`: size is
  * drawn from `whereby.size`, and colliding keys collapse (`Fabricator.ts`), so
- * a two-member key schema may produce only one. Every key present wants
- * `T.object({ ... })` — what a record over a finite key set degenerates to.
+ * a two-member key schema may produce only one. `T.unique.record` has no
+ * collisions, but it still holds only as many keys as its drawn size: over
+ * `["a", "b", "c"]` with `size: { min: 1, max: 3 }`, a value may hold `a`
+ * alone. Only a size fixed at the key count guarantees every key, which the
+ * type does not track. Every key present wants `T.object({ ... })` — what a
+ * record over a finite key set degenerates to.
  */
 export type Fabricated<
   $Key extends Key = Key,
@@ -84,9 +90,19 @@ export type Fabricated<
  * `whereby.length.min`.
  *
  * No bare-number form (unlike `string`'s and `array`'s `length`): "exactly N"
- * is a promise a collapsing key set cannot keep.
+ * is a promise a collapsing key set cannot keep. `T.unique.record` draws its
+ * keys distinct instead, which is what lets its {@link UniqueWhereby} keep it.
  */
 export type Whereby = { size: { max: number; minTried?: number | undefined } };
+
+/**
+ * `T.unique.record`'s `.whereby`: keys are drawn distinct, so `size` is a real
+ * `Length` — a bare `N` or `{ min?, max, distribution? }` whose `min` holds —
+ * plus {@link Redraws}.
+ */
+export type InputUniqueWhereby = { size: InputLength } & Redraws;
+
+export type UniqueWhereby = { size: Length; redraws?: number | undefined };
 
 /**
  * `key`/`value` stay required regardless of `produce` — both are known at
@@ -96,11 +112,25 @@ export type Whereby = { size: { max: number; minTried?: number | undefined } };
  * `Meta`.
  */
 export type Meta<$Key extends Key = Key, $Value extends Value = Value> =
-  | { key: $Key; value: $Value; whereby: Whereby; produce?: never }
   | {
       key: $Key;
       value: $Value;
-      whereby?: Whereby;
+      whereby: Whereby;
+      unique?: never;
+      produce?: never;
+    }
+  | {
+      key: $Key;
+      value: $Value;
+      whereby: UniqueWhereby;
+      unique: true;
+      produce?: never;
+    }
+  | {
+      key: $Key;
+      value: $Value;
+      whereby?: Whereby | UniqueWhereby;
+      unique?: true;
       produce: Produce<Fabricated<$Key, $Value>>;
     };
 

@@ -89,6 +89,16 @@ export const Adaptation = Symbol.for("fabricator:adaptation");
 export const Omitted = Symbol.for("fabricator:omitted");
 
 /**
+ * Marks a value as already produced, carried only by a built `T.unique.*` leaf
+ * (`Unique/Distinct.ts`'s `Tracker`). A per-call override skips that leaf's
+ * draw, so `object/Fabricator.ts` hands the override value here through
+ * `Unique/Override.ts`'s `recordOverride`, and no later draw repeats it.
+ * Recording only — claiming a value already produced is not an error, since the
+ * caller asked for it.
+ */
+export const Claim = Symbol.for("fabricator:claim");
+
+/**
  * Everything `construct()`/`toTypeBox()` accept as a starting point: a
  * not-yet-built Schema, or something already built into a Fabricator.
  */

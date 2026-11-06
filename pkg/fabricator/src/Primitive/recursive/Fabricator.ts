@@ -60,7 +60,7 @@ export function Fabricator<$Body>(
     context: ConstructionContext,
   ) => NaiveFabricator<unknown>,
 ): Fabricator<Schema<$Body>> {
-  const { schema, algorithm, trace } = context;
+  const { schema, algorithm, trace, exhaustion } = context;
   const meta = schema[Meta];
   const rehydrated = Schema(schema);
 
@@ -87,6 +87,7 @@ export function Fabricator<$Body>(
       algorithm,
       fork: privateSource.fork,
       self: atMax ? undefined : () => fabricateAt(depth + 1),
+      exhaustion,
     };
 
     return make(target, [], context).fabricate() as Fabricated<$Body>;

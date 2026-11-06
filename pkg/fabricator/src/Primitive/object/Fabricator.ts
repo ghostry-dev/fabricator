@@ -7,6 +7,7 @@ import type {
 import { toStreamFromTrace } from "../../Random";
 import type { Trace } from "../../Random/Types";
 import { Children, Kind, Meta, Omitted, type Adaptation } from "../../Types";
+import { recordOverride } from "../../Unique/Override";
 import { isPollutionKey } from "../../Utility/Core";
 import { type PlainObject } from "../../Utility/Types";
 import {
@@ -158,6 +159,13 @@ export function Fabricator<$Definition extends Definition>(
 
       if (visible && overrides && k in overrides) {
         const value = overrides[k];
+
+        /**
+         * The override stands in for this field's draw, so a `T.unique.*` leaf
+         * beneath it records the value and never draws it later.
+         */
+        recordOverride(v, value);
+
         /**
          * Forces this key off entirely — never written, not even as
          * `undefined`.

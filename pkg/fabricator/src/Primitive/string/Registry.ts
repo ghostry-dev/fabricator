@@ -1,8 +1,15 @@
 import { toLengthRange } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import { Kind, Meta } from "../../Types";
+import { toRedraws } from "../../Unique/Strategy";
 import { Schema } from "./Schema";
-import type { Fabricated, InputWhereby, JsonSchema, Whereby } from "./Types";
+import type {
+  Fabricated,
+  InputUniqueWhereby,
+  InputWhereby,
+  JsonSchema,
+  Whereby,
+} from "./Types";
 
 export default {
   /**
@@ -47,14 +54,48 @@ export default {
   whereby: (whereby: InputWhereby): Schema<{ whereby: Whereby }> => {
     return Schema({
       [Kind]: "string",
+      [Meta]: { whereby: toWhereby("T.string.whereby", whereby) },
+    });
+  },
+};
+
+/**
+ * `T.unique.string`, assembled into the namespace by `Primitive/unique`. No
+ * `as`: a producer replaces the draw, so it would discard the one thing this
+ * builder adds.
+ */
+export const unique = {
+  /** See the default export's `[Kind]`. */
+  [Kind]: "string" as const,
+
+  /**
+   * A string the built Fabricator never repeats, drawn like `T.string.whereby`.
+   * Each draw is redrawn while it matches one already produced, up to `redraws`
+   * times in a row; a length and composition that can spell only a few strings
+   * run out through that cap, as `UniqueRedrawsError`.
+   */
+  whereby: (
+    whereby: InputUniqueWhereby,
+  ): Schema<{ whereby: Whereby; unique: true }> => {
+    const label = "T.unique.string.whereby";
+    const converted = toWhereby(label, whereby);
+    const redraws = toRedraws(label, whereby.redraws);
+
+    return Schema({
+      [Kind]: "string",
       [Meta]: {
-        whereby: {
-          length: toLengthRange(whereby.length, "T.string.whereby"),
-          ...(whereby.composition === undefined
-            ? {}
-            : { composition: whereby.composition }),
-        },
+        whereby: redraws === undefined ? converted : { ...converted, redraws },
+        unique: true,
       },
     });
   },
 };
+
+function toWhereby(label: string, input: InputWhereby): Whereby {
+  return {
+    length: toLengthRange(input.length, label),
+    ...(input.composition === undefined
+      ? {}
+      : { composition: input.composition }),
+  };
+}

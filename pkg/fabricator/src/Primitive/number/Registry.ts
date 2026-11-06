@@ -5,10 +5,17 @@ import {
   toBound,
 } from "../../Bound";
 import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
+import { toRedraws } from "../../Unique/Strategy";
 import { default as bigint } from "../bigint";
+import { unique as uniqueBigint } from "../bigint/Registry";
 import { unboundedContinuous, unboundedDiscrete } from "./Defaults";
 import { Schema } from "./Schema";
-import type { Fabricated, InputWhereby, Whereby } from "./Types";
+import type {
+  Fabricated,
+  InputUniqueWhereby,
+  InputWhereby,
+  Whereby,
+} from "./Types";
 
 type ThisRegistry = Schema<{}, Adaptations> & {
   /**
@@ -59,7 +66,7 @@ function registry(): ThisRegistry {
     whereby: (whereby: InputWhereby) =>
       Schema({
         [Kind]: "number",
-        [Meta]: { whereby: toWhereby(whereby, false) },
+        [Meta]: { whereby: toWhereby("T.number", whereby, false) },
       }),
 
     get integer() {
@@ -69,7 +76,10 @@ function registry(): ThisRegistry {
         whereby: (whereby: InputWhereby) =>
           Schema({
             [Kind]: "number",
-            [Meta]: { integer: true, whereby: toWhereby(whereby, true) },
+            [Meta]: {
+              integer: true,
+              whereby: toWhereby("T.number", whereby, true),
+            },
           }),
 
         get sequence() {
@@ -87,11 +97,102 @@ function registry(): ThisRegistry {
 
 export default registry;
 
-function toWhereby(input: InputWhereby, integer: boolean): Whereby {
+type UniqueRegistry = Schema<{ unique: true }, Adaptations> & {
+  /**
+   * A `number` that the built Fabricator never repeats, drawn from `[min, max]`
+   * like `T.number.whereby`. Values are tracked as they are drawn, so memory
+   * grows with the values produced. A continuous range repeats only by chance,
+   * which makes this mostly a guard; a range whose ends meet holds one value,
+   * and the draw after it throws `UniqueExhaustedError`.
+   */
+  whereby: (
+    whereby: InputUniqueWhereby,
+  ) => Schema<{ unique: true; whereby: Whereby }>;
+
+  /**
+   * Integers the built Fabricator never repeats. A uniform range is drawn as a
+   * random permutation, so it yields every value exactly once and the draw
+   * after the last throws `UniqueExhaustedError`. A skewed or unbounded range
+   * is tracked instead, still exhausting exactly when bounded. A skewed range's
+   * rarest values can take many draws to find; `redraws` raises the cap on
+   * consecutive repeats for that.
+   */
+  integer: Schema<{ integer: true; unique: true }> & {
+    whereby: (
+      whereby: InputUniqueWhereby,
+    ) => Schema<{ integer: true; unique: true; whereby: Whereby }>;
+
+    big: typeof uniqueBigint;
+  };
+};
+
+/**
+ * `T.unique.number`, assembled into the namespace by `Primitive/unique`, which
+ * installs it as a getter for the same reason `T.number` is one. Mirrors
+ * {@link registry} without `integer.sequence`, which already never repeats.
+ */
+export function unique(): UniqueRegistry {
+  return {
+    /** See {@link registry} on why both are assigned. */
+    ...Schema({
+      [Kind]: "number",
+      [Meta]: { unique: true },
+      [Produces]: undefined as unknown as Produced<Fabricated>,
+      [Adaptation]: undefined as unknown as Adaptations,
+    }),
+
+    whereby: (whereby: InputUniqueWhereby) =>
+      Schema({
+        [Kind]: "number",
+        [Meta]: {
+          unique: true,
+          whereby: toUniqueWhereby("T.unique.number", whereby, false),
+        },
+      }),
+
+    get integer() {
+      return {
+        ...Schema({
+          [Kind]: "number",
+          [Meta]: { integer: true, unique: true },
+        }),
+
+        whereby: (whereby: InputUniqueWhereby) =>
+          Schema({
+            [Kind]: "number",
+            [Meta]: {
+              integer: true,
+              unique: true,
+              whereby: toUniqueWhereby("T.unique.number", whereby, true),
+            },
+          }),
+
+        big: uniqueBigint,
+      };
+    },
+  };
+}
+
+function toUniqueWhereby(
+  prefix: string,
+  input: InputUniqueWhereby,
+  integer: boolean,
+): Whereby {
+  const label = integer ? `${prefix}.integer.whereby` : `${prefix}.whereby`;
+  const whereby = toWhereby(prefix, input, integer);
+  const redraws = toRedraws(label, input.redraws);
+  return redraws === undefined ? whereby : { ...whereby, redraws };
+}
+
+function toWhereby(
+  prefix: string,
+  input: InputWhereby,
+  integer: boolean,
+): Whereby {
   const min = input.min === undefined ? undefined : toBound(input.min);
   const max = input.max === undefined ? undefined : toBound(input.max);
   const defaults = integer ? unboundedDiscrete : unboundedContinuous;
-  const label = integer ? "T.number.integer.whereby" : "T.number.whereby";
+  const label = integer ? `${prefix}.integer.whereby` : `${prefix}.whereby`;
 
   /**
    * An omitted end is not stored — same as `T.date` — but emptiness is judged

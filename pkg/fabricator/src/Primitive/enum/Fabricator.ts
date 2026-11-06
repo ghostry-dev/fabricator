@@ -6,7 +6,8 @@ import type {
 } from "../../Fabricator/Types";
 import type { Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
-import { Kind, Meta, type Adaptation } from "../../Types";
+import { Claim, Kind, Meta, type Adaptation } from "../../Types";
+import { exactValues, toLifetimeScope } from "../../Unique/Strategy";
 import { Schema } from "./Schema";
 import type { Fabricated, Items, Meta as ThisMeta } from "./Types";
 
@@ -22,13 +23,15 @@ export type Fabricator<
   [Meta]: $Schema[typeof Meta];
   readonly trace: Trace;
   readonly [Adaptation]?: AdaptationsOf<$Schema>;
+  /** Present on a `T.unique.enum` only — see `Types.ts`'s `Claim`. */
+  readonly [Claim]?: (value: unknown) => void;
   schema: Schema<$Schema[typeof Meta]["items"], AdaptationsOf<$Schema>>;
 };
 
 export function Fabricator<$Items extends Items>(
   context: FabricatorContext<Schema<$Items>>,
 ): Fabricator<Schema<$Items>> {
-  const { schema, algorithm, trace } = context;
+  const { schema, algorithm, trace, exhaustion } = context;
   const meta = schema[Meta];
   const rehydrated = Schema(schema);
 
@@ -46,6 +49,23 @@ export function Fabricator<$Items extends Items>(
   }
 
   const stream = toStreamFromTrace(algorithm, trace);
+
+  if (meta.unique) {
+    const scope = toLifetimeScope(
+      exactValues("enum", meta.items, stream),
+      exhaustion,
+    );
+
+    return {
+      [Kind]: "enum",
+      [Meta]: meta,
+      trace,
+      fabricate: () => scope.draw() as Fabricated<$Items>,
+      [Claim]: scope.claim,
+      schema: rehydrated,
+    };
+  }
+
   const pick = weighted<Fabricated<$Items>>(meta.items, stream, "T.enum");
 
   return {

@@ -390,13 +390,22 @@ function convert(
       return Type.Object(properties);
     }
 
+    /**
+     * `uniqueItems` for `T.unique.array` holds under a `by` projection too:
+     * members distinct by a projection of themselves are distinct as wholes.
+     */
     case "array": {
       const s = schema as Primitive.array.Schema;
       const length = s[Meta].whereby?.length;
       const items = recurse(s[Meta].definition, context);
-      if (!length) return Type.Array(items);
+      const unique = s[Meta].unique ? { uniqueItems: true } : {};
+      if (!length) return Type.Array(items, unique);
       const range = effectiveDiscrete(length.min, length.max);
-      return Type.Array(items, { minItems: range.min, maxItems: range.max });
+      return Type.Array(items, {
+        minItems: range.min,
+        maxItems: range.max,
+        ...unique,
+      });
     }
 
     /**
@@ -407,7 +416,8 @@ function convert(
      * `Never` catches every such key shape, and stays correct if TypeBox adds
      * or removes a branch.
      *
-     * `.adapt(typebox, ...)` wins over this mapping entirely.
+     * `.adapt(typebox, ...)` wins over this mapping entirely. The property
+     * count comes from {@link toPropertyCount}.
      */
     case "record": {
       const s = schema as Primitive.record.Schema;
@@ -415,6 +425,7 @@ function convert(
       const mapped = Type.Record(
         recurse(key, context),
         recurse(s[Meta].value, context),
+        toPropertyCount(s[Meta]),
       );
 
       if (mapped[TypeBoxKind] === "Never") {
@@ -732,4 +743,19 @@ function toConst(value: unknown): TSchema {
    * top.
    */
   return Type.Const(value);
+}
+
+/**
+ * The property count a record states, as `Type.Record` options. Only a
+ * `T.unique.record` has one: its keys are drawn distinct, so its drawn size is
+ * the record's. A plain record's colliding keys collapse, leaving no lower
+ * bound, and a producer replaces the draw that the size described.
+ */
+function toPropertyCount(meta: Primitive.record.Meta): {
+  minProperties?: number;
+  maxProperties?: number;
+} {
+  if (meta.produce || !meta.unique) return {};
+  const size = effectiveDiscrete(meta.whereby.size.min, meta.whereby.size.max);
+  return { minProperties: size.min, maxProperties: size.max };
 }

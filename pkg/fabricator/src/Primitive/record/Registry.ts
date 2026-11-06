@@ -1,8 +1,17 @@
+import { toLengthRange } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import { toSchema } from "../../Schema/Core";
 import { Kind, Meta } from "../../Types";
+import { toRedraws } from "../../Unique/Strategy";
 import { Schema } from "./Schema";
-import type { Fabricated, Key, Value, Whereby } from "./Types";
+import type {
+  Fabricated,
+  InputUniqueWhereby,
+  Key,
+  UniqueWhereby,
+  Value,
+  Whereby,
+} from "./Types";
 
 type ThisRegistry<$Key extends Key, $Value extends Value> = {
   /**
@@ -47,4 +56,50 @@ export default function <const $Key extends Key, const $Value extends Value>(
         [Meta]: { produce, key: normalizedKey, value: normalizedValue },
       }),
   };
+}
+
+type UniqueRegistry<$Key extends Key, $Value extends Value> = {
+  /**
+   * A record of `value` keyed by `key`, with `size` drawn from a bare `N` or `{
+   * min?, max, distribution? }` and every key distinct, so the record holds
+   * exactly the size drawn. A key drawn from a finite set (`T.enum`,
+   * `T.always`, …) is drawn without replacement, and a `size` that could exceed
+   * that set is rejected here, at construction. Any other key is redrawn while
+   * it repeats one already in the record, up to `redraws` times in a row.
+   */
+  whereby: (whereby: InputUniqueWhereby) => Schema<$Key, $Value>;
+};
+
+/**
+ * `T.unique.record`, assembled into the namespace by `Primitive/unique`. No
+ * `as`: a producer replaces the draw, so it would discard the one thing this
+ * builder adds.
+ */
+export function unique<const $Key extends Key, const $Value extends Value>(
+  key: $Key,
+  value: $Value,
+): UniqueRegistry<$Key, $Value> {
+  /** See the default export on why only the values are normalized. */
+  const normalizedKey = toSchema(key) as $Key;
+  const normalizedValue = toSchema(value) as $Value;
+
+  return {
+    whereby: (whereby: InputUniqueWhereby): Schema<$Key, $Value> =>
+      Schema({
+        [Kind]: "record",
+        [Meta]: {
+          whereby: toUniqueWhereby(whereby),
+          unique: true,
+          key: normalizedKey,
+          value: normalizedValue,
+        },
+      }),
+  };
+}
+
+function toUniqueWhereby(input: InputUniqueWhereby): UniqueWhereby {
+  const label = "T.unique.record.whereby";
+  const size = toLengthRange(input.size, label);
+  const redraws = toRedraws(label, input.redraws);
+  return redraws === undefined ? { size } : { size, redraws };
 }

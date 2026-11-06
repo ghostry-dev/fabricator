@@ -3,6 +3,7 @@ import type { Bound, InputBound } from "../../Bound";
 import type { Distribution } from "../../Distribution";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Redraws } from "../../Unique/Strategy";
 
 /**
  * Call-site `{ min, max }` — scalars are inclusive. Either end may be omitted;
@@ -15,15 +16,36 @@ export type InputWhereby = {
   distribution?: Distribution | undefined;
 };
 
+/** `T.date.past.whereby`: `past` closes its upper end at the clock. */
+export type InputPastWhereby = {
+  min?: InputBound<Date> | undefined;
+  distribution?: Distribution | undefined;
+};
+
+/** `T.date.future.whereby`: `future` closes its lower end at the clock. */
+export type InputFutureWhereby = {
+  max?: InputBound<Date> | undefined;
+  distribution?: Distribution | undefined;
+};
+
+/** `T.unique.date`'s `.whereby` inputs: each plain one, plus {@link Redraws}. */
+export type InputUniqueWhereby = InputWhereby & Redraws;
+export type InputUniquePastWhereby = InputPastWhereby & Redraws;
+export type InputUniqueFutureWhereby = InputFutureWhereby & Redraws;
+
 /**
  * Stored `{ min, max }` — each present end is a canonical {@link Bound}. An
  * omitted end stays omitted (fabricate fills `Defaults.ts`'s `unboundedEpoch`;
  * adapters forward only the ends that were named).
+ *
+ * `redraws` is set only through {@link InputUniqueWhereby} and its
+ * `past`/`future` forms.
  */
 export type Whereby = {
   min?: Bound<Date> | undefined;
   max?: Bound<Date> | undefined;
   distribution?: Distribution | undefined;
+  redraws?: number | undefined;
 };
 
 export type Fabricated = Date;
@@ -38,6 +60,7 @@ export type Fabricated = Date;
 export type Meta = {
   mode?: "past" | "future";
   whereby?: Whereby;
+  unique?: true;
   produce?: Produce<Fabricated>;
 };
 

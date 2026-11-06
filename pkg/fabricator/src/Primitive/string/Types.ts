@@ -3,6 +3,7 @@ import type { InputLength, Length } from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 import type { classes } from "./Constants";
+import type { Redraws } from "../../Unique/Strategy";
 
 /** An inclusive range of Unicode code points. */
 export type CodepointRange = { from: number; to: number };
@@ -33,7 +34,15 @@ export type Composition =
 
 export type InputWhereby = { length: InputLength; composition?: Composition };
 
-export type Whereby = { length: Length; composition?: Composition };
+/** `T.unique.string`'s `.whereby`: the same input, plus {@link Redraws}. */
+export type InputUniqueWhereby = InputWhereby & Redraws;
+
+/** `redraws` is set only through {@link InputUniqueWhereby}. */
+export type Whereby = {
+  length: Length;
+  composition?: Composition;
+  redraws?: number | undefined;
+};
 
 export type Fabricated = string;
 
@@ -59,10 +68,16 @@ export type JsonSchema = { format?: string; pattern?: string };
  * for future validation.
  */
 export type Meta =
-  | { whereby: Whereby; hints?: JsonSchema | undefined; produce?: never }
+  | {
+      whereby: Whereby;
+      hints?: JsonSchema | undefined;
+      unique?: true;
+      produce?: never;
+    }
   | {
       whereby?: Whereby;
       hints?: JsonSchema | undefined;
+      unique?: true;
       produce: Produce<Fabricated>;
     };
 

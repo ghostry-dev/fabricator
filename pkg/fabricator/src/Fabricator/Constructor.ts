@@ -15,6 +15,7 @@ import { inline } from "../Utility/Core";
 import {
   type AsFabricator,
   type ConstructionContext,
+  type Exhaustion,
   type Fabricator,
 } from "./Types";
 
@@ -60,11 +61,16 @@ export type Constructor = {
  * should resolve "now" against. `toConstructionContext` reads it straight off
  * the resolved construction trace rather than threading a second value
  * alongside `source`.
+ *
+ * `exhaustion` is how this constructor's `T.unique.*` leaves treat running out
+ * (`Fabricator/Types.ts`'s `Exhaustion`); only `Enumeration/Enumerate.ts`
+ * passes anything but the default.
  */
 export function Constructor(
   source: RandomSource,
   stack: Stack,
   ancestry: Ancestry,
+  exhaustion: Exhaustion = "throw",
 ): Constructor {
   /**
    * `schema` is `any` at the parameter: `switch (schema[Kind])` does not
@@ -103,6 +109,7 @@ export function Constructor(
     const common = {
       algorithm: context.algorithm,
       trace: context.toTrace(path, kind),
+      exhaustion: context.exhaustion,
     };
 
     switch (kind) {
@@ -445,7 +452,13 @@ export function Constructor(
       );
     }
 
-    const context = toConstructionContext(source, options, stack, ancestry);
+    const context = toConstructionContext(
+      source,
+      options,
+      stack,
+      ancestry,
+      exhaustion,
+    );
     const made = make(schema, options.path ?? [], context);
     const adaptations = schema[Adaptation];
 
@@ -496,6 +509,7 @@ function toConstructionContext(
   options: ConstructorOptions,
   stack: Stack,
   ancestry: Ancestry,
+  exhaustion: Exhaustion,
 ): ConstructionContext {
   const { source: resolved, trace } = resolveScope(
     source,
@@ -513,6 +527,7 @@ function toConstructionContext(
         algorithm: resolved.algorithm,
         clock: trace.clock,
       }),
+    exhaustion,
   };
 }
 

@@ -18,10 +18,14 @@ export type Fabricated = bigint;
  * `as` production, carried alongside `whereby` rather than replacing it (when
  * `whereby` was already set) so a prior range survives `as` for future
  * validation.
+ *
+ * `unique` is set by `T.unique.bigint`: the built Fabricator yields its range
+ * as a random permutation, never repeating for its whole lifetime
+ * (`Unique/Distinct.ts`'s `toBigintStrategy`).
  */
 export type Meta =
-  | { whereby: Whereby; produce?: never }
-  | { whereby?: Whereby; produce: Produce<Fabricated> };
+  | { whereby: Whereby; unique?: true; produce?: never }
+  | { whereby?: Whereby; unique?: true; produce: Produce<Fabricated> };
 
 export type Core<
   $Meta extends Meta = Meta,

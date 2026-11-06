@@ -400,6 +400,206 @@ export function shuffle<$T>(items: ReadonlyArray<$T>, stream: Stream): $T[] {
 }
 
 /**
+ * A weighted draw that never returns the same entry twice — each pick leaves
+ * the pool. The first pick follows `entries`' weights exactly as `weighted()`
+ * would; every later one follows the weights of what remains, which is the same
+ * distribution conditioned on not repeating.
+ */
+export type Pool<$Item> = {
+  /** How many entries are left to draw. */
+  readonly remaining: number;
+
+  /**
+   * Remove and return one entry. The caller checks `remaining` first: an empty
+   * pool has nothing to return.
+   */
+  draw: () => $Item;
+
+  /**
+   * Remove the first remaining entry `matches` accepts, without drawing — for
+   * an entry produced some other way. A no-op when none matches.
+   */
+  discard: (matches: (item: $Item) => boolean) => void;
+};
+
+/**
+ * A {@link Pool} over `entries`' drawable members (`isDrawable`; a zero weight
+ * stays out, as in `weighted()`). Linear in the pool's size per draw, which
+ * suits the small, caller-written member lists it is built from (`enum`'s
+ * members, `boolean`'s two outcomes).
+ *
+ * Equal weights stay equal as entries leave, so that case is fixed once: the
+ * pick is `discreteSampler`'s uniform index, one `stream.next()` per draw.
+ * Unequal weights take one `stream.next()` scaled over the remaining total,
+ * summed afresh each draw so removals never accumulate float drift. `splice`,
+ * not swap-remove, so the remaining order stays the caller's.
+ */
+export function withoutReplacement<$Item>(
+  entries: ReadonlyArray<readonly [number, $Item]>,
+  stream: Stream,
+): Pool<$Item> {
+  const drawable = entries.filter(([weight]) => isDrawable(weight));
+  const weights = drawable.map(([weight]) => weight);
+  const items = drawable.map(([, item]) => item);
+  const uniform = weights.every((weight) => weight === weights[0]);
+
+  function pick(): number {
+    if (uniform) {
+      return discreteSampler(
+        undefined,
+        { min: 0, max: items.length - 1 },
+        stream,
+      )();
+    }
+
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    const target = stream.next() * total;
+    let cumulative = 0;
+    for (let i = 0; i < weights.length; i++) {
+      cumulative += weights[i]!;
+      if (target < cumulative) return i;
+    }
+    return weights.length - 1;
+  }
+
+  function remove(index: number): $Item {
+    weights.splice(index, 1);
+    return items.splice(index, 1)[0]!;
+  }
+
+  return {
+    get remaining() {
+      return items.length;
+    },
+    draw: () => remove(pick()),
+    discard: (matches) => {
+      const index = items.findIndex(matches);
+      if (index !== -1) remove(index);
+    },
+  };
+}
+
+/**
+ * Every integer of an inclusive range, in a uniformly random order, one per
+ * `next()` — so no value repeats until all of them have been returned.
+ */
+export type Permutation<$T extends number | bigint> = {
+  /** How many values are left before the range is used up. */
+  readonly remaining: $T;
+
+  /**
+   * The next value. The caller checks `remaining` first: a used-up range has
+   * nothing to return.
+   */
+  next: () => $T;
+};
+
+/**
+ * A sparse Fisher–Yates shuffle of `[min, max]`: step `i` swaps position `i`
+ * with a uniform position `j` in `[i, size)` and returns what was at `j`. Only
+ * positions a swap has touched live in `displaced`, so memory grows with the
+ * values drawn, never with the range — `[1, 2^53]` costs nothing up front.
+ * Position `i` is never read again after its step, so its entry is deleted.
+ *
+ * The index draw is `discreteSampler`'s, never an inlined `floor(next() * n)`
+ * (see AGENTS.md's "Traps in the length/size draw"). Precondition: `max - min +
+ * 1 <= Number.MAX_SAFE_INTEGER`, so every position is an exact integer.
+ */
+export function permutation(range: Range, stream: Stream): Permutation<number> {
+  const { min } = range;
+  const size = range.max - min + 1;
+  const displaced = new Map<number, number>();
+  let i = 0;
+
+  return {
+    get remaining() {
+      return size - i;
+    },
+    next: () => {
+      const j = discreteSampler(undefined, { min: i, max: size - 1 }, stream)();
+      const value = displaced.get(j) ?? j;
+      displaced.set(j, displaced.get(i) ?? i);
+      displaced.delete(i);
+      i++;
+      return min + value;
+    },
+  };
+}
+
+/**
+ * {@link permutation} over a bigint range, with {@link bigintSampler} drawing
+ * each step's position. No size precondition: bigint positions are exact at any
+ * width.
+ */
+export function bigintPermutation(
+  range: { min: bigint; max: bigint },
+  stream: Stream,
+): Permutation<bigint> {
+  const { min } = range;
+  const size = range.max - min + BigInt(1);
+  const displaced = new Map<bigint, bigint>();
+  let i = BigInt(0);
+
+  return {
+    get remaining() {
+      return size - i;
+    },
+    next: () => {
+      const j = bigintSampler({ min: i, max: size - BigInt(1) }, stream)();
+      const value = displaced.get(j) ?? j;
+      displaced.set(j, displaced.get(i) ?? i);
+      displaced.delete(i);
+      i++;
+      return min + value;
+    },
+  };
+}
+
+/**
+ * A uniform bigint draw over the inclusive `[min, max]`.
+ *
+ * Fills a buffer one byte at a time from the seeded stream — the top 8 bits of
+ * each draw — so bigint generation replays under a salt like every other
+ * primitive, rather than drawing unseedable bytes from
+ * `crypto.getRandomValues`. Then rejection: keep the low `bitWidth` bits and
+ * retry any candidate past the span, which avoids the modulo bias of `random %
+ * span`. The mask keeps every candidate within one bit of the span, so the loop
+ * expects fewer than two iterations.
+ */
+export function bigintSampler(
+  range: { min: bigint; max: bigint },
+  stream: Stream,
+): () => bigint {
+  const { min, max } = range;
+  const span = max - min + BigInt(1);
+
+  const byteBits = 8;
+  const bitWidth = span.toString(2).length;
+  const byteWidth = Math.ceil(bitWidth / byteBits);
+  const bitMask = (BigInt(1) << BigInt(bitWidth)) - BigInt(1);
+
+  return () => {
+    const buffer = new Uint8Array(byteWidth);
+
+    const sample = (): bigint => {
+      for (let i = 0; i < buffer.length; i++) {
+        buffer[i] = Math.floor(stream.next() * 256);
+      }
+      let value = BigInt(0);
+      for (const byte of buffer) {
+        value = (value << BigInt(byteBits)) | BigInt(byte);
+      }
+      return value & bitMask;
+    };
+
+    while (true) {
+      const candidate = sample();
+      if (candidate < span) return min + candidate;
+    }
+  };
+}
+
+/**
  * `weighted()`'s own inclusion rule: whether this entry stays in the draw
  * table. `0` is valid and disables the outcome; negative/`NaN` are rejected
  * earlier by {@link isValidWeight}. Exposed so `Enumeration/Plan.ts` and the

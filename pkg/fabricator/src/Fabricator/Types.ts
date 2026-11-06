@@ -48,7 +48,20 @@ export type ConstructionContext = {
   algorithm: Algorithm;
   fork: (salt: Salt) => RandomSource;
   self?: (() => unknown) | undefined;
+  exhaustion: Exhaustion;
 };
+
+/**
+ * What a `T.unique.*` leaf does once its values run out. `"throw"` everywhere
+ * except `combinatorial`/`coverage`, whose builds pass `"cycle"`
+ * (`Enumeration/Enumerate.ts`): an enumeration is a testing schedule over its
+ * axes, and a unique leaf with fewer values than the schedule has instances
+ * starts a fresh round rather than failing the schedule partway. Carried on the
+ * construction rather than the Schema, so the same Schema throws when built
+ * anywhere else. Unique collections are unaffected: cycling inside one array
+ * would repeat a member within one value.
+ */
+export type Exhaustion = "throw" | "cycle";
 
 /**
  * What every kind's `Fabricator(...)` receives in place of a repeated `(schema,
@@ -70,6 +83,7 @@ export type FabricatorContext<$Schema> = {
   schema: $Schema;
   algorithm: Algorithm;
   trace: Trace;
+  exhaustion: Exhaustion;
 };
 
 /**

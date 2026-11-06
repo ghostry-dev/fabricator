@@ -33,10 +33,15 @@ export type Fabricated<$Items extends Items = Items> = $Items[number][1];
  * to fabricate from. `produce` layers an opaque production via `.as()`, carried
  * alongside `items` rather than replacing it, so a prior member set survives
  * `.as()` for future validation.
+ *
+ * `unique` is set by `T.unique.enum`: the built Fabricator draws its members
+ * without replacement for its whole lifetime (`Unique/Strategy.ts`'s
+ * `exactValues`). `produce` still wins over it, as over everything else.
  */
 export type Meta<$Items extends Items = Items> = {
   items: $Items;
   produce?: Produce<Fabricated<$Items>>;
+  unique?: true;
 };
 
 export type Core<

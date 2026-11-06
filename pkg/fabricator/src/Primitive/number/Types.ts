@@ -3,6 +3,7 @@ import type { Bound, InputBound } from "../../Bound";
 import type { Distribution } from "../../Distribution";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Redraws } from "../../Unique/Strategy";
 
 /**
  * Call-site `{ min, max }` — scalars are inclusive. Either end may be omitted;
@@ -15,15 +16,20 @@ export type InputWhereby = {
   distribution?: Distribution | undefined;
 };
 
+/** `T.unique.number`'s `.whereby`: the same input, plus {@link Redraws}. */
+export type InputUniqueWhereby = InputWhereby & Redraws;
+
 /**
  * Stored `{ min, max }` — each present end is a canonical {@link Bound}. An
  * omitted end stays omitted (fabricate fills the unbounded cap; adapters
- * forward only the ends that were named).
+ * forward only the ends that were named). `redraws` is set only through
+ * {@link InputUniqueWhereby}.
  */
 export type Whereby = {
   min?: Bound<number> | undefined;
   max?: Bound<number> | undefined;
   distribution?: Distribution | undefined;
+  redraws?: number | undefined;
 };
 
 export type Fabricated = number;
@@ -43,11 +49,16 @@ export type JsonSchema = { multipleOf?: number };
  * counter only ever yields whole numbers), optionally overridden by an opaque
  * `as` production — carried alongside the rest rather than replacing it, so a
  * prior scoping survives `as` for future validation.
+ *
+ * `unique` is set by `T.unique.number`: the built Fabricator never repeats a
+ * value for its whole lifetime (`Unique/Distinct.ts`'s `toNumberStrategy`).
+ * Never paired with `sequence`, which cannot repeat by design.
  */
 export type Meta = {
   whereby?: Whereby;
   integer?: boolean;
   sequence?: boolean;
+  unique?: true;
   hints?: JsonSchema | undefined;
   produce?: Produce<Fabricated>;
 };
