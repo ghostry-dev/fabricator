@@ -1,5 +1,5 @@
 import { expect, test } from ".";
-import { initialize, registry } from "@ghostry/fabricator";
+import { initialize, registry, type Enumeration } from "@ghostry/fabricator";
 import type { Fabricated } from "@ghostry/fabricator/internal";
 
 /**
@@ -24,7 +24,10 @@ const enumerated = combinatorial(schema);
 const covered = coverage(schema);
 
 export type Assertions = [
-  Expect<Equal<typeof enumerated, Iterable<Fabricated<typeof schema>>>>,
+  Expect<Equal<typeof enumerated, Enumeration<Fabricated<typeof schema>>>>,
+  /** Still an ordinary `Iterable`, with `size` beside it. */
+  Expect<Extends<typeof enumerated, Iterable<Fabricated<typeof schema>>>>,
+  Expect<Equal<(typeof enumerated)["size"], bigint>>,
   /**
    * `combinatorial` and `coverage` share one type — strategy and limit are both
    * invisible in the signature.

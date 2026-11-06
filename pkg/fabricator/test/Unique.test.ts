@@ -187,7 +187,7 @@ describe("leaves", () => {
     expect(new Set(draws(built, 2000)).size).toBe(2000);
   });
 
-  test("a unique string that can spell few values runs out through the cap", () => {
+  test("a unique string that can spell few values exhausts by counting", () => {
     const { T, Fabricator } = initialize({
       salt: "unique-string-small",
       clock: new Date(0),
@@ -197,10 +197,11 @@ describe("leaves", () => {
     );
 
     expect(new Set(draws(built, 2))).toEqual(new Set(["a", "b"]));
-    const error = attest.throws(FabricatorError.UniqueRedrawsError, () =>
+    const error = attest.throws(FabricatorError.UniqueExhaustedError, () =>
       built.fabricate(),
     );
-    expect(error.label).toBe("T.unique.string");
+    expect(error.kind).toBe("string");
+    expect(error.capacity).toBe(BigInt(2));
     expect(error.collection).toBeUndefined();
   });
 
@@ -709,7 +710,7 @@ describe("collection hints", () => {
       ).whereby({ size: { max: 2, minTried: 2 } }),
     );
 
-    const error = attest.throws(FabricatorError.UniqueRedrawsError, () =>
+    const error = attest.throws(FabricatorError.UniqueExhaustedError, () =>
       built.fabricate(),
     );
     expect(error.collection).toBe("record");

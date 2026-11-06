@@ -7,7 +7,14 @@ import { toStreamFromTrace } from "../Random";
 import type { RandomSource, Salt } from "../Random/Types";
 import type { AnySchema, Fabricated } from "../Schema/Types";
 import { plan, resolve } from "./Plan";
-import type { Axis, Enumerable, Limits, Orderer, Resolvable } from "./Types";
+import type {
+  Axis,
+  Enumerable,
+  Enumeration,
+  Limits,
+  Orderer,
+  Resolvable,
+} from "./Types";
 
 /**
  * Typed `combinatorial`/`coverage` boundary, closing over one instance's
@@ -71,8 +78,12 @@ export function enumerables(
    */
   function iterable<$Schema extends AnySchema>(
     rebuild: () => { built: Resolvable; axis: Axis },
-  ): Iterable<Fabricated<$Schema>> {
+    size: () => bigint,
+  ): Enumeration<Fabricated<$Schema>> {
     return {
+      get size() {
+        return size();
+      },
       [Symbol.iterator](): Iterator<Fabricated<$Schema>> {
         const { built, axis } = rebuild();
         const width = Number(axis.width);
@@ -106,7 +117,7 @@ export function enumerables(
    */
   function combinatorial<const $Schema extends AnySchema>(
     schema: $Schema,
-  ): Iterable<Fabricated<$Schema>> {
+  ): Enumeration<Fabricated<$Schema>> {
     const combinatorialSalt = [...effectiveSource().salt, "combinatorial"];
 
     /**
@@ -129,25 +140,28 @@ export function enumerables(
       );
     }
 
-    return iterable(() => {
-      const built = new Fabricator(schema, {
-        salt: combinatorialSalt,
-        ordinal: null,
-      }) as Resolvable;
+    return iterable(
+      () => {
+        const built = new Fabricator(schema, {
+          salt: combinatorialSalt,
+          ordinal: null,
+        }) as Resolvable;
 
-      return { built, axis: plan(built, { strategy: "product" }) };
-    });
+        return { built, axis: plan(built, { strategy: "product" }) };
+      },
+      () => probe.width,
+    );
   }
 
   /**
-   * Unlike `combinatorial`, no eager probe or limit check: `"cycle"`'s width is
-   * the widest single axis, which can never exceed the schema as written —
-   * there is nothing a limit would protect against (see `Limits`'s doc
-   * comment).
+   * Probed eagerly like `combinatorial`, but with no limit check: `"cycle"`'s
+   * width is the widest single axis, which can never exceed the schema as
+   * written — there is nothing a limit would protect against (see `Limits`'s
+   * doc comment).
    */
   function coverage<const $Schema extends AnySchema>(
     schema: $Schema,
-  ): Iterable<Fabricated<$Schema>> {
+  ): Enumeration<Fabricated<$Schema>> {
     const base = effectiveSource();
     const coverageSalt = [...base.salt, "coverage"];
 
@@ -159,7 +173,7 @@ export function enumerables(
      */
     const orderSalt = [...base.salt, "coverage", "order"];
 
-    return iterable(() => {
+    const rebuild = (): { built: Resolvable; axis: Axis } => {
       const built = new Fabricator(schema, {
         salt: coverageSalt,
         ordinal: null,
@@ -172,7 +186,19 @@ export function enumerables(
           orderer: orderer(base, orderSalt),
         }),
       };
-    });
+    };
+
+    /**
+     * Built eagerly, like `combinatorial`'s probe, so a schema that cannot be
+     * built throws at the call rather than on first iteration — both APIs fail
+     * at the same point. Its width is `size`. Planning it draws permutations
+     * from a fresh orderer that nothing else shares — each `rebuild()` makes
+     * its own from the same salt — so probing changes nothing the iteration
+     * sees.
+     */
+    const probe = rebuild().axis;
+
+    return iterable(rebuild, () => probe.width);
   }
 
   return { combinatorial, coverage };

@@ -75,7 +75,15 @@ export type Limits = { combinatorial: number };
  */
 export type Enumerable = <const $Schema extends AnySchema>(
   schema: $Schema,
-) => Iterable<Fabricated<$Schema>>;
+) => Enumeration<Fabricated<$Schema>>;
+
+/**
+ * What `combinatorial`/`coverage` return: the lazy instances, plus `size`, how
+ * many there are — known before any is produced. When compared against
+ * `capacity(schema)`, it says up front whether every instance can hold distinct
+ * unique values, or whether some leaf will start a fresh round.
+ */
+export type Enumeration<$T> = Iterable<$T> & { readonly size: bigint };
 
 export type Resolvable = {
   [Kind]: SchemaKind;

@@ -1,3 +1,4 @@
+import type { Capacity } from "../Unique/Capacity";
 import type { Enumerable, Limits } from "../Enumeration/Types";
 import type { Constructor } from "../Fabricator/Constructor";
 import type { Fabricate } from "../Fabricator/Fabricate";
@@ -308,6 +309,20 @@ export interface Instance<$Registry extends PlainObject> extends Pick<
    * it carries no limit.
    */
   coverage: Enumerable;
+
+  /**
+   * How many times one built Fabricator of `schema` can `fabricate()` before a
+   * `T.unique.*` leaf runs out, or `undefined` when no leaf has a known limit.
+   * For a fresh Fabricator, so it does not count what an existing one has
+   * drawn. Builds nothing, so it shifts no later draw. A `date` leaf's
+   * `past`/`future` end is read against the built Fabricator's clock when one
+   * is passed, otherwise against `context.clock`. See `Unique/Capacity.ts` for
+   * what it counts.
+   *
+   * Compare it with `coverage(schema).size` or `combinatorial(schema).size` to
+   * know whether every enumerated instance can hold distinct values.
+   */
+  capacity: Capacity;
 
   /**
    * Derive a new instance laid over this one: anything the overlay names

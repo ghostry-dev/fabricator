@@ -1,4 +1,5 @@
 import { enumerables } from "../Enumeration/Enumerate";
+import { toCapacity, type Capacity } from "../Unique/Capacity";
 import { FabricatorError } from "../Error";
 import { Constructor } from "../Fabricator/Constructor";
 import { Fabricate, type FabricatorCache } from "../Fabricator/Fabricate";
@@ -213,6 +214,14 @@ export function instantiate<$Registry extends PlainObject>(
     ancestry,
   );
 
+  /**
+   * The schema walk is pure; only the clock comes from here — a built
+   * Fabricator's own, else whatever `context.clock` reads at call time, the
+   * same "now" a build in this scope would take.
+   */
+  const capacity: Capacity = (schema) =>
+    toCapacity(schema, "trace" in schema ? schema.trace.clock : context.clock);
+
   const fabricatorCache: FabricatorCache =
     parent?.fabricatorCache ?? new WeakMap();
 
@@ -365,6 +374,7 @@ export function instantiate<$Registry extends PlainObject>(
     fabricate,
     combinatorial,
     coverage,
+    capacity,
     salt: source.salt,
     fork,
     wrap,

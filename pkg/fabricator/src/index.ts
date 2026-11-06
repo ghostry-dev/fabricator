@@ -234,3 +234,10 @@ export type {
   Overlay,
   Stack,
 } from "./Instance/Types";
+
+/**
+ * `capacity`'s type, and what `combinatorial`/`coverage` return, so a caller
+ * holding either can name it.
+ */
+export type { Capacity } from "./Unique/Capacity";
+export type { Enumeration } from "./Enumeration/Types";

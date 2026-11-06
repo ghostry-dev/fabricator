@@ -12,6 +12,7 @@ import { FabricatorError } from "../Error";
 import type { Fabricator } from "../Fabricator/Types";
 import type { Whereby as BigintWhereby } from "../Primitive/bigint/Types";
 import { toEpochRange } from "../Primitive/date/Defaults";
+import { toStringDomain } from "../Primitive/string/Capacity";
 import {
   unboundedContinuous,
   unboundedDiscrete,
@@ -27,6 +28,34 @@ import {
   trackedByKey,
   type Strategy,
 } from "./Strategy";
+
+/**
+ * How many distinct values a unique `number` can produce: every integer of an
+ * integer range, skewed or not, and for a continuous range only the single
+ * value of one whose ends meet — any other continuous range is left uncounted.
+ * Shared by {@link toNumberStrategy} and `Unique/Capacity.ts`.
+ */
+export function toNumberCapacity(meta: NumberMeta): bigint | undefined {
+  if (meta.integer) {
+    return toRangeCapacity(
+      effectiveDiscrete(
+        meta.whereby?.min ?? unboundedDiscrete.min,
+        meta.whereby?.max ?? unboundedDiscrete.max,
+      ),
+    );
+  }
+
+  const min = meta.whereby?.min ?? unboundedContinuous.min;
+  const max = meta.whereby?.max ?? unboundedContinuous.max;
+  return min.value === max.value ? BigInt(1) : undefined;
+}
+
+/**
+ * The size of an inclusive integer range, exact past `Number.MAX_SAFE_INTEGER`.
+ */
+export function toRangeCapacity(range: Range): bigint {
+  return BigInt(range.max) - BigInt(range.min) + BigInt(1);
+}
 
 /**
  * How a unique `number` draws. A uniform integer range small enough for exact
@@ -72,7 +101,7 @@ export function toNumberStrategy(options: {
       draw,
       key,
       redraws,
-      capacity: BigInt(range.max) - BigInt(range.min) + BigInt(1),
+      capacity: toNumberCapacity(meta),
       admits: (value) =>
         typeof value === "number"
         && Number.isInteger(value)
@@ -90,7 +119,7 @@ export function toNumberStrategy(options: {
     draw,
     key,
     redraws,
-    capacity: min.value === max.value ? BigInt(1) : undefined,
+    capacity: toNumberCapacity(meta),
     admits: (value) =>
       typeof value === "number" && value >= min.value && value <= max.value,
   });
@@ -148,7 +177,7 @@ export function toDateStrategy(options: {
     draw: () => new Date(next()),
     key: (value) => (value as Date).getTime(),
     redraws,
-    capacity: BigInt(range.max) - BigInt(range.min) + BigInt(1),
+    capacity: toRangeCapacity(range),
     admits,
   });
 }
@@ -242,6 +271,14 @@ export function toDistinct(
         distribution: meta.whereby?.distribution,
         stream,
         redraws,
+      });
+    case "string":
+      return trackedByKey({
+        label,
+        kind,
+        draw,
+        redraws,
+        ...toStringDomain(meta.whereby),
       });
     default:
       return trackedByKey({ label, kind, draw, redraws });

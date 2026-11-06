@@ -9,11 +9,10 @@ import type { Stream, Trace } from "../../Random/Types";
 import { toStreamFromTrace } from "../../Random";
 import { Claim, Kind, Meta, type Adaptation } from "../../Types";
 import { toLifetimeScope, trackedByKey } from "../../Unique/Strategy";
-import { inline } from "../../Utility/Core";
-import { classes, unicode } from "./Constants";
+import { toStringDomain } from "./Capacity";
+import { bmpScalars, toRanges, toSources } from "./Sources";
 import { Schema } from "./Schema";
 import type {
-  CharacterClass,
   CharacterSource,
   CodepointRange,
   Fabricated,
@@ -69,18 +68,7 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     stream,
   );
 
-  const sources = inline((): ReadonlyArray<[number, CharacterSource]> => {
-    const composition = whereby.composition;
-    if (composition === undefined) return [[1, unicode.scalars]];
-    if (Array.isArray(composition)) return composition;
-
-    return Object.entries(composition).map(
-      ([name, weight]): [number, CharacterSource] => [
-        weight as number,
-        classes[name as CharacterClass],
-      ],
-    );
-  });
+  const sources = toSources(whereby.composition);
 
   const pick = weighted(
     sources.map(([weight, source]): [number, () => string] => [
@@ -125,9 +113,9 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
 
   /**
    * Tracked by hashed key (`Unique/Key.ts`), so memory per produced string is
-   * one number however long the string. No capacity: counting the strings a
-   * length and composition can spell is left undone, so exhaustion surfaces
-   * through the redraws cap.
+   * one number however long the string. Its capacity is counted exactly
+   * (`Capacity.ts`), so it exhausts by counting rather than through the redraws
+   * cap.
    */
   if (meta.unique) {
     const scope = toLifetimeScope(
@@ -136,6 +124,7 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
         kind: "string",
         draw: fabricate,
         redraws: whereby.redraws,
+        ...toStringDomain(whereby),
       }),
       exhaustion,
     );
@@ -158,28 +147,6 @@ export function Fabricator(context: FabricatorContext<Schema>): Fabricator {
     schema: rehydrated,
   };
 }
-
-/** Normalize any character source to its underlying code point ranges. */
-const toRanges = (source: CharacterSource): ReadonlyArray<CodepointRange> => {
-  if (typeof source === "string") {
-    return [...source].map((char): CodepointRange => {
-      const codepoint = char.codePointAt(0)!;
-      return { from: codepoint, to: codepoint };
-    });
-  }
-  if (Array.isArray(source)) return source;
-  return [source as CodepointRange];
-};
-
-/**
- * Single-UTF-16-unit, well-formed code points (the BMP minus surrogates). Used
- * to top up a length budget when a drawn unit is too wide to fit the remaining
- * space (see `fabricate`).
- */
-const bmpScalars: ReadonlyArray<CodepointRange> = [
-  { from: 0x0, to: 0xd7ff },
-  { from: 0xe000, to: 0xffff },
-];
 
 /**
  * Compile a source into a generator of single characters: pick one of its

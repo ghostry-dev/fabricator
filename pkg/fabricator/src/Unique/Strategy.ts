@@ -100,18 +100,7 @@ export function exactValues(
   entries: ReadonlyArray<readonly [number, unknown]>,
   stream: Stream,
 ): Strategy {
-  const keyer = toKeyer();
-  const merged = new Map<number, [number, { key: number; value: unknown }]>();
-
-  for (const [weight, value] of entries) {
-    if (!isDrawable(weight)) continue;
-    const key = keyer(value);
-    const known = merged.get(key);
-    if (known) known[0] += weight;
-    else merged.set(key, [weight, { key, value }]);
-  }
-
-  const values = [...merged.values()];
+  const { keyer, values } = toDistinctValues(entries);
   const capacity = BigInt(values.length);
 
   return {
@@ -133,6 +122,29 @@ export function exactValues(
       };
     },
   };
+}
+
+/**
+ * `entries`' drawable values with equal ones merged and their weights summed,
+ * each tagged with its canonical key — what {@link exactValues} draws from, and
+ * what `Unique/Capacity.ts` counts for a unique `enum`. Returns the
+ * {@link Keyer} too, since a claim must key a value the same way.
+ */
+export function toDistinctValues(
+  entries: ReadonlyArray<readonly [number, unknown]>,
+): { keyer: Keyer; values: Array<[number, { key: number; value: unknown }]> } {
+  const keyer = toKeyer();
+  const merged = new Map<number, [number, { key: number; value: unknown }]>();
+
+  for (const [weight, value] of entries) {
+    if (!isDrawable(weight)) continue;
+    const key = keyer(value);
+    const known = merged.get(key);
+    if (known) known[0] += weight;
+    else merged.set(key, [weight, { key, value }]);
+  }
+
+  return { keyer, values: [...merged.values()] };
 }
 
 /**
@@ -279,6 +291,8 @@ export function trackedByKey(options: {
   kind: string;
   draw: () => unknown;
   by?: ((value: any) => unknown) | undefined;
+  capacity?: bigint | undefined;
+  admits?: ((value: unknown) => boolean) | undefined;
   redraws?: number | undefined;
 }): Strategy {
   const { by, ...rest } = options;
