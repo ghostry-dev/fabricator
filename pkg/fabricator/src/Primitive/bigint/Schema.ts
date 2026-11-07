@@ -11,7 +11,14 @@ import {
   type SatisfiesThis,
 } from "../../Schema/Satisfies";
 import { Kind, Meta } from "../../Types";
-import type { Core, Fabricated, Meta as ThisMeta } from "./Types";
+import { toAdmits } from "./Admits";
+import type {
+  Admits,
+  Core,
+  Fabricated,
+  InputAdmits,
+  Meta as ThisMeta,
+} from "./Types";
 
 /**
  * Buildable `bigint` recipe: a range (`whereby` — required, like `string`; no
@@ -32,6 +39,15 @@ export interface Schema<
    * validation of `produce`) still has it to check against.
    */
   as: (produce: Produce<Fabricated>) => Schema<$Meta, $Adaptations>;
+
+  /**
+   * State what adapters admit for this schema, widening what `whereby` draws —
+   * see `string/Schema.ts`'s `admits` for the full contract. A safe-integer
+   * `number` converts as in `whereby`.
+   */
+  admits: (
+    admitted: InputAdmits,
+  ) => Schema<$Meta & { admits: Admits }, $Adaptations>;
 
   /**
    * Check that this schema's fabricated value type is assignable to `$Target`.
@@ -67,6 +83,11 @@ export function Schema<
     [Kind]: "bigint",
     as: (produce) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
+    admits: (admitted) =>
+      Schema({
+        ...schema,
+        [Meta]: { ...schema[Meta], admits: toAdmits(schema[Meta], admitted) },
+      }),
     satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),

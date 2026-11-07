@@ -1,5 +1,10 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { Bound, InputBound } from "../../Bound";
+import type {
+  AdmittedEnds,
+  Bound,
+  InputAdmittedEnds,
+  InputBound,
+} from "../../Bound";
 import type { Distribution } from "../../Distribution";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
@@ -49,6 +54,38 @@ export type Whereby = {
   redraws?: number | undefined;
 };
 
+/**
+ * `.admits(...)`'s input: the ends an adapter states, widening what `whereby`
+ * draws. An end is replaced (epoch milliseconds convert as in `whereby`),
+ * `Infinity` (or `-Infinity` for `min`) states no limit, and an omitted end
+ * keeps what is admitted already.
+ */
+export type InputAdmits = InputAdmittedEnds<Date | number>;
+
+/**
+ * `T.date.past`'s `.admits`: its upper end is the clock, unknown until a
+ * Fabricator is built, so only `min` can be widened.
+ */
+export type InputPastAdmits = Pick<InputAdmits, "min">;
+
+/** `T.date.future`'s `.admits`: likewise, only `max`. */
+export type InputFutureAdmits = Pick<InputAdmits, "max">;
+
+/** The `.admits` input a date schema of `$Meta` takes, by its `mode`. */
+export type InputAdmitsOf<$Meta extends Meta> = $Meta extends { mode: "past" }
+  ? InputPastAdmits
+  : InputAdmitsOfFuture<$Meta>;
+
+type InputAdmitsOfFuture<$Meta extends Meta> = $Meta extends { mode: "future" }
+  ? InputFutureAdmits
+  : InputAdmits;
+
+/**
+ * `[Meta].admits`, set only by `.admits(...)` and complete once set: an absent
+ * end states no limit (`Admits.ts`'s `toAdmits`).
+ */
+export type Admits = AdmittedEnds<Date>;
+
 export type Fabricated = Date;
 
 /**
@@ -62,6 +99,7 @@ export type Meta = {
   mode?: "past" | "future";
   whereby?: Whereby;
   unique?: true;
+  admits?: Admits | undefined;
   produce?: Produce<Fabricated>;
 };
 

@@ -1,8 +1,4 @@
-import {
-  FabricatorError,
-  effectiveDiscrete,
-  type Bound,
-} from "@ghostry/fabricator";
+import { FabricatorError, type Bound } from "@ghostry/fabricator";
 import {
   walk,
   type AdaptationsOf,
@@ -396,15 +392,15 @@ function convert(
      */
     case "array": {
       const s = schema as Primitive.array.Schema;
-      const length = s[Meta].whereby?.length;
-      const items = recurse(s[Meta].definition, context);
-      const unique = s[Meta].unique ? { uniqueItems: true } : {};
-      if (!length) return Type.Array(items, unique);
-      const range = effectiveDiscrete(length.min, length.max);
+      const meta = s[Meta];
+      const items = recurse(meta.definition, context);
       return Type.Array(items, {
-        minItems: range.min,
-        maxItems: range.max,
-        ...unique,
+        ...lengthBound(
+          meta.admits?.length ?? meta.whereby?.length,
+          "minItems",
+          "maxItems",
+        ),
+        ...(meta.unique ? { uniqueItems: true } : {}),
       });
     }
 
@@ -519,16 +515,17 @@ function convert(
 
     case "bigint": {
       const s = schema as Primitive.bigint.Schema;
-      const whereby = s[Meta].whereby;
+      const ends = s[Meta].admits ?? s[Meta].whereby;
       return Type.BigInt(
-        whereby
+        ends
           ? {
-              ...numericBound(whereby.min, "minimum", "exclusiveMinimum"),
-              ...numericBound(whereby.max, "maximum", "exclusiveMaximum"),
+              ...numericBound(ends.min, "minimum", "exclusiveMinimum"),
+              ...numericBound(ends.max, "maximum", "exclusiveMaximum"),
             }
           : undefined,
       );
     }
+
     case "boolean":
       return Type.Boolean();
 
@@ -552,19 +549,19 @@ function convert(
 
     case "date": {
       const s = schema as Primitive.date.Schema;
-      const whereby = s[Meta].whereby;
-      if (!whereby?.min && !whereby?.max) return Type.Date();
+      const ends = s[Meta].admits ?? s[Meta].whereby;
+      if (!ends?.min && !ends?.max) return Type.Date();
       return Type.Date({
-        ...(whereby.min
+        ...(ends.min
           ? timestampBound(
-              whereby.min,
+              ends.min,
               "minimumTimestamp",
               "exclusiveMinimumTimestamp",
             )
           : {}),
-        ...(whereby.max
+        ...(ends.max
           ? timestampBound(
-              whereby.max,
+              ends.max,
               "maximumTimestamp",
               "exclusiveMaximumTimestamp",
             )
@@ -583,13 +580,13 @@ function convert(
     case "number": {
       const s = schema as Primitive.number.Schema;
       const meta = s[Meta];
-      const whereby = meta?.whereby;
+      const ends = meta?.admits ?? meta?.whereby;
       const options = {
         ...meta?.hints,
-        ...(whereby
+        ...(ends
           ? {
-              ...numericBound(whereby.min, "minimum", "exclusiveMinimum"),
-              ...numericBound(whereby.max, "maximum", "exclusiveMaximum"),
+              ...numericBound(ends.min, "minimum", "exclusiveMinimum"),
+              ...numericBound(ends.max, "maximum", "exclusiveMaximum"),
             }
           : {}),
       };
@@ -598,13 +595,13 @@ function convert(
     case "string": {
       const s = schema as Primitive.string.Schema;
       const meta = s[Meta];
-      const length = meta?.whereby?.length;
-      const range = length
-        ? effectiveDiscrete(length.min, length.max)
-        : undefined;
       return Type.String({
         ...meta?.hints,
-        ...(range ? { minLength: range.min, maxLength: range.max } : {}),
+        ...lengthBound(
+          meta?.admits?.length ?? meta?.whereby?.length,
+          "minLength",
+          "maxLength",
+        ),
       });
     }
 
@@ -648,7 +645,7 @@ function convert(
  * `minimum`/`maximum`; exclusive uses `exclusiveMinimum`/`exclusiveMaximum`
  * with the stated value, not the discrete interior — validation language
  * matches fabrication's exclusive end. Length has no exclusive keyword and goes
- * through {@link effectiveDiscrete} at the call site instead.
+ * through {@link lengthBound} instead.
  */
 function numericBound<$Value extends number | bigint>(
   bound: Bound<$Value> | undefined,
@@ -746,16 +743,56 @@ function toConst(value: unknown): TSchema {
 }
 
 /**
- * The property count a record states, as `Type.Record` options. Only a
- * `T.unique.record` has one: its keys are drawn distinct, so its drawn size is
- * the record's. A plain record's colliding keys collapse, leaving no lower
- * bound, and a producer replaces the draw that the size described.
+ * Length/size ends → the inclusive integer keywords JSON Schema has for them,
+ * stepping an exclusive end to the integer inside it, since none of
+ * `minLength`/`minItems`/`minProperties` has an exclusive form. An absent end,
+ * which `.admits` stores for no limit, states nothing.
+ */
+function lengthBound<$Min extends string, $Max extends string>(
+  ends:
+    | { min?: Bound<number> | undefined; max?: Bound<number> | undefined }
+    | undefined,
+  min: $Min,
+  max: $Max,
+): { [K in $Min | $Max]?: number } {
+  const keywords: { [key: string]: number } = {};
+  if (ends?.min) {
+    keywords[min] = ends.min.exclusive ? ends.min.value + 1 : ends.min.value;
+  }
+  if (ends?.max) {
+    keywords[max] = ends.max.exclusive ? ends.max.value - 1 : ends.max.value;
+  }
+
+  return keywords as { [K in $Min | $Max]?: number };
+}
+
+/**
+ * The property count a record states, as `Type.Record` options: what `.admits`
+ * stored, else what the record can fabricate — the range core's
+ * `record/Admits.ts` `toFabricableSize` checks `.admits` against. A unique
+ * record draws its keys distinct, so its drawn size is exact. A plain record's
+ * colliding keys collapse, so only `size.max` is a real bound: the first
+ * attempt always lands, guaranteeing one entry when `minTried` is at least 1
+ * and none otherwise. A producer replaces the draw that the size described, so
+ * without `.admits` it states none.
  */
 function toPropertyCount(meta: Primitive.record.Meta): {
   minProperties?: number;
   maxProperties?: number;
 } {
-  if (meta.produce || !meta.unique) return {};
-  const size = effectiveDiscrete(meta.whereby.size.min, meta.whereby.size.max);
-  return { minProperties: size.min, maxProperties: size.max };
+  if (meta.admits) {
+    return lengthBound(meta.admits.size, "minProperties", "maxProperties");
+  }
+
+  if (meta.produce) return {};
+
+  if (meta.unique) {
+    return lengthBound(meta.whereby.size, "minProperties", "maxProperties");
+  }
+
+  const { size } = meta.whereby;
+  return {
+    minProperties: (size.minTried ?? 0) >= 1 ? 1 : 0,
+    maxProperties: size.max,
+  };
 }

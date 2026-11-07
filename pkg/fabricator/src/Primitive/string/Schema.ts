@@ -11,7 +11,15 @@ import {
   type SatisfiesThis,
 } from "../../Schema/Satisfies";
 import { Kind, Meta } from "../../Types";
-import type { Core, Fabricated, JsonSchema, Meta as ThisMeta } from "./Types";
+import { toAdmits } from "./Admits";
+import type {
+  Core,
+  Fabricated,
+  JsonSchema,
+  Meta as ThisMeta,
+  Admits,
+  InputAdmits,
+} from "./Types";
 
 /**
  * Buildable `string` recipe: length/composition (`whereby` — required, unlike
@@ -36,6 +44,27 @@ export interface Schema<
     produce: Produce<Fabricated>,
     hints?: JsonSchema,
   ) => Schema<$Meta, $Adaptations>;
+
+  /**
+   * State what adapters admit for this schema, widening the bounds `whereby`
+   * draws — a `length.max` set small for test data need not cap what is
+   * accepted at runtime. Canonical `admits`; every other kind's method is the
+   * same and points here.
+   *
+   * Each end named replaces the current one, `Infinity` (`-Infinity` for a
+   * `min`) states no limit, and each end left out keeps what is admitted
+   * already — by default the drawn bounds, which is what an adapter states
+   * without this — so successive calls merge. Admitting may only widen: an end
+   * that excludes a value this schema can fabricate throws
+   * `AdmitsExcludesDrawError`, since that value would fail its own validation.
+   * Under `.as(produce)` nothing is drawn and nothing is checked.
+   *
+   * This library validates nothing itself; `admits` only describes the set an
+   * adapter translates. `.as(...)` and `.adapt(...)` carry it forward.
+   */
+  admits: (
+    admitted: InputAdmits,
+  ) => Schema<$Meta & { admits: Admits }, $Adaptations>;
 
   /**
    * Check that this schema's fabricated value type is assignable to `$Target`.
@@ -108,6 +137,11 @@ export function Schema<
     [Kind]: "string",
     as: (produce, hints) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce, hints } }),
+    admits: (admitted) =>
+      Schema({
+        ...schema,
+        [Meta]: { ...schema[Meta], admits: toAdmits(schema[Meta], admitted) },
+      }),
     satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),

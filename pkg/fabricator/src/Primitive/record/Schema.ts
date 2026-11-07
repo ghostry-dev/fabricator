@@ -11,7 +11,8 @@ import {
   type SatisfiesThis,
 } from "../../Schema/Satisfies";
 import { Kind, Meta } from "../../Types";
-import type { Core, Fabricated, Key, Value } from "./Types";
+import { toAdmits } from "./Admits";
+import type { Core, Fabricated, Key, Value, InputAdmits } from "./Types";
 
 /**
  * The buildable recipe for a `record`: a key Schema and a value Schema, drawn
@@ -31,6 +32,14 @@ export interface Schema<
   as: (
     produce: Produce<Fabricated<$Key, $Value>>,
   ) => Schema<$Key, $Value, $Adaptations>;
+
+  /**
+   * State what adapters admit for this schema, widening what `whereby` draws —
+   * see `string/Schema.ts`'s `admits` for the full contract. A plain record
+   * fabricates `[minTried >= 1 ? 1 : 0, size.max]` entries, since colliding
+   * keys collapse; a unique record its drawn `size`.
+   */
+  admits: (admitted: InputAdmits) => Schema<$Key, $Value, $Adaptations>;
 
   /**
    * Check that this schema's fabricated value type is assignable to `$Target`.
@@ -74,6 +83,11 @@ export function Schema<
     [Kind]: "record",
     as: (produce) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
+    admits: (admitted) =>
+      Schema({
+        ...schema,
+        [Meta]: { ...schema[Meta], admits: toAdmits(schema[Meta], admitted) },
+      }),
     satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),

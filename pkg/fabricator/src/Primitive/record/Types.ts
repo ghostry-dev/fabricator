@@ -1,5 +1,10 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { InputLength, Length } from "../../Bound";
+import type {
+  AdmittedEnds,
+  InputAdmittedEnds,
+  InputLength,
+  Length,
+} from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import {
@@ -105,6 +110,21 @@ export type InputUniqueWhereby = { size: InputLength } & Redraws;
 export type UniqueWhereby = { size: Length; redraws?: number | undefined };
 
 /**
+ * `.admits(...)`'s input: the property count an adapter states, widening what
+ * the record fabricates. An end is replaced, `Infinity` states no limit, and an
+ * omitted end keeps what is admitted already. A plain record fabricates
+ * `[minTried >= 1 ? 1 : 0, size.max]` entries, since colliding keys collapse
+ * but the first attempt always lands; a unique record its drawn `size`.
+ */
+export type InputAdmits = { size?: InputAdmittedEnds<number> | undefined };
+
+/**
+ * `[Meta].admits`, set only by `.admits(...)` and complete once set: an absent
+ * end states no limit (`Admits.ts`'s `toAdmits`).
+ */
+export type Admits = { size: AdmittedEnds<number> };
+
+/**
  * `key`/`value` stay required regardless of `produce` — both are known at
  * `T.record(...)` call time and describe the shape TypeBox derives either way.
  * `produce` is carried _alongside_ `whereby` rather than replacing it, so a
@@ -117,6 +137,7 @@ export type Meta<$Key extends Key = Key, $Value extends Value = Value> =
       value: $Value;
       whereby: Whereby;
       unique?: never;
+      admits?: Admits | undefined;
       produce?: never;
     }
   | {
@@ -124,6 +145,7 @@ export type Meta<$Key extends Key = Key, $Value extends Value = Value> =
       value: $Value;
       whereby: UniqueWhereby;
       unique: true;
+      admits?: Admits | undefined;
       produce?: never;
     }
   | {
@@ -131,6 +153,7 @@ export type Meta<$Key extends Key = Key, $Value extends Value = Value> =
       value: $Value;
       whereby?: Whereby | UniqueWhereby;
       unique?: true;
+      admits?: Admits | undefined;
       produce: Produce<Fabricated<$Key, $Value>>;
     };
 

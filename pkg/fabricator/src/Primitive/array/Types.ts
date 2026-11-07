@@ -1,5 +1,10 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { InputLength, Length } from "../../Bound";
+import type {
+  AdmittedEnds,
+  InputAdmittedEnds,
+  InputLength,
+  Length,
+} from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
@@ -18,6 +23,19 @@ export type InputWhereby = { length: InputLength };
 export type InputUniqueWhereby = InputWhereby & Redraws;
 
 export type Whereby = { length: Length; redraws?: number | undefined };
+
+/**
+ * `.admits(...)`'s input: the length an adapter states, widening what `whereby`
+ * draws. An end is replaced, `Infinity` (or `-Infinity` for `min`) states no
+ * limit, and an omitted end keeps what is admitted already.
+ */
+export type InputAdmits = { length?: InputAdmittedEnds<number> | undefined };
+
+/**
+ * `[Meta].admits`, set only by `.admits(...)` and complete once set: an absent
+ * end states no limit (`Admits.ts`'s `toAdmits`).
+ */
+export type Admits = { length: AdmittedEnds<number> };
 
 /**
  * `T.unique.array`'s marker on `[Meta]`: members are distinct within each
@@ -41,12 +59,14 @@ export type Meta<$Definition extends Definition = Definition> =
       definition: $Definition;
       whereby: Whereby;
       unique?: Unique;
+      admits?: Admits | undefined;
       produce?: never;
     }
   | {
       definition: $Definition;
       whereby?: Whereby;
       unique?: Unique;
+      admits?: Admits | undefined;
       produce: Produce<Fabricated<$Definition>>;
     };
 

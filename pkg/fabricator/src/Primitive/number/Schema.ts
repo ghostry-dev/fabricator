@@ -11,7 +11,15 @@ import {
   type SatisfiesThis,
 } from "../../Schema/Satisfies";
 import { Kind, Meta } from "../../Types";
-import type { Core, Fabricated, JsonSchema, Meta as ThisMeta } from "./Types";
+import { toAdmits } from "./Admits";
+import type {
+  Core,
+  Fabricated,
+  JsonSchema,
+  Meta as ThisMeta,
+  Admits,
+  InputAdmits,
+} from "./Types";
 
 /**
  * Buildable `number` recipe: a range/distribution (`whereby`, absent for the
@@ -39,6 +47,15 @@ export interface Schema<
     produce: Produce<Fabricated>,
     hints?: JsonSchema,
   ) => Schema<$Meta, $Adaptations>;
+
+  /**
+   * State what adapters admit for this schema, widening what `whereby` draws —
+   * see `string/Schema.ts`'s `admits` for the full contract. An omitted
+   * `whereby` end is unbounded, so only no limit admits it.
+   */
+  admits: (
+    admitted: InputAdmits,
+  ) => Schema<$Meta & { admits: Admits }, $Adaptations>;
 
   /**
    * Check that this schema's fabricated value type is assignable to `$Target`.
@@ -74,6 +91,11 @@ export function Schema<
     [Kind]: "number",
     as: (produce, hints) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce, hints } }),
+    admits: (admitted) =>
+      Schema({
+        ...schema,
+        [Meta]: { ...schema[Meta], admits: toAdmits(schema[Meta], admitted) },
+      }),
     satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),

@@ -527,15 +527,15 @@ export namespace FabricatorError {
   }
 
   /**
-   * A bound given as a `number` for a kind stored in another type (`bigint`,
-   * `Date`) that does not convert exactly — a fractional or unsafe integer for
-   * a `bigint`, an instant `Date` cannot hold, or a non-finite value where an
-   * end must be finite.
+   * A bound given as a `number` that does not convert exactly to its kind's
+   * type — a fractional or unsafe integer for a `bigint`, an instant `Date`
+   * cannot hold — or a non-finite value where an end must be finite.
    */
   export class InvalidBoundError extends FabricatorError {
     constructor(
       /**
-       * The registry entry that was called, e.g. `"T.bigint.whereby"`.
+       * What was called, e.g. `"T.bigint.whereby"` or `".admits on a bigint
+       * schema"`.
        */
       public readonly label: string,
 
@@ -556,7 +556,54 @@ export namespace FabricatorError {
     ) {
       super();
       this.name = "@ghostry/fabricator:InvalidBoundError";
-      this.message = `${label}'s ${end} must be ${expected}; received ${String(value)}.`;
+      this.message = `${label}: ${end} must be ${expected}; received ${String(value)}.`;
+    }
+  }
+
+  /**
+   * `.admits(...)` names an end that excludes values the schema fabricates.
+   * Admitted ends may only widen the fabricated range — a fabricated value must
+   * pass the validation an adapter builds from them.
+   */
+  export class AdmitsExcludesDrawError extends FabricatorError {
+    constructor(
+      /**
+       * What was called, e.g. `".admits on a string schema"`.
+       */
+      public readonly label: string,
+
+      /**
+       * The rejected end's path, e.g. `"length.max"` or `"min"`.
+       */
+      public readonly end: string,
+
+      /**
+       * The admitted end, canonical as stored.
+       */
+      public readonly admitted: {
+        readonly value: unknown;
+        readonly exclusive: boolean;
+      },
+
+      /**
+       * The fabricated end it excludes values from; absent when that end is
+       * drawn against the kind's unbounded cap, which only no limit admits.
+       */
+      public readonly fabricated:
+        | { readonly value: unknown; readonly exclusive: boolean }
+        | undefined,
+    ) {
+      super();
+      this.name = "@ghostry/fabricator:AdmitsExcludesDrawError";
+      const drawn =
+        fabricated === undefined
+          ? "an unbounded end"
+          : `${end}=${describeBound(fabricated)}`;
+      const unlimited = end.endsWith("min") ? "-Infinity" : "Infinity";
+      this.message =
+        `${label}: ${end}=${describeBound(admitted)} excludes values the `
+        + `schema fabricates, which reach ${drawn}. Admitted ends may only `
+        + `widen the fabricated range; pass ${unlimited} for no limit.`;
     }
   }
 

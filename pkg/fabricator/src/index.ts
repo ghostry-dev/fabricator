@@ -124,6 +124,13 @@ export { registry } from "./Schema/Registry";
 export { effectiveDiscrete, toBound } from "./Bound";
 export type { Bound, InputBound } from "./Bound";
 /**
+ * What `.admits(...)` accepts for a group of ends, and how `[Meta].admits`
+ * stores it (an absent end states no limit). Exported so an argument built
+ * programmatically, or an `.adapt` producer reading `meta.admits`, can be typed
+ * — the same rationale as `Bound`.
+ */
+export type { AdmittedEnds, InputAdmittedEnds } from "./Bound";
+/**
  * The `length` shapes `T.string`/`T.array`'s `.whereby(...)` accept and store,
  * and the `distribution` every range-bearing `whereby` takes. Exported so a
  * `whereby` argument built programmatically, or read back off a schema's `meta`

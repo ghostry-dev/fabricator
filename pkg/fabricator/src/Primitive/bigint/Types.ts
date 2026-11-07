@@ -1,5 +1,10 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { Bound, InputBound } from "../../Bound";
+import type {
+  AdmittedEnds,
+  Bound,
+  InputAdmittedEnds,
+  InputBound,
+} from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 
@@ -13,6 +18,20 @@ export type InputWhereby = {
 };
 
 export type Whereby = { min: Bound<bigint>; max: Bound<bigint> };
+
+/**
+ * `.admits(...)`'s input: the ends an adapter states, widening what `whereby`
+ * draws. An end is replaced (a safe-integer `number` converts as in `whereby`),
+ * `Infinity` (or `-Infinity` for `min`) states no limit, and an omitted end
+ * keeps what is admitted already.
+ */
+export type InputAdmits = InputAdmittedEnds<bigint | number>;
+
+/**
+ * `[Meta].admits`, set only by `.admits(...)` and complete once set: an absent
+ * end states no limit (`Admits.ts`'s `toAdmits`).
+ */
+export type Admits = AdmittedEnds<bigint>;
 
 export type Fabricated = bigint;
 
@@ -28,8 +47,18 @@ export type Fabricated = bigint;
  * (`Unique/Distinct.ts`'s `toBigintStrategy`).
  */
 export type Meta =
-  | { whereby: Whereby; unique?: true; produce?: never }
-  | { whereby?: Whereby; unique?: true; produce: Produce<Fabricated> };
+  | {
+      whereby: Whereby;
+      unique?: true;
+      admits?: Admits | undefined;
+      produce?: never;
+    }
+  | {
+      whereby?: Whereby;
+      unique?: true;
+      admits?: Admits | undefined;
+      produce: Produce<Fabricated>;
+    };
 
 export type Core<
   $Meta extends Meta = Meta,

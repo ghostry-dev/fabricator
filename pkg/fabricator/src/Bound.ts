@@ -250,3 +250,159 @@ export function toLengthRange(length: InputLength, label: string): Length {
 
   return { min: range.min, max: range.max, distribution: length.distribution };
 }
+
+/**
+ * The ends an adapter states for a schema, as `.admits(...)` stores them. An
+ * absent end states no limit. Also the shape of a schema's fabricable range,
+ * where an absent end is one drawn against the kind's unbounded cap.
+ */
+export type AdmittedEnds<$T> = {
+  min?: Bound<$T> | undefined;
+  max?: Bound<$T> | undefined;
+};
+
+/**
+ * What `.admits({ min, max })` accepts: an end as `whereby` takes it, or
+ * `-Infinity`/`Infinity` (bare, or as a `Bound`'s value) for no limit. An
+ * omitted end keeps what is admitted already.
+ */
+export type InputAdmittedEnds<$T> = {
+  min?: InputBound<$T> | undefined;
+  max?: InputBound<$T> | undefined;
+};
+
+/**
+ * Whether every value `inner` admits at one end is one `outer` admits too. Each
+ * kind's notion of "admits" differs — a whole-number end excludes by `±1`, a
+ * continuous end by its endpoint alone — so each passes its own.
+ */
+export type Within<$T> = (
+  inner: Bound<$T>,
+  outer: Bound<$T>,
+  end: "min" | "max",
+) => boolean;
+
+/**
+ * Continuous ends: a farther value, or the same value with `inner` no less
+ * exclusive than `outer`.
+ */
+export const continuousWithin: Within<number> = (inner, outer, end) => {
+  if (inner.value === outer.value) return inner.exclusive || !outer.exclusive;
+  return end === "min" ? inner.value > outer.value : inner.value < outer.value;
+};
+
+/** Whole-number ends, compared as the inclusive integers they leave. */
+export const discreteWithin: Within<number> = (inner, outer, end) =>
+  end === "min"
+    ? discreteEnd(inner, end) >= discreteEnd(outer, end)
+    : discreteEnd(inner, end) <= discreteEnd(outer, end);
+
+export const bigintWithin: Within<bigint> = (inner, outer, end) =>
+  end === "min"
+    ? bigintEnd(inner, end) >= bigintEnd(outer, end)
+    : bigintEnd(inner, end) <= bigintEnd(outer, end);
+
+/** `Date` holds whole milliseconds, so its ends compare as discrete epoch ms. */
+export const dateWithin: Within<Date> = (inner, outer, end) =>
+  discreteWithin(epochBound(inner), epochBound(outer), end);
+
+function discreteEnd(bound: Bound<number>, end: "min" | "max"): number {
+  if (!bound.exclusive) return bound.value;
+  return end === "min" ? bound.value + 1 : bound.value - 1;
+}
+
+function bigintEnd(bound: Bound<bigint>, end: "min" | "max"): bigint {
+  if (!bound.exclusive) return bound.value;
+  return end === "min" ? bound.value + BigInt(1) : bound.value - BigInt(1);
+}
+
+/** A `number` end for `.admits`, where a finite value is required. */
+export function toFiniteBound(
+  label: string,
+  end: "min" | "max",
+  input: InputBound<number>,
+): Bound<number> {
+  const bound = toBound(input);
+  if (!Number.isFinite(bound.value)) {
+    throw new FabricatorError.InvalidBoundError(
+      label,
+      end,
+      bound.value,
+      `a finite number, or ${end === "min" ? "-Infinity" : "Infinity"} for no limit`,
+    );
+  }
+  return bound;
+}
+
+/**
+ * Resolve one `.admits(...)` group of ends — a length, a size, or a kind's own
+ * `min`/`max`. Each end the caller names replaces the current one, `±Infinity`
+ * dropping it; each end left out keeps `current`, which is what was admitted
+ * before, or the kind's default. Successive calls therefore merge per end.
+ *
+ * Admitting may only widen what is fabricated, or a fabricated value would fail
+ * the validation an adapter builds from these ends: each resolved end must
+ * admit every value of `fabricable` at that side, an absent fabricable end
+ * (drawn against the kind's unbounded cap) admitting only no limit. A
+ * `fabricable` of `undefined` skips the check — under `.as(produce)` there is
+ * nothing drawn to compare against. The result is complete and minimal: an end
+ * with no limit is left off.
+ */
+export function toAdmittedEnds<$T, $Input>(
+  label: string,
+  path: string | undefined,
+  current: AdmittedEnds<$T>,
+  fabricable: AdmittedEnds<$T> | undefined,
+  input: InputAdmittedEnds<$Input> | undefined,
+  convert: (end: "min" | "max", input: InputBound<$Input>) => Bound<$T>,
+  within: Within<$T>,
+): AdmittedEnds<$T> {
+  const resolved: AdmittedEnds<$T> = {};
+
+  for (const end of ["min", "max"] as const) {
+    const bound = toAdmittedEnd(end, current[end], input?.[end], convert);
+    if (bound !== undefined) resolved[end] = bound;
+  }
+
+  if (fabricable !== undefined) {
+    assertWidens(label, path, resolved, fabricable, within);
+  }
+
+  return resolved;
+}
+
+function toAdmittedEnd<$T, $Input>(
+  end: "min" | "max",
+  current: Bound<$T> | undefined,
+  given: InputBound<$Input> | undefined,
+  convert: (end: "min" | "max", input: InputBound<$Input>) => Bound<$T>,
+): Bound<$T> | undefined {
+  if (given === undefined) return current;
+  if (toBound(given).value === (end === "min" ? -Infinity : Infinity)) {
+    return undefined;
+  }
+
+  return convert(end, given);
+}
+
+function assertWidens<$T>(
+  label: string,
+  path: string | undefined,
+  admitted: AdmittedEnds<$T>,
+  fabricable: AdmittedEnds<$T>,
+  within: Within<$T>,
+): void {
+  for (const end of ["min", "max"] as const) {
+    const outer = admitted[end];
+    if (outer === undefined) continue;
+    const inner = fabricable[end];
+    if (inner === undefined || !within(inner, outer, end)) {
+      throw new FabricatorError.AdmitsExcludesDrawError(
+        label,
+        path === undefined ? end : `${path}.${end}`,
+        outer,
+        inner,
+      );
+    }
+  }
+}

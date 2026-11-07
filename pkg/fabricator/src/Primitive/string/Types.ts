@@ -1,5 +1,10 @@
 import type { Adaptations } from "../../Adapter/Types";
-import type { InputLength, Length } from "../../Bound";
+import type {
+  AdmittedEnds,
+  InputAdmittedEnds,
+  InputLength,
+  Length,
+} from "../../Bound";
 import type { Produce } from "../../Random/Types";
 import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
 import type { classes } from "./Constants";
@@ -44,6 +49,19 @@ export type Whereby = {
   redraws?: number | undefined;
 };
 
+/**
+ * `.admits(...)`'s input: the length an adapter states, widening what `whereby`
+ * draws. An end is replaced, `Infinity` (or `-Infinity` for `min`) states no
+ * limit, and an omitted end keeps what is admitted already.
+ */
+export type InputAdmits = { length?: InputAdmittedEnds<number> | undefined };
+
+/**
+ * `[Meta].admits`, set only by `.admits(...)` and complete once set: an absent
+ * end states no limit (`Admits.ts`'s `toAdmits`).
+ */
+export type Admits = { length: AdmittedEnds<number> };
+
 export type Fabricated = string;
 
 /**
@@ -71,12 +89,14 @@ export type Meta =
   | {
       whereby: Whereby;
       hints?: JsonSchema | undefined;
+      admits?: Admits | undefined;
       unique?: true;
       produce?: never;
     }
   | {
       whereby?: Whereby;
       hints?: JsonSchema | undefined;
+      admits?: Admits | undefined;
       unique?: true;
       produce: Produce<Fabricated>;
     };

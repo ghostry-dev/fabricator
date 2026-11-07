@@ -1,6 +1,7 @@
-import { expect, test } from ".";
 import { initialize, registry } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
+import { Value } from "@sinclair/typebox/value";
+import { expect, test } from ".";
 
 /**
  * The registry `initialize()` hands back, so the helpers below stay typed.
@@ -59,3 +60,33 @@ test("toTypeBox collapses a literal-union key to an object", () => {
   expect(schema.type).toBe("object");
   expect(Object.keys(schema.properties).sort()).toEqual(["a", "b"]);
 });
+
+/**
+ * Colliding keys collapse, so a plain record states only what survives them:
+ * `size.max` above, and one entry below once `minTried` guarantees an attempt.
+ * Two possible keys and up to eight attempts collide on nearly every draw. The
+ * key is an open string rather than a literal union, which would collapse to an
+ * object requiring every key.
+ */
+test.each([
+  { minTried: 0, minProperties: 0 },
+  { minTried: 1, minProperties: 1 },
+] as const)(
+  "a plain record with minTried $minTried states minProperties $minProperties",
+  ({ row }) => {
+    const { T, Fabricator } = initialize({ salt: "record-typebox-count" });
+    const schema = T.record(
+      T.string.whereby({ length: 1, composition: [[1, "ab"]] }),
+      value(T),
+    ).whereby({ size: { minTried: row.minTried, max: 8 } });
+
+    const mapped = toTypeBox(schema);
+    expect(mapped.minProperties).toBe(row.minProperties);
+    expect(mapped.maxProperties).toBe(8);
+
+    for (let salt = 0; salt < 200; salt++) {
+      const built = new Fabricator(schema, { salt: String(salt) });
+      expect(Value.Check(mapped, built.fabricate())).toBe(true);
+    }
+  },
+);

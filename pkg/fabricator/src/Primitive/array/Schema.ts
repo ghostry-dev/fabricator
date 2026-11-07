@@ -11,7 +11,8 @@ import {
   type SatisfiesThis,
 } from "../../Schema/Satisfies";
 import { Kind, Meta } from "../../Types";
-import type { Core, Definition, Fabricated } from "./Types";
+import { toAdmits } from "./Admits";
+import type { Core, Definition, Fabricated, InputAdmits } from "./Types";
 
 /**
  * The buildable recipe for an `array`: a single element Schema, repeated
@@ -29,6 +30,12 @@ export interface Schema<
   as: (
     produce: Produce<Fabricated<$Definition>>,
   ) => Schema<$Definition, $Adaptations>;
+
+  /**
+   * State what adapters admit for this schema, widening what `whereby` draws —
+   * see `string/Schema.ts`'s `admits` for the full contract.
+   */
+  admits: (admitted: InputAdmits) => Schema<$Definition, $Adaptations>;
 
   /**
    * Check that this schema's fabricated value type is assignable to `$Target`.
@@ -66,6 +73,11 @@ export function Schema<
     [Kind]: "array",
     as: (produce) =>
       Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
+    admits: (admitted) =>
+      Schema({
+        ...schema,
+        [Meta]: { ...schema[Meta], admits: toAdmits(schema[Meta], admitted) },
+      }),
     satisfies,
     adapt: (adapter, produce) =>
       Schema(withAdaptations(schema, adapter, produce)),
