@@ -83,3 +83,19 @@ test("a record's admitted size replaces its fabricable count", () => {
   expect(produced.minProperties).toBeUndefined();
   expect(produced.maxProperties).toBe(100);
 });
+
+test("admitted keywords are forwarded", () => {
+  const { T } = initialize({ salt: "admits-typebox-keywords" });
+
+  const string = toTypeBox(
+    T.string.as(() => "a@b.c").admits({ format: "email", pattern: "@" }),
+  );
+  expect(string.format).toBe("email");
+  expect(string.pattern).toBe("@");
+
+  const number = toTypeBox(
+    T.number.integer.whereby({ min: 0, max: 8 }).admits({ multipleOf: 2 }),
+  );
+  expect(number.multipleOf).toBe(2);
+  expect(number.maximum).toBe(8);
+});

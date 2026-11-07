@@ -42,23 +42,24 @@ export type Whereby = {
  * draws. An end is replaced, `Infinity` (or `-Infinity` for `min`) states no
  * limit, and an omitted end keeps what is admitted already.
  */
-export type InputAdmits = InputAdmittedEnds<number>;
+export type InputAdmits = InputAdmittedEnds<number> & Keywords;
+
+/**
+ * JSON-Schema keywords for what the numbers are, which adapters forward to
+ * their target. Unlike an end, `multipleOf` is not checked against what is
+ * drawn — like `.adapt`, the caller vouches that fabricated values match,
+ * usually by fabricating through `.as(produce)`. A keyword left out keeps what
+ * is admitted already.
+ */
+export type Keywords = { multipleOf?: number | undefined };
 
 /**
  * `[Meta].admits`, set only by `.admits(...)` and complete once set: an absent
  * end states no limit (`Admits.ts`'s `toAdmits`).
  */
-export type Admits = AdmittedEnds<number>;
+export type Admits = AdmittedEnds<number> & Keywords;
 
 export type Fabricated = number;
-
-/**
- * JSON-Schema keywords that constrain a number value — carried as neutral,
- * schema-library-agnostic hints (see the builder's `as`). The numeric range
- * lives on `whereby` as {@link Bound}s, which adapters forward; `hints` holds
- * only the orthogonal constraints not expressible there.
- */
-export type JsonSchema = { multipleOf?: number };
 
 /**
  * A ranged number — `whereby` is absent on the full-range form, `integer` (a
@@ -77,7 +78,6 @@ export type Meta = {
   integer?: boolean;
   sequence?: boolean;
   unique?: true;
-  hints?: JsonSchema | undefined;
   admits?: Admits | undefined;
   produce?: Produce<Fabricated>;
 };

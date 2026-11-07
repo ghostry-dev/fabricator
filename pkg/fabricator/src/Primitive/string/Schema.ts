@@ -15,7 +15,6 @@ import { toAdmits } from "./Admits";
 import type {
   Core,
   Fabricated,
-  JsonSchema,
   Meta as ThisMeta,
   Admits,
   InputAdmits,
@@ -40,10 +39,7 @@ export interface Schema<
    * `whereby` forward, not discarding it, so a later `.as(...)` (or future
    * validation of `produce`) still has it to check against.
    */
-  as: (
-    produce: Produce<Fabricated>,
-    hints?: JsonSchema,
-  ) => Schema<$Meta, $Adaptations>;
+  as: (produce: Produce<Fabricated>) => Schema<$Meta, $Adaptations>;
 
   /**
    * State what adapters admit for this schema, widening the bounds `whereby`
@@ -58,6 +54,12 @@ export interface Schema<
    * that excludes a value this schema can fabricate throws
    * `AdmitsExcludesDrawError`, since that value would fail its own validation.
    * Under `.as(produce)` nothing is drawn and nothing is checked.
+   *
+   * `format` and `pattern` ride along: JSON-Schema keywords for what the
+   * strings are, merged the same way and never checked against what is drawn.
+   * Like `.adapt`, the caller vouches that fabricated values match them —
+   * usually by fabricating through `.as(produce)`. `number` takes `multipleOf`
+   * the same way.
    *
    * This library validates nothing itself; `admits` only describes the set an
    * adapter translates. `.as(...)` and `.adapt(...)` carry it forward.
@@ -135,8 +137,8 @@ export function Schema<
   return {
     ...schema,
     [Kind]: "string",
-    as: (produce, hints) =>
-      Schema({ ...schema, [Meta]: { ...schema[Meta], produce, hints } }),
+    as: (produce) =>
+      Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
     admits: (admitted) =>
       Schema({
         ...schema,

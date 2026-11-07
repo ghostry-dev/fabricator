@@ -54,27 +54,30 @@ export type Whereby = {
  * draws. An end is replaced, `Infinity` (or `-Infinity` for `min`) states no
  * limit, and an omitted end keeps what is admitted already.
  */
-export type InputAdmits = { length?: InputAdmittedEnds<number> | undefined };
+export type InputAdmits = {
+  length?: InputAdmittedEnds<number> | undefined;
+} & Keywords;
+
+/**
+ * JSON-Schema keywords for what the strings are, which adapters forward to
+ * their target: `toTypeBox` to `Type.String(...)`, a future `toZod` to
+ * `z.string()` refinements. Unlike a length they are not checked against what
+ * is drawn — like `.adapt`, the caller vouches that fabricated values match,
+ * usually by fabricating through `.as(produce)`. A keyword left out keeps what
+ * is admitted already.
+ */
+export type Keywords = {
+  format?: string | undefined;
+  pattern?: string | undefined;
+};
 
 /**
  * `[Meta].admits`, set only by `.admits(...)` and complete once set: an absent
  * end states no limit (`Admits.ts`'s `toAdmits`).
  */
-export type Admits = { length: AdmittedEnds<number> };
+export type Admits = { length: AdmittedEnds<number> } & Keywords;
 
 export type Fabricated = string;
-
-/**
- * JSON-Schema keywords that constrain a string value — carried as neutral,
- * schema-library-agnostic hints (see the builder's `as`). Adapters forward them
- * to their target: `toTypeBox` to `Type.String(...)`, a future `toZod` to
- * `z.string()` refinements, etc.
- *
- * Length lives on `whereby` as Bound pairs, which adapters forward as
- * `minLength`/`maxLength`; `hints` never duplicates it — these are the
- * orthogonal, non-length constraints.
- */
-export type JsonSchema = { format?: string; pattern?: string };
 
 /**
  * A length and optional composition, drawn via `whereby`. There is no natural
@@ -88,14 +91,12 @@ export type JsonSchema = { format?: string; pattern?: string };
 export type Meta =
   | {
       whereby: Whereby;
-      hints?: JsonSchema | undefined;
       admits?: Admits | undefined;
       unique?: true;
       produce?: never;
     }
   | {
       whereby?: Whereby;
-      hints?: JsonSchema | undefined;
       admits?: Admits | undefined;
       unique?: true;
       produce: Produce<Fabricated>;

@@ -570,19 +570,21 @@ function convert(
     }
 
     /**
-     * `[Meta].hints` holds orthogonal JSON-Schema keywords; range Bound lives
-     * on `whereby` and is forwarded as `minimum`/`exclusiveMinimum` (and the
-     * integer/string length equivalents). `integer` picks `Type.Integer()` over
-     * `Type.Number()` to match {@link ToTypeBox} reading the same flag off
-     * `$Meta`. The static type of `string` is `TString` regardless of which
-     * options are present.
+     * Ends come from `[Meta].admits` when `.admits(...)` set it, else from
+     * `whereby`, forwarded as `minimum`/`exclusiveMinimum` (and the string
+     * length equivalents); `admits` also carries the JSON-Schema keywords no
+     * end expresses (`multipleOf`, `format`, `pattern`). `integer` picks
+     * `Type.Integer()` over `Type.Number()` to match {@link ToTypeBox} reading
+     * the same flag off `$Meta`. The static type of `string` is `TString`
+     * regardless of which options are present.
      */
     case "number": {
       const s = schema as Primitive.number.Schema;
       const meta = s[Meta];
       const ends = meta?.admits ?? meta?.whereby;
+      const multipleOf = meta?.admits?.multipleOf;
       const options = {
-        ...meta?.hints,
+        ...(multipleOf === undefined ? {} : { multipleOf }),
         ...(ends
           ? {
               ...numericBound(ends.min, "minimum", "exclusiveMinimum"),
@@ -595,8 +597,11 @@ function convert(
     case "string": {
       const s = schema as Primitive.string.Schema;
       const meta = s[Meta];
+      const format = meta?.admits?.format;
+      const pattern = meta?.admits?.pattern;
       return Type.String({
-        ...meta?.hints,
+        ...(format === undefined ? {} : { format }),
+        ...(pattern === undefined ? {} : { pattern }),
         ...lengthBound(
           meta?.admits?.length ?? meta?.whereby?.length,
           "minLength",

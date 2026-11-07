@@ -155,8 +155,8 @@ function draw<$T>(
  * declaration emission (`tsgo`, not `tsc --noEmit`; see `AGENTS.md`'s
  * declaration-emit trap) refuses to print an anonymous expansion of one. Even
  * where it printed it would be the wrong contract: inference would surface each
- * builder's incidental narrowness (`Schema<{ produce; hints }>`) where the
- * declared surface states `Primitive.string.Schema`.
+ * builder's incidental narrowness (`Schema<{ produce }>`) where the declared
+ * surface states `Primitive.string.Schema`.
  *
  * Every node is a plain object or a leaf builder function, never a function
  * carrying properties: `deepMerge` recurses only where `isPlainObject` holds on

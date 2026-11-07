@@ -7,7 +7,6 @@ import type {
   Fabricated,
   InputUniqueWhereby,
   InputWhereby,
-  JsonSchema,
   Whereby,
 } from "./Types";
 
@@ -21,17 +20,13 @@ export default {
 
   /**
    * Derive a custom string type: a `string` Schema whose production is
-   * `produce`, optionally tagged with a `format` hint that schema exporters
-   * (e.g. `toTypeBox`) read.
+   * `produce`. Chain `.admits({ format })` (or `pattern`) to tell adapters what
+   * the strings are.
    */
   as: (
     produce: Produce<Fabricated>,
-    hints?: JsonSchema,
-  ): Schema<{
-    produce: Produce<Fabricated>;
-    hints: JsonSchema | undefined;
-  }> => {
-    return Schema({ [Kind]: "string", [Meta]: { produce, hints } });
+  ): Schema<{ produce: Produce<Fabricated> }> => {
+    return Schema({ [Kind]: "string", [Meta]: { produce } });
   },
 
   /**

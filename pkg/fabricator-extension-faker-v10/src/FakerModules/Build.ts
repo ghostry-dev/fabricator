@@ -72,11 +72,9 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
    * plainly.
    *
    * `.as()` rather than a `whereby` length bound: a bound would claim a maximum
-   * length these values have no reason to respect — inert against today's
-   * TypeBox adapter, which reads `[Meta].hints` and never `whereby`, but
-   * `whereby` is carried forward through `.as()` for future validation, so the
-   * claim would eventually be read, and be wrong. A producer claims nothing
-   * about the value, and both forms convert to `{"type":"string"}`.
+   * length these values have no reason to respect, and adapters state
+   * `whereby`'s length (`maxLength`). A producer claims nothing about the
+   * value, so it converts to `{"type":"string"}`.
    *
    * This producer is never called: `object/Fabricator.ts` short-circuits on the
    * enclosing schema's `produce` before any field is fabricated. One shared
@@ -369,10 +367,9 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
       mongodbObjectId: (
         ...args: Parameters<Faker["database"]["mongodbObjectId"]>
       ) =>
-        T.string.as(
-          d(() => f.database.mongodbObjectId(...args)),
-          { pattern: "^[0-9a-fA-F]{24}$" },
-        ),
+        T.string
+          .as(d(() => f.database.mongodbObjectId(...args)))
+          .admits({ pattern: "^[0-9a-fA-F]{24}$" }),
       type: (...args: Parameters<Faker["database"]["type"]>) =>
         T.string.as(d(() => f.database.type(...args))),
     },
@@ -412,18 +409,16 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
       amount: (...args: Parameters<Faker["finance"]["amount"]>) =>
         T.string.as(d(() => f.finance.amount(...args))),
       bic: (...args: Parameters<Faker["finance"]["bic"]>) =>
-        T.string.as(
-          d(() => f.finance.bic(...args)),
-          { pattern: "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$" },
-        ),
+        T.string
+          .as(d(() => f.finance.bic(...args)))
+          .admits({ pattern: "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$" }),
       bitcoinAddress: (
         ...args: Parameters<Faker["finance"]["bitcoinAddress"]>
       ) => T.string.as(d(() => f.finance.bitcoinAddress(...args))),
       creditCardCVV: (...args: Parameters<Faker["finance"]["creditCardCVV"]>) =>
-        T.string.as(
-          d(() => f.finance.creditCardCVV(...args)),
-          { pattern: "^[0-9]{3,4}$" },
-        ),
+        T.string
+          .as(d(() => f.finance.creditCardCVV(...args)))
+          .admits({ pattern: "^[0-9]{3,4}$" }),
       creditCardIssuer: (
         ...args: Parameters<Faker["finance"]["creditCardIssuer"]>
       ) => T.string.as(d(() => f.finance.creditCardIssuer(...args))),
@@ -514,64 +509,51 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
     },
     image: {
       avatar: (...args: Parameters<Faker["image"]["avatar"]>) =>
-        T.string.as(
-          d(() => f.image.avatar(...args)),
-          { format: "uri" },
-        ),
+        T.string.as(d(() => f.image.avatar(...args))).admits({ format: "uri" }),
       avatarGitHub: (...args: Parameters<Faker["image"]["avatarGitHub"]>) =>
-        T.string.as(
-          d(() => f.image.avatarGitHub(...args)),
-          { format: "uri" },
-        ),
+        T.string
+          .as(d(() => f.image.avatarGitHub(...args)))
+          .admits({ format: "uri" }),
       dataUri: (...args: Parameters<Faker["image"]["dataUri"]>) =>
-        T.string.as(
-          d(() => f.image.dataUri(...args)),
-          { format: "uri" },
-        ),
+        T.string
+          .as(d(() => f.image.dataUri(...args)))
+          .admits({ format: "uri" }),
       personPortrait: (...args: Parameters<Faker["image"]["personPortrait"]>) =>
-        T.string.as(
-          d(() => f.image.personPortrait(...args)),
-          { format: "uri" },
-        ),
+        T.string
+          .as(d(() => f.image.personPortrait(...args)))
+          .admits({ format: "uri" }),
       url: (...args: Parameters<Faker["image"]["url"]>) =>
-        T.string.as(
-          d(() => f.image.url(...args)),
-          { format: "uri" },
-        ),
+        T.string.as(d(() => f.image.url(...args))).admits({ format: "uri" }),
       urlLoremFlickr: (...args: Parameters<Faker["image"]["urlLoremFlickr"]>) =>
         T.string.as(d(() => f.image.urlLoremFlickr(...args))),
       urlPicsumPhotos: (
         ...args: Parameters<Faker["image"]["urlPicsumPhotos"]>
       ) =>
-        T.string.as(
-          d(() => f.image.urlPicsumPhotos(...args)),
-          { format: "uri" },
-        ),
+        T.string
+          .as(d(() => f.image.urlPicsumPhotos(...args)))
+          .admits({ format: "uri" }),
     },
     internet: {
       displayName: (...args: Parameters<Faker["internet"]["displayName"]>) =>
         T.string.as(d(() => f.internet.displayName(...args))),
       domainName: (...args: Parameters<Faker["internet"]["domainName"]>) =>
-        T.string.as(
-          d(() => f.internet.domainName(...args)),
-          { format: "hostname" },
-        ),
+        T.string
+          .as(d(() => f.internet.domainName(...args)))
+          .admits({ format: "hostname" }),
       domainSuffix: (...args: Parameters<Faker["internet"]["domainSuffix"]>) =>
         T.string.as(d(() => f.internet.domainSuffix(...args))),
       domainWord: (...args: Parameters<Faker["internet"]["domainWord"]>) =>
         T.string.as(d(() => f.internet.domainWord(...args))),
       email: (...args: Parameters<Faker["internet"]["email"]>) =>
-        T.string.as(
-          d(() => f.internet.email(...args)),
-          { format: "email" },
-        ),
+        T.string
+          .as(d(() => f.internet.email(...args)))
+          .admits({ format: "email" }),
       emoji: (...args: Parameters<Faker["internet"]["emoji"]>) =>
         T.string.as(d(() => f.internet.emoji(...args))),
       exampleEmail: (...args: Parameters<Faker["internet"]["exampleEmail"]>) =>
-        T.string.as(
-          d(() => f.internet.exampleEmail(...args)),
-          { format: "email" },
-        ),
+        T.string
+          .as(d(() => f.internet.exampleEmail(...args)))
+          .admits({ format: "email" }),
       httpMethod: (...args: Parameters<Faker["internet"]["httpMethod"]>) =>
         T.enum
           .uniform(["GET", "POST", "PUT", "DELETE", "PATCH"])
@@ -582,15 +564,13 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
       ip: (...args: Parameters<Faker["internet"]["ip"]>) =>
         T.string.as(d(() => f.internet.ip(...args))),
       ipv4: (...args: Parameters<Faker["internet"]["ipv4"]>) =>
-        T.string.as(
-          d(() => f.internet.ipv4(...args)),
-          { format: "ipv4" },
-        ),
+        T.string
+          .as(d(() => f.internet.ipv4(...args)))
+          .admits({ format: "ipv4" }),
       ipv6: (...args: Parameters<Faker["internet"]["ipv6"]>) =>
-        T.string.as(
-          d(() => f.internet.ipv6(...args)),
-          { format: "ipv6" },
-        ),
+        T.string
+          .as(d(() => f.internet.ipv6(...args)))
+          .admits({ format: "ipv6" }),
       jwt: (...args: Parameters<Faker["internet"]["jwt"]>) =>
         T.string.as(d(() => f.internet.jwt(...args))),
       jwtAlgorithm: (...args: Parameters<Faker["internet"]["jwtAlgorithm"]>) =>
@@ -606,10 +586,7 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
           .uniform(["http", "https"])
           .as(d(() => f.internet.protocol(...args))),
       url: (...args: Parameters<Faker["internet"]["url"]>) =>
-        T.string.as(
-          d(() => f.internet.url(...args)),
-          { format: "uri" },
-        ),
+        T.string.as(d(() => f.internet.url(...args))).admits({ format: "uri" }),
       userAgent: (...args: Parameters<Faker["internet"]["userAgent"]>) =>
         T.string.as(d(() => f.internet.userAgent(...args))),
       username: (...args: Parameters<Faker["internet"]["username"]>) =>
@@ -792,10 +769,7 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
       ulid: (...args: Parameters<Faker["string"]["ulid"]>) =>
         T.string.as(d(() => f.string.ulid(...args))),
       uuid: (...args: Parameters<Faker["string"]["uuid"]>) =>
-        T.string.as(
-          d(() => f.string.uuid(...args)),
-          { format: "uuid" },
-        ),
+        T.string.as(d(() => f.string.uuid(...args))).admits({ format: "uuid" }),
     },
     system: {
       commonFileExt: (...args: Parameters<Faker["system"]["commonFileExt"]>) =>
@@ -815,10 +789,9 @@ export function build(T: Registry, faker: Faker, draw: Draw): FakerModules {
       fileName: (...args: Parameters<Faker["system"]["fileName"]>) =>
         T.string.as(d(() => f.system.fileName(...args))),
       filePath: (...args: Parameters<Faker["system"]["filePath"]>) =>
-        T.string.as(
-          d(() => f.system.filePath(...args)),
-          { format: "uri-reference" },
-        ),
+        T.string
+          .as(d(() => f.system.filePath(...args)))
+          .admits({ format: "uri-reference" }),
       fileType: (...args: Parameters<Faker["system"]["fileType"]>) =>
         T.string.as(d(() => f.system.fileType(...args))),
       mimeType: (...args: Parameters<Faker["system"]["mimeType"]>) =>

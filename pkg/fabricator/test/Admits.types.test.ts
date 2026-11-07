@@ -35,3 +35,14 @@ export function values() {
   array.admits({ length: { max: "9" } });
   T.bigint.whereby({ max: 3 }).admits({ max: 9, min: BigInt(-9) });
 }
+
+export function keywords() {
+  // @ts-expect-error — format describes a string
+  T.number.admits({ format: "email" });
+  // @ts-expect-error — multipleOf describes a number
+  T.string.whereby({ length: 3 }).admits({ multipleOf: 2 });
+  // @ts-expect-error — keywords moved from .as to .admits
+  T.string.as(() => "", { format: "email" });
+  T.string.as(() => "").admits({ format: "email", pattern: "@" });
+  T.number.integer.admits({ multipleOf: 2 });
+}

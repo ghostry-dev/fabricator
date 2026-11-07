@@ -544,7 +544,7 @@ class Suggester {
       );
     else if (format !== null)
       notes.push(
-        `Values look like ${format}s; ${builders[format]} produces those, with a hints.format of "${format === "url" ? "uri" : format}" for adapters.`,
+        `Values look like ${format}s; ${builders[format]} produces those, and .admits({ format: "${format === "url" ? "uri" : format}" }) states the format for adapters.`,
       );
 
     if (unique(frequencies, tally.count, column))

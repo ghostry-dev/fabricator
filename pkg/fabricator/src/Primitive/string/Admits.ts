@@ -11,12 +11,17 @@ const label = ".admits on a string schema";
 /**
  * Resolve `.admits(...)` against what is admitted already: `meta.admits`, or by
  * default the drawn `length` — what an adapter states without one. Under
- * `.as(produce)` nothing is drawn, so nothing is checked.
+ * `.as(produce)` nothing is drawn, so nothing is checked. `format` and
+ * `pattern` are never checked (`Types.ts`'s `Keywords`).
  */
 export function toAdmits(meta: Meta, input: InputAdmits): Admits {
   const drawn = toEnds(meta.whereby?.length);
+  const format = input.format ?? meta.admits?.format;
+  const pattern = input.pattern ?? meta.admits?.pattern;
 
   return {
+    ...(format === undefined ? {} : { format }),
+    ...(pattern === undefined ? {} : { pattern }),
     length: toAdmittedEnds(
       label,
       "length",

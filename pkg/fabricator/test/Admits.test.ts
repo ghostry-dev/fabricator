@@ -194,6 +194,38 @@ describe("widen only", () => {
   });
 });
 
+describe("keywords", () => {
+  test("format and pattern are stored beside the length and merge per key", () => {
+    const { T } = initialize({ salt: "admits-keywords" });
+
+    const schema = T.string
+      .as(() => "a@b.c")
+      .admits({ format: "email" })
+      .admits({ pattern: "@", length: { max: 255 } });
+
+    expect(schema[Meta].admits).toEqual({
+      format: "email",
+      pattern: "@",
+      length: { max: inclusive(255) },
+    });
+  });
+
+  test("keywords are not checked against what is drawn", () => {
+    const { T } = initialize({ salt: "admits-keywords-unchecked" });
+
+    expect(
+      T.string
+        .whereby({ length: 3, composition: { lowercase: 1 } })
+        .admits({ pattern: "^[0-9]+$" })[Meta].admits?.pattern,
+    ).toBe("^[0-9]+$");
+    expect(
+      T.number.integer.whereby({ min: 0, max: 9 }).admits({ multipleOf: 2 })[
+        Meta
+      ].admits,
+    ).toEqual({ min: inclusive(0), max: inclusive(9), multipleOf: 2 });
+  });
+});
+
 describe("conversion", () => {
   test("bigint and date ends accept numbers, as in whereby", () => {
     const { T } = initialize({ salt: "admits-numbers" });

@@ -13,12 +13,13 @@ const label = ".admits on a number schema";
  * Resolve `.admits(...)` against what is admitted already: `meta.admits`, or by
  * default the `whereby` ends — what an adapter states without one. An omitted
  * `whereby` end draws against `±Number.MAX_VALUE` (`±MAX_SAFE_INTEGER` for an
- * integer), so only no limit admits it.
+ * integer), so only no limit admits it. `multipleOf` is never checked
+ * (`Types.ts`'s `Keywords`).
  */
 export function toAdmits(meta: Meta, input: InputAdmits): Admits {
   const stated = { min: meta.whereby?.min, max: meta.whereby?.max };
-
-  return toAdmittedEnds(
+  const multipleOf = input.multipleOf ?? meta.admits?.multipleOf;
+  const ends = toAdmittedEnds(
     label,
     undefined,
     meta.admits ?? stated,
@@ -27,6 +28,8 @@ export function toAdmits(meta: Meta, input: InputAdmits): Admits {
     (end, given) => toFiniteBound(label, end, given),
     meta.integer ? discreteWithin : continuousWithin,
   );
+
+  return multipleOf === undefined ? ends : { ...ends, multipleOf };
 }
 
 /**

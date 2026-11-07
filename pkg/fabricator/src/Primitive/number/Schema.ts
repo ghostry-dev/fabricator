@@ -15,7 +15,6 @@ import { toAdmits } from "./Admits";
 import type {
   Core,
   Fabricated,
-  JsonSchema,
   Meta as ThisMeta,
   Admits,
   InputAdmits,
@@ -43,10 +42,7 @@ export interface Schema<
    * `.as(...)` (or future validation of `produce`) still has them to check
    * against.
    */
-  as: (
-    produce: Produce<Fabricated>,
-    hints?: JsonSchema,
-  ) => Schema<$Meta, $Adaptations>;
+  as: (produce: Produce<Fabricated>) => Schema<$Meta, $Adaptations>;
 
   /**
    * State what adapters admit for this schema, widening what `whereby` draws —
@@ -89,8 +85,8 @@ export function Schema<
   return {
     ...schema,
     [Kind]: "number",
-    as: (produce, hints) =>
-      Schema({ ...schema, [Meta]: { ...schema[Meta], produce, hints } }),
+    as: (produce) =>
+      Schema({ ...schema, [Meta]: { ...schema[Meta], produce } }),
     admits: (admitted) =>
       Schema({
         ...schema,
