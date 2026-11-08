@@ -142,6 +142,48 @@ export namespace FabricatorError {
   }
 
   /**
+   * `T.recursive(body).whereby({ depth })` with no `terminal`, when the derived
+   * terminal must empty a collection of `self` that states a minimum above 0.
+   * Every branch ends at the depth limit with that collection empty, and an
+   * adapter states the minimum as written, so no finite tree could pass the
+   * validation it builds. Thrown at `.whereby()`. `.admits({ length: { min: 0 }
+   * })` on the collection keeps drawing at least the minimum below the limit
+   * while stating none for the adapter.
+   */
+  export class UnsatisfiableRecursiveBoundError extends FabricatorError {
+    constructor(
+      /**
+       * Structural path from the recursive body to the collection, as field
+       * names / slot indices.
+       */
+      public readonly path: ReadonlyArray<string>,
+
+      /**
+       * The collection's bound — `"length"` for an array, `"size"` for a
+       * record.
+       */
+      public readonly key: "length" | "size",
+
+      /**
+       * The smallest count the collection states, as an inclusive integer.
+       */
+      public readonly min: number,
+    ) {
+      super();
+      this.name = "@ghostry/fabricator:UnsatisfiableRecursiveBoundError";
+      const where =
+        path.length === 0 ? "the recursive body itself" : `"${path.join(".")}"`;
+      this.message =
+        `T.recursive: the collection of self at ${where} states ${key}.min `
+        + `${min}, but every branch ends at the depth limit with it empty, so `
+        + "no finite tree satisfies it. Add `.admits({ "
+        + `${key}: { min: 0 } })\` to that collection to keep drawing at least `
+        + `${min} below the limit while stating no minimum, or pass an `
+        + "explicit terminal.";
+    }
+  }
+
+  /**
    * A walk reached a node whose `[Kind]` it has no case for — a Schema built by
    * hand or cast past the type system, or a kind added to `Primitive/index.ts`
    * without wiring it into every dispatch site.

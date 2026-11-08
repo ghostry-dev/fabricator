@@ -25,6 +25,7 @@ import {
   type TNumber,
   type TObject,
   type TOptional,
+  type TPartial,
   type TRecordOrObject,
   type TRecursive,
   type TSchema,
@@ -52,6 +53,17 @@ const key = "@ghostry/fabricator-typebox/v0";
 type Key = typeof key;
 
 type Returnable = TSchema;
+
+/**
+ * A record over a finite key set collapses to a `TObject`, every property
+ * required; nothing written promises every key, so each is made optional.
+ * `TPartial` of anything but an object degrades to `TObject<{}>`, so only the
+ * collapsed form goes through it — an open key's `TRecord` and a symbol key's
+ * `TNever` pass unchanged.
+ */
+type RecordOf<$Mapped extends TSchema> = $Mapped extends TObject
+  ? TPartial<$Mapped>
+  : $Mapped;
 
 /**
  * Tuple-preserving map from a `choice`'s `[weight, option]` pairs to each
@@ -210,7 +222,8 @@ export type ToTypeBox<$Schema> =
    * returns — rather than a hand-rolled mapping, the same move
    * `ChoiceOptions` makes by deferring to `Union<T>`. Keeps
    * `TRecord<TString, V>` for an open string key; collapses a
-   * literal-union or enum key into a `TObject` of those properties.
+   * literal-union or enum key into a `TObject` of those properties,
+   * made optional by {@link RecordOf}.
    *
    * A *symbol* key resolves to `TNever`: `TRecordOrObject` has no
    * `TSymbol` branch. Honest — `Static<TNever>` is `never`, agreeing
@@ -218,7 +231,7 @@ export type ToTypeBox<$Schema> =
    * rather than emitting the equivalent silently. See its `record` case.
    */
   $Schema extends Primitive.record.Core<infer $Key, infer $Value>
-    ? TRecordOrObject<ToTypeBox<$Key>, ToTypeBox<$Value>> :
+    ? RecordOf<TRecordOrObject<ToTypeBox<$Key>, ToTypeBox<$Value>>> :
 
   /**
    * `Type.Recursive((This) => body)` already builds a `$ref`-based
@@ -428,6 +441,16 @@ function convert(
         throw new FabricatorError.UnrepresentableRecordKeyError(
           String(key[Kind]),
         );
+      }
+
+      /**
+       * A finite key set collapses to an object, which would require every key.
+       * Nothing written says every key is present — the size is drawn and
+       * colliding keys collapse — so each property is optional, as `Fabricated`
+       * already makes it.
+       */
+      if (mapped[TypeBoxKind] === "Object") {
+        return Type.Partial(mapped, toPropertyCount(s[Meta]));
       }
 
       return mapped;
@@ -773,13 +796,11 @@ function lengthBound<$Min extends string, $Max extends string>(
 
 /**
  * The property count a record states, as `Type.Record` options: what `.admits`
- * stored, else what the record can fabricate — the range core's
- * `record/Admits.ts` `toFabricableSize` checks `.admits` against. A unique
- * record draws its keys distinct, so its drawn size is exact. A plain record's
- * colliding keys collapse, so only `size.max` is a real bound: the first
- * attempt always lands, guaranteeing one entry when `minTried` is at least 1
- * and none otherwise. A producer replaces the draw that the size described, so
- * without `.admits` it states none.
+ * stored, else the size written in `whereby`, as written — the same count
+ * core's `record/Admits.ts` `toStatedSize` derives. A unique record's `size` is
+ * a range. A plain record's `minTried` counts attempts, not entries, so only
+ * `max` is stated. Stated under `.as(produce)` too, as every kind's written
+ * bounds are.
  */
 function toPropertyCount(meta: Primitive.record.Meta): {
   minProperties?: number;
@@ -788,16 +809,10 @@ function toPropertyCount(meta: Primitive.record.Meta): {
   if (meta.admits) {
     return lengthBound(meta.admits.size, "minProperties", "maxProperties");
   }
-
-  if (meta.produce) return {};
-
   if (meta.unique) {
     return lengthBound(meta.whereby.size, "minProperties", "maxProperties");
   }
+  if (!meta.whereby) return {};
 
-  const { size } = meta.whereby;
-  return {
-    minProperties: (size.minTried ?? 0) >= 1 ? 1 : 0,
-    maxProperties: size.max,
-  };
+  return { maxProperties: meta.whereby.size.max };
 }

@@ -1037,7 +1037,9 @@ test("T.recursive expansions inside wrap({ clock }) resolve against the wrap's c
   const tree = T.recursive((self) =>
     T.object({
       at: T.opaque(({ clock }) => clock),
-      children: T.array(self).whereby({ length: 1 }),
+      children: T.array(self)
+        .whereby({ length: 1 })
+        .admits({ length: { min: 0 } }),
     }),
   ).whereby({ depth: { max: 3 } });
 

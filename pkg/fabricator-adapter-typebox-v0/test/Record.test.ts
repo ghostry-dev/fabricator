@@ -62,17 +62,13 @@ test("toTypeBox collapses a literal-union key to an object", () => {
 });
 
 /**
- * Colliding keys collapse, so a plain record states only what survives them:
- * `size.max` above, and one entry below once `minTried` guarantees an attempt.
- * Two possible keys and up to eight attempts collide on nearly every draw. The
- * key is an open string rather than a literal union, which would collapse to an
- * object requiring every key.
+ * A plain record states its written `size.max` and no minimum: `minTried`
+ * counts attempts, and colliding keys collapse below it. Two possible keys and
+ * up to eight attempts collide on nearly every draw, and every result still
+ * validates.
  */
-test.each([
-  { minTried: 0, minProperties: 0 },
-  { minTried: 1, minProperties: 1 },
-] as const)(
-  "a plain record with minTried $minTried states minProperties $minProperties",
+test.each([{ minTried: 0 }, { minTried: 3 }] as const)(
+  "a plain record with minTried $minTried states only maxProperties",
   ({ row }) => {
     const { T, Fabricator } = initialize({ salt: "record-typebox-count" });
     const schema = T.record(
@@ -81,7 +77,7 @@ test.each([
     ).whereby({ size: { minTried: row.minTried, max: 8 } });
 
     const mapped = toTypeBox(schema);
-    expect(mapped.minProperties).toBe(row.minProperties);
+    expect(mapped.minProperties).toBeUndefined();
     expect(mapped.maxProperties).toBe(8);
 
     for (let salt = 0; salt < 200; salt++) {
@@ -90,3 +86,24 @@ test.each([
     }
   },
 );
+
+/**
+ * A literal-union key collapses to an object; nothing written promises every
+ * key, so a record that drew only one still validates.
+ */
+test("a literal-union record's properties are optional", () => {
+  const { T, Fabricator } = initialize({ salt: "record-typebox-partial" });
+  const schema = T.record(T.enum.uniform(["a", "b"]), value(T)).whereby({
+    size: { max: 2 },
+  });
+
+  const mapped = toTypeBox(schema);
+  expect(mapped.required).toBeUndefined();
+  expect(Value.Check(mapped, { a: 1 })).toBe(true);
+  expect(Value.Check(mapped, {})).toBe(true);
+
+  for (let salt = 0; salt < 100; salt++) {
+    const built = new Fabricator(schema, { salt: String(salt) });
+    expect(Value.Check(mapped, built.fabricate())).toBe(true);
+  }
+});

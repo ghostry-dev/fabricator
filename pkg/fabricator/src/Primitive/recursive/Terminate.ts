@@ -1,9 +1,11 @@
+import type { AdmittedEnds } from "../../Bound";
 import { FabricatorError } from "../../Error";
 import type { Primitive, Kind as SchemaKind } from "../../Primitive";
 import type { AnySchema } from "../../Schema/Types";
 import { Adaptation, Kind, Meta, Omitted } from "../../Types";
 import { never } from "../../Utility/Core";
 import type { PlainObject } from "../../Utility/Types";
+import { toStatedSize } from "../record/Admits";
 
 /**
  * Derive the schema that `fabricateAt` swaps in at `depth.max` when the caller
@@ -21,6 +23,13 @@ import type { PlainObject } from "../../Utility/Types";
  *
  * Nested `T.recursive` is its own fixed point and is treated as a leaf; its
  * inner `self` is not this walk's `self`.
+ *
+ * An emptied collection must not state a minimum above 0: an adapter states it
+ * as written, for every level of the tree, and every branch ends here empty, so
+ * no finite tree would validate. {@link assertEmptiable} throws
+ * `UnsatisfiableRecursiveBoundError` instead. A wrapper above the collection
+ * declines first (`T.optional(T.array(self))` becomes omitted), so only a
+ * collection this walk empties is checked.
  */
 export function terminate(body: AnySchema): AnySchema {
   return terminateAt(body, []);
@@ -35,14 +44,30 @@ function terminateAt(schema: any, path: ReadonlyArray<string>): AnySchema {
 
     case "array": {
       const s = schema as Primitive.array.Schema;
-      return containsSelf(s[Meta].definition) ? emptyArray() : schema;
+      if (!containsSelf(s[Meta].definition)) return schema;
+
+      const meta = s[Meta];
+      assertEmptiable(
+        path,
+        "length",
+        meta.admits ? meta.admits.length : meta.whereby?.length,
+      );
+      return emptyArray();
     }
 
     case "record": {
       const s = schema as Primitive.record.Schema;
-      return containsSelf(s[Meta].key) || containsSelf(s[Meta].value)
-        ? emptyRecord()
-        : schema;
+      if (!containsSelf(s[Meta].key) && !containsSelf(s[Meta].value)) {
+        return schema;
+      }
+
+      const meta = s[Meta];
+      assertEmptiable(
+        path,
+        "size",
+        meta.admits ? meta.admits.size : toStatedSize(meta),
+      );
+      return emptyRecord();
     }
 
     case "choice": {
@@ -246,6 +271,28 @@ function containsSelf(schema: any): boolean {
 
     default:
       return never(kind);
+  }
+}
+
+/**
+ * The stated ends are `.admits`'s when set — complete, so an absent `min` there
+ * states none — else the written ones, which is what an adapter states.
+ */
+function assertEmptiable(
+  path: ReadonlyArray<string>,
+  key: "length" | "size",
+  stated: AdmittedEnds<number> | undefined,
+): void {
+  const min = stated?.min;
+  if (!min) return;
+
+  const smallest = min.exclusive ? min.value + 1 : min.value;
+  if (smallest > 0) {
+    throw new FabricatorError.UnsatisfiableRecursiveBoundError(
+      path,
+      key,
+      smallest,
+    );
   }
 }
 

@@ -31,7 +31,7 @@ test("a unique array's fabricated values pass its own uniqueItems schema", () =>
   }
 });
 
-test("a unique record states its drawn property count, and a plain record what survives collisions", () => {
+test("a unique record states its drawn property count, and a plain record its max", () => {
   const { T, Fabricator } = initialize({ salt: "unique-typebox-record" });
   const key = T.string.whereby({ length: 6, composition: { lowercase: 1 } });
 
@@ -50,6 +50,6 @@ test("a unique record states its drawn property count, and a plain record what s
   const plain = toTypeBox(
     T.record(key, T.boolean).whereby({ size: { minTried: 2, max: 4 } }),
   );
-  expect(plain.minProperties).toBe(1);
+  expect(plain.minProperties).toBeUndefined();
   expect(plain.maxProperties).toBe(4);
 });

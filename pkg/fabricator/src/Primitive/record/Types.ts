@@ -130,32 +130,33 @@ export type Admits = { size: AdmittedEnds<number> };
  * `produce` is carried _alongside_ `whereby` rather than replacing it, so a
  * prior size spec survives `as` for future validation — same as `array`'s
  * `Meta`.
+ *
+ * Two discriminants, crossed. `unique` decides `whereby`'s shape, so testing it
+ * narrows `whereby` to {@link Whereby} or {@link UniqueWhereby} with no cast.
+ * `produce` decides whether anything is drawn, and is `never` on the drawn
+ * members so that a falsy `produce` narrows to them — an optional `Produce` on
+ * every member would not narrow. Only the plain builder's `.as(...)` produces
+ * with no `whereby`; `T.unique.record` has no such form, so a unique record
+ * always carries its size.
  */
-export type Meta<$Key extends Key = Key, $Value extends Value = Value> =
+export type Meta<$Key extends Key = Key, $Value extends Value = Value> = {
+  key: $Key;
+  value: $Value;
+  admits?: Admits | undefined;
+} & (
+  | { unique?: never; whereby: Whereby; produce?: never }
   | {
-      key: $Key;
-      value: $Value;
-      whereby: Whereby;
       unique?: never;
-      admits?: Admits | undefined;
-      produce?: never;
-    }
-  | {
-      key: $Key;
-      value: $Value;
-      whereby: UniqueWhereby;
-      unique: true;
-      admits?: Admits | undefined;
-      produce?: never;
-    }
-  | {
-      key: $Key;
-      value: $Value;
-      whereby?: Whereby | UniqueWhereby;
-      unique?: true;
-      admits?: Admits | undefined;
+      whereby?: Whereby;
       produce: Produce<Fabricated<$Key, $Value>>;
-    };
+    }
+  | { unique: true; whereby: UniqueWhereby; produce?: never }
+  | {
+      unique: true;
+      whereby: UniqueWhereby;
+      produce: Produce<Fabricated<$Key, $Value>>;
+    }
+);
 
 export interface Core<
   $Key extends Key = Key,

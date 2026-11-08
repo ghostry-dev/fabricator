@@ -299,12 +299,54 @@ test("a derived JSON terminal at depth.max = 0 is the non-self choice arms", () 
   }
 });
 
-test("a derived terminal empties an array even when body set length.min > 0", () => {
+/**
+ * The derived terminal empties every collection of `self`, and an adapter
+ * states each collection's minimum as written at every level, so a stated `min >
+ * 0` would reject every finite tree. Admitting `min: 0` keeps the draw.
+ */
+test("a collection of self stating min > 0 throws unless it admits min 0", () => {
   const { T, Fabricator } = initialize({ salt: "recursive-min-length" });
+
+  const error = attest.throws(
+    FabricatorError.UnsatisfiableRecursiveBoundError,
+    () =>
+      T.recursive((self) =>
+        T.object({
+          children: T.array(self).whereby({ length: { min: 1, max: 1 } }),
+        }),
+      ).whereby({ depth: { max: 1 } }),
+  );
+  expect(error.path).toEqual(["children"]);
+  expect(error.key).toBe("length");
+  expect(error.min).toBe(1);
+
+  expect(() =>
+    T.recursive((self) =>
+      T.object({
+        children: T.unique
+          .record(T.string.whereby({ length: 4 }), self)
+          .whereby({ size: { min: 1, max: 2 } }),
+      }),
+    ).whereby({ depth: { max: 1 } }),
+  ).toThrow(FabricatorError.UnsatisfiableRecursiveBoundError);
+
+  /** A plain record states no minimum, and a wrapper above declines first. */
+  expect(() =>
+    T.recursive((self) =>
+      T.object({
+        children: T.record(T.string.whereby({ length: 4 }), self).whereby({
+          size: { minTried: 1, max: 2 },
+        }),
+        next: T.optional(T.array(self).whereby({ length: 1 })),
+      }),
+    ).whereby({ depth: { max: 1 } }),
+  ).not.toThrow();
 
   const Chain = T.recursive((self) =>
     T.object({
-      children: T.array(self).whereby({ length: { min: 1, max: 1 } }),
+      children: T.array(self)
+        .whereby({ length: { min: 1, max: 1 } })
+        .admits({ length: { min: 0 } }),
     }),
   ).whereby({ depth: { max: 1 } });
 
@@ -394,7 +436,9 @@ test("a pinned clock reaches every T.recursive expansion", () => {
   const tree = T.recursive((self) =>
     T.object({
       at: T.opaque(({ clock }) => clock),
-      children: T.array(self).whereby({ length: 1 }),
+      children: T.array(self)
+        .whereby({ length: 1 })
+        .admits({ length: { min: 0 } }),
     }),
   ).whereby({ depth: { max: 3 } });
 

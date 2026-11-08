@@ -307,19 +307,18 @@ export type Assertions = [
    * `record` defers to TypeBox's own `TRecordOrObject`, so it inherits that
    * helper's split: an open string key stays a `TRecord` (emitting
    * `patternProperties`), while a finite literal key set collapses into a
-   * `TObject` of exactly those properties.
+   * `TObject` of exactly those properties — each optional, as `Fabrication` of
+   * the same schema is `Partial`: a record's size is drawn and colliding keys
+   * collapse, so it may cover only a subset.
    */
   Expect<Equal<typeof withRecord, TRecord<TString, TInteger>>>,
   Expect<
-    Equal<typeof withLiteralKeyRecord, TObject<{ a: TInteger; b: TInteger }>>
+    Equal<
+      typeof withLiteralKeyRecord,
+      TObject<{ a: TOptional<TInteger>; b: TOptional<TInteger> }>
+    >
   >,
   /**
-   * Note the collapsed form marks both properties _required_, while
-   * `Fabrication` of the same schema is `Partial` — a record's size is drawn
-   * and colliding keys collapse, so it may cover only a subset. That is a
-   * deliberate `Static<ToTypeBox<S>>` vs `Fabricated<S>` divergence, not a
-   * bug.
-   *
    * Bare-vs-concrete: an unconstrained key has no TypeBox counterpart, so this
    * resolves to `TNever` rather than a loose `TSchema` — agreeing with the
    * runtime `convert()`, which throws instead of emitting a silent `TNever`.

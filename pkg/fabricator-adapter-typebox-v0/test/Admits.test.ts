@@ -63,7 +63,7 @@ test("admitted ends replace the drawn ones for number, bigint, and date", () => 
   expect(date.maximumTimestamp).toBeUndefined();
 });
 
-test("a record's admitted size replaces its fabricable count", () => {
+test("a record's admitted size replaces its written one", () => {
   const { T } = initialize({ salt: "admits-typebox-record" });
   const key = T.string.whereby({ length: 4 });
 
@@ -72,8 +72,16 @@ test("a record's admitted size replaces its fabricable count", () => {
       .whereby({ size: { max: 5 } })
       .admits({ size: { max: Infinity } }),
   );
-  expect(widened.minProperties).toBe(0);
+  expect(widened.minProperties).toBeUndefined();
   expect(widened.maxProperties).toBeUndefined();
+
+  /** Written bounds are stated under `.as(produce)`, as for every kind. */
+  const written = toTypeBox(
+    T.record(key, T.always(1))
+      .whereby({ size: { max: 5 } })
+      .as(() => ({})),
+  );
+  expect(written.maxProperties).toBe(5);
 
   const produced = toTypeBox(
     T.record(key, T.always(1))
@@ -98,4 +106,27 @@ test("admitted keywords are forwarded", () => {
   );
   expect(number.multipleOf).toBe(2);
   expect(number.maximum).toBe(8);
+});
+
+/**
+ * Every branch of a recursive tree ends at the depth limit with its collection
+ * of `self` empty. Admitting `min: 0` states no minimum there, so every
+ * fabricated tree validates while each level below the limit still draws one.
+ */
+test("a recursive collection admitting min 0 validates every fabricated tree", () => {
+  const { T, Fabricator } = initialize({ salt: "admits-typebox-recursive" });
+  const Tree = T.recursive((self) =>
+    T.object({
+      name: T.string.whereby({ length: 3, composition: { lowercase: 1 } }),
+      children: T.array(self)
+        .whereby({ length: { min: 1, max: 2 } })
+        .admits({ length: { min: 0 } }),
+    }),
+  ).whereby({ depth: { max: 2 } });
+
+  const mapped = toTypeBox(Tree);
+  for (let salt = 0; salt < 100; salt++) {
+    const built = new Fabricator(Tree, { salt: String(salt) });
+    expect(Value.Check(mapped, built.fabricate())).toBe(true);
+  }
 });
