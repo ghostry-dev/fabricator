@@ -1,6 +1,6 @@
 {
   "name": "@ghostry/fabricator-census",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "description": "Take a census of real data and get @ghostry/fabricator schema suggestions — distributions, presence weights, string lengths and compositions, enums — with PostgreSQL sampling and aggregate helpers.",
   "keywords": [
@@ -67,7 +67,7 @@
     "dist"
   ],
   "peerDependencies": {
-    "@ghostry/fabricator": ">=0.0.11 <0.1.0"
+    "@ghostry/fabricator": ">=0.0.14 <0.1.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.12",

@@ -18,39 +18,39 @@
     },
     "pkg/fabricator": {
       "name": "@ghostry/fabricator",
-      "version": "0.0.13",
+      "version": "0.0.14",
       "devDependencies": {
         "@ghostry/harness": "^0.0.6",
       },
     },
     "pkg/fabricator-adapter-typebox-v0": {
       "name": "@ghostry/fabricator-adapter-typebox-v0",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "devDependencies": {
         "@ghostry/fabricator": "workspace:*",
         "@ghostry/harness": "^0.0.6",
         "@sinclair/typebox": "^0.34.52",
       },
       "peerDependencies": {
-        "@ghostry/fabricator": ">=0.0.8 <0.1.0",
+        "@ghostry/fabricator": ">=0.0.14 <0.1.0",
         "@sinclair/typebox": "^0.34.52",
       },
     },
     "pkg/fabricator-census": {
       "name": "@ghostry/fabricator-census",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "devDependencies": {
         "@electric-sql/pglite": "^0.5.12",
         "@ghostry/fabricator": "workspace:*",
         "@ghostry/harness": "^0.0.6",
       },
       "peerDependencies": {
-        "@ghostry/fabricator": ">=0.0.11 <0.1.0",
+        "@ghostry/fabricator": ">=0.0.14 <0.1.0",
       },
     },
     "pkg/fabricator-extension-faker-v10": {
       "name": "@ghostry/fabricator-extension-faker-v10",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "devDependencies": {
         "@faker-js/faker": "^10.6.0",
         "@ghostry/fabricator": "workspace:*",
@@ -60,7 +60,7 @@
       },
       "peerDependencies": {
         "@faker-js/faker": "^10.5.0",
-        "@ghostry/fabricator": ">=0.0.1 <0.1.0",
+        "@ghostry/fabricator": ">=0.0.14 <0.1.0",
       },
     },
   },

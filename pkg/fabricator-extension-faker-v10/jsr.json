@@ -1,6 +1,6 @@
 {
   "name": "@ghostry/fabricator-extension-faker-v10",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "exports": "./src/index.ts",
   "publish": { "exclude": ["test"] }
 }
