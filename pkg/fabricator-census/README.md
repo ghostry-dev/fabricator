@@ -36,10 +36,12 @@ npm install @ghostry/fabricator-census @ghostry/fabricator
 import { census, report } from "@ghostry/fabricator-census";
 
 console.log(report(census.from(rows)));
-// $.age   T.number.integer.whereby({ min: 18, max: 79, distribution: { kind: "normal", mean: 38.31, spread: 11.95 } })
+// $.age   T.number.integer.whereby({ min: 18, max: 79, distribution: { kind: "normal", mean: 38.31, spread: 11.95 } }).admits({ min: -Infinity, max: Infinity })
 // $.plan  T.enum.weighted([[3528, "free"], [1237, "pro"], [235, "team"]])
 // …
 ```
+
+The `whereby` ranges are what was observed, so they shape fabricated data. The `.admits(...)` call stops an adapter from turning them into validation limits, since real data can fall outside a sample.
 
 `rows` is any iterable of decoded values. From a PostgreSQL table, `collect` sizes and draws the sample through your own driver, and gathers whole-table facts to merge over it:
 

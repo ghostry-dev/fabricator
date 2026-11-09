@@ -530,6 +530,19 @@ export type SuggestedComposition =
 /** A string format with a known builder elsewhere. */
 export type SuggestedFormat = "uuid" | "email" | "url" | "numeric";
 
+/**
+ * The ends a suggestion admits: what an adapter states, widening `whereby`.
+ * Complete, like core's `[Meta].admits`: an end left out states no limit, so a
+ * suggestion stays plain JSON with no `Infinity` in it.
+ *
+ * Census's own bounds are observed — a sample's extremes, or a table's — never
+ * declared. An adapter states every bound written in `whereby`, so a schema
+ * written from the observed range alone would reject any value past what was
+ * seen. Every end here is therefore absent: census admits no limit it was not
+ * told the source enforces.
+ */
+export type SuggestedEnds<$End> = { min?: $End; max?: $End };
+
 /** A date range as ISO strings, since JSON cannot carry a `Date`. */
 export type DateSuggestion = {
   kind: "date";
@@ -538,6 +551,7 @@ export type DateSuggestion = {
     max: string;
     distribution: FittedDistribution | null;
   };
+  admits: SuggestedEnds<string>;
   fit: Fit | null;
   notes: string[];
 };
@@ -561,12 +575,14 @@ export type Suggestion =
       kind: "number";
       integer: boolean;
       whereby: { min: number; max: number; distribution: FittedDistribution };
+      admits: SuggestedEnds<number>;
       fit: Fit;
     } & Notes)
   | ({ kind: "enum"; items: Array<[number, SuggestedValue]> } & Notes)
   | ({
       kind: "string";
       whereby: { length: SuggestedLength; composition?: SuggestedComposition };
+      admits: { length: SuggestedEnds<number> };
       fit: Fit | null;
       format: SuggestedFormat | null;
     } & Notes)
@@ -581,11 +597,16 @@ export type Suggestion =
       resolve: "isoDateTime" | "isoDate";
     } & Notes)
   | ({ kind: "boolean"; weights: { true: number; false: number } } & Notes)
-  | ({ kind: "bigint"; whereby: { min: string; max: string } } & Notes)
+  | ({
+      kind: "bigint";
+      whereby: { min: string; max: string };
+      admits: SuggestedEnds<string>;
+    } & Notes)
   | DateSuggestion
   | ({
       kind: "array";
       whereby: { length: SuggestedLength };
+      admits: { length: SuggestedEnds<number> };
       fit: Fit | null;
       element: Suggestion;
     } & Notes)
@@ -598,6 +619,12 @@ export type Suggestion =
       key: Suggestion;
       value: Suggestion;
       whereby: { size: { max: number; minTried: number } };
+
+      /**
+       * Only `max`: a plain record states no minimum (`minTried` counts
+       * attempts).
+       */
+      admits: { size: { max?: number } };
     } & Notes)
   | ({ kind: "choice"; options: Array<[number, Suggestion]> } & Notes)
   | ({

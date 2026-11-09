@@ -66,8 +66,11 @@ export const unique = {
   /**
    * A string the built Fabricator never repeats, drawn like `T.string.whereby`.
    * Each draw is redrawn while it matches one already produced, up to `redraws`
-   * times in a row; a length and composition that can spell only a few strings
-   * run out through that cap, as `UniqueRedrawsError`.
+   * times in a row. The strings a length and composition can spell are counted
+   * exactly (`Capacity.ts`'s `toStringDomain`), so the draw after the last one
+   * throws `UniqueExhaustedError` rather than spending the cap. A `custom`
+   * length distribution can leave lengths unreachable that the count assumes
+   * reachable; those last strings surface as `UniqueRedrawsError`.
    */
   whereby: (
     whereby: InputUniqueWhereby,

@@ -1,4 +1,3 @@
-import { describe, expect, test } from ".";
 import { classes } from "@ghostry/fabricator";
 import {
   census,
@@ -8,6 +7,7 @@ import {
   type CensusOptions,
   type Suggestion,
 } from "@ghostry/fabricator-census";
+import { describe, expect, test } from ".";
 
 function suggested(values: unknown[], options?: CensusOptions): Suggestion {
   return suggest(census.from(values, { seed: "suggest", ...options }));
@@ -160,12 +160,12 @@ describe("numbers", () => {
     expect(suggestion.notes.join(" ")).toContain("NaN");
   });
 
-  test("all-distinct numbers note that core has no uniqueness", () => {
+  test("all-distinct numbers note T.unique.number", () => {
     const suggestion = suggested(
       Array.from({ length: 40 }, (_, i) => (i * 37) % 101),
     );
     expect(suggestion.kind).toBe("number");
-    expect(suggestion.notes.join(" ")).toContain("uniqueness");
+    expect(suggestion.notes.join(" ")).toContain("T.unique.number");
   });
 
   test("repeated non-integer values are an enum", () => {
@@ -380,6 +380,53 @@ describe("options", () => {
   });
 });
 
+describe("admits", () => {
+  /**
+   * Every bound that census writes is observed, so none is stated: an adapter
+   * states `whereby` as written, and would reject values past what was seen.
+   */
+  test("every bounded suggestion admits no limit", () => {
+    const spread = (i: number) => (i * 37) % 101;
+    const number = suggested(
+      Array.from({ length: 200 }, (_, i) => spread(i) + 0.5),
+    );
+    const string = suggested(
+      Array.from({ length: 200 }, (_, i) => "s".repeat(1 + (i % 7)) + i),
+    );
+    const bigint = suggested(
+      Array.from({ length: 200 }, (_, i) => BigInt(spread(i) * 1000 + i)),
+    );
+    const date = suggested(
+      Array.from(
+        { length: 200 },
+        (_, i) => new Date(spread(i) * 86_400_000 + i),
+      ),
+    );
+    const array = suggested(
+      Array.from({ length: 200 }, (_, i) =>
+        Array.from({ length: i % 5 }, () => i),
+      ),
+    );
+    const record = suggested(
+      Array.from({ length: 50 }, (_, i) => ({ [`user-${i}`]: i })),
+      { fields: 8 },
+    );
+
+    /** `toEqual`, not `toMatchObject`, which `{}` would match whatever it held. */
+    const admitted = (suggestion: Suggestion) => [
+      suggestion.kind,
+      "admits" in suggestion ? suggestion.admits : null,
+    ];
+
+    expect(admitted(number)).toEqual(["number", {}]);
+    expect(admitted(string)).toEqual(["string", { length: {} }]);
+    expect(admitted(bigint)).toEqual(["bigint", {}]);
+    expect(admitted(date)).toEqual(["date", {}]);
+    expect(admitted(array)).toEqual(["array", { length: {} }]);
+    expect(admitted(record)).toEqual(["record", { size: {} }]);
+  });
+});
+
 describe("report", () => {
   const rows = repeat(
     [
@@ -398,6 +445,20 @@ describe("report", () => {
     );
     expect(text).toContain("$.note  T.omittable(T.nullable(");
     expect(text).toContain("Not detected:");
+  });
+
+  test("renders each bounded suggestion's .admits, with no limit", () => {
+    const values = Array.from({ length: 500 }, (_, i) => (i * 7.3) % 100);
+    expect(report(census.from(values))).toContain(
+      ".admits({ min: -Infinity, max: Infinity })",
+    );
+    const strings = Array.from(
+      { length: 50 },
+      (_, i) => "x".repeat(1 + (i % 9)) + i,
+    );
+    expect(report(census.from(strings))).toContain(
+      ".admits({ length: { min: 0, max: Infinity } })",
+    );
   });
 
   test("shows every fit candidate's score", () => {

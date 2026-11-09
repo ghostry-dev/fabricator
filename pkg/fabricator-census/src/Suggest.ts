@@ -4,6 +4,10 @@
  * weights, a type mix becomes a weighted `choice`, and each type's tally
  * becomes its kind's `whereby`, `weighted` or members.
  *
+ * Every bounded suggestion also carries `admits`, with no end in it: its
+ * `whereby` bounds are observed, and an adapter would state them as written —
+ * see `Types.ts`'s `SuggestedEnds`.
+ *
  * @module
  */
 
@@ -404,7 +408,7 @@ class Suggester {
 
     if (unique(numeric.frequencies, numeric.finite, column))
       notes.push(
-        "Every value is distinct. Core has no uniqueness facility, so a fabricated range will collide; T.number.integer.sequence or a uuid string avoid that.",
+        "Every value is distinct, but a fabricated range will collide. T.unique.number draws the same range without repeating; T.number.integer.sequence or a uuid string also avoid collisions.",
       );
 
     return {
@@ -415,6 +419,7 @@ class Suggester {
         max: fitted.max,
         distribution: fitted.distribution,
       },
+      admits: {},
       fit: fitted,
       notes,
     };
@@ -549,7 +554,7 @@ class Suggester {
 
     if (unique(frequencies, tally.count, column))
       notes.push(
-        "Every value is distinct. Core has no uniqueness facility, so fabricated strings can collide; a uuid avoids that.",
+        "Every value is distinct, but fabricated strings can collide. T.unique.string draws the same strings without repeating; a uuid also avoids collisions.",
       );
 
     const lengths = column?.get("length");
@@ -579,6 +584,7 @@ class Suggester {
     return {
       kind: "string",
       whereby: composition === null ? { length } : { length, composition },
+      admits: { length: {} },
       fit: lengthFit,
       format,
       notes,
@@ -631,6 +637,7 @@ class Suggester {
     return {
       kind: "bigint",
       whereby: { min: String(min), max: String(max) },
+      admits: {},
       notes,
     };
   }
@@ -678,6 +685,7 @@ class Suggester {
         max: new Date(max).toISOString(),
         distribution: fitted?.distribution ?? null,
       },
+      admits: {},
       fit: fitted,
       notes,
     };
@@ -697,6 +705,7 @@ class Suggester {
     return {
       kind: "array",
       whereby: { length },
+      admits: { length: {} },
       fit: lengthFit,
       element,
       notes: [],
@@ -711,6 +720,7 @@ class Suggester {
         key: this.string(tally.keys),
         value: this.node(tally.value!, 0),
         whereby: { size: { max: size.max, minTried: size.min } },
+        admits: { size: {} },
         notes: [
           `This object passed the census's limit of ${this.fieldLimit} distinct keys, so its keys read as data rather than structure.`,
           "T.record's size draws uniformly, and colliding keys collapse, so minTried is not a guaranteed floor.",

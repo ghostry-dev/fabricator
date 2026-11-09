@@ -85,6 +85,7 @@ export type {
   DateSuggestion,
   Notes,
   SuggestedComposition,
+  SuggestedEnds,
   SuggestedFormat,
   SuggestedLength,
   SuggestedValue,

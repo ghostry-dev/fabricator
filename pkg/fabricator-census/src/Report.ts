@@ -15,6 +15,7 @@ import type {
   Fit,
   FittedDistribution,
   SuggestedComposition,
+  SuggestedEnds,
   SuggestedLength,
   SuggestedValue,
   Suggestion,
@@ -163,7 +164,7 @@ function expression(suggestion: Suggestion): string {
       return "T.opaque(() => …)";
     case "number": {
       const { min, max, distribution } = suggestion.whereby;
-      return `T.number${suggestion.integer ? ".integer" : ""}.whereby({ min: ${min}, max: ${max}, distribution: ${render(distribution)} })`;
+      return `T.number${suggestion.integer ? ".integer" : ""}.whereby({ min: ${min}, max: ${max}, distribution: ${render(distribution)} })${admitsText(suggestion.admits, String)}`;
     }
     case "enum": {
       const shown = suggestion.items
@@ -178,7 +179,7 @@ function expression(suggestion: Suggestion): string {
       const parts = [`length: ${lengthText(length)}`];
       if (composition !== undefined)
         parts.push(`composition: ${compositionText(composition)}`);
-      return `T.string.whereby({ ${parts.join(", ")} })`;
+      return `T.string.whereby({ ${parts.join(", ")} }).admits({ length: ${countText(suggestion.admits.length)} })`;
     }
     case "derive": {
       const resolve =
@@ -190,21 +191,21 @@ function expression(suggestion: Suggestion): string {
     case "boolean":
       return `T.boolean.weighted({ true: ${suggestion.weights.true}, false: ${suggestion.weights.false} })`;
     case "bigint":
-      return `T.bigint.whereby({ min: BigInt("${suggestion.whereby.min}"), max: BigInt("${suggestion.whereby.max}") })`;
+      return `T.bigint.whereby({ min: BigInt("${suggestion.whereby.min}"), max: BigInt("${suggestion.whereby.max}") })${admitsText(suggestion.admits, (end) => `BigInt("${end}")`)}`;
     case "date": {
       const { min, max, distribution } = suggestion.whereby;
       const parts = [`min: new Date("${min}")`, `max: new Date("${max}")`];
       if (distribution !== null)
         parts.push(`distribution: ${render(distribution, true)}`);
-      return `T.date.whereby({ ${parts.join(", ")} })`;
+      return `T.date.whereby({ ${parts.join(", ")} })${admitsText(suggestion.admits, (end) => `new Date("${end}")`)}`;
     }
     case "array":
-      return `T.array(${inline(suggestion.element)}).whereby({ length: ${lengthText(suggestion.whereby.length)} })`;
+      return `T.array(${inline(suggestion.element)}).whereby({ length: ${lengthText(suggestion.whereby.length)} }).admits({ length: ${countText(suggestion.admits.length)} })`;
     case "object":
       return `T.object({ ${suggestion.fields.map(({ key }) => JSON.stringify(key)).join(", ")} })`;
     case "record": {
       const { max, minTried } = suggestion.whereby.size;
-      return `T.record(${inline(suggestion.key)}, ${inline(suggestion.value)}).whereby({ size: { max: ${max}, minTried: ${minTried} } })`;
+      return `T.record(${inline(suggestion.key)}, ${inline(suggestion.value)}).whereby({ size: { max: ${max}, minTried: ${minTried} } }).admits({ size: { max: ${suggestion.admits.size.max ?? "Infinity"} } })`;
     }
     case "choice":
       return `T.choice.weighted([${suggestion.options
@@ -221,6 +222,29 @@ function expression(suggestion: Suggestion): string {
       return `T.${suggestion.kind}(${inline(suggestion.inner)}).weighted({ ${weights} })`;
     }
   }
+}
+
+/**
+ * A suggestion's `admits` as the `.admits(...)` call that states it. An end the
+ * suggestion leaves out admits no limit, which `.admits` spells
+ * `-Infinity`/`Infinity`; it must be written, since an end left out of the call
+ * keeps the bound `whereby` wrote.
+ */
+function admitsText<$End>(
+  ends: SuggestedEnds<$End>,
+  text: (end: $End) => string,
+): string {
+  const min = ends.min === undefined ? "-Infinity" : text(ends.min);
+  const max = ends.max === undefined ? "Infinity" : text(ends.max);
+  return `.admits({ min: ${min}, max: ${max} })`;
+}
+
+/**
+ * A length's admitted ends. No limit on a count's minimum is `0`, which states
+ * the same as `-Infinity` and reads as a count.
+ */
+function countText(ends: SuggestedEnds<number>): string {
+  return `{ min: ${ends.min ?? 0}, max: ${ends.max ?? "Infinity"} }`;
 }
 
 function lengthText(length: SuggestedLength): string {

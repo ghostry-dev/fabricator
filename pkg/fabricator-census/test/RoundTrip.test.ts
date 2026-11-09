@@ -1,6 +1,12 @@
 import { beforeAll, expect, test } from ".";
 import { classes, initialize } from "@ghostry/fabricator";
-import { census, suggest, type Suggestion } from "@ghostry/fabricator-census";
+import { Meta } from "@ghostry/fabricator/internal";
+import {
+  census,
+  suggest,
+  type SuggestedEnds,
+  type Suggestion,
+} from "@ghostry/fabricator-census";
 
 /**
  * Fabricate from a schema whose every probability is known, take a census of
@@ -188,4 +194,65 @@ test("an ISO string derived from a date comes back as a derive", () => {
   expect(Date.parse(born.from.whereby.min)).toBeGreaterThanOrEqual(
     Date.parse("1950-01-01"),
   );
+});
+
+/**
+ * The `.admits(...)` a report renders, applied to each bounded suggestion's own
+ * `whereby`: it must build — `.admits` throws `AdmitsExcludesDrawError` on an
+ * end that excludes a drawable value — and state nothing beyond a count's floor
+ * of 0.
+ */
+test("each bounded suggestion builds with the .admits it renders, stating no limit", () => {
+  const { T } = initialize({ salt: "roundtrip-admits", clock: new Date(0) });
+  const score = field("score");
+  const name = field("name");
+  const tags = field("tags");
+  const prefs = field("prefs");
+  const born = field("born");
+
+  if (score.kind !== "number") throw new Error(score.kind);
+  if (name.kind !== "string") throw new Error(name.kind);
+  if (tags.kind !== "array") throw new Error(tags.kind);
+  if (prefs.kind !== "record") throw new Error(prefs.kind);
+  if (born.kind !== "derive") throw new Error(born.kind);
+
+  const count = (ends: SuggestedEnds<number>) => ({
+    min: ends.min ?? 0,
+    max: ends.max ?? Infinity,
+  });
+  const instant = (end: string | undefined, none: number) =>
+    end === undefined ? none : new Date(end);
+  const date = born.from;
+
+  const number = T.number.integer
+    .whereby(score.whereby)
+    .admits({
+      min: score.admits.min ?? -Infinity,
+      max: score.admits.max ?? Infinity,
+    });
+  const string = T.string
+    .whereby(name.whereby)
+    .admits({ length: count(name.admits.length) });
+  const array = T.array(T.boolean)
+    .whereby(tags.whereby)
+    .admits({ length: count(tags.admits.length) });
+  const record = T.record(T.string.whereby({ length: 8 }), T.boolean)
+    .whereby(prefs.whereby)
+    .admits({ size: { max: prefs.admits.size.max ?? Infinity } });
+  const moment = T.date
+    .whereby({
+      min: new Date(date.whereby.min),
+      max: new Date(date.whereby.max),
+    })
+    .admits({
+      min: instant(date.admits.min, -Infinity),
+      max: instant(date.admits.max, Infinity),
+    });
+
+  const floor = { min: { value: 0, exclusive: false } };
+  expect(number[Meta].admits).toEqual({});
+  expect(string[Meta].admits).toEqual({ length: floor });
+  expect(array[Meta].admits).toEqual({ length: floor });
+  expect(record[Meta].admits).toEqual({ size: {} });
+  expect(moment[Meta].admits).toEqual({});
 });
