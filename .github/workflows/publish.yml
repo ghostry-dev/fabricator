@@ -74,33 +74,6 @@ jobs:
         with:
           subject-path: ${{ steps.tarball-path.outputs.path }}
 
-  release-github:
-    name: Create release on GitHub
-    needs: [pack]
-    permissions:
-      contents: write
-    runs-on: ubuntu-26.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Download
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ inputs.package }}-${{ inputs.version }}.tgz
-          path: ${{ github.workspace }}/dist
-          merge-multiple: true
-
-      - name: Create release
-        uses: softprops/action-gh-release@v3
-        with:
-          name: ${{ inputs.package }} ${{ inputs.version }}
-          tag_name: ${{ inputs.package }}/${{ inputs.version }}
-          target_commitish: ${{ github.ref }}
-          prerelease: ${{ env.is-prerelease }}
-          fail_on_unmatched_files: true
-          files: ${{ github.workspace }}/dist/*.tgz
-
   ##
   # https://docs.npmjs.com/generating-provenance-statements#example-github-actions-workflow
   # https://docs.npmjs.com/trusted-publishers#step-2-configure-your-cicd-workflow
@@ -143,6 +116,25 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
+
+      ##
+      # npm refuses to publish over an existing version, so a re-run after
+      # this job published and a later job failed would fail here forever.
+      # Skipping a version npm already has makes the job safe to repeat.
+      #
+      - name: Check whether the version is already published
+        id: published
+        env:
+          version: ${{ inputs.version }}
+        run: |
+          name="$(jq -r .name ${{ env.pkg-dir }}/package.json)"
+          if bunx --no-install npm view "$name@${version#v}" version > /dev/null 2>&1; then
+            echo "$name@${version#v} is already on npm; skipping publish"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       ##
       # npm authenticates through trusted publishing (OIDC) alone; there is
       # no token. Provenance comes from the `id-token: write` permission
@@ -161,6 +153,7 @@ jobs:
       # this step fails for that package.
       #
       - name: Publish
+        if: ${{ steps.published.outputs.exists == 'false' }}
         run: >
           bunx --no-install npm publish
           ${{ github.workspace }}/dist/${{ env.filename }}
@@ -210,3 +203,39 @@ jobs:
       - name: Publish
         working-directory: ${{ env.pkg-dir }}
         run: bunx --no-install jsr publish
+
+  ##
+  # The release is created last, after both registries have the version,
+  # because `main.yml` treats an existing release as "already published" and
+  # skips the package. Created any earlier, a release left behind by a failed
+  # publish would make every later run skip that version instead of finishing
+  # it. Both publishes are safe to repeat — `publish-npm` skips a version npm
+  # already has, and `jsr publish` skips one JSR already has — so a re-run
+  # completes whatever the failed run left undone.
+  #
+  release-github:
+    name: Create release on GitHub
+    needs: [pack, publish-npm, publish-jsr]
+    permissions:
+      contents: write
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.package }}-${{ inputs.version }}.tgz
+          path: ${{ github.workspace }}/dist
+          merge-multiple: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ inputs.package }} ${{ inputs.version }}
+          tag_name: ${{ inputs.package }}/${{ inputs.version }}
+          target_commitish: ${{ github.ref }}
+          prerelease: ${{ env.is-prerelease }}
+          fail_on_unmatched_files: true
+          files: ${{ github.workspace }}/dist/*.tgz
