@@ -36,6 +36,13 @@ export type Column = {
 
   /** Declared nullable; says nothing about whether nulls occur. */
   nullable: boolean;
+
+  /**
+   * The type modifier (`atttypmod`), or a domain's own when the column has
+   * none: `n + 4` for `varchar(n)`, precision and scale packed for `numeric(p,
+   * s)`. `null` when the type is unconstrained. `limits` decodes it.
+   */
+  typmod: number | null;
 };
 
 /**
@@ -119,7 +126,8 @@ export function columns(table: Table): Query<Column[]> {
       "  pg_catalog.format_type(a.atttypid, a.atttypmod) AS type,",
       "  COALESCE(b.typname, t.typname) AS base,",
       "  COALESCE(b.typcategory, t.typcategory) AS category,",
-      "  NOT a.attnotnull AS nullable",
+      "  NOT a.attnotnull AS nullable,",
+      "  NULLIF(COALESCE(NULLIF(a.atttypmod, -1), t.typtypmod), -1) AS typmod",
       "FROM pg_catalog.pg_attribute a",
       "JOIN pg_catalog.pg_type t ON t.oid = a.atttypid",
       "LEFT JOIN pg_catalog.pg_type b ON b.oid = t.typbasetype",
@@ -138,6 +146,7 @@ export function columns(table: Table): Query<Column[]> {
         base: text(row, "base"),
         category: text(row, "category"),
         nullable: flag(row, "nullable"),
+        typmod: toNumber(row["typmod"], "typmod"),
       }));
     },
   };

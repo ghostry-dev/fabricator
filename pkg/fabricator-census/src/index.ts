@@ -44,6 +44,12 @@ export {
 export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts";
 
 /**
+ * Declared limits on a column — what it accepts rather than what it holds —
+ * stated as a suggestion's `admits`.
+ */
+export type { ColumnLimits, Limits } from "./Limits";
+
+/**
  * Every failure this package raises. Extends core's `FabricatorError`, so one
  * `instanceof` check covers both packages.
  */

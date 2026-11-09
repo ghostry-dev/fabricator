@@ -1,5 +1,6 @@
 import { CensusError } from "./Error";
 import { validateFacts } from "./Facts";
+import { validateLimits } from "./Limits";
 import { resolveOptions } from "./Options";
 import { toContext } from "./Tally/Context";
 import { NodeTally } from "./Tally/Node";
@@ -13,6 +14,7 @@ import type { Accumulator, Census, CensusOptions } from "./Types";
 function begin(options?: CensusOptions): Accumulator {
   const resolved = resolveOptions(options);
   const facts = validateFacts(options?.facts ?? []);
+  const limits = validateLimits(options?.limits ?? []);
   const context = toContext(
     resolved,
     (context, path, depth) => new NodeTally(context, path, depth),
@@ -26,7 +28,12 @@ function begin(options?: CensusOptions): Accumulator {
       root.add(value);
     },
     finish() {
-      return (result ??= { options: resolved, root: root.snapshot(), facts });
+      return (result ??= {
+        options: resolved,
+        root: root.snapshot(),
+        facts,
+        limits,
+      });
     },
   };
 }

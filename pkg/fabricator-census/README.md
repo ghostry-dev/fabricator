@@ -41,19 +41,19 @@ console.log(report(census.from(rows)));
 // …
 ```
 
-The `whereby` ranges are what was observed, so they shape fabricated data. The `.admits(...)` call stops an adapter from turning them into validation limits, since real data can fall outside a sample.
+The `whereby` ranges are what was observed, so they shape fabricated data. The `.admits(...)` call stops an adapter from turning them into validation limits, since real data can fall outside a sample. Pass `limits` — what each column accepts, such as a maximum length — and `.admits(...)` states those instead.
 
-`rows` is any iterable of decoded values. From a PostgreSQL table, `collect` sizes and draws the sample through your own driver, and gathers whole-table facts to merge over it:
+`rows` is any iterable of decoded values. From a PostgreSQL table, `collect` sizes and draws the sample through your own driver, gathers whole-table facts to merge over it, and decodes each column's declared limits from its type (`varchar(n)`, the integer types, `numeric(p, s)`):
 
 ```ts
 import { collect } from "@ghostry/fabricator-census/postgres";
 
-const { rows, facts } = await collect(
+const { rows, facts, limits } = await collect(
   async (text, values) => (await client.query(text, values)).rows,
   { table: "users" },
 );
 
-console.log(report(census.from(rows, { facts })));
+console.log(report(census.from(rows, { facts, limits })));
 ```
 
 See the [Census guide](https://docs.ghostry.dev/fabricator/guides/census) in the docs for reading the suggestions, how fits are scored, sampling methods, and what the queries cost.

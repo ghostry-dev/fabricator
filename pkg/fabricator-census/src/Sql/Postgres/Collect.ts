@@ -1,14 +1,15 @@
 /**
  * The whole PostgreSQL path in one call: size, sample and describe a table
- * through a caller-supplied `run`, and return rows and facts ready for a
- * census. Sugar over the builders, which stay the primary API — `collect` only
- * runs them in order and threads each result into the next.
+ * through a caller-supplied `run`, and return rows, facts and limits ready for
+ * a census. Sugar over the builders, which stay the primary API — `collect`
+ * only runs them in order and threads each result into the next.
  *
  * @module
  */
 
 import { CensusError } from "../../Error";
 import type { ColumnFacts } from "../../Facts";
+import type { ColumnLimits } from "../../Limits";
 import {
   sampleSize,
   type SampleSize,
@@ -25,6 +26,7 @@ import {
   type Column,
 } from "./Catalog";
 import { coerce } from "./Coerce";
+import { limits as limitsOf } from "./Limits";
 import {
   sample,
   type BernoulliSample,
@@ -74,6 +76,9 @@ export type Collected = {
   /** Estimated facts from statistics, then exact facts from the aggregates. */
   facts: ColumnFacts[];
 
+  /** Each described column's limits, decoded from its type. */
+  limits: ColumnLimits[];
+
   /** The columns described, limited to `sample.columns` when it was given. */
   columns: Column[];
 
@@ -89,11 +94,12 @@ export type Collected = {
  * Steps, in order: the row estimate (a count if the table was never analyzed),
  * the columns, the planner's statistics as estimated facts, a sample sized by
  * `sampleSize` against the estimate, coercion of its rows, and — unless
- * `budget` is `catalog` — one exact aggregate per column.
+ * `budget` is `catalog` — one exact aggregate per column. Limits are decoded
+ * from the described columns' types, with no query of their own.
  *
  * ```ts
- * const { rows, facts } = await collect(run, { table: "users" });
- * const users = census.from(rows, { facts });
+ * const { rows, facts, limits } = await collect(run, { table: "users" });
+ * const users = census.from(rows, { facts, limits });
  * ```
  */
 export async function collect(
@@ -166,5 +172,13 @@ export async function collect(
     for (const query of aggregates(table, columns, options.aggregates))
       facts.push(await execute(query));
 
-  return { rows, facts, columns, population, size, queries };
+  return {
+    rows,
+    facts,
+    limits: limitsOf(columns),
+    columns,
+    population,
+    size,
+    queries,
+  };
 }

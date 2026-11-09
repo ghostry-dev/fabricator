@@ -6,6 +6,7 @@ import {
   count,
   estimate,
   estimatedFacts,
+  limits,
   parseText,
   sample,
   statistics,
@@ -15,13 +16,12 @@ import {
 } from "@ghostry/fabricator-census/postgres";
 import { describe, expect, test } from ".";
 
-const column = (name: string, base: string, category: string): Column => ({
-  name,
-  type: base,
-  base,
-  category,
-  nullable: true,
-});
+const column = (
+  name: string,
+  base: string,
+  category: string,
+  typmod: number | null = null,
+): Column => ({ name, type: base, base, category, nullable: true, typmod });
 
 describe("identifiers", () => {
   test("names are double-quoted with quotes doubled", () => {
@@ -224,6 +224,12 @@ describe("columns", () => {
     expect(text).toContain("NOT a.attisdropped");
   });
 
+  test("reads the column's type modifier, or its domain's", () => {
+    expect(columns("t").text).toContain(
+      "NULLIF(COALESCE(NULLIF(a.atttypmod, -1), t.typtypmod), -1) AS typmod",
+    );
+  });
+
   test("reads columns, accepting t/f for booleans", () => {
     expect(
       columns("t").read([
@@ -233,6 +239,7 @@ describe("columns", () => {
           base: "int8",
           category: "N",
           nullable: false,
+          typmod: null,
         },
         {
           name: "tags",
@@ -240,6 +247,14 @@ describe("columns", () => {
           base: "_text",
           category: "A",
           nullable: "t",
+        },
+        {
+          name: "code",
+          type: "character varying(8)",
+          base: "varchar",
+          category: "S",
+          nullable: false,
+          typmod: 12,
         },
       ]),
     ).toEqual([
@@ -249,6 +264,7 @@ describe("columns", () => {
         base: "int8",
         category: "N",
         nullable: false,
+        typmod: null,
       },
       {
         name: "tags",
@@ -256,6 +272,15 @@ describe("columns", () => {
         base: "_text",
         category: "A",
         nullable: true,
+        typmod: null,
+      },
+      {
+        name: "code",
+        type: "character varying(8)",
+        base: "varchar",
+        category: "S",
+        nullable: false,
+        typmod: 12,
       },
     ]);
   });
@@ -264,6 +289,92 @@ describe("columns", () => {
     expect(() => columns("t").read([{ name: 1 }])).toThrow(
       CensusError.UnexpectedRowError,
     );
+  });
+});
+
+/** `numeric(p, s)`'s modifier, packed as PostgreSQL packs it. */
+const numericTypmod = (precision: number, scale: number) =>
+  ((precision << 16) | (scale & 0x7ff)) + 4;
+
+describe("limits", () => {
+  test("varchar(n) and char(n) declare a length, with a note on code points", () => {
+    const decoded = limits([
+      column("name", "varchar", "S", 12 + 4),
+      column("code", "bpchar", "S", 3 + 4),
+    ]);
+    expect(decoded.map((entry) => [entry.column, entry.limits.length])).toEqual(
+      [
+        ["name", { max: 12 }],
+        ["code", { max: 3 }],
+      ],
+    );
+    expect(decoded[0]!.limits.notes!.join(" ")).toContain("code points");
+  });
+
+  test("each integer type declares its range, int8 as bigint tags", () => {
+    expect(
+      limits([
+        column("a", "int2", "N"),
+        column("b", "int4", "N"),
+        column("c", "int8", "N"),
+      ]),
+    ).toEqual([
+      { column: "a", limits: { min: -32768, max: 32767 } },
+      { column: "b", limits: { min: -2147483648, max: 2147483647 } },
+      {
+        column: "c",
+        limits: {
+          min: { type: "bigint", value: "-9223372036854775808" },
+          max: { type: "bigint", value: "9223372036854775807" },
+        },
+      },
+    ]);
+  });
+
+  test("decoded limits are fresh objects", () => {
+    const [first] = limits([column("a", "int8", "N")]);
+    const [second] = limits([column("a", "int8", "N")]);
+    expect(first!.limits).not.toBe(second!.limits);
+    expect(first!.limits.min).not.toBe(second!.limits.min);
+  });
+
+  test("numeric(p, s) declares ±10^(p − s), with a note on multipleOf", () => {
+    const [price] = limits([
+      column("price", "numeric", "N", numericTypmod(6, 2)),
+    ]);
+    expect(price!.limits).toMatchObject({ min: -10_000, max: 10_000 });
+    expect(price!.limits.notes!.join(" ")).toContain("multipleOf");
+  });
+
+  test("a negative scale widens the bound", () => {
+    const [rounded] = limits([
+      column("n", "numeric", "N", numericTypmod(3, -2)),
+    ]);
+    expect(rounded!.limits).toMatchObject({ min: -100_000, max: 100_000 });
+  });
+
+  test("a scale above the precision bounds below one", () => {
+    const [small] = limits([column("n", "numeric", "N", numericTypmod(3, 5))]);
+    expect(small!.limits).toMatchObject({ min: -0.01, max: 0.01 });
+  });
+
+  test("a numeric bound past what a number holds declares nothing", () => {
+    expect(
+      limits([column("n", "numeric", "N", numericTypmod(1000, -500))]),
+    ).toEqual([]);
+  });
+
+  test("unconstrained and unbounded types declare nothing", () => {
+    expect(
+      limits([
+        column("a", "numeric", "N"),
+        column("b", "varchar", "S"),
+        column("c", "text", "S"),
+        column("d", "float8", "N"),
+        column("e", "timestamptz", "D"),
+        column("f", "_varchar", "A", 12 + 4),
+      ]),
+    ).toEqual([]);
   });
 });
 

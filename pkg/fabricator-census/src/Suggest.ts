@@ -4,9 +4,9 @@
  * weights, a type mix becomes a weighted `choice`, and each type's tally
  * becomes its kind's `whereby`, `weighted` or members.
  *
- * Every bounded suggestion also carries `admits`, with no end in it: its
- * `whereby` bounds are observed, and an adapter would state them as written —
- * see `Types.ts`'s `SuggestedEnds`.
+ * Every bounded suggestion also carries `admits`: its `whereby` bounds are
+ * observed, and an adapter would state them as written, so `admits` holds only
+ * the ends the census's `limits` declare — see `Types.ts`'s `SuggestedEnds`.
  *
  * @module
  */
@@ -17,9 +17,11 @@ import {
   factBigInt,
   factNumber,
   resolveFacts,
+  type BigIntFact,
   type Facts,
   type Sources,
 } from "./Facts";
+import type { Limits } from "./Limits";
 import { fit } from "./Fit/Fit";
 import type {
   ArrayTally,
@@ -35,6 +37,7 @@ import type {
   ObjectTally,
   StringTally,
   SuggestedComposition,
+  SuggestedEnds,
   SuggestedFormat,
   SuggestedLength,
   SuggestedValue,
@@ -137,11 +140,16 @@ export function suggest(census: Census, options?: SuggestOptions): Suggestion {
     if (resolvedFacts !== null) columns.set(column, resolvedFacts);
   }
 
+  const limits = new Map(
+    census.limits.map((entry) => [entry.column, entry.limits]),
+  );
+
   return new Suggester(
     resolved,
     census.options.fields,
     census.root.object,
     columns,
+    limits,
   ).node(census.root, 0);
 }
 
@@ -154,6 +162,7 @@ class Suggester {
       string,
       { facts: Facts; sources: Sources }
     >,
+    private readonly limits: ReadonlyMap<string, Limits>,
   ) {}
 
   /**
@@ -161,8 +170,13 @@ class Suggester {
    * only for an object field; top-level values and array elements are always
    * present, so they never get an `omittable`.
    */
-  node(node: Node, absent: number, column: Column | null = null): Suggestion {
-    const suggestion = this.presence(node, absent, column);
+  node(
+    node: Node,
+    absent: number,
+    column: Column | null = null,
+    declared: Limits | null = null,
+  ): Suggestion {
+    const suggestion = this.presence(node, absent, column, declared);
     if (column !== null) suggestion.notes.push(...column.notes());
     return suggestion;
   }
@@ -176,6 +190,7 @@ class Suggester {
     node: Node,
     sampledAbsent: number,
     column: Column | null,
+    declared: Limits | null,
   ): Suggestion {
     const scale = column === null ? 1 : column.get("count") / node.count;
     const absent = Math.round(sampledAbsent * scale);
@@ -208,7 +223,7 @@ class Suggester {
       return inner;
     }
 
-    const inner = this.values(node, column);
+    const inner = this.values(node, column, declared);
     if (absent > 0) {
       if (undefineds > 0 && nulls > 0)
         return omittable(absent, present, {
@@ -263,18 +278,24 @@ class Suggester {
    * the depth limit were counted but never described, so they can only be
    * opaque.
    */
-  private values(node: Node, facts: Column | null): Suggestion {
+  private values(
+    node: Node,
+    facts: Column | null,
+    declared: Limits | null,
+  ): Suggestion {
     const options: Array<[number, Suggestion]> = [];
     const { types } = node;
 
     /**
      * A column's extremes and members describe one type of value; with a mix,
      * there is no telling which they belong to, so only presence uses them.
+     * Limits describe one type the same way.
      */
     const kinds = (Object.keys(types) as Array<keyof typeof types>).filter(
       (type) => type !== "null" && type !== "undefined" && types[type] > 0,
     );
     const column = kinds.length === 1 ? facts : null;
+    const limits = kinds.length === 1 ? declared : null;
 
     const depth = (what: string): Suggestion => ({
       kind: "opaque",
@@ -284,19 +305,21 @@ class Suggester {
     });
 
     if (types.number > 0)
-      options.push([types.number, this.number(node.number!, column)]);
+      options.push([types.number, this.number(node.number!, column, limits)]);
     if (types.string > 0)
-      options.push([types.string, this.string(node.string!, column)]);
+      options.push([types.string, this.string(node.string!, column, limits)]);
     if (types.boolean > 0)
       options.push([types.boolean, this.boolean(node.boolean!, column)]);
     if (types.bigint > 0)
-      options.push([types.bigint, this.bigint(node.bigint!, column)]);
+      options.push([types.bigint, this.bigint(node.bigint!, column, limits)]);
     if (types.date > 0)
-      options.push([types.date, this.date(node.date!, column)]);
+      options.push([types.date, this.date(node.date!, column, limits)]);
     if (types.array > 0)
       options.push([
         types.array,
-        node.array === null ? depth("Arrays") : this.array(node.array, column),
+        node.array === null
+          ? depth("Arrays")
+          : this.array(node.array, column, limits),
       ]);
     if (types.object > 0)
       options.push([
@@ -319,9 +342,13 @@ class Suggester {
     return { kind: "choice", options, notes: [] };
   }
 
-  private number(numeric: Numeric, column: Column | null): Suggestion {
+  private number(
+    numeric: Numeric,
+    column: Column | null,
+    declared: Limits | null,
+  ): Suggestion {
     const notes: string[] = [];
-    const base = this.finite(numeric, notes, column);
+    const base = this.finite(numeric, notes, column, declared);
 
     const nonFinite: Array<[number, Suggestion]> = [];
     const special = (
@@ -360,6 +387,7 @@ class Suggester {
     numeric: Numeric,
     notes: string[],
     column: Column | null,
+    declared: Limits | null,
   ): Suggestion | null {
     const summary = numeric.summary;
     if (summary === null) return null;
@@ -411,6 +439,17 @@ class Suggester {
         "Every value is distinct, but a fabricated range will collide. T.unique.number draws the same range without repeating; T.number.integer.sequence or a uuid string also avoid collisions.",
       );
 
+    const admits = admitted(
+      {
+        min: endOf(declared?.min, factNumber),
+        max: endOf(declared?.max, factNumber),
+      },
+      { min: fitted.min, max: fitted.max },
+      { what: "value", above: (a, b) => a > b, show: String },
+      declared,
+      notes,
+    );
+
     return {
       kind: "number",
       integer: numeric.integer,
@@ -419,7 +458,7 @@ class Suggester {
         max: fitted.max,
         distribution: fitted.distribution,
       },
-      admits: {},
+      admits,
       fit: fitted,
       notes,
     };
@@ -500,7 +539,11 @@ class Suggester {
     ]);
   }
 
-  private string(tally: StringTally, column: Column | null = null): Suggestion {
+  private string(
+    tally: StringTally,
+    column: Column | null = null,
+    declared: Limits | null = null,
+  ): Suggestion {
     const notes: string[] = [];
     const members = this.members(tally.frequencies, tally.count, column, notes);
 
@@ -584,7 +627,7 @@ class Suggester {
     return {
       kind: "string",
       whereby: composition === null ? { length } : { length, composition },
-      admits: { length: {} },
+      admits: { length: admittedLength(length, declared, notes) },
       fit: lengthFit,
       format,
       notes,
@@ -606,7 +649,11 @@ class Suggester {
     return { kind: "boolean", weights: { true: yes, false: no }, notes: [] };
   }
 
-  private bigint(tally: BigIntTally, column: Column | null): Suggestion {
+  private bigint(
+    tally: BigIntTally,
+    column: Column | null,
+    declared: Limits | null,
+  ): Suggestion {
     const notes: string[] = [];
     const members = this.members(tally.frequencies, tally.count, column, notes);
     if (members !== null) return { kind: "enum", items: members, notes };
@@ -634,15 +681,30 @@ class Suggester {
       "T.bigint draws uniformly across its range; core has no bigint distributions.",
     );
 
+    const admits = admitted(
+      {
+        min: endOf(declared?.min, factBigInt),
+        max: endOf(declared?.max, factBigInt),
+      },
+      { min: String(min), max: String(max) },
+      { what: "value", above: (a, b) => BigInt(a) > BigInt(b), show: String },
+      declared,
+      notes,
+    );
+
     return {
       kind: "bigint",
       whereby: { min: String(min), max: String(max) },
-      admits: {},
+      admits,
       notes,
     };
   }
 
-  private date(tally: DateTally, column: Column | null): Suggestion {
+  private date(
+    tally: DateTally,
+    column: Column | null,
+    declared: Limits | null,
+  ): Suggestion {
     const notes: string[] = [];
 
     if (tally.invalid > 0)
@@ -662,13 +724,14 @@ class Suggester {
 
     if (members !== null) return { kind: "enum", items: members, notes };
 
-    return this.epoch(tally.epoch, notes, numericRange(column));
+    return this.epoch(tally.epoch, notes, numericRange(column), declared);
   }
 
   private epoch(
     epoch: Numeric,
     notes: string[],
     range?: { min: number; max: number },
+    declared: Limits | null = null,
   ): DateSuggestion {
     const summary = epoch.summary!;
     const fitted = fit(epoch, { discrete: false, range });
@@ -678,20 +741,39 @@ class Suggester {
     const max =
       range === undefined ? summary.max : Math.max(summary.max, range.max);
 
+    const ends = admitted(
+      {
+        min: endOf(declared?.min, instant),
+        max: endOf(declared?.max, instant),
+      },
+      { min, max },
+      { what: "instant", above: (a, b) => a > b, show: iso },
+      declared,
+      notes,
+    );
+    const admits: SuggestedEnds<string> = {};
+    if (ends.min !== undefined) admits.min = iso(ends.min);
+    if (ends.max !== undefined) admits.max = iso(ends.max);
+
     return {
       kind: "date",
       whereby: {
-        min: new Date(min).toISOString(),
-        max: new Date(max).toISOString(),
+        min: iso(min),
+        max: iso(max),
         distribution: fitted?.distribution ?? null,
       },
-      admits: {},
+      admits,
       fit: fitted,
       notes,
     };
   }
 
-  private array(tally: ArrayTally, column: Column | null = null): Suggestion {
+  private array(
+    tally: ArrayTally,
+    column: Column | null,
+    declared: Limits | null,
+  ): Suggestion {
+    const notes: string[] = [];
     const { length, fit: lengthFit } = lengthOf(
       tally.length,
       column?.get("length"),
@@ -705,10 +787,10 @@ class Suggester {
     return {
       kind: "array",
       whereby: { length },
-      admits: { length: {} },
+      admits: { length: admittedLength(length, declared, notes) },
       fit: lengthFit,
       element,
-      notes: [],
+      notes,
     };
   }
 
@@ -733,14 +815,15 @@ class Suggester {
     const suggestion: Suggestion = {
       kind: "object",
       fields: fields.map((field) => {
-        const facts =
-          tally === this.root ? this.columns.get(field.key) : undefined;
+        const root = tally === this.root;
+        const facts = root ? this.columns.get(field.key) : undefined;
         const column =
           facts === undefined ? null : new Column(facts.facts, facts.sources);
+        const declared = root ? (this.limits.get(field.key) ?? null) : null;
 
         return {
           key: field.key,
-          value: this.node(field.node, field.absent, column),
+          value: this.node(field.node, field.absent, column, declared),
         };
       }),
       notes,
@@ -757,6 +840,92 @@ class Suggester {
     if (discriminant !== null) notes.push(discriminant);
     return suggestion;
   }
+}
+
+/**
+ * The ends a suggestion admits, from declared limits alone: each declared end
+ * that contains what `whereby` draws, and nothing where none was declared. An
+ * end that would exclude a drawn value is dropped with a note, since admitting
+ * it would throw core's `AdmitsExcludesDrawError` — which is how a sample past
+ * a declared limit shows up: a string's UTF-16 length past a code-point limit,
+ * or a float rounded across a bound. The limits' own notes join the
+ * suggestion's when any end is admitted.
+ */
+function admitted<$End>(
+  declared: { min: $End | undefined; max: $End | undefined },
+  drawn: { min: $End; max: $End },
+  order: {
+    what: string;
+    above: (a: $End, b: $End) => boolean;
+    show: (end: $End) => string;
+  },
+  limits: Limits | null,
+  notes: string[],
+): SuggestedEnds<$End> {
+  const ends: SuggestedEnds<$End> = {};
+  const { what, above, show } = order;
+  const { min, max } = declared;
+
+  if (min !== undefined && above(min, drawn.min))
+    notes.push(
+      `The declared minimum ${what}, ${show(min)}, is above the least ${what} drawn here, ${show(drawn.min)}, so no minimum is admitted.`,
+    );
+  else if (min !== undefined) ends.min = min;
+
+  if (max !== undefined && above(drawn.max, max))
+    notes.push(
+      `The declared maximum ${what}, ${show(max)}, is below the greatest ${what} drawn here, ${show(drawn.max)}, so no maximum is admitted.`,
+    );
+  else if (max !== undefined) ends.max = max;
+
+  if (ends.min !== undefined || ends.max !== undefined)
+    notes.push(...(limits?.notes ?? []));
+
+  return ends;
+}
+
+/**
+ * A length's admitted ends: only a maximum is ever declared, so the minimum
+ * stays absent and `report` writes it as `0`.
+ */
+function admittedLength(
+  length: SuggestedLength,
+  limits: Limits | null,
+  notes: string[],
+): SuggestedEnds<number> {
+  const longest = typeof length === "number" ? length : length.max;
+  const shortest = typeof length === "number" ? length : length.min;
+
+  return admitted(
+    { min: undefined, max: limits?.length?.max },
+    { min: shortest, max: longest },
+    { what: "length", above: (a, b) => a > b, show: String },
+    limits,
+    notes,
+  );
+}
+
+/** A declared end converted for one kind, or `undefined` where none was. */
+function endOf<$End>(
+  end: number | BigIntFact | undefined,
+  convert: (end: number | BigIntFact) => $End | undefined,
+): $End | undefined {
+  if (end === undefined) return undefined;
+  return convert(end);
+}
+
+/**
+ * A declared date end as epoch milliseconds. One past what a `Date` can hold
+ * excludes no `Date`, so it declares nothing.
+ */
+function instant(end: number | BigIntFact): number | undefined {
+  const value = factNumber(end);
+  if (Number.isNaN(new Date(value).valueOf())) return undefined;
+  return value;
+}
+
+function iso(epoch: number): string {
+  return new Date(epoch).toISOString();
 }
 
 function omittable(

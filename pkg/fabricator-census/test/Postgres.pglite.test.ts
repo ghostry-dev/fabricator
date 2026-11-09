@@ -3,6 +3,7 @@ import { initialize } from "@ghostry/fabricator";
 import {
   census,
   CensusError,
+  report,
   suggest,
   type Suggestion,
 } from "@ghostry/fabricator-census";
@@ -94,6 +95,24 @@ beforeAll(async () => {
   await db.exec(
     "CREATE TABLE fresh (id int4); INSERT INTO fresh SELECT generate_series(1, 50);",
   );
+  await db.exec(`
+    CREATE DOMAIN code AS varchar(8);
+    CREATE TABLE limited (
+      name varchar(12) NOT NULL,
+      rank int2 NOT NULL,
+      price numeric(6, 2) NOT NULL,
+      note text NOT NULL,
+      tag code NOT NULL
+    );
+    INSERT INTO limited
+    SELECT substr(md5(i::text), 1, 1 + i % 12),
+      (i % 500) - 250,
+      round((i % 997) * 1.37, 2),
+      substr(md5(i::text), 1, 1 + i % 30),
+      'c' || i
+    FROM generate_series(1, 2000) AS i;
+    ANALYZE limited;
+  `);
 });
 
 describe("collect", () => {
@@ -242,5 +261,80 @@ describe("budget", () => {
     await expect(
       collect(run, { table: "fresh", budget: "catalog" }),
     ).rejects.toThrow(CensusError.UnanalyzedTableError);
+  });
+});
+
+describe("limits", () => {
+  let fields: Map<string, Suggestion>;
+  let collected: Awaited<ReturnType<typeof collect>>;
+  let text: string;
+
+  beforeAll(async () => {
+    collected = await collect(run, { table: "limited", sample: { seed: 5 } });
+    const taken = census.from(collected.rows, {
+      seed: "pglite",
+      facts: collected.facts,
+      limits: collected.limits,
+    });
+    const root = suggest(taken);
+    if (root.kind !== "object") throw new Error(root.kind);
+    fields = new Map(root.fields.map((f) => [f.key, f.value]));
+    text = report(taken, root);
+  });
+
+  test("collect decodes each column's type, a domain's included", () => {
+    expect(
+      collected.limits.map(({ column, limits }) => ({
+        column,
+        min: limits.min,
+        max: limits.max,
+        length: limits.length,
+      })),
+    ).toEqual([
+      { column: "name", min: undefined, max: undefined, length: { max: 12 } },
+      { column: "rank", min: -32768, max: 32767, length: undefined },
+      { column: "price", min: -10_000, max: 10_000, length: undefined },
+      { column: "tag", min: undefined, max: undefined, length: { max: 8 } },
+    ]);
+  });
+
+  test("varchar(n) is admitted as a length, with its note", () => {
+    const name = fields.get("name")!;
+    expect(name).toMatchObject({
+      kind: "string",
+      admits: { length: { max: 12 } },
+    });
+    expect(name.notes.join(" ")).toContain("code points");
+    expect(fields.get("tag")).toMatchObject({
+      kind: "string",
+      admits: { length: { max: 8 } },
+    });
+  });
+
+  test("int2 and numeric(6, 2) are admitted as their ranges", () => {
+    expect(fields.get("rank")).toMatchObject({
+      kind: "number",
+      admits: { min: -32768, max: 32767 },
+    });
+    const price = fields.get("price")!;
+    expect(price).toMatchObject({
+      kind: "number",
+      admits: { min: -10_000, max: 10_000 },
+    });
+    expect(price.notes.join(" ")).toContain("multipleOf");
+  });
+
+  test("text declares nothing, so it admits no limit", () => {
+    expect(fields.get("note")).toMatchObject({
+      kind: "string",
+      admits: { length: {} },
+    });
+  });
+
+  test("report states the declared ends", () => {
+    expect(text).toContain(".admits({ length: { min: 0, max: 12 } })");
+    expect(text).toContain(".admits({ min: -32768, max: 32767 })");
+    expect(text).toContain(".admits({ min: -10000, max: 10000 })");
+    expect(text).toContain(".admits({ length: { min: 0, max: Infinity } })");
   });
 });

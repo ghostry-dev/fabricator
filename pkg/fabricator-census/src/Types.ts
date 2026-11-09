@@ -1,5 +1,6 @@
 import type { CharacterClass, CodepointRange } from "@ghostry/fabricator";
 import type { ColumnFacts } from "./Facts";
+import type { ColumnLimits } from "./Limits";
 
 /**
  * How a census is taken. Every count-valued option is a memory or resolution
@@ -60,6 +61,14 @@ export type CensusOptions = {
    * exact facts first, then estimates, then the sample.
    */
   facts?: ReadonlyArray<ColumnFacts> | undefined;
+
+  /**
+   * Declared limits on the top-level fields — what each `column` accepts, where
+   * `facts` describe what it holds — from `./postgres`'s `limits`, or by hand.
+   * Recorded on the census, and stated as a suggestion's `admits`. A column may
+   * appear once.
+   */
+  limits?: ReadonlyArray<ColumnLimits> | undefined;
 };
 
 /** {@link CensusOptions} with every default applied, as recorded on a census. */
@@ -99,6 +108,9 @@ export type Census = {
 
   /** The facts the census was given, validated; empty when none were. */
   facts: ColumnFacts[];
+
+  /** The limits the census was given, validated; empty when none were. */
+  limits: ColumnLimits[];
 };
 
 /**
@@ -538,8 +550,9 @@ export type SuggestedFormat = "uuid" | "email" | "url" | "numeric";
  * Census's own bounds are observed — a sample's extremes, or a table's — never
  * declared. An adapter states every bound written in `whereby`, so a schema
  * written from the observed range alone would reject any value past what was
- * seen. Every end here is therefore absent: census admits no limit it was not
- * told the source enforces.
+ * seen. An end here is therefore present only where the census's `limits`
+ * declare one, and only when it contains what `whereby` draws: census admits no
+ * limit it was not told the source enforces.
  */
 export type SuggestedEnds<$End> = { min?: $End; max?: $End };
 

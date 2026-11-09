@@ -37,6 +37,9 @@ export { coerce, parseText } from "./Sql/Postgres/Coerce";
 
 export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts";
 
+export { limits } from "./Sql/Postgres/Limits";
+export type { ColumnLimits, Limits } from "./Limits";
+
 export {
   collect,
   type Collected,
