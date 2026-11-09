@@ -218,13 +218,28 @@ jobs:
       version: ${{ needs.get-version-fabricator.outputs.version }}
       build-run-id: ${{ needs.build.outputs.run-id }}
 
+  ##
+  # Every other package declares a peer range on `@ghostry/fabricator` whose
+  # lower bound may be the core version this same push releases, and JSR
+  # resolves that range against npm when it publishes. So each waits for
+  # `publish-fabricator`, which ends only once the new core version is
+  # visible on npm.
+  #
+  # A job whose `needs` was skipped is skipped too unless its `if` says
+  # otherwise, and `publish-fabricator` is skipped whenever core has no new
+  # version. `!cancelled() && !failure()` replaces the implicit `success()`:
+  # it still runs after a skipped core publish, and still stops after a failed
+  # build, test, or core publish.
+  ##
+
   publish-fabricator-adapter-typebox-v0:
     name: Publish (fabricator-adapter-typebox-v0)
-    if: ${{ needs.check-release-fabricator-adapter-typebox-v0.outputs.exists == 'false' }}
+    if: ${{ !cancelled() && !failure() && needs.check-release-fabricator-adapter-typebox-v0.outputs.exists == 'false' }}
     uses: ./.github/workflows/publish.yml
     needs:
       - build
       - test
+      - publish-fabricator
       - get-version-fabricator-adapter-typebox-v0
       - check-release-fabricator-adapter-typebox-v0
     permissions:
@@ -239,11 +254,12 @@ jobs:
 
   publish-fabricator-extension-faker-v10:
     name: Publish (fabricator-extension-faker-v10)
-    if: ${{ needs.check-release-fabricator-extension-faker-v10.outputs.exists == 'false' }}
+    if: ${{ !cancelled() && !failure() && needs.check-release-fabricator-extension-faker-v10.outputs.exists == 'false' }}
     uses: ./.github/workflows/publish.yml
     needs:
       - build
       - test
+      - publish-fabricator
       - get-version-fabricator-extension-faker-v10
       - check-release-fabricator-extension-faker-v10
     permissions:
@@ -258,11 +274,12 @@ jobs:
 
   publish-fabricator-census:
     name: Publish (fabricator-census)
-    if: ${{ needs.check-release-fabricator-census.outputs.exists == 'false' }}
+    if: ${{ !cancelled() && !failure() && needs.check-release-fabricator-census.outputs.exists == 'false' }}
     uses: ./.github/workflows/publish.yml
     needs:
       - build
       - test
+      - publish-fabricator
       - get-version-fabricator-census
       - check-release-fabricator-census
     permissions:

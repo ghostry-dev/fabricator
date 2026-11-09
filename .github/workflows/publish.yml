@@ -167,6 +167,28 @@ jobs:
           --tag ${{ env.is-prerelease == 'true' && 'experimental' || 'latest' }}
           --provenance
 
+      ##
+      # npm's registry is eventually consistent: a version can be missing from
+      # `npm view` for a while after `npm publish` returns. `main.yml` starts
+      # the packages that depend on this one once this workflow finishes, and
+      # JSR resolves their peer range against npm, so this job ends only once
+      # the version can actually be fetched.
+      #
+      - name: Wait for the version to be visible
+        env:
+          version: ${{ inputs.version }}
+        run: |
+          name="$(jq -r .name ${{ env.pkg-dir }}/package.json)"
+          for attempt in $(seq 1 60); do
+            if bunx --no-install npm view "$name@${version#v}" version > /dev/null 2>&1; then
+              echo "$name@${version#v} is visible on npm"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "$name@${version#v} is still not visible on npm after 10 minutes"
+          exit 1
+
   publish-jsr:
     name: Publish to JSR
     permissions:
