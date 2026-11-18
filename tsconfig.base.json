@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2019",
-    "module": "ESNext",
+    "module": "NodeNext",
     "moduleDetection": "force",
     "allowJs": false,
     "types": ["@types/bun"],
-    "moduleResolution": "bundler",
+    "moduleResolution": "NodeNext",
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,

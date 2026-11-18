@@ -1,7 +1,7 @@
 import { en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * The whole premise of the bridge: a faker builder draws through the same

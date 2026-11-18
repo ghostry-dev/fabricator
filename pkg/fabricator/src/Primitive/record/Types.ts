@@ -1,20 +1,23 @@
-import type { Adaptations } from "../../Adapter/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
 import type {
   AdmittedEnds,
   InputAdmittedEnds,
   InputLength,
   Length,
-} from "../../Bound";
-import type { Produce } from "../../Random/Types";
-import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
+} from "../../Bound.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../Schema/Types.ts";
 import {
   Produces,
   type Adaptation,
   type Kind,
   type Meta,
   type Produced,
-} from "../../Types";
-import type { Redraws } from "../../Unique/Strategy";
+} from "../../Types.ts";
+import type { Redraws } from "../../Unique/Strategy.ts";
 
 /**
  * A Schema usable as a record's keys: any Schema whose fabricated value is a

@@ -1,5 +1,5 @@
 import { toKeyer } from "@ghostry/fabricator/internal";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * `toKeyer` is what a tracked unique scope stores in place of a value. Each

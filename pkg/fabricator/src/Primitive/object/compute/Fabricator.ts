@@ -1,15 +1,15 @@
-import type { Adaptations } from "../../../Adapter/Types";
-import { FabricatorError } from "../../../Error";
+import type { Adaptations } from "../../../Adapter/Types.ts";
+import { FabricatorError } from "../../../Error/index.ts";
 import type {
   Fabricator as BaseFabricator,
   FabricatorContext,
-} from "../../../Fabricator/Types";
-import type { Trace } from "../../../Random/Types";
-import { violatesKind } from "../../../Schema/Core";
-import { Kind, Meta, type Adaptation } from "../../../Types";
-import { type PlainObject } from "../../../Utility/Types";
-import type { Schema } from "./Schema";
-import type { Resolved, Source, Meta as ThisMeta } from "./Types";
+} from "../../../Fabricator/Types.ts";
+import type { Trace } from "../../../Random/Types.ts";
+import { violatesKind } from "../../../Schema/Core.ts";
+import { Kind, Meta, type Adaptation } from "../../../Types.ts";
+import { type PlainObject } from "../../../Utility/Types.ts";
+import type { Schema } from "./Schema.ts";
+import type { Resolved, Source, Meta as ThisMeta } from "./Types.ts";
 
 export type Fabrication<$Fabricator extends Fabricator<any, Source>> =
   $Fabricator extends Fabricator<any, infer $Source>

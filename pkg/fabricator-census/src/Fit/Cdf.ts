@@ -9,7 +9,7 @@
  */
 
 import { normalCdf } from "@ghostry/fabricator/internal";
-import type { FittedDistribution } from "../Types";
+import type { FittedDistribution } from "../Types.ts";
 
 /**
  * A candidate in unit coordinates. `mode`, `mean` and `spread` are positions

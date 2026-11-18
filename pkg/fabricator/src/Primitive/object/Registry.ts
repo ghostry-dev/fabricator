@@ -1,26 +1,26 @@
-import { mergeAdaptations } from "../../Adapter/Core";
-import type { Adaptations } from "../../Adapter/Types";
-import { FabricatorError } from "../../Error";
-import { toSchema, toValueKind, violatesKind } from "../../Schema/Core";
-import type { AnySchema } from "../../Schema/Types";
-import { Adaptation, Fixed, Kind, Meta, Omitted } from "../../Types";
-import { isPlainObject } from "../../Utility/Core";
-import { shallowMerge } from "../../Utility/ShallowMerge";
-import { type PlainObject } from "../../Utility/Types";
-import { isNullableSchema } from "../nullable/Schema";
-import { isNullishSchema } from "../nullish/Schema";
-import { isUndefinableSchema } from "../undefinable/Schema";
-import { default as computer } from "./compute";
-import { isObjectComputeSchema } from "./compute/Schema";
-import { isObjectOmittableSchema } from "./omittable/Schema";
-import { isObjectOptionalSchema } from "./optional/Schema";
-import { isObjectSchema, Schema } from "./Schema";
+import { mergeAdaptations } from "../../Adapter/Core.ts";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import { FabricatorError } from "../../Error/index.ts";
+import { toSchema, toValueKind, violatesKind } from "../../Schema/Core.ts";
+import type { AnySchema } from "../../Schema/Types.ts";
+import { Adaptation, Fixed, Kind, Meta, Omitted } from "../../Types.ts";
+import { isPlainObject } from "../../Utility/Core.ts";
+import { shallowMerge } from "../../Utility/ShallowMerge.ts";
+import { type PlainObject } from "../../Utility/Types.ts";
+import { isNullableSchema } from "../nullable/Schema.ts";
+import { isNullishSchema } from "../nullish/Schema.ts";
+import { isUndefinableSchema } from "../undefinable/Schema.ts";
+import { default as computer } from "./compute/index.ts";
+import { isObjectComputeSchema } from "./compute/Schema.ts";
+import { isObjectOmittableSchema } from "./omittable/Schema.ts";
+import { isObjectOptionalSchema } from "./optional/Schema.ts";
+import { isObjectSchema, Schema } from "./Schema.ts";
 import type {
   Definition,
   Refinements,
   Subsettable,
   Meta as ThisMeta,
-} from "./Types";
+} from "./Types.ts";
 
 function normalizeDefinition<$Definition extends Definition>(
   definition: $Definition,

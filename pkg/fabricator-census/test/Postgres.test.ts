@@ -14,7 +14,7 @@ import {
   type SampleMethod,
   type SampleOptions,
 } from "@ghostry/fabricator-census/postgres";
-import { describe, expect, test } from ".";
+import { describe, expect, test } from "./index.ts";
 
 const column = (
   name: string,

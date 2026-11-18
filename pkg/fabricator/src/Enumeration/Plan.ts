@@ -1,15 +1,15 @@
-import { drawableOutcomes, isDrawable } from "../Distribution";
-import { FabricatorError } from "../Error";
-import type { Kind as SchemaKind } from "../Primitive";
-import { outcomes as booleanOutcomes } from "../Primitive/boolean/Outcomes";
-import { outcomes as nullableOutcomes } from "../Primitive/nullable/Outcomes";
-import { outcomes as nullishOutcomes } from "../Primitive/nullish/Outcomes";
-import { outcomes as omittableOutcomes } from "../Primitive/object/omittable/Outcomes";
-import { outcomes as optionalOutcomes } from "../Primitive/object/optional/Outcomes";
-import { outcomes as undefinableOutcomes } from "../Primitive/undefinable/Outcomes";
-import { Children, Fixed, Kind, Meta, Omitted } from "../Types";
-import { never } from "../Utility/Core";
-import type { Axis, Orderer, Pin, Resolvable, Strategy } from "./Types";
+import { drawableOutcomes, isDrawable } from "../Distribution/index.ts";
+import { FabricatorError } from "../Error/index.ts";
+import type { Kind as SchemaKind } from "../Primitive/index.ts";
+import { outcomes as booleanOutcomes } from "../Primitive/boolean/Outcomes.ts";
+import { outcomes as nullableOutcomes } from "../Primitive/nullable/Outcomes.ts";
+import { outcomes as nullishOutcomes } from "../Primitive/nullish/Outcomes.ts";
+import { outcomes as omittableOutcomes } from "../Primitive/object/omittable/Outcomes.ts";
+import { outcomes as optionalOutcomes } from "../Primitive/object/optional/Outcomes.ts";
+import { outcomes as undefinableOutcomes } from "../Primitive/undefinable/Outcomes.ts";
+import { Children, Fixed, Kind, Meta, Omitted } from "../Types.ts";
+import { never } from "../Utility/Core.ts";
+import type { Axis, Orderer, Pin, Resolvable, Strategy } from "./Types.ts";
 
 /** A width-1 axis: nothing to pin, let the node fabricate normally. */
 function leaf(): Axis {

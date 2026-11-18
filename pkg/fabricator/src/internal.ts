@@ -19,7 +19,7 @@
  * (re-exported here as `Primitive`), or no adapter can reach that kind's `Core`
  * type.
  */
-export type { Fabrication, NaiveFabricator } from "./Fabricator/Types";
+export type { Fabrication, NaiveFabricator } from "./Fabricator/Types.ts";
 
 /**
  * Schema -> the Fabricator type `construct()` produces for it, dispatching per
@@ -35,7 +35,7 @@ export type { Fabrication, NaiveFabricator } from "./Fabricator/Types";
  * type is exactly this. Without it, an integration is pushed into hand-writing
  * a per-kind stand-in — a second copy of this mapping, susceptible to drift.
  */
-export type { AsFabricator } from "./Fabricator/Types";
+export type { AsFabricator } from "./Fabricator/Types.ts";
 
 /**
  * `Produced` travels with `Produces`: `[Produces]` holds a Schema's value type
@@ -51,8 +51,8 @@ export {
   Produces,
   type Buildable,
   type Produced,
-} from "./Types";
-export { isArray, isPlainObject } from "./Utility/Core";
+} from "./Types.ts";
+export { isArray, isPlainObject } from "./Utility/Core.ts";
 
 /**
  * The runtime counterparts of `Buildable` and `AnySchema`, for an integration
@@ -61,33 +61,33 @@ export { isArray, isPlainObject } from "./Utility/Core";
  * an identity, since a block could either continue its streams or build afresh
  * from its schema.
  */
-export { isBuildable, isSchema } from "./Schema/Core";
+export { isBuildable, isSchema } from "./Schema/Core.ts";
 
-export { toKeyer, type Keyer } from "./Unique/Key";
+export { toKeyer, type Keyer } from "./Unique/Key.ts";
 
-export type * as Primitive from "./Primitive/namespace";
+export type * as Primitive from "./Primitive/namespace.ts";
 
 /**
  * `Schema/Types.ts`'s own value-type resolution, needed by tests asserting
  * `Fabricated<...>` directly rather than through a built Fabricator's
  * `Fabrication<...>`.
  */
-export type { Fabricated } from "./Schema/Types";
+export type { Fabricated } from "./Schema/Types.ts";
 
 /**
  * `Constructor` is `Instance.Fabricator`'s own type — public in effect (every
  * `initialize()` caller receives one), just never named directly by the `.`
  * export, which only ever describes it inline.
  */
-export type { Constructor } from "./Fabricator/Constructor";
+export type { Constructor } from "./Fabricator/Constructor.ts";
 
 /**
  * The enumeration planner's own shapes — `combinatorial`/`coverage` (the `.`
  * export's public entry points) are built on `plan`/`resolve`, which a test
  * asserting `axisFor`'s per-kind width/strategy decisions needs directly.
  */
-export { plan, resolve } from "./Enumeration/Plan";
-export type { Axis, Enumerable, Pin, Resolvable } from "./Enumeration/Types";
+export { plan, resolve } from "./Enumeration/Plan.ts";
+export type { Axis, Enumerable, Pin, Resolvable } from "./Enumeration/Types.ts";
 
 /**
  * The randomness layer underneath `initialize({ clock, salt, algorithm })` and
@@ -101,7 +101,7 @@ export {
   toRandomSource,
   toStream,
   toStreamFromTrace,
-} from "./Random";
+} from "./Random/index.ts";
 export type {
   Algorithm,
   ConstructionPins,
@@ -109,7 +109,7 @@ export type {
   ConstructorOptions,
   Salt,
   Trace,
-} from "./Random/Types";
+} from "./Random/Types.ts";
 
 /**
  * The shared index-selection draw every weighted kind (`enum`, `choice`,
@@ -117,7 +117,7 @@ export type {
  * a test can measure its distribution against a raw stream, without a kind's
  * registry guards or `.fabricate()` in between.
  */
-export { weighted } from "./Distribution";
+export { weighted } from "./Distribution/index.ts";
 
 /**
  * The normal CDF the `normal` distribution's truncation is computed with. The
@@ -131,7 +131,7 @@ export { weighted } from "./Distribution";
  * against the exact curve fabrication will draw from, rather than against a
  * second approximation that could disagree with it in the tails.
  */
-export { normalCdf, normalInv } from "./Distribution";
+export { normalCdf, normalInv } from "./Distribution/index.ts";
 
 /**
  * The synchronous ambient carrier. `#stack` (`package.json`) selects it only
@@ -143,4 +143,4 @@ export { normalCdf, normalInv } from "./Distribution";
  * serviceable argument for `initialize({ stack })` for anyone who wants the old
  * semantics back deliberately.
  */
-export { toStack as toSynchronousStack } from "./Instance/Stack/Sync";
+export { toStack as toSynchronousStack } from "./Instance/Stack/Sync.ts";

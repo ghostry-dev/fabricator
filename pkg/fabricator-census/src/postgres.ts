@@ -16,7 +16,7 @@ export {
   statistics,
   type Column,
   type ColumnStatistics,
-} from "./Sql/Postgres/Catalog";
+} from "./Sql/Postgres/Catalog.ts";
 
 export {
   sample,
@@ -25,26 +25,26 @@ export {
   type SampleMethod,
   type SampleOptions,
   type SystemSample,
-} from "./Sql/Postgres/Sample";
+} from "./Sql/Postgres/Sample.ts";
 
-export { aggregates, type AggregateOptions } from "./Sql/Postgres/Aggregate";
+export { aggregates, type AggregateOptions } from "./Sql/Postgres/Aggregate.ts";
 
 /**
  * Rows and catalog text as the values their column types hold, whatever the
  * driver returned.
  */
-export { coerce, parseText } from "./Sql/Postgres/Coerce";
+export { coerce, parseText } from "./Sql/Postgres/Coerce.ts";
 
-export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts";
+export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts.ts";
 
-export { limits } from "./Sql/Postgres/Limits";
-export type { ColumnLimits, Limits } from "./Limits";
+export { limits } from "./Sql/Postgres/Limits.ts";
+export type { ColumnLimits, Limits } from "./Limits.ts";
 
 export {
   collect,
   type Collected,
   type CollectOptions,
   type Run,
-} from "./Sql/Postgres/Collect";
+} from "./Sql/Postgres/Collect.ts";
 
-export type { Cost, Query, Row, Table } from "./Sql/Types";
+export type { Cost, Query, Row, Table } from "./Sql/Types.ts";

@@ -1,6 +1,6 @@
-import { Replace } from "../Types";
-import { isPlainObject, mergeableKeys } from "./Core";
-import type { PlainObject, Pretty } from "./Types";
+import { Replace } from "../Types.ts";
+import { isPlainObject, mergeableKeys } from "./Core.ts";
+import type { PlainObject, Pretty } from "./Types.ts";
 
 export type DeepMerge<$A, $B> = $B extends { [Replace]: true }
   ? Pretty<Omit<$B, typeof Replace>>

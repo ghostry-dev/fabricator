@@ -1,5 +1,5 @@
-import { bigintWithin, toAdmittedEnds, toBigintBound } from "../../Bound";
-import type { Admits, InputAdmits, Meta } from "./Types";
+import { bigintWithin, toAdmittedEnds, toBigintBound } from "../../Bound.ts";
+import type { Admits, InputAdmits, Meta } from "./Types.ts";
 
 const label = ".admits on a bigint schema";
 

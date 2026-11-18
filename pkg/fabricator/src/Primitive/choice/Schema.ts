@@ -1,17 +1,17 @@
-import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core";
+import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
+} from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import { Kind, Meta } from "../../Types";
-import type { Core, Fabricated, Items } from "./Types";
+} from "../../Schema/Satisfies.ts";
+import { Kind, Meta } from "../../Types.ts";
+import type { Core, Fabricated, Items } from "./Types.ts";
 
 /**
  * Buildable `choice` recipe: a weighted set of option Schemas, one of which is

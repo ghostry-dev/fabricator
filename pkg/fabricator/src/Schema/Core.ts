@@ -1,5 +1,5 @@
-import type { Adaptations } from "../Adapter/Types";
-import type { Kind as SchemaKind } from "../Primitive";
+import type { Adaptations } from "../Adapter/Types.ts";
+import type { Kind as SchemaKind } from "../Primitive/index.ts";
 import {
   Adaptation,
   Kind,
@@ -7,10 +7,10 @@ import {
   type Buildable,
   type Produced,
   type Produces,
-} from "../Types";
-import { isPlainObject, never } from "../Utility/Core";
-import { type PlainObject } from "../Utility/Types";
-import type { AnySchema } from "./Types";
+} from "../Types.ts";
+import { isPlainObject, never } from "../Utility/Core.ts";
+import { type PlainObject } from "../Utility/Types.ts";
+import type { AnySchema } from "./Types.ts";
 
 /**
  * Normalize a Schema, a builder namespace, or an already-built Fabricator into

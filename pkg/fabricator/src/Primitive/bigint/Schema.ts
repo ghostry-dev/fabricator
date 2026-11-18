@@ -1,24 +1,24 @@
-import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core";
+import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
+} from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import { Kind, Meta } from "../../Types";
-import { toAdmits } from "./Admits";
+} from "../../Schema/Satisfies.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { toAdmits } from "./Admits.ts";
 import type {
   Admits,
   Core,
   Fabricated,
   InputAdmits,
   Meta as ThisMeta,
-} from "./Types";
+} from "./Types.ts";
 
 /**
  * Buildable `bigint` recipe: a range (`whereby` — required, like `string`; no

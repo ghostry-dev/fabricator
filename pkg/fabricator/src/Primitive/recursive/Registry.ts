@@ -1,10 +1,10 @@
-import type { AnySchema } from "../../Schema/Types";
-import { toSchema } from "../../Schema/Core";
-import { Kind, Meta } from "../../Types";
-import { default as self, type Schema as SelfSchema } from "./self";
-import { Schema } from "./Schema";
-import { terminate } from "./Terminate";
-import type { Whereby } from "./Types";
+import type { AnySchema } from "../../Schema/Types.ts";
+import { toSchema } from "../../Schema/Core.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { default as self, type Schema as SelfSchema } from "./self/index.ts";
+import { Schema } from "./Schema.ts";
+import { terminate } from "./Terminate.ts";
+import type { Whereby } from "./Types.ts";
 
 /**
  * `T.recursive(body)` — a builder, not a Schema, matching `array`/`record`:

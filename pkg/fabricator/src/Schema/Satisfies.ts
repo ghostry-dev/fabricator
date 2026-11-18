@@ -1,6 +1,6 @@
-import type { NaiveFabricator } from "../Fabricator/Types";
-import type { Buildable, Produced, Produces } from "../Types";
-import type { Fabricated } from "./Types";
+import type { NaiveFabricator } from "../Fabricator/Types.ts";
+import type { Buildable, Produced, Produces } from "../Types.ts";
+import type { Fabricated } from "./Types.ts";
 
 /**
  * The `this`-parameter constraint every kind's `.satisfies<$Target>()`

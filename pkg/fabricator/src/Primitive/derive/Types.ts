@@ -1,8 +1,14 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { ProduceContext } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
-import type { Resolved, Source } from "../object/compute/Types";
-import type * as tuple from "../tuple/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type { ProduceContext } from "../../Random/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
+import type { Resolved, Source } from "../object/compute/Types.ts";
+import type * as tuple from "../tuple/Types.ts";
 
 /**
  * `from` is a tuple of schemas, one per input slot — the same shape
@@ -15,7 +21,7 @@ export type From = tuple.Items;
  * Re-exported so this kind's other files (and `Primitive.derive.Source`) name
  * the same `to` contract `object.compute` uses, rather than restating it.
  */
-export type { Denoted, Resolved, Source } from "../object/compute/Types";
+export type { Denoted, Resolved, Source } from "../object/compute/Types.ts";
 
 /**
  * `from` is stored after `toSchema` (inert per-slot schemas, same as `tuple`).

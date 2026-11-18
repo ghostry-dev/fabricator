@@ -1,5 +1,5 @@
-import { Kind, Meta } from "../../../Types";
-import { Schema } from "./Schema";
+import { Kind, Meta } from "../../../Types.ts";
+import { Schema } from "./Schema.ts";
 
 /**
  * Mints a fresh `self` placeholder — called only from `recursive/Registry.ts`

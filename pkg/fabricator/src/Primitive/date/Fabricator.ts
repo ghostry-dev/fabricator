@@ -1,22 +1,22 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
 import {
   assertNonemptyDiscrete,
   effectiveDiscrete,
   type Bound,
-} from "../../Bound";
-import { Distribution, sampler } from "../../Distribution";
+} from "../../Bound.ts";
+import { Distribution, sampler } from "../../Distribution/index.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import type { Stream, Trace } from "../../Random/Types";
-import { toStreamFromTrace } from "../../Random";
-import { Claim, Kind, MAX_TIME, Meta, type Adaptation } from "../../Types";
-import { toDateStrategy } from "../../Unique/Distinct";
-import { toLifetimeScope } from "../../Unique/Strategy";
-import { toEpochBounds, toEpochRange } from "./Defaults";
-import { Schema } from "./Schema";
-import type { Fabricated, Meta as ThisMeta, Whereby } from "./Types";
+} from "../../Fabricator/Types.ts";
+import type { Stream, Trace } from "../../Random/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import { Claim, Kind, MAX_TIME, Meta, type Adaptation } from "../../Types.ts";
+import { toDateStrategy } from "../../Unique/Distinct.ts";
+import { toLifetimeScope } from "../../Unique/Strategy.ts";
+import { toEpochBounds, toEpochRange } from "./Defaults.ts";
+import { Schema } from "./Schema.ts";
+import type { Fabricated, Meta as ThisMeta, Whereby } from "./Types.ts";
 
 export type Fabrication<_ extends Fabricator> = Fabricated;
 

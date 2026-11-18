@@ -1,5 +1,5 @@
 import { initialize } from "@ghostry/fabricator";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * Compile-time assertions that `fabricate(schema)` is typed exactly as `new

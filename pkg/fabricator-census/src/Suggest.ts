@@ -12,7 +12,7 @@
  */
 
 import { classes, type CharacterClass } from "@ghostry/fabricator";
-import { CensusError } from "./Error";
+import { CensusError } from "./Error.ts";
 import {
   factBigInt,
   factNumber,
@@ -20,9 +20,9 @@ import {
   type BigIntFact,
   type Facts,
   type Sources,
-} from "./Facts";
-import type { Limits } from "./Limits";
-import { fit } from "./Fit/Fit";
+} from "./Facts.ts";
+import type { Limits } from "./Limits.ts";
+import { fit } from "./Fit/Fit.ts";
 import type {
   ArrayTally,
   BigIntTally,
@@ -43,7 +43,7 @@ import type {
   SuggestedValue,
   Suggestion,
   SuggestOptions,
-} from "./Types";
+} from "./Types.ts";
 
 type Resolved = Required<{ [K in keyof SuggestOptions]: number }>;
 

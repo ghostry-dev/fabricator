@@ -10,8 +10,8 @@
  */
 
 import { isArray } from "@ghostry/fabricator/internal";
-import { CensusError } from "./Error";
-import type { BigIntFact } from "./Facts";
+import { CensusError } from "./Error.ts";
+import type { BigIntFact } from "./Facts.ts";
 
 export type Limits = {
   /**

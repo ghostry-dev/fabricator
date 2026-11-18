@@ -1,4 +1,4 @@
-import { Children, Claim, Kind, Omitted } from "../Types";
+import { Children, Claim, Kind, Omitted } from "../Types.ts";
 
 /**
  * Record a per-call override on the `T.unique.*` leaf it stands in for, so no

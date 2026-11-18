@@ -1,4 +1,4 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize, registry, type Enumeration } from "@ghostry/fabricator";
 import type { Fabricated } from "@ghostry/fabricator/internal";
 

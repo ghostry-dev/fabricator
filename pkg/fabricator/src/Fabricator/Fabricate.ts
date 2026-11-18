@@ -1,11 +1,11 @@
-import { toEffectiveSource } from "../Instance/Stack/Visible";
-import type { Ancestry, Stack } from "../Instance/Types";
-import type { RandomSource } from "../Random/Types";
-import { FabricatorError } from "../Error";
-import { isSchema } from "../Schema/Core";
-import type { AnySchema, Fabricated } from "../Schema/Types";
-import type { Constructor } from "./Constructor";
-import type { NaiveFabricator } from "./Types";
+import { toEffectiveSource } from "../Instance/Stack/Visible.ts";
+import type { Ancestry, Stack } from "../Instance/Types.ts";
+import type { RandomSource } from "../Random/Types.ts";
+import { FabricatorError } from "../Error/index.ts";
+import { isSchema } from "../Schema/Core.ts";
+import type { AnySchema, Fabricated } from "../Schema/Types.ts";
+import type { Constructor } from "./Constructor.ts";
+import type { NaiveFabricator } from "./Types.ts";
 
 /**
  * `new Fabricator(schema).fabricate()` in one call, without a build per call:

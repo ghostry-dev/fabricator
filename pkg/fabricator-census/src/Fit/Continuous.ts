@@ -7,8 +7,8 @@
  */
 
 import { normalCdf } from "@ghostry/fabricator/internal";
-import { unitCdf, type UnitModel } from "./Cdf";
-import { nelderMead } from "./Optimize";
+import { unitCdf, type UnitModel } from "./Cdf.ts";
+import { nelderMead } from "./Optimize.ts";
 
 /**
  * A distinct observed value as a unit position, with how many observations

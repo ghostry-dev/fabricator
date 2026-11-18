@@ -1,4 +1,4 @@
-import type { Frequencies, Value } from "../Types";
+import type { Frequencies, Value } from "../Types.ts";
 
 /**
  * Exact counts per distinct value, up to `capacity` distinct values. Past that

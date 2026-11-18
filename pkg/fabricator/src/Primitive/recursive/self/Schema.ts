@@ -1,16 +1,19 @@
-import { withAdaptations, type AdaptationEntry } from "../../../Adapter/Core";
+import {
+  withAdaptations,
+  type AdaptationEntry,
+} from "../../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../../Adapter/Types";
+} from "../../../Adapter/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../../Schema/Satisfies";
-import { Kind } from "../../../Types";
-import type { Core, Fabricated } from "./Types";
+} from "../../../Schema/Satisfies.ts";
+import { Kind } from "../../../Types.ts";
+import type { Core, Fabricated } from "./Types.ts";
 
 /**
  * The placeholder `T.recursive`'s body callback receives in place of the schema

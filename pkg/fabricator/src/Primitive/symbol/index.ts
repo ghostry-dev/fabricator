@@ -1,5 +1,5 @@
-export * from "./Types";
-export * from "./Schema";
-export * from "./Fabricator";
-export * from "./Registry";
-export { default } from "./Registry";
+export * from "./Types.ts";
+export * from "./Schema.ts";
+export * from "./Fabricator.ts";
+export * from "./Registry.ts";
+export { default } from "./Registry.ts";

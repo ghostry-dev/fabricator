@@ -1,9 +1,19 @@
-import type { Adaptations } from "../../Adapter/Types";
-import { assertNonemptyDiscrete, epochBound, toDateBound } from "../../Bound";
-import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
-import { toRedraws, type Redraws } from "../../Unique/Strategy";
-import { unboundedEpoch } from "./Defaults";
-import { Schema } from "./Schema";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import {
+  assertNonemptyDiscrete,
+  epochBound,
+  toDateBound,
+} from "../../Bound.ts";
+import {
+  Adaptation,
+  Kind,
+  Meta,
+  Produces,
+  type Produced,
+} from "../../Types.ts";
+import { toRedraws, type Redraws } from "../../Unique/Strategy.ts";
+import { unboundedEpoch } from "./Defaults.ts";
+import { Schema } from "./Schema.ts";
 import type {
   Fabricated,
   InputFutureWhereby,
@@ -13,7 +23,7 @@ import type {
   InputUniqueWhereby,
   InputWhereby,
   Whereby,
-} from "./Types";
+} from "./Types.ts";
 
 type ThisRegistry = Schema<{}, Adaptations> & {
   /**

@@ -7,7 +7,7 @@ import {
   type CensusOptions,
   type Suggestion,
 } from "@ghostry/fabricator-census";
-import { describe, expect, test } from ".";
+import { describe, expect, test } from "./index.ts";
 
 function suggested(values: unknown[], options?: CensusOptions): Suggestion {
   return suggest(census.from(values, { seed: "suggest", ...options }));

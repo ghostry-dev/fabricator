@@ -1,5 +1,5 @@
-import type { AnySchema } from "../Schema/Types";
-import { Adaptation, Meta } from "../Types";
+import type { AnySchema } from "../Schema/Types.ts";
+import { Adaptation, Meta } from "../Types.ts";
 import type {
   Adaptations,
   AdaptationsOf,
@@ -9,7 +9,7 @@ import type {
   Recurse,
   SchemaAdaptation,
   WithAdaptations,
-} from "./Types";
+} from "./Types.ts";
 
 type OverrideSchemaAdaptation<
   $Schema extends object,

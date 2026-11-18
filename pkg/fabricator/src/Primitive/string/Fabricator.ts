@@ -1,23 +1,23 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
-import { effectiveDiscrete } from "../../Bound";
-import { discreteSampler, weighted } from "../../Distribution";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
+import { effectiveDiscrete } from "../../Bound.ts";
+import { discreteSampler, weighted } from "../../Distribution/index.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import type { Stream, Trace } from "../../Random/Types";
-import { toStreamFromTrace } from "../../Random";
-import { Claim, Kind, Meta, type Adaptation } from "../../Types";
-import { toLifetimeScope, trackedByKey } from "../../Unique/Strategy";
-import { toStringDomain } from "./Capacity";
-import { bmpScalars, toRanges, toSources } from "./Sources";
-import { Schema } from "./Schema";
+} from "../../Fabricator/Types.ts";
+import type { Stream, Trace } from "../../Random/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import { Claim, Kind, Meta, type Adaptation } from "../../Types.ts";
+import { toLifetimeScope, trackedByKey } from "../../Unique/Strategy.ts";
+import { toStringDomain } from "./Capacity.ts";
+import { bmpScalars, toRanges, toSources } from "./Sources.ts";
+import { Schema } from "./Schema.ts";
 import type {
   CharacterSource,
   CodepointRange,
   Fabricated,
   Meta as ThisMeta,
-} from "./Types";
+} from "./Types.ts";
 
 export type Fabrication<_ extends Fabricator> = Fabricated;
 

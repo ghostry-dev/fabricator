@@ -1,5 +1,5 @@
 import { FabricatorError, initialize } from "@ghostry/fabricator";
-import { describe, expect, test } from ".";
+import { describe, expect, test } from "./index.ts";
 
 function draws<$T>(fabricator: { fabricate: () => $T }, count: number): $T[] {
   return Array.from({ length: count }, () => fabricator.fabricate());

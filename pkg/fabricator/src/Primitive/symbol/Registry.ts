@@ -1,7 +1,13 @@
-import type { Adaptations } from "../../Adapter/Types";
-import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
-import { Schema } from "./Schema";
-import type { Fabricated } from "./Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import {
+  Adaptation,
+  Kind,
+  Meta,
+  Produces,
+  type Produced,
+} from "../../Types.ts";
+import { Schema } from "./Schema.ts";
+import type { Fabricated } from "./Types.ts";
 
 type ThisRegistry = Schema<{}, Adaptations> & {
   keyed: (key: string) => Schema<{ key: string }>;

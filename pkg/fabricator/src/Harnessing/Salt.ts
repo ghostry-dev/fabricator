@@ -1,4 +1,4 @@
-import type { Identity } from "./Types";
+import type { Identity } from "./Types.ts";
 
 /**
  * The salt `integration` layers onto the instance for one `Identity`.

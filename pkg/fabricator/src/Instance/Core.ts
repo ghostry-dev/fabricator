@@ -1,21 +1,21 @@
-import { enumerables } from "../Enumeration/Enumerate";
-import { toCapacity, type Capacity } from "../Unique/Capacity";
-import { FabricatorError } from "../Error";
-import { Constructor } from "../Fabricator/Constructor";
-import { Fabricate, type FabricatorCache } from "../Fabricator/Fabricate";
+import { enumerables } from "../Enumeration/Enumerate.ts";
+import { toCapacity, type Capacity } from "../Unique/Capacity.ts";
+import { FabricatorError } from "../Error/index.ts";
+import { Constructor } from "../Fabricator/Constructor.ts";
+import { Fabricate, type FabricatorCache } from "../Fabricator/Fabricate.ts";
 import {
   defaultAlgorithm,
   deriveClock,
   isLayered,
   normalizeSalt,
   toRandomSource,
-} from "../Random";
-import type { RandomSource, Salt } from "../Random/Types";
-import { registry } from "../Schema/Registry";
-import { Layer } from "../Types";
-import { inline, isThenable, noop } from "../Utility/Core";
-import type { PlainObject } from "../Utility/Types";
-import { toInnermostFrame } from "./Stack/Visible";
+} from "../Random/index.ts";
+import type { RandomSource, Salt } from "../Random/Types.ts";
+import { registry } from "../Schema/Registry.ts";
+import { Layer } from "../Types.ts";
+import { inline, isThenable, noop } from "../Utility/Core.ts";
+import type { PlainObject } from "../Utility/Types.ts";
+import { toInnermostFrame } from "./Stack/Visible.ts";
 import type {
   Ancestry,
   Config,
@@ -24,7 +24,7 @@ import type {
   Overlay,
   Stack,
   Token,
-} from "./Types";
+} from "./Types.ts";
 
 /**
  * `combinatorial`'s default limit — `2**10`, so it admits ten independent

@@ -1,9 +1,9 @@
-import { assertDrawableWeights } from "../../Distribution";
-import { FabricatorError } from "../../Error";
-import { toSchema } from "../../Schema/Core";
-import { Kind, Meta } from "../../Types";
-import { Schema } from "./Schema";
-import type { Item, Items } from "./Types";
+import { assertDrawableWeights } from "../../Distribution/index.ts";
+import { FabricatorError } from "../../Error/index.ts";
+import { toSchema } from "../../Schema/Core.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { Schema } from "./Schema.ts";
+import type { Item, Items } from "./Types.ts";
 
 /**
  * Tuple-preserving: a mapped type over `$Items` keeps its exact length and

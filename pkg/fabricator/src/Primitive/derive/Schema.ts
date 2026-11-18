@@ -1,18 +1,18 @@
-import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core";
+import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
-import type { ProduceContext } from "../../Random/Types";
+} from "../../Adapter/Types.ts";
+import type { ProduceContext } from "../../Random/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import { Kind } from "../../Types";
-import type * as tuple from "../tuple/Types";
-import type { Core, From, Resolved, Source } from "./Types";
+} from "../../Schema/Satisfies.ts";
+import { Kind } from "../../Types.ts";
+import type * as tuple from "../tuple/Types.ts";
+import type { Core, From, Resolved, Source } from "./Types.ts";
 
 /**
  * What `T.derive({ to, from })` returns: not yet a Schema — `.as(resolve)` is

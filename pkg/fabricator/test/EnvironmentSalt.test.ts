@@ -1,6 +1,6 @@
 import { initialize } from "@ghostry/fabricator";
 import { toRandomSource } from "@ghostry/fabricator/internal";
-import { afterEach, describe, expect, test } from ".";
+import { afterEach, describe, expect, test } from "./index.ts";
 
 /**
  * The one variable `envSalt` (`Random/index.ts`) consults, plus the names it

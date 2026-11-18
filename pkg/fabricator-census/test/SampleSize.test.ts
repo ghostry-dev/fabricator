@@ -1,4 +1,4 @@
-import { describe, expect, test } from ".";
+import { describe, expect, test } from "./index.ts";
 import { CensusError, sampleSize } from "@ghostry/fabricator-census";
 
 function reason(

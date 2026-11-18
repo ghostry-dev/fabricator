@@ -1,12 +1,12 @@
-import { shuffle } from "../Distribution";
-import { FabricatorError } from "../Error";
-import { Constructor } from "../Fabricator/Constructor";
-import { toEffectiveSource } from "../Instance/Stack/Visible";
-import type { Ancestry, Stack } from "../Instance/Types";
-import { toStreamFromTrace } from "../Random";
-import type { RandomSource, Salt } from "../Random/Types";
-import type { AnySchema, Fabricated } from "../Schema/Types";
-import { plan, resolve } from "./Plan";
+import { shuffle } from "../Distribution/index.ts";
+import { FabricatorError } from "../Error/index.ts";
+import { Constructor } from "../Fabricator/Constructor.ts";
+import { toEffectiveSource } from "../Instance/Stack/Visible.ts";
+import type { Ancestry, Stack } from "../Instance/Types.ts";
+import { toStreamFromTrace } from "../Random/index.ts";
+import type { RandomSource, Salt } from "../Random/Types.ts";
+import type { AnySchema, Fabricated } from "../Schema/Types.ts";
+import { plan, resolve } from "./Plan.ts";
 import type {
   Axis,
   Enumerable,
@@ -14,7 +14,7 @@ import type {
   Limits,
   Orderer,
   Resolvable,
-} from "./Types";
+} from "./Types.ts";
 
 /**
  * Typed `combinatorial`/`coverage` boundary, closing over one instance's

@@ -1,13 +1,13 @@
 import { isArray, isPlainObject } from "@ghostry/fabricator/internal";
-import type { Node, TypeCounts } from "../Types";
-import { ArrayTally } from "./Array";
-import { BigIntTally } from "./BigInt";
-import { BooleanTally } from "./Boolean";
-import type { Context, Path } from "./Context";
-import { DateTally } from "./Date";
-import { NumericTally, asNumber } from "./Numeric";
-import { ObjectTally } from "./Object";
-import { StringTally } from "./String";
+import type { Node, TypeCounts } from "../Types.ts";
+import { ArrayTally } from "./Array.ts";
+import { BigIntTally } from "./BigInt.ts";
+import { BooleanTally } from "./Boolean.ts";
+import type { Context, Path } from "./Context.ts";
+import { DateTally } from "./Date.ts";
+import { NumericTally, asNumber } from "./Numeric.ts";
+import { ObjectTally } from "./Object.ts";
+import { StringTally } from "./String.ts";
 
 /**
  * Everything observed at one path: a count per type, and a tally per type seen,

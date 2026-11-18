@@ -1,6 +1,6 @@
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 import { Meta } from "@ghostry/fabricator/internal";
-import { attest, expect, test } from ".";
+import { attest, expect, test } from "./index.ts";
 
 /**
  * These four tests assert boundedness relative to "now" — under the default

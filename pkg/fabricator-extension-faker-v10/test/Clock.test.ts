@@ -1,7 +1,7 @@
 import { en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * Faker inherits the instance's own `clock` rather than carrying a second,

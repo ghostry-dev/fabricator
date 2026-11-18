@@ -3,8 +3,8 @@ import {
   toAdmittedEnds,
   toDateBound,
   type AdmittedEnds,
-} from "../../Bound";
-import type { Admits, InputAdmits, Meta } from "./Types";
+} from "../../Bound.ts";
+import type { Admits, InputAdmits, Meta } from "./Types.ts";
 
 const label = ".admits on a date schema";
 

@@ -1,4 +1,4 @@
-import type { CodepointRange } from "./Types";
+import type { CodepointRange } from "./Types.ts";
 
 /**
  * Unicode code point ranges for spanning the codespace — a fuzzing aid for

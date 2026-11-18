@@ -1,4 +1,4 @@
-import { beforeAll, expect, test } from ".";
+import { beforeAll, expect, test } from "./index.ts";
 import { classes, initialize } from "@ghostry/fabricator";
 import { Meta } from "@ghostry/fabricator/internal";
 import {

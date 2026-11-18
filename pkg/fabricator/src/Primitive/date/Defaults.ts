@@ -1,6 +1,6 @@
-import { effectiveDiscrete, epochBound, type Bound } from "../../Bound";
-import { MAX_TIME } from "../../Types";
-import type { Meta } from "./Types";
+import { effectiveDiscrete, epochBound, type Bound } from "../../Bound.ts";
+import { MAX_TIME } from "../../Types.ts";
+import type { Meta } from "./Types.ts";
 
 /**
  * Inclusive epoch-millisecond caps that a missing `whereby` end draws against —

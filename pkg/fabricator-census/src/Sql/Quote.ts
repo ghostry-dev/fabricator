@@ -6,8 +6,8 @@
  * @module
  */
 
-import { CensusError } from "../Error";
-import type { Table } from "./Types";
+import { CensusError } from "../Error.ts";
+import type { Table } from "./Types.ts";
 
 /**
  * An identifier in double quotes, each `"` inside doubled: the SQL-standard

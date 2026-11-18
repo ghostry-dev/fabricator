@@ -1,4 +1,4 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize } from "@ghostry/fabricator";
 
 test("a nullable field's key is always present, its value sometimes null", () => {

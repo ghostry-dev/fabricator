@@ -1,7 +1,7 @@
-import { toSchema } from "../../Schema/Core";
-import { Kind, Meta } from "../../Types";
-import { Schema, type Deriver } from "./Schema";
-import type { From, Source } from "./Types";
+import { toSchema } from "../../Schema/Core.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { Schema, type Deriver } from "./Schema.ts";
+import type { From, Source } from "./Types.ts";
 
 export default function <const $From extends From, const $To extends Source>({
   to,

@@ -1,7 +1,7 @@
-import type { Kind as SchemaKind } from "../Primitive";
-import type { AnySchema, Fabricated } from "../Schema/Types";
-import type { Children, Kind, Meta } from "../Types";
-import type { PlainObject } from "../Utility/Types";
+import type { Kind as SchemaKind } from "../Primitive/index.ts";
+import type { AnySchema, Fabricated } from "../Schema/Types.ts";
+import type { Children, Kind, Meta } from "../Types.ts";
+import type { PlainObject } from "../Utility/Types.ts";
 
 /**
  * How a composite with more than one child combines their widths. `"product"`

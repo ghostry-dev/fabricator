@@ -1,5 +1,5 @@
-import { Kind, Meta } from "../../Types";
-import { Schema } from "./Schema";
+import { Kind, Meta } from "../../Types.ts";
+import { Schema } from "./Schema.ts";
 
 /**
  * A function, not the Schema itself: `Schema/Registry.ts` installs it as the

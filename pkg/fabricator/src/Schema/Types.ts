@@ -1,8 +1,8 @@
-import type { Adaptations } from "../Adapter/Types";
-import type { NaiveFabricator } from "../Fabricator/Types";
-import type { Kind as SchemaKind } from "../Primitive";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types";
-import type { PlainObject } from "../Utility/Types";
+import type { Adaptations } from "../Adapter/Types.ts";
+import type { NaiveFabricator } from "../Fabricator/Types.ts";
+import type { Kind as SchemaKind } from "../Primitive/index.ts";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types.ts";
+import type { PlainObject } from "../Utility/Types.ts";
 
 /**
  * The broadest Schema constraint: some kind, some config. Used by compound

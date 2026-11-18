@@ -1,16 +1,16 @@
-import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core";
+import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
+} from "../../Adapter/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import { Kind } from "../../Types";
-import type { Core, Fabricated, Meta as ThisMeta } from "./Types";
+} from "../../Schema/Satisfies.ts";
+import { Kind } from "../../Types.ts";
+import type { Core, Fabricated, Meta as ThisMeta } from "./Types.ts";
 
 /**
  * Nothing to configure (see `Types.ts`'s `Meta`), so `adapt` is this kind's

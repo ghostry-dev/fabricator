@@ -1,9 +1,9 @@
-import { FabricatorError } from "../Error";
-import type { Instance } from "../Instance/Types";
-import { layer } from "../Random";
-import type { PlainObject } from "../Utility/Types";
-import { saltFor } from "./Salt";
-import type { FabricatorTestContext, FrameArgs, Integration } from "./Types";
+import { FabricatorError } from "../Error/index.ts";
+import type { Instance } from "../Instance/Types.ts";
+import { layer } from "../Random/index.ts";
+import type { PlainObject } from "../Utility/Types.ts";
+import { saltFor } from "./Salt.ts";
+import type { FabricatorTestContext, FrameArgs, Integration } from "./Types.ts";
 
 /**
  * Decorate an existing `Instance` as a `@ghostry/harness` integration. The

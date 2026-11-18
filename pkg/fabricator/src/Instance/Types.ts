@@ -1,9 +1,14 @@
-import type { Capacity } from "../Unique/Capacity";
-import type { Enumerable, Limits } from "../Enumeration/Types";
-import type { Constructor } from "../Fabricator/Constructor";
-import type { Fabricate } from "../Fabricator/Fabricate";
-import type { Algorithm, Layered, RandomSource, Salt } from "../Random/Types";
-import type { PlainObject } from "../Utility/Types";
+import type { Capacity } from "../Unique/Capacity.ts";
+import type { Enumerable, Limits } from "../Enumeration/Types.ts";
+import type { Constructor } from "../Fabricator/Constructor.ts";
+import type { Fabricate } from "../Fabricator/Fabricate.ts";
+import type {
+  Algorithm,
+  Layered,
+  RandomSource,
+  Salt,
+} from "../Random/Types.ts";
+import type { PlainObject } from "../Utility/Types.ts";
 
 /**
  * A fully resolved instance configuration — every field present, nothing left

@@ -1,6 +1,6 @@
-import type { BigIntTally as BigIntOutput } from "../Types";
-import type { Context } from "./Context";
-import { FrequencyTally } from "./Frequency";
+import type { BigIntTally as BigIntOutput } from "../Types.ts";
+import type { Context } from "./Context.ts";
+import { FrequencyTally } from "./Frequency.ts";
 
 /**
  * Exact extremes by bigint comparison, and nothing numeric beyond them: core's

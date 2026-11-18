@@ -1,10 +1,10 @@
-import { CensusError } from "./Error";
-import { validateFacts } from "./Facts";
-import { validateLimits } from "./Limits";
-import { resolveOptions } from "./Options";
-import { toContext } from "./Tally/Context";
-import { NodeTally } from "./Tally/Node";
-import type { Accumulator, Census, CensusOptions } from "./Types";
+import { CensusError } from "./Error.ts";
+import { validateFacts } from "./Facts.ts";
+import { validateLimits } from "./Limits.ts";
+import { resolveOptions } from "./Options.ts";
+import { toContext } from "./Tally/Context.ts";
+import { NodeTally } from "./Tally/Node.ts";
+import type { Accumulator, Census, CensusOptions } from "./Types.ts";
 
 /**
  * Start an incremental census. Every other way of taking one goes through this:

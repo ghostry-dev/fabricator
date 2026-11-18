@@ -1,17 +1,17 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
-import { effectiveDiscreteBigint } from "../../Bound";
-import { bigintSampler } from "../../Distribution";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
+import { effectiveDiscreteBigint } from "../../Bound.ts";
+import { bigintSampler } from "../../Distribution/index.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import { toStreamFromTrace } from "../../Random";
-import type { Trace } from "../../Random/Types";
-import { Claim, Kind, Meta, type Adaptation } from "../../Types";
-import { toBigintStrategy } from "../../Unique/Distinct";
-import { toLifetimeScope } from "../../Unique/Strategy";
-import { Schema } from "./Schema";
-import type { Fabricated, Meta as ThisMeta } from "./Types";
+} from "../../Fabricator/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import type { Trace } from "../../Random/Types.ts";
+import { Claim, Kind, Meta, type Adaptation } from "../../Types.ts";
+import { toBigintStrategy } from "../../Unique/Distinct.ts";
+import { toLifetimeScope } from "../../Unique/Strategy.ts";
+import { Schema } from "./Schema.ts";
+import type { Fabricated, Meta as ThisMeta } from "./Types.ts";
 
 export type Fabrication<_ extends Fabricator> = Fabricated;
 

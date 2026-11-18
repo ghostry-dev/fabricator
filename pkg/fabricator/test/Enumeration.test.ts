@@ -6,7 +6,7 @@ import {
   type Pin,
   type Resolvable,
 } from "@ghostry/fabricator/internal";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * Drives `plan`/`resolve` directly — no public API exists yet (that's phases

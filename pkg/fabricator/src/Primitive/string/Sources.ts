@@ -1,11 +1,11 @@
-import { isArray } from "../../Utility/Core";
-import { classes, unicode } from "./Constants";
+import { isArray } from "../../Utility/Core.ts";
+import { classes, unicode } from "./Constants.ts";
 import type {
   CharacterClass,
   CharacterSource,
   CodepointRange,
   Composition,
-} from "./Types";
+} from "./Types.ts";
 
 /**
  * A composition as weighted character sources — the shape `Fabricator.ts` draws

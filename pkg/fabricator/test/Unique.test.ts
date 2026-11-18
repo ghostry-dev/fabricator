@@ -4,7 +4,7 @@ import {
   initialize,
   layer,
 } from "@ghostry/fabricator";
-import { attest, describe, expect, test } from ".";
+import { attest, describe, expect, test } from "./index.ts";
 
 const salts = Array.from({ length: 20 }, (_, i) => `unique-${i}`);
 

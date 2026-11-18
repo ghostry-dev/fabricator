@@ -20,7 +20,7 @@
  * @module
  */
 
-export { walk } from "./Adapter/Core";
+export { walk } from "./Adapter/Core.ts";
 
 /**
  * `Adapter`/`Recurse` are what an adapter declares; `AdaptationsOf` is how it
@@ -31,10 +31,10 @@ export type {
   AdaptationsOf,
   Adapter,
   Recurse,
-} from "./Adapter/Types";
+} from "./Adapter/Types.ts";
 
 /**
  * What `[Adaptation]` holds at runtime — a per-adapter map of overrides, read
  * only by an adapter.
  */
-export { Adaptation } from "./Types";
+export { Adaptation } from "./Types.ts";

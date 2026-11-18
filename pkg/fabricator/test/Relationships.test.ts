@@ -1,5 +1,5 @@
 import { initialize } from "@ghostry/fabricator";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * Pins the batch-and-pool idiom the docs teach: `T.array` for a batch,

@@ -1,5 +1,5 @@
-import type { Frame, Stack } from "../Types";
-import { toVisible } from "./Visible";
+import type { Frame, Stack } from "../Types.ts";
+import { toVisible } from "./Visible.ts";
 
 /**
  * The synchronous carrier: a private `Frame[]`, pushed on `enter` and popped in

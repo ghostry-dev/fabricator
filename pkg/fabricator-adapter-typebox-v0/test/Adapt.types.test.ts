@@ -8,7 +8,7 @@ import {
   type TUndefined,
   type TUnion,
 } from "@sinclair/typebox";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize, registry } from "@ghostry/fabricator";
 import { Adaptation, type Adapter } from "@ghostry/fabricator/adapting";
 import {

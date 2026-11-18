@@ -8,7 +8,7 @@
 import { initialize } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 import { Value } from "@sinclair/typebox/value";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 test("an admitted length replaces the drawn one, and Infinity drops it", () => {
   const { T, Fabricator } = initialize({ salt: "admits-typebox-length" });

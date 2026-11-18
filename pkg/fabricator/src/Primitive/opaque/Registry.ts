@@ -1,6 +1,6 @@
-import type { Produce } from "../../Random/Types";
-import { Kind, Meta } from "../../Types";
-import { Schema } from "./Schema";
+import type { Produce } from "../../Random/Types.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { Schema } from "./Schema.ts";
 
 /**
  * A value this library has no kind for — a `Map`, a `Set`, a `URL`, a class

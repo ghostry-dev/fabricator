@@ -1,4 +1,4 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 
 /**

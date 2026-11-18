@@ -10,21 +10,21 @@
  * @module
  */
 
-export { census } from "./Census";
+export { census } from "./Census.ts";
 
 /**
  * Fit a distribution to any numeric tally in a census — the candidates core's
  * `sampler` can draw, scored against the observations the way core would
  * produce them.
  */
-export { fit } from "./Fit/Fit";
+export { fit } from "./Fit/Fit.ts";
 
 /**
  * Turn a census into a suggestion tree — the builder and arguments for every
  * path — and render either as text.
  */
-export { suggest } from "./Suggest";
-export { report } from "./Report";
+export { suggest } from "./Suggest.ts";
+export { report } from "./Report.ts";
 
 /**
  * How many rows a census needs for its statistics to hold to a margin — the
@@ -35,25 +35,25 @@ export {
   type SampleSize,
   type SampleSizeOptions,
   type SampleSizeReason,
-} from "./SampleSize";
+} from "./SampleSize.ts";
 
 /**
  * Whole-table facts about a column, as pushdown aggregates or planner
  * statistics report them.
  */
-export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts";
+export type { BigIntFact, ColumnFacts, Facts, FactValue } from "./Facts.ts";
 
 /**
  * Declared limits on a column — what it accepts rather than what it holds —
  * stated as a suggestion's `admits`.
  */
-export type { ColumnLimits, Limits } from "./Limits";
+export type { ColumnLimits, Limits } from "./Limits.ts";
 
 /**
  * Every failure this package raises. Extends core's `FabricatorError`, so one
  * `instanceof` check covers both packages.
  */
-export { CensusError } from "./Error";
+export { CensusError } from "./Error.ts";
 
 /**
  * The census's own data shapes, so a caller storing, diffing or rendering one
@@ -99,4 +99,4 @@ export type {
   SuggestOptions,
   TypeCounts,
   Value,
-} from "./Types";
+} from "./Types.ts";

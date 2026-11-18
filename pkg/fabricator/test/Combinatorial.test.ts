@@ -1,9 +1,9 @@
 import { Omitted, initialize, registry } from "@ghostry/fabricator";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import {
   combinatorialFromHere,
   enumerableSharedSchema,
-} from "./fixtures/sharedSchema";
+} from "./fixtures/sharedSchema.ts";
 
 test("an enum and a boolean field multiply: 3 x 2 = 6 instances", () => {
   const { T, combinatorial } = initialize({ salt: "combinatorial-basic" });

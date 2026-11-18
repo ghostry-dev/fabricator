@@ -1,4 +1,4 @@
-import { Layer } from "../Types";
+import { Layer } from "../Types.ts";
 
 /**
  * A zero-argument function that produces a float in `[0, 1)`, exactly like

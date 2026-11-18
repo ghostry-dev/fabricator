@@ -1,6 +1,6 @@
-export * from "./Constants";
-export * from "./Fabricator";
-export * from "./Registry";
-export { default } from "./Registry";
-export * from "./Schema";
-export * from "./Types";
+export * from "./Constants.ts";
+export * from "./Fabricator.ts";
+export * from "./Registry.ts";
+export { default } from "./Registry.ts";
+export * from "./Schema.ts";
+export * from "./Types.ts";

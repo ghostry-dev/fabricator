@@ -1,9 +1,9 @@
-import type { Adaptations } from "../../../Adapter/Types";
-import type { Produce } from "../../../Random/Types";
+import type { Adaptations } from "../../../Adapter/Types.ts";
+import type { Produce } from "../../../Random/Types.ts";
 import type {
   AnySchema,
   Fabricated as FabricatedBy,
-} from "../../../Schema/Types";
+} from "../../../Schema/Types.ts";
 import {
   Kind,
   Meta,
@@ -11,7 +11,7 @@ import {
   type Adaptation,
   type Produced,
   type Produces,
-} from "../../../Types";
+} from "../../../Types.ts";
 
 /**
  * The wrapped field's own Schema — the value type an omittable field produces
@@ -33,7 +33,7 @@ export type Resolved<$Definition extends Definition> =
   | Fabricated<$Definition>
   | typeof Omitted;
 
-export type { Outcome } from "./Outcomes";
+export type { Outcome } from "./Outcomes.ts";
 
 /**
  * Relative weights for `.weighted(...)`, keyed by `Outcome`. Keys optional — an

@@ -1,4 +1,4 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize } from "@ghostry/fabricator";
 
 test("T.enum.uniform builds and fabricates standalone, drawing every member across enough draws", () => {

@@ -1,12 +1,15 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../Schema/Types.ts";
 import {
   Produces,
   type Adaptation,
   type Kind,
   type Meta,
   type Produced,
-} from "../../Types";
+} from "../../Types.ts";
 
 /**
  * Fixed point of a recursive schema. A self-referential alias, normally

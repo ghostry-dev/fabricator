@@ -1,6 +1,6 @@
-import * as primitives from "../Primitive";
-import { deepMerge, type DeepMerge } from "../Utility/DeepMerge";
-import { type PlainObject } from "../Utility/Types";
+import * as primitives from "../Primitive/index.ts";
+import { deepMerge, type DeepMerge } from "../Utility/DeepMerge.ts";
+import { type PlainObject } from "../Utility/Types.ts";
 
 /**
  * A kind whose `Registry.ts` default export takes no arguments returns a bare

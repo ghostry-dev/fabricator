@@ -1,4 +1,4 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize } from "@ghostry/fabricator";
 
 test("T.choice.uniform builds and fabricates standalone, drawing every option across enough draws", () => {

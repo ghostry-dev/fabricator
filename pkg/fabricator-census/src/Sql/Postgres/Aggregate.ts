@@ -7,12 +7,12 @@
  */
 
 import { isArray } from "@ghostry/fabricator/internal";
-import { CensusError } from "../../Error";
-import type { ColumnFacts, Facts, FactValue } from "../../Facts";
-import { Parameters, qualify, quote, toNumber } from "../Quote";
-import type { Query, Row, Table } from "../Types";
-import type { Column } from "./Catalog";
-import { columnNotes, parseNumber, parseText } from "./Coerce";
+import { CensusError } from "../../Error.ts";
+import type { ColumnFacts, Facts, FactValue } from "../../Facts.ts";
+import { Parameters, qualify, quote, toNumber } from "../Quote.ts";
+import type { Query, Row, Table } from "../Types.ts";
+import type { Column } from "./Catalog.ts";
+import { columnNotes, parseNumber, parseText } from "./Coerce.ts";
 
 export type AggregateOptions = {
   /**

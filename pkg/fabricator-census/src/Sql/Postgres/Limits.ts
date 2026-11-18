@@ -10,8 +10,8 @@
  * @module
  */
 
-import type { ColumnLimits, Limits } from "../../Limits";
-import type { Column } from "./Catalog";
+import type { ColumnLimits, Limits } from "../../Limits.ts";
+import type { Column } from "./Catalog.ts";
 
 /** `VARHDRSZ`: a length modifier stores the declared length plus four. */
 const HEADER = 4;

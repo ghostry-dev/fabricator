@@ -1,10 +1,10 @@
-import { unique as array } from "../array/Registry";
-import { unique as bigint } from "../bigint/Registry";
-import { unique as date } from "../date/Registry";
-import { unique as enumeration } from "../enum/Registry";
-import { unique as number } from "../number/Registry";
-import { unique as record } from "../record/Registry";
-import { unique as string } from "../string/Registry";
+import { unique as array } from "../array/Registry.ts";
+import { unique as bigint } from "../bigint/Registry.ts";
+import { unique as date } from "../date/Registry.ts";
+import { unique as enumeration } from "../enum/Registry.ts";
+import { unique as number } from "../number/Registry.ts";
+import { unique as record } from "../record/Registry.ts";
+import { unique as string } from "../string/Registry.ts";
 
 /**
  * `T.unique`: the builders whose Schemas promise distinct values. Not a kind —

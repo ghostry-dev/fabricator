@@ -9,7 +9,7 @@
 
 import { classes, type CharacterClass } from "@ghostry/fabricator";
 import { isArray } from "@ghostry/fabricator/internal";
-import { suggest } from "./Suggest";
+import { suggest } from "./Suggest.ts";
 import type {
   Census,
   Fit,
@@ -19,7 +19,7 @@ import type {
   SuggestedLength,
   SuggestedValue,
   Suggestion,
-} from "./Types";
+} from "./Types.ts";
 
 /** Enum members shown before the rest are elided. */
 const MEMBERS = 8;

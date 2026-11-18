@@ -1,4 +1,4 @@
-import type { Adaptation, Meta } from "../Types";
+import type { Adaptation, Meta } from "../Types.ts";
 
 /**
  * One adapter's override for one schema, _as stored_ in `[Adaptation]` — the

@@ -1,7 +1,16 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
-import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../Schema/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
 
 /**
  * The wrapped schema — the value type produced when the roll lands on neither
@@ -14,7 +23,7 @@ export type Fabricated<
   $Bindings extends unknown[] = [],
 > = FabricatedBy<$Definition, $Bindings> | null | undefined;
 
-export type { Outcome } from "./Outcomes";
+export type { Outcome } from "./Outcomes.ts";
 
 /**
  * Relative weights for `.weighted(...)`, keyed by `Outcome`. Keys optional — an

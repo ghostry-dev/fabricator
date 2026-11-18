@@ -1,5 +1,5 @@
 import { initialize } from "@ghostry/fabricator";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * The property structural (schema-path) keying exists for: a leaf's stream is

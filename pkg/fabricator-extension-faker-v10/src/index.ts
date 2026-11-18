@@ -1,12 +1,12 @@
 import type { LocaleDefinition, Randomizer } from "@faker-js/faker";
 import { Faker } from "@faker-js/faker";
 import type { ProduceContext } from "@ghostry/fabricator";
-import { construct } from "./Construct";
-import { FakerExtensionError } from "./Error";
-import type { FakerExtension, Registry } from "./Types";
+import { construct } from "./Construct.ts";
+import { FakerExtensionError } from "./Error.ts";
+import type { FakerExtension, Registry } from "./Types.ts";
 
-export { FakerExtensionError } from "./Error";
-export type { FakerExtension as FakerTypes } from "./Types";
+export { FakerExtensionError } from "./Error.ts";
+export type { FakerExtension as FakerTypes } from "./Types.ts";
 
 /**
  * The mirror's type-level machinery — not needed to _use_ it, but exported so a
@@ -19,8 +19,8 @@ export type { FakerExtension as FakerTypes } from "./Types";
  * builder's declared parameters and return Schema — so `Honest<...>` reads the
  * shipped contract, not an intermediate description.
  */
-export type { FakerModules } from "./FakerModules/Types";
-export type { MethodName, ModuleName } from "./Types";
+export type { FakerModules } from "./FakerModules/Types.ts";
+export type { MethodName, ModuleName } from "./Types.ts";
 
 /**
  * Faker's configuration bag — re-exported so `Options.config` doesn't need

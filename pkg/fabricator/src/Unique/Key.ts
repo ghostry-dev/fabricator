@@ -1,5 +1,5 @@
-import { cyrb128 } from "../Utility/Digest";
-import { isPlainObject } from "../Utility/Core";
+import { cyrb128 } from "../Utility/Digest.ts";
+import { isPlainObject } from "../Utility/Core.ts";
 
 /**
  * Maps a value to a number that equal values share — what a tracked unique

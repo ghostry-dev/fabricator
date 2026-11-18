@@ -1,12 +1,18 @@
-import type { Adaptations } from "../../Adapter/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
 import type {
   AdmittedEnds,
   Bound,
   InputAdmittedEnds,
   InputBound,
-} from "../../Bound";
-import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+} from "../../Bound.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
 
 /**
  * Call-site `{ min?, max }`. Either end may be a `number` that is a safe

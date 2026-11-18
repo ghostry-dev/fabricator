@@ -1,7 +1,7 @@
 import type { Faker } from "@faker-js/faker";
 import type { ProduceContext } from "@ghostry/fabricator";
-import { build } from "./FakerModules/Build";
-import type { FakerExtension, Registry } from "./Types";
+import { build } from "./FakerModules/Build.ts";
+import type { FakerExtension, Registry } from "./Types.ts";
 
 /**
  * Builds the whole `faker` namespace — every module and method

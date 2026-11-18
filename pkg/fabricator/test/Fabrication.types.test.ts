@@ -8,7 +8,7 @@ import {
   type Primitive,
   type Fabricated,
 } from "@ghostry/fabricator/internal";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * Compile-time assertions. `Expect<Equal<A, B>>` fails to typecheck unless `A`

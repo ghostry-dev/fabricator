@@ -6,7 +6,7 @@ import {
   type Facts,
   type Suggestion,
 } from "@ghostry/fabricator-census";
-import { describe, expect, test } from ".";
+import { describe, expect, test } from "./index.ts";
 
 /** One column's suggestion, from rows `{ [column]: value }` and its facts. */
 function column(

@@ -1,11 +1,11 @@
-import type { AdmittedEnds } from "../../Bound";
-import { FabricatorError } from "../../Error";
-import type { Primitive, Kind as SchemaKind } from "../../Primitive";
-import type { AnySchema } from "../../Schema/Types";
-import { Adaptation, Kind, Meta, Omitted } from "../../Types";
-import { never } from "../../Utility/Core";
-import type { PlainObject } from "../../Utility/Types";
-import { toStatedSize } from "../record/Admits";
+import type { AdmittedEnds } from "../../Bound.ts";
+import { FabricatorError } from "../../Error/index.ts";
+import type { Primitive, Kind as SchemaKind } from "../../Primitive/index.ts";
+import type { AnySchema } from "../../Schema/Types.ts";
+import { Adaptation, Kind, Meta, Omitted } from "../../Types.ts";
+import { never } from "../../Utility/Core.ts";
+import type { PlainObject } from "../../Utility/Types.ts";
+import { toStatedSize } from "../record/Admits.ts";
 
 /**
  * Derive the schema that `fabricateAt` swaps in at `depth.max` when the caller

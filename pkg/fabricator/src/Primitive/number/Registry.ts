@@ -1,21 +1,27 @@
-import type { Adaptations } from "../../Adapter/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
 import {
   assertNonemptyContinuous,
   assertNonemptyDiscrete,
   toBound,
-} from "../../Bound";
-import { Adaptation, Kind, Meta, Produces, type Produced } from "../../Types";
-import { toRedraws } from "../../Unique/Strategy";
-import { default as bigint } from "../bigint";
-import { unique as uniqueBigint } from "../bigint/Registry";
-import { unboundedContinuous, unboundedDiscrete } from "./Defaults";
-import { Schema } from "./Schema";
+} from "../../Bound.ts";
+import {
+  Adaptation,
+  Kind,
+  Meta,
+  Produces,
+  type Produced,
+} from "../../Types.ts";
+import { toRedraws } from "../../Unique/Strategy.ts";
+import { default as bigint } from "../bigint/index.ts";
+import { unique as uniqueBigint } from "../bigint/Registry.ts";
+import { unboundedContinuous, unboundedDiscrete } from "./Defaults.ts";
+import { Schema } from "./Schema.ts";
 import type {
   Fabricated,
   InputUniqueWhereby,
   InputWhereby,
   Whereby,
-} from "./Types";
+} from "./Types.ts";
 
 type ThisRegistry = Schema<{}, Adaptations> & {
   /**

@@ -29,7 +29,7 @@
  * caller owns `initialize(...)` (and in particular the suite-wide `clock`), and
  * this only wraps each test body in that instance's per-identity `wrap`.
  */
-export { integration } from "./Harnessing/Core";
+export { integration } from "./Harnessing/Core.ts";
 
 /**
  * `Identity` is what identifies one registered test or suite; `Integration` is
@@ -51,4 +51,4 @@ export type {
   ProviderArgs,
   Provides,
   Wrapper,
-} from "./Harnessing/Types";
+} from "./Harnessing/Types.ts";

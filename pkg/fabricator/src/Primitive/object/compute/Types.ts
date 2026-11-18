@@ -1,15 +1,15 @@
-import type { Adaptations } from "../../../Adapter/Types";
+import type { Adaptations } from "../../../Adapter/Types.ts";
 import type {
   AnySchema,
   Fabricated as FabricatedBy,
-} from "../../../Schema/Types";
+} from "../../../Schema/Types.ts";
 import {
   Kind,
   type Adaptation,
   type Meta,
   type Produced,
   type Produces,
-} from "../../../Types";
+} from "../../../Types.ts";
 
 /**
  * A builder that can mint a Schema via `as` — e.g. `T.string`, `T.bigint`.

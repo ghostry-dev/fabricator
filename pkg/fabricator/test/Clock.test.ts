@@ -1,5 +1,5 @@
 import { FabricatorError, initialize, layer } from "@ghostry/fabricator";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * `clock` is what `T.date.past`/`T.date.future` (and any producer reading

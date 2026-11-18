@@ -1,19 +1,19 @@
-import type { AdaptationEntry } from "../../Adapter/Core";
+import type { AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
+} from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import type { AnySchema } from "../../Schema/Types";
-import { Kind, Meta } from "../../Types";
-import type { ShallowMerge } from "../../Utility/ShallowMerge";
-import type { Computer } from "./compute/Schema";
+} from "../../Schema/Satisfies.ts";
+import type { AnySchema } from "../../Schema/Types.ts";
+import { Kind, Meta } from "../../Types.ts";
+import type { ShallowMerge } from "../../Utility/ShallowMerge.ts";
+import type { Computer } from "./compute/Schema.ts";
 import type {
   Core,
   Definition,
@@ -21,7 +21,7 @@ import type {
   Fabricated,
   Override,
   Refinement,
-} from "./Types";
+} from "./Types.ts";
 
 export type Refiner<
   $Definition extends Definition,

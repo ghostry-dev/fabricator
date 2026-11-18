@@ -7,7 +7,7 @@
 
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 import { Meta } from "@ghostry/fabricator/internal";
-import { attest, describe, expect, test } from ".";
+import { attest, describe, expect, test } from "./index.ts";
 
 const inclusive = <$T>(value: $T) => ({ value, exclusive: false });
 

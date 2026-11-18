@@ -44,9 +44,9 @@
 
 import type { Faker } from "@faker-js/faker";
 import type { ProduceContext } from "@ghostry/fabricator";
-import type { Registry } from "../Types";
-import type { FakerModules } from "./Types";
-import { toWords } from "./Words";
+import type { Registry } from "../Types.ts";
+import type { FakerModules } from "./Types.ts";
+import { toWords } from "./Words.ts";
 
 /**
  * `src/index.ts`'s `draw`, by type — the save/restore wrapper that binds a

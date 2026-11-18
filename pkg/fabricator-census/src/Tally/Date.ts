@@ -1,6 +1,6 @@
-import type { DateTally as DateOutput } from "../Types";
-import type { Context, Path } from "./Context";
-import { asDate, NumericTally } from "./Numeric";
+import type { DateTally as DateOutput } from "../Types.ts";
+import type { Context, Path } from "./Context.ts";
+import { asDate, NumericTally } from "./Numeric.ts";
 
 /**
  * A `Date`'s instant as epoch milliseconds — the axis core's `T.date` draws on

@@ -1,4 +1,4 @@
-import { attest, expect, test } from ".";
+import { attest, expect, test } from "./index.ts";
 import { FabricatorError, initialize } from "@ghostry/fabricator";
 import {
   Children,
@@ -7,7 +7,7 @@ import {
   Meta,
   type Buildable,
 } from "@ghostry/fabricator/internal";
-import { fabricateFromTrace } from "./fixtures/replay/fromTrace";
+import { fabricateFromTrace } from "./fixtures/replay/fromTrace.ts";
 
 test("a leaf round-trips from its own trace, including from another file and another instance", () => {
   const instance = initialize({

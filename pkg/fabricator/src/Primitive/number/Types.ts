@@ -1,14 +1,20 @@
-import type { Adaptations } from "../../Adapter/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
 import type {
   AdmittedEnds,
   Bound,
   InputAdmittedEnds,
   InputBound,
-} from "../../Bound";
-import type { Distribution } from "../../Distribution";
-import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
-import type { Redraws } from "../../Unique/Strategy";
+} from "../../Bound.ts";
+import type { Distribution } from "../../Distribution/index.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
+import type { Redraws } from "../../Unique/Strategy.ts";
 
 /**
  * Call-site `{ min, max }` — scalars are inclusive. Either end may be omitted;

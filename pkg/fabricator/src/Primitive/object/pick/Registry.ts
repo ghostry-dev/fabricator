@@ -1,6 +1,6 @@
-import { subset } from "../Registry";
-import type { Schema } from "../Schema";
-import type { DefinitionOf, Subsettable } from "../Types";
+import { subset } from "../Registry.ts";
+import type { Schema } from "../Schema.ts";
+import type { DefinitionOf, Subsettable } from "../Types.ts";
 
 /**
  * `T.pick(source, keys)`: an `object` Schema with only `keys`, in source order.

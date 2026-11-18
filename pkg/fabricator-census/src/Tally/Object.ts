@@ -1,8 +1,8 @@
-import type { Field, ObjectTally as ObjectOutput } from "../Types";
-import type { Context, Path } from "./Context";
-import type { NodeTally } from "./Node";
-import { asNumber, NumericTally } from "./Numeric";
-import { StringTally } from "./String";
+import type { Field, ObjectTally as ObjectOutput } from "../Types.ts";
+import type { Context, Path } from "./Context.ts";
+import type { NodeTally } from "./Node.ts";
+import { asNumber, NumericTally } from "./Numeric.ts";
+import { StringTally } from "./String.ts";
 
 type Entry = { present: number; node: NodeTally };
 

@@ -1,7 +1,7 @@
-import { toSchema } from "../../Schema/Core";
-import { Kind, Meta } from "../../Types";
-import { Schema } from "./Schema";
-import type { Items } from "./Types";
+import { toSchema } from "../../Schema/Core.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { Schema } from "./Schema.ts";
+import type { Items } from "./Types.ts";
 
 export default function <const $Items extends Items>(
   items: $Items,

@@ -1,4 +1,4 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize } from "@ghostry/fabricator";
 
 test("an overridden field's fixed value never disturbs its object's other randomness", () => {

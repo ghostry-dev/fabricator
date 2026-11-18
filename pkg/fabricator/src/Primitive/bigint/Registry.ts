@@ -1,8 +1,8 @@
-import { assertNonemptyDiscreteBigint, toBigintBound } from "../../Bound";
-import type { Produce } from "../../Random/Types";
-import { Kind, Meta } from "../../Types";
-import { Schema } from "./Schema";
-import type { Fabricated, InputWhereby, Whereby } from "./Types";
+import { assertNonemptyDiscreteBigint, toBigintBound } from "../../Bound.ts";
+import type { Produce } from "../../Random/Types.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { Schema } from "./Schema.ts";
+import type { Fabricated, InputWhereby, Whereby } from "./Types.ts";
 
 export default {
   /**

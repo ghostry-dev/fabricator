@@ -7,7 +7,7 @@
  */
 
 import { normalInv } from "@ghostry/fabricator/internal";
-import { CensusError } from "./Error";
+import { CensusError } from "./Error.ts";
 
 export type SampleSizeOptions = {
   /**

@@ -1,6 +1,6 @@
-import { Layer, MAX_TIME } from "../Types";
-import { cyrb128 } from "../Utility/Digest";
-import { sfc32 } from "./Generator/sfc32";
+import { Layer, MAX_TIME } from "../Types.ts";
+import { cyrb128 } from "../Utility/Digest.ts";
+import { sfc32 } from "./Generator/sfc32.ts";
 import type {
   Algorithm,
   ConstructionPins,
@@ -12,7 +12,7 @@ import type {
   Salt,
   Stream,
   Trace,
-} from "./Types";
+} from "./Types.ts";
 
 /**
  * Build the library's built-in PRNG from a seed — the genuine article, not a

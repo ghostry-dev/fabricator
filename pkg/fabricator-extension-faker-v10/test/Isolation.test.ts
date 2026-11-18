@@ -4,7 +4,7 @@ import {
   FakerExtensionError,
   fakerExtension,
 } from "@ghostry/fabricator-extension-faker-v10";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * The bridge's shared `scope` is a module-level mutable — these tests are the

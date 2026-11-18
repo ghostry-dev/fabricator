@@ -1,10 +1,10 @@
-import type { Limits } from "./Enumeration/Types";
+import type { Limits } from "./Enumeration/Types.ts";
 import { toStack } from "#stack";
-import { instantiate, overlay } from "./Instance/Core";
-import type { Instance, Stack } from "./Instance/Types";
-import type { Algorithm, Salt } from "./Random/Types";
-import { registry } from "./Schema/Registry";
-import type { PlainObject } from "./Utility/Types";
+import { instantiate, overlay } from "./Instance/Core.ts";
+import type { Instance, Stack } from "./Instance/Types.ts";
+import type { Algorithm, Salt } from "./Random/Types.ts";
+import { registry } from "./Schema/Registry.ts";
+import type { PlainObject } from "./Utility/Types.ts";
 
 export function initialize<
   const $Registry extends PlainObject = typeof registry,
@@ -89,18 +89,18 @@ export function initialize<
   ).instance;
 }
 
-export { Omitted } from "./Types";
+export { Omitted } from "./Types.ts";
 /**
  * Tags a `Salt` — for `new Fabricator(schema, { salt })`, or `fork`'s own
  * `Overlay.salt` — as composing onto whatever base is in effect, rather than
  * replacing it outright.
  */
-export { layer } from "./Random";
+export { layer } from "./Random/index.ts";
 /**
  * `layer(...)`'s return type, so a caller building one programmatically can
  * name it — the same rationale as the existing `Salt` export.
  */
-export type { Layered } from "./Random/Types";
+export type { Layered } from "./Random/Types.ts";
 /**
  * Every failure this library raises is an instance of this class — see
  * `src/Error/index.ts` for the full hierarchy. Every subclass is a member of
@@ -108,28 +108,28 @@ export type { Layered } from "./Random/Types";
  * them: `e instanceof FabricatorError.InvalidOverrideValueError` works, and
  * `.name` names the same failure.
  */
-export { FabricatorError } from "./Error";
+export { FabricatorError } from "./Error/index.ts";
 /**
  * The default registry of type definers, exported so it can be extended via
  * `registry.extend(({ T }) => ({ ... }))` before being passed to `initialize({
  * types })`.
  */
-export { registry } from "./Schema/Registry";
+export { registry } from "./Schema/Registry.ts";
 /**
  * Canonical `{ value, exclusive }` endpoint stored on `whereby` min/max, plus
  * the call-site union that still accepts a scalar (inclusive). Exported so a
  * named `.whereby(...)` argument or an `.adapt` producer reading `meta` can
  * type it — the same rationale as `Stream`.
  */
-export { effectiveDiscrete, toBound } from "./Bound";
-export type { Bound, InputBound } from "./Bound";
+export { effectiveDiscrete, toBound } from "./Bound.ts";
+export type { Bound, InputBound } from "./Bound.ts";
 /**
  * What `.admits(...)` accepts for a group of ends, and how `[Meta].admits`
  * stores it (an absent end states no limit). Exported so an argument built
  * programmatically, or an `.adapt` producer reading `meta.admits`, can be typed
  * — the same rationale as `Bound`.
  */
-export type { AdmittedEnds, InputAdmittedEnds } from "./Bound";
+export type { AdmittedEnds, InputAdmittedEnds } from "./Bound.ts";
 /**
  * The `length` shapes `T.string`/`T.array`'s `.whereby(...)` accept and store,
  * and the `distribution` every range-bearing `whereby` takes. Exported so a
@@ -139,8 +139,8 @@ export type { AdmittedEnds, InputAdmittedEnds } from "./Bound";
  * object (`{ kind: "skew", exponent: 4 }`), and the type's namespace members
  * (`Distribution.Normal`, …) name each variant.
  */
-export type { Distribution, Range } from "./Distribution";
-export type { InputLength, Length } from "./Bound";
+export type { Distribution, Range } from "./Distribution/index.ts";
+export type { InputLength, Length } from "./Bound.ts";
 /**
  * `T.string`'s `composition` vocabulary: the class-weighting and `[weight,
  * source]` forms, and the sources the second form draws from. `classes` holds
@@ -153,14 +153,14 @@ export type {
   CharacterSource,
   CodepointRange,
   Composition,
-} from "./Primitive/string/Types";
-export { classes, unicode } from "./Primitive/string/Constants";
+} from "./Primitive/string/Types.ts";
+export { classes, unicode } from "./Primitive/string/Constants.ts";
 /**
  * Public because it is the type of `ProduceContext`'s `random` member — the
  * seeded stream every kind's `.as(produce)` and `T.opaque`'s producer are
  * handed — so a caller writing either as a named function can name it.
  */
-export type { Stream } from "./Random/Types";
+export type { Stream } from "./Random/Types.ts";
 /**
  * Uniform pick and Fisher–Yates shuffle over a caller-held list, each taking
  * the `Stream` a producer is already handed. Exported so a caller writing
@@ -169,14 +169,14 @@ export type { Stream } from "./Random/Types";
  * `T.enum` when the pick can be a schema: it is enumerable and path-keyed;
  * these helpers are for the cases that cannot.
  */
-export { sample, shuffle } from "./Distribution";
+export { sample, shuffle } from "./Distribution/index.ts";
 /**
  * What every kind's `.as(produce)` producer is called with — a single curated
  * object rather than a positional argument list, so a caller writing the
  * producer as a named function can name its parameter. `T.opaque`'s producer
  * takes the same shape.
  */
-export type { ProduceContext } from "./Random/Types";
+export type { ProduceContext } from "./Random/Types.ts";
 /**
  * What every kind's `.adapt(adapter, produce)` producer is called with — `{
  * schema, meta }` — the same rationale as `Stream`/`ProduceContext` above: a
@@ -188,24 +188,24 @@ export type { ProduceContext } from "./Random/Types";
  * `AdaptationsOf`, `Recurse`) is exported from `@ghostry/fabricator/adapting`
  * instead — surface for implementing an adapter, not for calling `.adapt()`.
  */
-export type { Adapting } from "./Adapter/Types";
+export type { Adapting } from "./Adapter/Types.ts";
 /**
  * The shape `initialize({ salt })` and `new Fabricator(schema, { salt })` both
  * accept — a single string, or several — so a caller building one
  * programmatically (rather than as an inline literal) can name the type.
  */
-export type { Salt } from "./Random/Types";
+export type { Salt } from "./Random/Types.ts";
 /**
  * The shape that `initialize({ algorithm })` accepts — a seed in, a `[0, 1)`
  * generator out.
  */
-export type { Algorithm } from "./Random/Types";
+export type { Algorithm } from "./Random/Types.ts";
 /**
  * Reads the value type a Schema produces, via its phantom `[Produces]` marker —
  * before it is built, which is what a helper accepting a Schema needs — or the
  * value type a built Fabricator produces, off its `fabricate` signature.
  */
-export type { Fabricated } from "./Schema/Types";
+export type { Fabricated } from "./Schema/Types.ts";
 /**
  * Check that a Schema or built Fabricator produces a value assignable to a
  * supplied type — `.satisfies<T>()` on every kind's Schema is the main form;
@@ -213,13 +213,13 @@ export type { Fabricated } from "./Schema/Types";
  * caller does not want to edit. `SatisfiedBy` is the type-only equivalent. See
  * `Schema/Satisfies.ts`.
  */
-export { satisfies } from "./Schema/Satisfies";
-export type { SatisfiedBy } from "./Schema/Satisfies";
+export { satisfies } from "./Schema/Satisfies.ts";
+export type { SatisfiedBy } from "./Schema/Satisfies.ts";
 /**
  * `fabricator.trace`'s type — otherwise unnameable by a caller wanting to hold
  * onto one, the same reason `Stream` is exported above.
  */
-export type { Trace } from "./Random/Types";
+export type { Trace } from "./Random/Types.ts";
 /**
  * `fork`/`wrap`'s own config shapes, so a caller building an overlay
  * programmatically (rather than as an inline literal) can name them — the same
@@ -240,11 +240,11 @@ export type {
   Context,
   Overlay,
   Stack,
-} from "./Instance/Types";
+} from "./Instance/Types.ts";
 
 /**
  * `capacity`'s type, and what `combinatorial`/`coverage` return, so a caller
  * holding either can name it.
  */
-export type { Capacity } from "./Unique/Capacity";
-export type { Enumeration } from "./Enumeration/Types";
+export type { Capacity } from "./Unique/Capacity.ts";
+export type { Enumeration } from "./Enumeration/Types.ts";

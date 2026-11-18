@@ -1,19 +1,19 @@
-import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core";
+import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
-import { assertDrawableKeyedWeights } from "../../Distribution";
-import type { Produce } from "../../Random/Types";
+} from "../../Adapter/Types.ts";
+import { assertDrawableKeyedWeights } from "../../Distribution/index.ts";
+import type { Produce } from "../../Random/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import { Kind, Meta } from "../../Types";
-import { outcomes } from "./Outcomes";
-import type { Core, Fabricated, Meta as ThisMeta, Weights } from "./Types";
+} from "../../Schema/Satisfies.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { outcomes } from "./Outcomes.ts";
+import type { Core, Fabricated, Meta as ThisMeta, Weights } from "./Types.ts";
 
 /**
  * Buildable `boolean` recipe: an even coin flip, a weighted one (`weights`), or

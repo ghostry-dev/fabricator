@@ -10,11 +10,11 @@ import {
   toStreamFromTrace,
   type Algorithm,
 } from "@ghostry/fabricator/internal";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import {
   fabricateSharedSchemaHere,
   sharedSchema,
-} from "./fixtures/sharedSchema";
+} from "./fixtures/sharedSchema.ts";
 
 const { T } = initialize();
 

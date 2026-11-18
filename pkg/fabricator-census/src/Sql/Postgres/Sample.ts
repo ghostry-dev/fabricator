@@ -6,9 +6,9 @@
  * @module
  */
 
-import { CensusError } from "../../Error";
-import { Parameters, qualify, quote } from "../Quote";
-import type { Query, Row, Table } from "../Types";
+import { CensusError } from "../../Error.ts";
+import { Parameters, qualify, quote } from "../Quote.ts";
+import type { Query, Row, Table } from "../Types.ts";
 
 /** What every sampling method takes. */
 type Common = {

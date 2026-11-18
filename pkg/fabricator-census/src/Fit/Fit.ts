@@ -6,11 +6,17 @@
  * @module
  */
 
-import { CensusError } from "../Error";
-import type { Fit, FitCandidate, FitOptions, Numeric, Value } from "../Types";
-import { parameters, toDistribution, unit, type UnitModel } from "./Cdf";
-import { continuousScore, estimates, type Observation } from "./Continuous";
-import { discreteEstimates, discreteScorer, type Count } from "./Discrete";
+import { CensusError } from "../Error.ts";
+import type {
+  Fit,
+  FitCandidate,
+  FitOptions,
+  Numeric,
+  Value,
+} from "../Types.ts";
+import { parameters, toDistribution, unit, type UnitModel } from "./Cdf.ts";
+import { continuousScore, estimates, type Observation } from "./Continuous.ts";
+import { discreteEstimates, discreteScorer, type Count } from "./Discrete.ts";
 
 /**
  * The KS critical value's coefficient at α ≈ 0.05: two scores closer than `1.36

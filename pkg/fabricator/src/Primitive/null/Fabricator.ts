@@ -1,12 +1,12 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import type { Trace } from "../../Random/Types";
-import { Kind, Meta, type Adaptation } from "../../Types";
-import { Schema } from "./Schema";
-import type { Fabricated, Meta as ThisMeta } from "./Types";
+} from "../../Fabricator/Types.ts";
+import type { Trace } from "../../Random/Types.ts";
+import { Kind, Meta, type Adaptation } from "../../Types.ts";
+import { Schema } from "./Schema.ts";
+import type { Fabricated, Meta as ThisMeta } from "./Types.ts";
 
 export type Fabrication<_ extends Fabricator> = Fabricated;
 

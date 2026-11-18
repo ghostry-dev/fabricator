@@ -5,7 +5,7 @@ import {
   registry,
 } from "@ghostry/fabricator";
 import { toSynchronousStack } from "@ghostry/fabricator/internal";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * The load-bearing assertion: inside one `wrap`, construction reached

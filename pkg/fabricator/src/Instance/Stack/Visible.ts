@@ -1,5 +1,5 @@
-import type { RandomSource } from "../../Random/Types";
-import type { Ancestry, Frame, Stack } from "../Types";
+import type { RandomSource } from "../../Random/Types.ts";
+import type { Ancestry, Frame, Stack } from "../Types.ts";
 
 /**
  * Whether `reader` is `receiver` or one of its ancestors — `reader`'s chain a

@@ -1,5 +1,5 @@
-import type { Instance } from "../Instance/Types";
-import type { PlainObject } from "../Utility/Types";
+import type { Instance } from "../Instance/Types.ts";
+import type { PlainObject } from "../Utility/Types.ts";
 
 /**
  * What identifies one registered test or suite — the material a salt is derived

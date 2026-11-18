@@ -9,9 +9,9 @@
  * @module
  */
 
-import type { BigIntFact, FactValue } from "../../Facts";
-import type { Row } from "../Types";
-import type { Column } from "./Catalog";
+import type { BigIntFact, FactValue } from "../../Facts.ts";
+import type { Row } from "../Types.ts";
+import type { Column } from "./Catalog.ts";
 
 const INTEGERS = new Set(["int2", "int4", "int8"]);
 const MAX = BigInt(Number.MAX_SAFE_INTEGER);

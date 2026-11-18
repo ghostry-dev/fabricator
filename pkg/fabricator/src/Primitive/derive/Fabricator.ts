@@ -1,16 +1,16 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
-import { FabricatorError } from "../../Error";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
+import { FabricatorError } from "../../Error/index.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import { toStreamFromTrace } from "../../Random";
-import type { Trace } from "../../Random/Types";
-import { toValueKind, violatesKind } from "../../Schema/Core";
-import { Children, Kind, Meta, type Adaptation } from "../../Types";
-import type { Fabricated as FromValues } from "../tuple/Types";
-import { Schema } from "./Schema";
-import type { From, Meta as ThisMeta, Resolved, Source } from "./Types";
+} from "../../Fabricator/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import type { Trace } from "../../Random/Types.ts";
+import { toValueKind, violatesKind } from "../../Schema/Core.ts";
+import { Children, Kind, Meta, type Adaptation } from "../../Types.ts";
+import type { Fabricated as FromValues } from "../tuple/Types.ts";
+import { Schema } from "./Schema.ts";
+import type { From, Meta as ThisMeta, Resolved, Source } from "./Types.ts";
 
 export type Fabrication<$Fabricator extends Fabricator> =
   $Fabricator extends Fabricator<infer $Schema extends { [Meta]: ThisMeta }>

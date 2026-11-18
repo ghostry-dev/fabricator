@@ -1,11 +1,11 @@
-import type { Adaptations } from "../../../Adapter/Types";
+import type { Adaptations } from "../../../Adapter/Types.ts";
 import {
   Produces,
   type Adaptation,
   type Produced,
   type Kind,
   type Meta,
-} from "../../../Types";
+} from "../../../Types.ts";
 
 /**
  * The value a `self` reference resolves to at this position — whatever the

@@ -1,9 +1,9 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize, registry } from "@ghostry/fabricator";
 import {
   coverageFromHere,
   enumerableSharedSchema,
-} from "./fixtures/sharedSchema";
+} from "./fixtures/sharedSchema.ts";
 
 test("count is the widest single axis, not the product", () => {
   const { T, coverage } = initialize({ salt: "coverage-widest-axis" });

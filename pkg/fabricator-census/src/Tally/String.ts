@@ -5,10 +5,10 @@ import type {
   Formats,
   OtherBucket,
   StringTally as StringOutput,
-} from "../Types";
-import type { Context, Path } from "./Context";
-import { FrequencyTally } from "./Frequency";
-import { asDate, asNumber, NumericTally } from "./Numeric";
+} from "../Types.ts";
+import type { Context, Path } from "./Context.ts";
+import { FrequencyTally } from "./Frequency.ts";
+import { asDate, asNumber, NumericTally } from "./Numeric.ts";
 
 const buckets: ReadonlyArray<CharacterBucket> = [
   "lowercase",

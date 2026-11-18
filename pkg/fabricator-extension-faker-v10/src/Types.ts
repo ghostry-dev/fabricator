@@ -1,7 +1,7 @@
 import type { Faker } from "@faker-js/faker";
 import type { registry } from "@ghostry/fabricator";
 import type { Primitive } from "@ghostry/fabricator/internal";
-import type { FakerModules } from "./FakerModules/Types";
+import type { FakerModules } from "./FakerModules/Types.ts";
 
 /**
  * What the mirror needs from whichever registry it is merged into — a

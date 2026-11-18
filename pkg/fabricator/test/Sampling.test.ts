@@ -4,7 +4,7 @@ import {
   sample,
   shuffle,
 } from "@ghostry/fabricator";
-import { attest, expect, test } from ".";
+import { attest, expect, test } from "./index.ts";
 
 /**
  * `sample`/`shuffle` are public so a producer that already holds a `Stream` can

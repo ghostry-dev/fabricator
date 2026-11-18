@@ -1,7 +1,7 @@
 import { initialize, registry } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 import { Value } from "@sinclair/typebox/value";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * The registry `initialize()` hands back, so the helpers below stay typed.

@@ -1,16 +1,16 @@
-import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core";
+import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
+} from "../../Adapter/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import { Kind } from "../../Types";
-import type { Core, Fabricated, Value } from "./Types";
+} from "../../Schema/Satisfies.ts";
+import { Kind } from "../../Types.ts";
+import type { Core, Fabricated, Value } from "./Types.ts";
 
 /**
  * A fixed value, so unlike every other kind there is no `.as()` — nothing left

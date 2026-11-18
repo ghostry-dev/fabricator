@@ -1,4 +1,4 @@
-import type { NumberGenerator } from "../Types";
+import type { NumberGenerator } from "../Types.ts";
 
 /**
  * sfc32 ("Small Fast Counter"): a 128-bit-state PRNG that is fast, compact, and

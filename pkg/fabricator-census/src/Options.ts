@@ -1,5 +1,5 @@
-import { CensusError } from "./Error";
-import type { CensusOptions, ResolvedOptions } from "./Types";
+import { CensusError } from "./Error.ts";
+import type { CensusOptions, ResolvedOptions } from "./Types.ts";
 
 /**
  * The defaults {@link CensusOptions} documents. `reservoir` at 10k covers the

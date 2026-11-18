@@ -1,6 +1,12 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
 
 export type Fabricated = boolean;
 

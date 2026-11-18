@@ -1,11 +1,11 @@
-import { effectiveDiscrete, effectiveDiscreteBigint } from "../Bound";
-import { isDrawable } from "../Distribution";
-import { toEpochRange } from "../Primitive/date/Defaults";
-import { toStringDomain } from "../Primitive/string/Capacity";
-import { toSchema } from "../Schema/Core";
-import { Fixed, Kind, Meta, type Buildable } from "../Types";
-import { toNumberCapacity, toRangeCapacity } from "./Distinct";
-import { toDistinctValues } from "./Strategy";
+import { effectiveDiscrete, effectiveDiscreteBigint } from "../Bound.ts";
+import { isDrawable } from "../Distribution/index.ts";
+import { toEpochRange } from "../Primitive/date/Defaults.ts";
+import { toStringDomain } from "../Primitive/string/Capacity.ts";
+import { toSchema } from "../Schema/Core.ts";
+import { Fixed, Kind, Meta, type Buildable } from "../Types.ts";
+import { toNumberCapacity, toRangeCapacity } from "./Distinct.ts";
+import { toDistinctValues } from "./Strategy.ts";
 
 /**
  * How many times one built Fabricator of `schema` can `fabricate()` before a

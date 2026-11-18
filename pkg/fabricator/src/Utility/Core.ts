@@ -1,5 +1,5 @@
-import { Replace } from "../Types";
-import { type PlainObject } from "./Types";
+import { Replace } from "../Types.ts";
+import { type PlainObject } from "./Types.ts";
 
 /**
  * Syntactic sugar for an IIFE.

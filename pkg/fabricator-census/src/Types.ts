@@ -1,6 +1,6 @@
 import type { CharacterClass, CodepointRange } from "@ghostry/fabricator";
-import type { ColumnFacts } from "./Facts";
-import type { ColumnLimits } from "./Limits";
+import type { ColumnFacts } from "./Facts.ts";
+import type { ColumnLimits } from "./Limits.ts";
 
 /**
  * How a census is taken. Every count-valued option is a memory or resolution

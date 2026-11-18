@@ -4,12 +4,12 @@ import {
   permutation,
   withoutReplacement,
   type Range,
-} from "../Distribution";
-import { FabricatorError } from "../Error";
-import type { Exhaustion } from "../Fabricator/Types";
-import type { Stream } from "../Random/Types";
-import { Claim } from "../Types";
-import { toKeyer, type Keyer } from "./Key";
+} from "../Distribution/index.ts";
+import { FabricatorError } from "../Error/index.ts";
+import type { Exhaustion } from "../Fabricator/Types.ts";
+import type { Stream } from "../Random/Types.ts";
+import { Claim } from "../Types.ts";
+import { toKeyer, type Keyer } from "./Key.ts";
 
 /**
  * One run of distinct draws: nothing `draw` returns repeats anything it, or

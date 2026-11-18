@@ -8,9 +8,9 @@
  * @module
  */
 
-import { unit, unitCdf, type UnitModel } from "./Cdf";
-import { estimates, type Observation } from "./Continuous";
-import { golden, nelderMead } from "./Optimize";
+import { unit, unitCdf, type UnitModel } from "./Cdf.ts";
+import { estimates, type Observation } from "./Continuous.ts";
+import { golden, nelderMead } from "./Optimize.ts";
 
 /** A distinct observed integer and how many observations share it. */
 export type Count = { value: number; weight: number };

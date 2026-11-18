@@ -14,7 +14,7 @@ import { base, en, FakerError, ko } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import type { FakerTypes } from "@ghostry/fabricator-extension-faker-v10";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
-import { attest, describe, expect, test } from ".";
+import { attest, describe, expect, test } from "./index.ts";
 
 type Builder = (F: FakerTypes) => ReturnType<FakerTypes["lorem"]["word"]>;
 type Case = readonly [

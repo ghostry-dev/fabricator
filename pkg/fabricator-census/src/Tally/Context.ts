@@ -4,8 +4,8 @@ import {
   randomSalt,
   toStream,
 } from "@ghostry/fabricator/internal";
-import type { ResolvedOptions } from "../Types";
-import type { NodeTally } from "./Node";
+import type { ResolvedOptions } from "../Types.ts";
+import type { NodeTally } from "./Node.ts";
 
 /**
  * A tally's position in the data, one segment per step. Segments are tagged by

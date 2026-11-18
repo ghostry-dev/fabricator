@@ -7,16 +7,16 @@
  * @module
  */
 
-import { CensusError } from "../../Error";
-import type { ColumnFacts } from "../../Facts";
-import type { ColumnLimits } from "../../Limits";
+import { CensusError } from "../../Error.ts";
+import type { ColumnFacts } from "../../Facts.ts";
+import type { ColumnLimits } from "../../Limits.ts";
 import {
   sampleSize,
   type SampleSize,
   type SampleSizeOptions,
-} from "../../SampleSize";
-import type { Cost, Query, Row, Table } from "../Types";
-import { aggregates, type AggregateOptions } from "./Aggregate";
+} from "../../SampleSize.ts";
+import type { Cost, Query, Row, Table } from "../Types.ts";
+import { aggregates, type AggregateOptions } from "./Aggregate.ts";
 import {
   columns as columnsOf,
   count,
@@ -24,15 +24,15 @@ import {
   estimatedFacts,
   statistics,
   type Column,
-} from "./Catalog";
-import { coerce } from "./Coerce";
-import { limits as limitsOf } from "./Limits";
+} from "./Catalog.ts";
+import { coerce } from "./Coerce.ts";
+import { limits as limitsOf } from "./Limits.ts";
 import {
   sample,
   type BernoulliSample,
   type HashSample,
   type SystemSample,
-} from "./Sample";
+} from "./Sample.ts";
 
 /**
  * Runs one query with the caller's driver and resolves to its result rows —

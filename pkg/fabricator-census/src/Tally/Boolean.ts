@@ -1,4 +1,4 @@
-import type { BooleanTally as BooleanOutput } from "../Types";
+import type { BooleanTally as BooleanOutput } from "../Types.ts";
 
 export class BooleanTally {
   private yes = 0;

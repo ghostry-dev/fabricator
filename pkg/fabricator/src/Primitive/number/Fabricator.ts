@@ -1,18 +1,22 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
-import { constrainContinuous, effectiveDiscrete } from "../../Bound";
-import { Distribution, discreteSampler, sampler } from "../../Distribution";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
+import { constrainContinuous, effectiveDiscrete } from "../../Bound.ts";
+import {
+  Distribution,
+  discreteSampler,
+  sampler,
+} from "../../Distribution/index.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import { toStreamFromTrace } from "../../Random";
-import type { Trace } from "../../Random/Types";
-import { Claim, Kind, Meta, type Adaptation } from "../../Types";
-import { toNumberStrategy } from "../../Unique/Distinct";
-import { toLifetimeScope } from "../../Unique/Strategy";
-import { unboundedContinuous, unboundedDiscrete } from "./Defaults";
-import { Schema } from "./Schema";
-import type { Fabricated, Meta as ThisMeta } from "./Types";
+} from "../../Fabricator/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import type { Trace } from "../../Random/Types.ts";
+import { Claim, Kind, Meta, type Adaptation } from "../../Types.ts";
+import { toNumberStrategy } from "../../Unique/Distinct.ts";
+import { toLifetimeScope } from "../../Unique/Strategy.ts";
+import { unboundedContinuous, unboundedDiscrete } from "./Defaults.ts";
+import { Schema } from "./Schema.ts";
+import type { Fabricated, Meta as ThisMeta } from "./Types.ts";
 
 export type Fabrication<_ extends Fabricator> = Fabricated;
 

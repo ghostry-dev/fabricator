@@ -1,17 +1,17 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
-import { effectiveDiscrete } from "../../Bound";
-import { discreteSampler } from "../../Distribution";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
+import { effectiveDiscrete } from "../../Bound.ts";
+import { discreteSampler } from "../../Distribution/index.ts";
 import type {
   Fabricator as BaseFabricator,
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import { toStreamFromTrace } from "../../Random";
-import type { Stream, Trace } from "../../Random/Types";
-import { Children, Kind, Meta, type Adaptation } from "../../Types";
-import { assertCapacity, toDistinct } from "../../Unique/Distinct";
-import { withinCollection } from "../../Unique/Strategy";
-import { Schema } from "./Schema";
+} from "../../Fabricator/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import type { Stream, Trace } from "../../Random/Types.ts";
+import { Children, Kind, Meta, type Adaptation } from "../../Types.ts";
+import { assertCapacity, toDistinct } from "../../Unique/Distinct.ts";
+import { withinCollection } from "../../Unique/Strategy.ts";
+import { Schema } from "./Schema.ts";
 import type {
   Fabricated,
   Key,
@@ -19,7 +19,7 @@ import type {
   UniqueWhereby,
   Value,
   Whereby,
-} from "./Types";
+} from "./Types.ts";
 
 export type Fabrication<$Fabricator extends Fabricator> =
   $Fabricator extends Fabricator<infer $Schema extends { [Meta]: ThisMeta }>

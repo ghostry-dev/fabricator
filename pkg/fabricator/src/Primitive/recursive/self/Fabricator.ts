@@ -1,12 +1,12 @@
-import { FabricatorError } from "../../../Error";
+import { FabricatorError } from "../../../Error/index.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../../Fabricator/Types";
-import type { Trace } from "../../../Random/Types";
-import { Kind, Meta } from "../../../Types";
-import type { Schema } from "./Schema";
-import type { Fabricated, Meta as ThisMeta } from "./Types";
+} from "../../../Fabricator/Types.ts";
+import type { Trace } from "../../../Random/Types.ts";
+import { Kind, Meta } from "../../../Types.ts";
+import type { Schema } from "./Schema.ts";
+import type { Fabricated, Meta as ThisMeta } from "./Types.ts";
 
 export type Fabrication<$Fabricator extends Fabricator> =
   $Fabricator extends Fabricator<infer $Bindings> ? $Bindings[0] : never;

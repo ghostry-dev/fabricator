@@ -1,7 +1,16 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
-import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../Schema/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
 
 /** The schemas a `choice` can draw from. */
 export type Item = AnySchema;

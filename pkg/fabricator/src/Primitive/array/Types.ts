@@ -1,14 +1,23 @@
-import type { Adaptations } from "../../Adapter/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
 import type {
   AdmittedEnds,
   InputAdmittedEnds,
   InputLength,
   Length,
-} from "../../Bound";
-import type { Produce } from "../../Random/Types";
-import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
-import type { Redraws } from "../../Unique/Strategy";
+} from "../../Bound.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../Schema/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
+import type { Redraws } from "../../Unique/Strategy.ts";
 
 export type Definition = AnySchema;
 

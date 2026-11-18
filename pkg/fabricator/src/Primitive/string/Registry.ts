@@ -1,14 +1,14 @@
-import { toLengthRange } from "../../Bound";
-import type { Produce } from "../../Random/Types";
-import { Kind, Meta } from "../../Types";
-import { toRedraws } from "../../Unique/Strategy";
-import { Schema } from "./Schema";
+import { toLengthRange } from "../../Bound.ts";
+import type { Produce } from "../../Random/Types.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { toRedraws } from "../../Unique/Strategy.ts";
+import { Schema } from "./Schema.ts";
 import type {
   Fabricated,
   InputUniqueWhereby,
   InputWhereby,
   Whereby,
-} from "./Types";
+} from "./Types.ts";
 
 export default {
   /**

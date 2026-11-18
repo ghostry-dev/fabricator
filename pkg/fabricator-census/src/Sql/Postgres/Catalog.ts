@@ -8,11 +8,11 @@
  */
 
 import { isArray } from "@ghostry/fabricator/internal";
-import { CensusError } from "../../Error";
-import type { BigIntFact, ColumnFacts, Facts } from "../../Facts";
-import { qualify, toNumber } from "../Quote";
-import type { Query, Row, Table } from "../Types";
-import { columnNotes, parseNumber, parseText } from "./Coerce";
+import { CensusError } from "../../Error.ts";
+import type { BigIntFact, ColumnFacts, Facts } from "../../Facts.ts";
+import { qualify, toNumber } from "../Quote.ts";
+import type { Query, Row, Table } from "../Types.ts";
+import { columnNotes, parseNumber, parseText } from "./Coerce.ts";
 
 /** A column as the catalog describes it. */
 export type Column = {

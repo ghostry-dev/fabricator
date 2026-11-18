@@ -1,12 +1,12 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
 import {
   Produces,
   type Adaptation,
   type Kind,
   type Meta,
   type Produced,
-} from "../../Types";
+} from "../../Types.ts";
 
 export type Fabricated<$T> = $T;
 

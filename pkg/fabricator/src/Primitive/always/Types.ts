@@ -1,5 +1,11 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
 
 /**
  * Any value at all. Deliberately unconstrained: fabricating a fixed value needs

@@ -2,24 +2,24 @@ import {
   effectiveDiscrete,
   effectiveDiscreteBigint,
   type Bound,
-} from "../Bound";
+} from "../Bound.ts";
 import {
   discreteSampler,
   type Distribution,
   type Range,
-} from "../Distribution";
-import { FabricatorError } from "../Error";
-import type { Fabricator } from "../Fabricator/Types";
-import type { Whereby as BigintWhereby } from "../Primitive/bigint/Types";
-import { toEpochRange } from "../Primitive/date/Defaults";
-import { toStringDomain } from "../Primitive/string/Capacity";
+} from "../Distribution/index.ts";
+import { FabricatorError } from "../Error/index.ts";
+import type { Fabricator } from "../Fabricator/Types.ts";
+import type { Whereby as BigintWhereby } from "../Primitive/bigint/Types.ts";
+import { toEpochRange } from "../Primitive/date/Defaults.ts";
+import { toStringDomain } from "../Primitive/string/Capacity.ts";
 import {
   unboundedContinuous,
   unboundedDiscrete,
-} from "../Primitive/number/Defaults";
-import type { Meta as NumberMeta } from "../Primitive/number/Types";
-import type { Stream } from "../Random/Types";
-import { Kind, Meta } from "../Types";
+} from "../Primitive/number/Defaults.ts";
+import type { Meta as NumberMeta } from "../Primitive/number/Types.ts";
+import type { Stream } from "../Random/Types.ts";
+import { Kind, Meta } from "../Types.ts";
 import {
   exactBigintRange,
   exactRange,
@@ -27,7 +27,7 @@ import {
   tracked,
   trackedByKey,
   type Strategy,
-} from "./Strategy";
+} from "./Strategy.ts";
 
 /**
  * How many distinct values a unique `number` can produce: every integer of an

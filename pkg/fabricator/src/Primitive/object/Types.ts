@@ -1,6 +1,9 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
-import type { AnySchema, Fabricated as FabricatedBy } from "../../Schema/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  AnySchema,
+  Fabricated as FabricatedBy,
+} from "../../Schema/Types.ts";
 import {
   Kind,
   Meta,
@@ -8,9 +11,9 @@ import {
   type Omitted,
   type Produced,
   type Produces,
-} from "../../Types";
-import { type Pretty } from "../../Utility/Types";
-import type { Schema as ComputeSchema } from "./compute/Schema";
+} from "../../Types.ts";
+import { type Pretty } from "../../Utility/Types.ts";
+import type { Schema as ComputeSchema } from "./compute/Schema.ts";
 
 export type Definition<$Schema = AnySchema> = { [_ in string]: $Schema };
 

@@ -4,13 +4,13 @@ import {
   type FabricatorTestContext,
   type Identity,
 } from "@ghostry/fabricator/harnessing";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import {
   compose,
   run,
   toIdentity,
   type AnyIntegration,
-} from "./fixtures/harnessingConsumer";
+} from "./fixtures/harnessingConsumer.ts";
 
 /**
  * One shared, plausible "now" — the recommended setup. Salt varies per

@@ -1,6 +1,6 @@
-import type { Distribution } from "./Distribution";
-import { FabricatorError } from "./Error";
-import { isPlainObject } from "./Utility/Core";
+import type { Distribution } from "./Distribution/index.ts";
+import { FabricatorError } from "./Error/index.ts";
+import { isPlainObject } from "./Utility/Core.ts";
 
 /**
  * Canonical endpoint stored on `[Meta].whereby`. Call sites still accept a

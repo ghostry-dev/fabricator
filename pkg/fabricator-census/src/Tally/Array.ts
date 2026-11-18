@@ -1,7 +1,7 @@
-import type { ArrayTally as ArrayOutput } from "../Types";
-import type { Context, Path } from "./Context";
-import type { NodeTally } from "./Node";
-import { asNumber, NumericTally } from "./Numeric";
+import type { ArrayTally as ArrayOutput } from "../Types.ts";
+import type { Context, Path } from "./Context.ts";
+import type { NodeTally } from "./Node.ts";
+import { asNumber, NumericTally } from "./Numeric.ts";
 
 /**
  * Every position of every array merges into one `element` node — the shape

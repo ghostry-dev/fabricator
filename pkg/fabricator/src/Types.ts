@@ -1,5 +1,5 @@
-import type { Fabricator } from "./Fabricator/Types";
-import type { AnySchema } from "./Schema/Types";
+import type { Fabricator } from "./Fabricator/Types.ts";
+import type { AnySchema } from "./Schema/Types.ts";
 
 export const Kind = Symbol.for("fabricator:kind");
 export const Meta = Symbol.for("fabricator:meta");

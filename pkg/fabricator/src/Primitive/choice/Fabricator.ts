@@ -1,14 +1,14 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
-import { weighted } from "../../Distribution";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
+import { weighted } from "../../Distribution/index.ts";
 import type {
   FabricatorContext,
   NaiveFabricator,
-} from "../../Fabricator/Types";
-import type { Trace } from "../../Random/Types";
-import { toStreamFromTrace } from "../../Random";
-import { Children, Kind, Meta, type Adaptation } from "../../Types";
-import { Schema } from "./Schema";
-import type { Fabricated, Items, Meta as ThisMeta } from "./Types";
+} from "../../Fabricator/Types.ts";
+import type { Trace } from "../../Random/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import { Children, Kind, Meta, type Adaptation } from "../../Types.ts";
+import { Schema } from "./Schema.ts";
+import type { Fabricated, Items, Meta as ThisMeta } from "./Types.ts";
 
 export type Fabrication<$Fabricator extends Fabricator> =
   $Fabricator extends Fabricator<infer $Schema extends { [Meta]: ThisMeta }>

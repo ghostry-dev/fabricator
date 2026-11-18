@@ -1,23 +1,30 @@
-import { FabricatorError } from "../Error";
-import { toEffectiveSource } from "../Instance/Stack/Visible";
-import type { Ancestry, Stack } from "../Instance/Types";
-import { Primitive } from "../Primitive";
-import { isLayered, normalizeSalt, toRandomSource } from "../Random";
+import { FabricatorError } from "../Error/index.ts";
+import { toEffectiveSource } from "../Instance/Stack/Visible.ts";
+import type { Ancestry, Stack } from "../Instance/Types.ts";
+import { Primitive } from "../Primitive/index.ts";
+import { isLayered, normalizeSalt, toRandomSource } from "../Random/index.ts";
 import type {
   ConstructionPins,
   ConstructionTrace,
   ConstructorOptions,
   RandomSource,
-} from "../Random/Types";
-import { toSchema } from "../Schema/Core";
-import { Adaptation, Fixed, Kind, Layer, Meta, type Buildable } from "../Types";
-import { inline } from "../Utility/Core";
+} from "../Random/Types.ts";
+import { toSchema } from "../Schema/Core.ts";
+import {
+  Adaptation,
+  Fixed,
+  Kind,
+  Layer,
+  Meta,
+  type Buildable,
+} from "../Types.ts";
+import { inline } from "../Utility/Core.ts";
 import {
   type AsFabricator,
   type ConstructionContext,
   type Exhaustion,
   type Fabricator,
-} from "./Types";
+} from "./Types.ts";
 
 /**
  * The type of `construct()` itself, as handed back by `Constructor` — kept

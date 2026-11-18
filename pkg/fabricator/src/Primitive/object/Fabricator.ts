@@ -1,28 +1,28 @@
-import type { AdaptationsOf } from "../../Adapter/Types";
-import { FabricatorError } from "../../Error";
+import type { AdaptationsOf } from "../../Adapter/Types.ts";
+import { FabricatorError } from "../../Error/index.ts";
 import type {
   Fabricator as BaseFabricator,
   FabricatorContext,
-} from "../../Fabricator/Types";
-import { toStreamFromTrace } from "../../Random";
-import type { Trace } from "../../Random/Types";
-import { Children, Kind, Meta, Omitted, type Adaptation } from "../../Types";
-import { recordOverride } from "../../Unique/Override";
-import { isPollutionKey } from "../../Utility/Core";
-import { type PlainObject } from "../../Utility/Types";
+} from "../../Fabricator/Types.ts";
+import { toStreamFromTrace } from "../../Random/index.ts";
+import type { Trace } from "../../Random/Types.ts";
+import { Children, Kind, Meta, Omitted, type Adaptation } from "../../Types.ts";
+import { recordOverride } from "../../Unique/Override.ts";
+import { isPollutionKey } from "../../Utility/Core.ts";
+import { type PlainObject } from "../../Utility/Types.ts";
 import {
   isObjectComputeFabricator,
   type Fabricator as ComputeFabricator,
-} from "./compute/Fabricator";
-import { isObjectOmittableFabricator } from "./omittable/Fabricator";
-import { isObjectOptionalFabricator } from "./optional/Fabricator";
-import type { Schema } from "./Schema";
+} from "./compute/Fabricator.ts";
+import { isObjectOmittableFabricator } from "./omittable/Fabricator.ts";
+import { isObjectOptionalFabricator } from "./optional/Fabricator.ts";
+import type { Schema } from "./Schema.ts";
 import type {
   Definition,
   Fabricated,
   Override,
   Meta as ThisMeta,
-} from "./Types";
+} from "./Types.ts";
 
 export type Fabrication<$Fabricator extends Fabricator> =
   $Fabricator extends Fabricator<infer $Schema>

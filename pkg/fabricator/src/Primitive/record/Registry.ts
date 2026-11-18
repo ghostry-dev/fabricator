@@ -1,9 +1,9 @@
-import { toLengthRange } from "../../Bound";
-import type { Produce } from "../../Random/Types";
-import { toSchema } from "../../Schema/Core";
-import { Kind, Meta } from "../../Types";
-import { toRedraws } from "../../Unique/Strategy";
-import { Schema } from "./Schema";
+import { toLengthRange } from "../../Bound.ts";
+import type { Produce } from "../../Random/Types.ts";
+import { toSchema } from "../../Schema/Core.ts";
+import { Kind, Meta } from "../../Types.ts";
+import { toRedraws } from "../../Unique/Strategy.ts";
+import { Schema } from "./Schema.ts";
 import type {
   Fabricated,
   InputUniqueWhereby,
@@ -11,7 +11,7 @@ import type {
   UniqueWhereby,
   Value,
   Whereby,
-} from "./Types";
+} from "./Types.ts";
 
 type ThisRegistry<$Key extends Key, $Value extends Value> = {
   /**

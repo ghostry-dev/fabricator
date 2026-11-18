@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { Frame, Stack } from "../Types";
-import { toVisible } from "./Visible";
+import type { Frame, Stack } from "../Types.ts";
+import { toVisible } from "./Visible.ts";
 
 /**
  * The asynchronous carrier, and the **only** module in this package importing

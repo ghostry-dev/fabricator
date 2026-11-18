@@ -1,7 +1,7 @@
-import { effectiveDiscrete } from "../../Bound";
-import { isDrawable } from "../../Distribution";
-import { bmpScalars, toRanges, toSources } from "./Sources";
-import type { CodepointRange, Whereby } from "./Types";
+import { effectiveDiscrete } from "../../Bound.ts";
+import { isDrawable } from "../../Distribution/index.ts";
+import { bmpScalars, toRanges, toSources } from "./Sources.ts";
+import type { CodepointRange, Whereby } from "./Types.ts";
 
 /**
  * The strings a `string` `whereby` can produce: how many, and a membership test

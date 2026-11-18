@@ -1,6 +1,12 @@
-import type { Adaptations } from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
 
 /**
  * The values an `enum` can draw from — any value at all, for the same reason

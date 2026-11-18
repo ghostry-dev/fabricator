@@ -1,19 +1,22 @@
-import { withAdaptations, type AdaptationEntry } from "../../../Adapter/Core";
+import {
+  withAdaptations,
+  type AdaptationEntry,
+} from "../../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../../Adapter/Types";
-import type { AnySchema } from "../../../Schema/Types";
+} from "../../../Adapter/Types.ts";
+import type { AnySchema } from "../../../Schema/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../../Schema/Satisfies";
-import { Kind } from "../../../Types";
-import type { Pretty } from "../../../Utility/Types";
-import type * as object from "../Types";
-import type { Core, Resolved, Source } from "./Types";
+} from "../../../Schema/Satisfies.ts";
+import { Kind } from "../../../Types.ts";
+import type { Pretty } from "../../../Utility/Types.ts";
+import type * as object from "../Types.ts";
+import type { Core, Resolved, Source } from "./Types.ts";
 
 /**
  * The fields a `.from([...])` resolver is handed: only the named ones, each

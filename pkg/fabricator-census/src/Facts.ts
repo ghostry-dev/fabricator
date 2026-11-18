@@ -8,7 +8,7 @@
  */
 
 import { isArray } from "@ghostry/fabricator/internal";
-import { CensusError } from "./Error";
+import { CensusError } from "./Error.ts";
 
 /** An integer too large for a JS number, as its decimal string. */
 export type BigIntFact = { type: "bigint"; value: string };

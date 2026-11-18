@@ -1,5 +1,5 @@
-import { FabricatorError } from "../Error";
-import type { Stream } from "../Random/Types";
+import { FabricatorError } from "../Error/index.ts";
+import type { Stream } from "../Random/Types.ts";
 
 /**
  * How randomly generated values cluster within a `{ min, max }` range. Without

@@ -4,7 +4,7 @@ import {
   initialize,
   layer,
 } from "@ghostry/fabricator";
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 
 /**
  * The equivalence `fabricate` promises: repeated calls with one schema object

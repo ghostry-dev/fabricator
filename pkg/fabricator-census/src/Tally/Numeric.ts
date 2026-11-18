@@ -1,7 +1,13 @@
-import { Reservoir } from "../Reservoir";
-import type { Histogram, Numeric, Quantiles, Summary, Value } from "../Types";
-import type { Context, Path } from "./Context";
-import { FrequencyTally } from "./Frequency";
+import { Reservoir } from "../Reservoir.ts";
+import type {
+  Histogram,
+  Numeric,
+  Quantiles,
+  Summary,
+  Value,
+} from "../Types.ts";
+import type { Context, Path } from "./Context.ts";
+import { FrequencyTally } from "./Frequency.ts";
 
 /**
  * How a numeric tally's frequency keys become census values: as themselves for

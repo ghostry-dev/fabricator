@@ -1,17 +1,17 @@
-import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core";
+import { withAdaptations, type AdaptationEntry } from "../../Adapter/Core.ts";
 import type {
   Adaptations,
   Adapter,
   Adapting,
   WithAdaptations,
-} from "../../Adapter/Types";
-import type { Produce } from "../../Random/Types";
+} from "../../Adapter/Types.ts";
+import type { Produce } from "../../Random/Types.ts";
 import {
   schemaSatisfies as satisfies,
   type SatisfiesThis,
-} from "../../Schema/Satisfies";
-import { Kind, Meta } from "../../Types";
-import type { Core, Fabricated, Meta as ThisMeta } from "./Types";
+} from "../../Schema/Satisfies.ts";
+import { Kind, Meta } from "../../Types.ts";
+import type { Core, Fabricated, Meta as ThisMeta } from "./Types.ts";
 
 /**
  * `$Meta` is generic (defaulting to the full `Meta` union) so builder return

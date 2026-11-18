@@ -1,4 +1,4 @@
-import { expect, test } from ".";
+import { expect, test } from "./index.ts";
 import { initialize } from "@ghostry/fabricator";
 import { toTypeBox } from "@ghostry/fabricator-adapter-typebox-v0";
 

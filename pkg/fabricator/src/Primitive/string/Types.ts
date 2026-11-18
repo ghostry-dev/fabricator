@@ -1,14 +1,20 @@
-import type { Adaptations } from "../../Adapter/Types";
+import type { Adaptations } from "../../Adapter/Types.ts";
 import type {
   AdmittedEnds,
   InputAdmittedEnds,
   InputLength,
   Length,
-} from "../../Bound";
-import type { Produce } from "../../Random/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../../Types";
-import type { classes } from "./Constants";
-import type { Redraws } from "../../Unique/Strategy";
+} from "../../Bound.ts";
+import type { Produce } from "../../Random/Types.ts";
+import type {
+  Adaptation,
+  Kind,
+  Meta,
+  Produced,
+  Produces,
+} from "../../Types.ts";
+import type { classes } from "./Constants.ts";
+import type { Redraws } from "../../Unique/Strategy.ts";
 
 /** An inclusive range of Unicode code points. */
 export type CodepointRange = { from: number; to: number };

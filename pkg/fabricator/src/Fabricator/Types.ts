@@ -1,9 +1,9 @@
-import type { Adaptations, AdaptationsOf } from "../Adapter/Types";
-import type { Primitive, Kind as SchemaKind } from "../Primitive";
-import type { Algorithm, RandomSource, Salt, Trace } from "../Random/Types";
-import type { Fabricated } from "../Schema/Types";
-import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types";
-import type { PlainObject } from "../Utility/Types";
+import type { Adaptations, AdaptationsOf } from "../Adapter/Types.ts";
+import type { Primitive, Kind as SchemaKind } from "../Primitive/index.ts";
+import type { Algorithm, RandomSource, Salt, Trace } from "../Random/Types.ts";
+import type { Fabricated } from "../Schema/Types.ts";
+import type { Adaptation, Kind, Meta, Produced, Produces } from "../Types.ts";
+import type { PlainObject } from "../Utility/Types.ts";
 
 /**
  * Threaded through `Constructor.ts`'s `make` for every dispatch of one `new

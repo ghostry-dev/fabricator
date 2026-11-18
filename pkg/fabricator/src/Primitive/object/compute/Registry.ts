@@ -1,8 +1,8 @@
-import { FabricatorError } from "../../../Error";
-import { Kind, Meta } from "../../../Types";
-import type { Definition, Fabricated } from "../Types";
-import { Schema, type Computer, type Narrowed } from "./Schema";
-import type { Resolved, Source } from "./Types";
+import { FabricatorError } from "../../../Error/index.ts";
+import { Kind, Meta } from "../../../Types.ts";
+import type { Definition, Fabricated } from "../Types.ts";
+import { Schema, type Computer, type Narrowed } from "./Schema.ts";
+import type { Resolved, Source } from "./Types.ts";
 
 /**
  * `base` is the keys of the `.refine()` stage's base definition — what a plain

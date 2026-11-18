@@ -1,4 +1,4 @@
-import type { Bound } from "../../Bound";
+import type { Bound } from "../../Bound.ts";
 
 /**
  * Inclusive caps a missing `whereby` end draws against. Not stored on the bare
