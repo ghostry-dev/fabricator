@@ -1,24 +1,83 @@
+# Managed by the @ghostry meta repo (.templates/workflows/generate.ts). Edit it
+# there and run `bun .scripts/sync.ts`; changes made here are overwritten.
 name: Build and Test
 
 on:
   pull_request:
     branches: ["*"]
-  workflow_call:
-    outputs:
-      build-run-id:
-        value: ${{ jobs.build.outputs.run-id }}
 
 jobs:
-  build:
-    name: Build
+  build-fabricator:
+    name: Build `fabricator`
     uses: ./.github/workflows/build.yml
+    with:
+      package: fabricator
+      path: pkg/fabricator
 
-  test:
-    name: Test
+  test-fabricator:
+    name: Test `fabricator`
     uses: ./.github/workflows/test.yml
-    needs:
-      - build
+    needs: [build-fabricator]
     permissions:
       actions: read
     with:
-      build-run-id: ${{ needs.build.outputs.run-id }}
+      package: fabricator
+      path: pkg/fabricator
+      build-run-id: ${{ needs.build-fabricator.outputs.run-id }}
+
+  build-fabricator-adapter-typebox-v0:
+    name: Build `fabricator-adapter-typebox-v0`
+    uses: ./.github/workflows/build.yml
+    needs: [build-fabricator]
+    with:
+      package: fabricator-adapter-typebox-v0
+      path: pkg/fabricator-adapter-typebox-v0
+
+  test-fabricator-adapter-typebox-v0:
+    name: Test `fabricator-adapter-typebox-v0`
+    uses: ./.github/workflows/test.yml
+    needs: [build-fabricator-adapter-typebox-v0]
+    permissions:
+      actions: read
+    with:
+      package: fabricator-adapter-typebox-v0
+      path: pkg/fabricator-adapter-typebox-v0
+      build-run-id: ${{ needs.build-fabricator-adapter-typebox-v0.outputs.run-id }}
+
+  build-fabricator-census:
+    name: Build `fabricator-census`
+    uses: ./.github/workflows/build.yml
+    needs: [build-fabricator]
+    with:
+      package: fabricator-census
+      path: pkg/fabricator-census
+
+  test-fabricator-census:
+    name: Test `fabricator-census`
+    uses: ./.github/workflows/test.yml
+    needs: [build-fabricator-census]
+    permissions:
+      actions: read
+    with:
+      package: fabricator-census
+      path: pkg/fabricator-census
+      build-run-id: ${{ needs.build-fabricator-census.outputs.run-id }}
+
+  build-fabricator-extension-faker-v10:
+    name: Build `fabricator-extension-faker-v10`
+    uses: ./.github/workflows/build.yml
+    needs: [build-fabricator, build-fabricator-adapter-typebox-v0]
+    with:
+      package: fabricator-extension-faker-v10
+      path: pkg/fabricator-extension-faker-v10
+
+  test-fabricator-extension-faker-v10:
+    name: Test `fabricator-extension-faker-v10`
+    uses: ./.github/workflows/test.yml
+    needs: [build-fabricator-extension-faker-v10]
+    permissions:
+      actions: read
+    with:
+      package: fabricator-extension-faker-v10
+      path: pkg/fabricator-extension-faker-v10
+      build-run-id: ${{ needs.build-fabricator-extension-faker-v10.outputs.run-id }}

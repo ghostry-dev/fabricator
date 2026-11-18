@@ -682,3 +682,26 @@ Every subclass is declared inside `export namespace FabricatorError { ... }`, me
 - Test file organization is by _concern_, not by primitive: `As.test.ts`, `Compute.test.ts`, `Override.test.ts`, `Omittable.test.ts`, `Optional.test.ts`, `Undefinable.test.ts`, `random.test.ts` for runtime behavior; `*.types.test.ts` files (`Fabrication.types.test.ts`, `pkg/fabricator-adapter-typebox-v0/test/index.types.test.ts`, `pkg/fabricator-adapter-typebox-v0/test/Adapt.types.test.ts`) for compile-time-only assertions, using the `Equal`/`Extends`/`Expect` trick (a conditional-type equality check plus a `type X = Expect<...>` that fails to compile if false) rather than a runtime assertion library. A kind's `toTypeBox`/adapter-specific assertions live in the adapter package's own test suite even when the same concern's core-only assertions stay in `pkg/fabricator/test/` under the identical basename (`Always.test.ts`, `As.test.ts`, `Opaque.test.ts`, `Record.test.ts`, `Fabrication.types.test.ts` all split this way) — the two are independent files, not a shared one.
 - Testing a probabilistic-roll kind (`boolean`, `object.omittable`, `object.optional` [3-way], `undefinable`) "sees every outcome across N draws" is deterministic per salt, not flaky in the usual sense — but a specific salt can still, legitimately, produce a short run that lands on one side for the first N draws. It'll pass reliably forever once fixed, since the same salt always replays the same sequence — but if a new test in this style fails, first try a wider sample (more elements / a higher retry cap) before suspecting the implementation; don't just pick a different salt string to make a failure disappear without understanding why, since that can just as easily paper over a real bug. `Optional.test.ts` also asserts the 33/33/33 distribution numerically (not just "all three outcomes occur"), specifically to guard against a regression back to the 50/25/25 a naive `omittable(undefinable(inner))` composition would give.
 - Tests that compare multiple `initialize()` instances (same-salt replay, isolation, structural-keying siblings, …) must pass the **same `clock`** to each — `clock: "derived"` when they share a salt, a pinned `Date` when they don't (`"derived"` derives from the salt, so two different salts would still disagree on "now"). The unconfigured default is the wall-clock instant of that call, so two `initialize({ salt })` calls a millisecond apart silently diverge. Tests that specifically compare differently-clocked instances are the exception.
+
+<!-- @ghostry:shared:start
+     Managed by the @ghostry meta repo (.templates/blocks/agents.*.md); edit
+     it there. -->
+
+## @ghostry conventions
+
+These apply to every @ghostry repo. This repo is checked out inside the @ghostry meta repo (its parent directory), which holds the shared config, workflows, and agent skills in `../.agents/skills/`. Change shared files there, never here.
+
+- Bun only: `bun install`, `bun run …`, `bun test`, `bun x …`. Never `npm`, `npx`, or `node`.
+- Format with oxfmt. Its config, `.oxfmtrc.jsonc`, is shared.
+- Comments are TypeDoc-style `/** */` and explain _why_ (a constraint, an invariant, a workaround), never restate _what_ the code already says.
+- AGENTS.md describes present-state facts and invariants, never change history. State the current behavior and the trap directly; git history holds the rest.
+
+### Libraries
+
+- Type-check under both TypeScript 7 (`check`) and TypeScript 5 (`check:ts5`, where a package defines it). Both must pass: TS7's type-instantiation budget is far larger than TS5's, and most consumers are on 5.x.
+- `tsconfig.base.json` holds the shared compiler options. In particular, `verbatimModuleSyntax` is on, so type-only imports say `import type` (or `type` on individual specifiers), and `exactOptionalPropertyTypes` is on. A package's own `tsconfig.json` extends the base and adds only what is specific to it.
+- Every relative import names its file, `.ts` extension included: `"./Types.ts"`, and `"./Thing/index.ts"` for a directory, never `"./Thing"`. Declaration emit copies imports as written, and a consumer on `moduleResolution: node16`/`nodenext` needs the extension.
+- `jsr publish` ships every non-gitignored file in the package directory, dotfiles included. A package at the repo root therefore lists what to publish with `publish.include`, an allowlist, in `jsr.json`. A denylist there would leak `.github/`, `.bun-version`, `tsconfig*.json`, and the rest. Under `pkg/*`, the repo-level files sit outside the package, so a short `exclude` is enough. `bun run check:jsr`, where defined, prints the exact file list.
+- Releasing: bumping a package's `version` in a commit to `main` publishes it to npm and JSR and creates its GitHub release, with an empty body. Write the release notes afterwards with the meta repo's `release-notes` skill, following its `.release-notes/FORMAT.md`.
+
+<!-- @ghostry:shared:end -->

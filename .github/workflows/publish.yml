@@ -1,3 +1,5 @@
+# Managed by the @ghostry meta repo (.templates/workflows/publish.yml). Edit it
+# there and run `bun .scripts/sync.ts`; changes made here are overwritten.
 name: Publish
 
 on:
@@ -6,11 +8,25 @@ on:
       package:
         required: true
         type: string
-        description: The directory name under pkg/ of the package to publish.
+        description: >-
+          The package's id: the repo name for a single-package repo, or its
+          directory name under `pkg/`. Artifact and tarball names derive from it.
+      path:
+        required: true
+        type: string
+        description: The package directory relative to the repo root (`.` or `pkg/<id>`).
       version:
         required: true
         type: string
-        description: The version of the package to publish.
+        description: The version of the package to publish, with its `v` prefix.
+      tag:
+        required: true
+        type: string
+        description: The release tag, `vX.Y.Z` or `<id>/vX.Y.Z`.
+      release-name:
+        required: true
+        type: string
+        description: The GitHub release's title.
       build-run-id:
         required: true
         type: string
@@ -18,7 +34,7 @@ on:
 
 env:
   is-prerelease: ${{ contains(inputs.version, '-') }}
-  pkg-dir: pkg/${{ inputs.package }}
+  pkg-dir: ${{ inputs.path }}
 
 jobs:
   pack:
@@ -142,7 +158,7 @@ jobs:
       # the calling and the called workflow.
       #
       # A trusted publisher can only be configured for a package that
-      # already exists, so a new package under `pkg/` is claimed by hand
+      # already exists, so a new package is claimed by hand
       # first: publish a README-only stub at `0.0.0` from a maintainer's
       # machine (`npm publish --access public`, 2FA), then add a trusted
       # publisher on npmjs.com naming `main.yml` — npm validates a reusable
@@ -233,8 +249,8 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
-          name: ${{ inputs.package }} ${{ inputs.version }}
-          tag_name: ${{ inputs.package }}/${{ inputs.version }}
+          name: ${{ inputs.release-name }}
+          tag_name: ${{ inputs.tag }}
           target_commitish: ${{ github.ref }}
           prerelease: ${{ env.is-prerelease }}
           fail_on_unmatched_files: true

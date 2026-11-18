@@ -1,3 +1,6 @@
+# >>> @ghostry:shared
+# Managed by the @ghostry meta repo (.templates/blocks/gitignore.library); edit
+# it there.
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
 # Logs
@@ -157,7 +160,7 @@ dist
 
 .tern-port
 
-# Stores VSCode versions used for testing VSCode extensions
+# Stores VSCode versions used by VSCode extensions
 
 .vscode-test
 
@@ -178,6 +181,7 @@ dist
 /*.md
 !/AGENTS.md
 !/README.md
+# <<< @ghostry:shared
 
 # Local scratch space, excluded from build (tsconfig.build.json) and publish
 # (jsr.json) in each package, but never meant to be committed

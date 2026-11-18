@@ -1,4 +1,9 @@
+/**
+ * Managed by the @ghostry meta repo (.templates/all/.oxfmtrc.jsonc). Edit it
+ * there and run `bun .scripts/sync.ts`; changes made here are overwritten.
+ */
 {
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "experimentalOperatorPosition": "start",
   "quoteProps": "as-needed",
   "objectWrap": "collapse",

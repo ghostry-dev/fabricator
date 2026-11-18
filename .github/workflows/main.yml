@@ -1,6 +1,12 @@
+# Managed by the @ghostry meta repo (.templates/workflows/generate.ts). Edit it
+# there and run `bun .scripts/sync.ts`; changes made here are overwritten.
 ##
 # Changing a package's version in a commit to main publishes it under that
-# version.
+# version. The GitHub release is created with an empty body; notes are written
+# afterwards with the meta repo's release-notes skill.
+#
+# This file's name matters: each package's npm trusted publisher names
+# `main.yml`, since npm checks the calling workflow, not `publish.yml`.
 #
 name: Build, Test, and Release
 
@@ -10,204 +16,222 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build
+  build-fabricator:
+    name: Build `fabricator`
     uses: ./.github/workflows/build.yml
+    with:
+      package: fabricator
+      path: pkg/fabricator
 
-  test:
-    name: Test
+  test-fabricator:
+    name: Test `fabricator`
     uses: ./.github/workflows/test.yml
-    needs: [build]
+    needs: [build-fabricator]
     permissions:
       actions: read
     with:
-      build-run-id: ${{ needs.build.outputs.run-id }}
+      package: fabricator
+      path: pkg/fabricator
+      build-run-id: ${{ needs.build-fabricator.outputs.run-id }}
 
-  get-version-fabricator:
-    name: Get current version (fabricator)
+  build-fabricator-adapter-typebox-v0:
+    name: Build `fabricator-adapter-typebox-v0`
+    uses: ./.github/workflows/build.yml
+    needs: [build-fabricator]
+    with:
+      package: fabricator-adapter-typebox-v0
+      path: pkg/fabricator-adapter-typebox-v0
+
+  test-fabricator-adapter-typebox-v0:
+    name: Test `fabricator-adapter-typebox-v0`
+    uses: ./.github/workflows/test.yml
+    needs: [build-fabricator-adapter-typebox-v0]
+    permissions:
+      actions: read
+    with:
+      package: fabricator-adapter-typebox-v0
+      path: pkg/fabricator-adapter-typebox-v0
+      build-run-id: ${{ needs.build-fabricator-adapter-typebox-v0.outputs.run-id }}
+
+  build-fabricator-census:
+    name: Build `fabricator-census`
+    uses: ./.github/workflows/build.yml
+    needs: [build-fabricator]
+    with:
+      package: fabricator-census
+      path: pkg/fabricator-census
+
+  test-fabricator-census:
+    name: Test `fabricator-census`
+    uses: ./.github/workflows/test.yml
+    needs: [build-fabricator-census]
+    permissions:
+      actions: read
+    with:
+      package: fabricator-census
+      path: pkg/fabricator-census
+      build-run-id: ${{ needs.build-fabricator-census.outputs.run-id }}
+
+  build-fabricator-extension-faker-v10:
+    name: Build `fabricator-extension-faker-v10`
+    uses: ./.github/workflows/build.yml
+    needs: [build-fabricator, build-fabricator-adapter-typebox-v0]
+    with:
+      package: fabricator-extension-faker-v10
+      path: pkg/fabricator-extension-faker-v10
+
+  test-fabricator-extension-faker-v10:
+    name: Test `fabricator-extension-faker-v10`
+    uses: ./.github/workflows/test.yml
+    needs: [build-fabricator-extension-faker-v10]
+    permissions:
+      actions: read
+    with:
+      package: fabricator-extension-faker-v10
+      path: pkg/fabricator-extension-faker-v10
+      build-run-id: ${{ needs.build-fabricator-extension-faker-v10.outputs.run-id }}
+
+  version-fabricator:
+    name: Check for a release (`fabricator`)
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
     outputs:
-      version: ${{ steps.read-version.outputs.version }}
+      version: ${{ steps.read.outputs.version }}
+      tag: ${{ steps.read.outputs.tag }}
+      exists: ${{ steps.read.outputs.exists }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
+      - name: Read the version and look for its release
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="v$(jq -r .version pkg/fabricator/package.json)"
+          tag="fabricator/$version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            exists=true
+          else
+            exists=false
+          fi
+          echo "Release $tag already exists? $exists"
+          echo "exists=$exists" >> $GITHUB_OUTPUT
 
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Read package version
-        id: read-version
-        working-directory: pkg/fabricator
-        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
-
-  get-version-fabricator-adapter-typebox-v0:
-    name: Get current version (fabricator-adapter-typebox-v0)
+  version-fabricator-adapter-typebox-v0:
+    name: Check for a release (`fabricator-adapter-typebox-v0`)
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
     outputs:
-      version: ${{ steps.read-version.outputs.version }}
+      version: ${{ steps.read.outputs.version }}
+      tag: ${{ steps.read.outputs.tag }}
+      exists: ${{ steps.read.outputs.exists }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
+      - name: Read the version and look for its release
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="v$(jq -r .version pkg/fabricator-adapter-typebox-v0/package.json)"
+          tag="fabricator-adapter-typebox-v0/$version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            exists=true
+          else
+            exists=false
+          fi
+          echo "Release $tag already exists? $exists"
+          echo "exists=$exists" >> $GITHUB_OUTPUT
 
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Read package version
-        id: read-version
-        working-directory: pkg/fabricator-adapter-typebox-v0
-        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
-
-  get-version-fabricator-extension-faker-v10:
-    name: Get current version (fabricator-extension-faker-v10)
+  version-fabricator-census:
+    name: Check for a release (`fabricator-census`)
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
     outputs:
-      version: ${{ steps.read-version.outputs.version }}
+      version: ${{ steps.read.outputs.version }}
+      tag: ${{ steps.read.outputs.tag }}
+      exists: ${{ steps.read.outputs.exists }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
+      - name: Read the version and look for its release
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="v$(jq -r .version pkg/fabricator-census/package.json)"
+          tag="fabricator-census/$version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            exists=true
+          else
+            exists=false
+          fi
+          echo "Release $tag already exists? $exists"
+          echo "exists=$exists" >> $GITHUB_OUTPUT
 
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Read package version
-        id: read-version
-        working-directory: pkg/fabricator-extension-faker-v10
-        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
-
-  get-version-fabricator-census:
-    name: Get current version (fabricator-census)
+  version-fabricator-extension-faker-v10:
+    name: Check for a release (`fabricator-extension-faker-v10`)
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
     outputs:
-      version: ${{ steps.read-version.outputs.version }}
+      version: ${{ steps.read.outputs.version }}
+      tag: ${{ steps.read.outputs.tag }}
+      exists: ${{ steps.read.outputs.exists }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
+      - name: Read the version and look for its release
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="v$(jq -r .version pkg/fabricator-extension-faker-v10/package.json)"
+          tag="fabricator-extension-faker-v10/$version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            exists=true
+          else
+            exists=false
+          fi
+          echo "Release $tag already exists? $exists"
+          echo "exists=$exists" >> $GITHUB_OUTPUT
 
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Read package version
-        id: read-version
-        working-directory: pkg/fabricator-census
-        run: echo "version=v$(bunx --no-install npm view ./ version)" >> $GITHUB_OUTPUT
-
-  check-release-fabricator:
-    name: Check for existing release (fabricator)
-    needs: [get-version-fabricator]
-    runs-on: ubuntu-26.04
-    outputs:
-      exists: ${{ steps.release-exists.outputs.result }}
-    steps:
-      - name: Find existing release if it exists
-        id: release-exists
-        uses: actions/github-script@v9
-        with:
-          result-encoding: string
-          script: |
-            return github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: 'fabricator/${{ needs.get-version-fabricator.outputs.version }}',
-            }).then(() => 'true').catch(() => 'false');
-
-      - name: Release `fabricator/${{ needs.get-version-fabricator.outputs.version }}` already exists?
-        run: echo "${{ steps.release-exists.outputs.result }}"
-
-  check-release-fabricator-adapter-typebox-v0:
-    name: Check for existing release (fabricator-adapter-typebox-v0)
-    needs: [get-version-fabricator-adapter-typebox-v0]
-    runs-on: ubuntu-26.04
-    outputs:
-      exists: ${{ steps.release-exists.outputs.result }}
-    steps:
-      - name: Find existing release if it exists
-        id: release-exists
-        uses: actions/github-script@v9
-        with:
-          result-encoding: string
-          script: |
-            return github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: 'fabricator-adapter-typebox-v0/${{ needs.get-version-fabricator-adapter-typebox-v0.outputs.version }}',
-            }).then(() => 'true').catch(() => 'false');
-
-      - name: Release `fabricator-adapter-typebox-v0/${{ needs.get-version-fabricator-adapter-typebox-v0.outputs.version }}` already exists?
-        run: echo "${{ steps.release-exists.outputs.result }}"
-
-  check-release-fabricator-extension-faker-v10:
-    name: Check for existing release (fabricator-extension-faker-v10)
-    needs: [get-version-fabricator-extension-faker-v10]
-    runs-on: ubuntu-26.04
-    outputs:
-      exists: ${{ steps.release-exists.outputs.result }}
-    steps:
-      - name: Find existing release if it exists
-        id: release-exists
-        uses: actions/github-script@v9
-        with:
-          result-encoding: string
-          script: |
-            return github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: 'fabricator-extension-faker-v10/${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}',
-            }).then(() => 'true').catch(() => 'false');
-
-      - name: Release `fabricator-extension-faker-v10/${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}` already exists?
-        run: echo "${{ steps.release-exists.outputs.result }}"
-
-  check-release-fabricator-census:
-    name: Check for existing release (fabricator-census)
-    needs: [get-version-fabricator-census]
-    runs-on: ubuntu-26.04
-    outputs:
-      exists: ${{ steps.release-exists.outputs.result }}
-    steps:
-      - name: Find existing release if it exists
-        id: release-exists
-        uses: actions/github-script@v9
-        with:
-          result-encoding: string
-          script: |
-            return github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: 'fabricator-census/${{ needs.get-version-fabricator-census.outputs.version }}',
-            }).then(() => 'true').catch(() => 'false');
-
-      - name: Release `fabricator-census/${{ needs.get-version-fabricator-census.outputs.version }}` already exists?
-        run: echo "${{ steps.release-exists.outputs.result }}"
+  ##
+  # A package that depends on another package in this repo publishes after it.
+  # Its dependency range may have a lower bound equal to the version this same
+  # push releases, and JSR resolves that range against npm when it publishes.
+  # `publish.yml` ends only once the new version is visible on npm.
+  #
+  # A job whose `needs` was skipped is skipped too, unless its `if` says
+  # otherwise, and a dependency's publish is skipped whenever it has no new
+  # version. `!cancelled() && !failure()` replaces the implicit `success()`:
+  # it still runs after a skipped publish, and still stops after a failed
+  # build, test, or publish.
+  ##
 
   publish-fabricator:
-    name: Publish (fabricator)
-    if: ${{ needs.check-release-fabricator.outputs.exists == 'false' }}
+    name: Publish (`fabricator`)
+    if: ${{ needs.version-fabricator.outputs.exists == 'false' }}
     uses: ./.github/workflows/publish.yml
     needs:
-      - build
-      - test
-      - get-version-fabricator
-      - check-release-fabricator
+      - build-fabricator
+      - test-fabricator
+      - version-fabricator
     permissions:
       actions: read
       attestations: write
@@ -215,33 +239,21 @@ jobs:
       id-token: write
     with:
       package: fabricator
-      version: ${{ needs.get-version-fabricator.outputs.version }}
-      build-run-id: ${{ needs.build.outputs.run-id }}
-
-  ##
-  # Every other package declares a peer range on `@ghostry/fabricator` whose
-  # lower bound may be the core version this same push releases, and JSR
-  # resolves that range against npm when it publishes. So each waits for
-  # `publish-fabricator`, which ends only once the new core version is
-  # visible on npm.
-  #
-  # A job whose `needs` was skipped is skipped too unless its `if` says
-  # otherwise, and `publish-fabricator` is skipped whenever core has no new
-  # version. `!cancelled() && !failure()` replaces the implicit `success()`:
-  # it still runs after a skipped core publish, and still stops after a failed
-  # build, test, or core publish.
-  ##
+      path: pkg/fabricator
+      version: ${{ needs.version-fabricator.outputs.version }}
+      tag: ${{ needs.version-fabricator.outputs.tag }}
+      release-name: fabricator ${{ needs.version-fabricator.outputs.version }}
+      build-run-id: ${{ needs.build-fabricator.outputs.run-id }}
 
   publish-fabricator-adapter-typebox-v0:
-    name: Publish (fabricator-adapter-typebox-v0)
-    if: ${{ !cancelled() && !failure() && needs.check-release-fabricator-adapter-typebox-v0.outputs.exists == 'false' }}
+    name: Publish (`fabricator-adapter-typebox-v0`)
+    if: ${{ !cancelled() && !failure() && needs.version-fabricator-adapter-typebox-v0.outputs.exists == 'false' }}
     uses: ./.github/workflows/publish.yml
     needs:
-      - build
-      - test
+      - build-fabricator-adapter-typebox-v0
+      - test-fabricator-adapter-typebox-v0
+      - version-fabricator-adapter-typebox-v0
       - publish-fabricator
-      - get-version-fabricator-adapter-typebox-v0
-      - check-release-fabricator-adapter-typebox-v0
     permissions:
       actions: read
       attestations: write
@@ -249,39 +261,21 @@ jobs:
       id-token: write
     with:
       package: fabricator-adapter-typebox-v0
-      version: ${{ needs.get-version-fabricator-adapter-typebox-v0.outputs.version }}
-      build-run-id: ${{ needs.build.outputs.run-id }}
-
-  publish-fabricator-extension-faker-v10:
-    name: Publish (fabricator-extension-faker-v10)
-    if: ${{ !cancelled() && !failure() && needs.check-release-fabricator-extension-faker-v10.outputs.exists == 'false' }}
-    uses: ./.github/workflows/publish.yml
-    needs:
-      - build
-      - test
-      - publish-fabricator
-      - get-version-fabricator-extension-faker-v10
-      - check-release-fabricator-extension-faker-v10
-    permissions:
-      actions: read
-      attestations: write
-      contents: write
-      id-token: write
-    with:
-      package: fabricator-extension-faker-v10
-      version: ${{ needs.get-version-fabricator-extension-faker-v10.outputs.version }}
-      build-run-id: ${{ needs.build.outputs.run-id }}
+      path: pkg/fabricator-adapter-typebox-v0
+      version: ${{ needs.version-fabricator-adapter-typebox-v0.outputs.version }}
+      tag: ${{ needs.version-fabricator-adapter-typebox-v0.outputs.tag }}
+      release-name: fabricator-adapter-typebox-v0 ${{ needs.version-fabricator-adapter-typebox-v0.outputs.version }}
+      build-run-id: ${{ needs.build-fabricator-adapter-typebox-v0.outputs.run-id }}
 
   publish-fabricator-census:
-    name: Publish (fabricator-census)
-    if: ${{ !cancelled() && !failure() && needs.check-release-fabricator-census.outputs.exists == 'false' }}
+    name: Publish (`fabricator-census`)
+    if: ${{ !cancelled() && !failure() && needs.version-fabricator-census.outputs.exists == 'false' }}
     uses: ./.github/workflows/publish.yml
     needs:
-      - build
-      - test
+      - build-fabricator-census
+      - test-fabricator-census
+      - version-fabricator-census
       - publish-fabricator
-      - get-version-fabricator-census
-      - check-release-fabricator-census
     permissions:
       actions: read
       attestations: write
@@ -289,5 +283,31 @@ jobs:
       id-token: write
     with:
       package: fabricator-census
-      version: ${{ needs.get-version-fabricator-census.outputs.version }}
-      build-run-id: ${{ needs.build.outputs.run-id }}
+      path: pkg/fabricator-census
+      version: ${{ needs.version-fabricator-census.outputs.version }}
+      tag: ${{ needs.version-fabricator-census.outputs.tag }}
+      release-name: fabricator-census ${{ needs.version-fabricator-census.outputs.version }}
+      build-run-id: ${{ needs.build-fabricator-census.outputs.run-id }}
+
+  publish-fabricator-extension-faker-v10:
+    name: Publish (`fabricator-extension-faker-v10`)
+    if: ${{ !cancelled() && !failure() && needs.version-fabricator-extension-faker-v10.outputs.exists == 'false' }}
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - build-fabricator-extension-faker-v10
+      - test-fabricator-extension-faker-v10
+      - version-fabricator-extension-faker-v10
+      - publish-fabricator
+      - publish-fabricator-adapter-typebox-v0
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+    with:
+      package: fabricator-extension-faker-v10
+      path: pkg/fabricator-extension-faker-v10
+      version: ${{ needs.version-fabricator-extension-faker-v10.outputs.version }}
+      tag: ${{ needs.version-fabricator-extension-faker-v10.outputs.tag }}
+      release-name: fabricator-extension-faker-v10 ${{ needs.version-fabricator-extension-faker-v10.outputs.version }}
+      build-run-id: ${{ needs.build-fabricator-extension-faker-v10.outputs.run-id }}

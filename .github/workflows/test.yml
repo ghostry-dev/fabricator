@@ -1,8 +1,21 @@
+# Managed by the @ghostry meta repo (.templates/workflows/generate.ts). Edit it
+# there and run `bun .scripts/sync.ts`; changes made here are overwritten.
 name: Test
 
 on:
   workflow_call:
     inputs:
+      package:
+        required: true
+        type: string
+        description: >-
+          The package's id: the repo name for a single-package repo, or its
+          directory name under `pkg/`. One job per package, so a package that
+          fails blocks only its own dependents and its own release.
+      path:
+        required: true
+        type: string
+        description: The package directory relative to the repo root (`.` or `pkg/<id>`).
       build-run-id:
         required: true
         type: string
@@ -26,7 +39,13 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Download the fabricator build
+      ##
+      # Suites resolve packages through built output rather than source, so
+      # the package's own `dist` has to be in place, and so does the `dist`
+      # of every in-repo package it depends on.
+      #
+      - name: Download `@ghostry/fabricator`
+        if: contains(fromJSON('["fabricator-adapter-typebox-v0","fabricator-census","fabricator-extension-faker-v10"]'), inputs.package)
         uses: actions/download-artifact@v8
         with:
           name: pkg-fabricator
@@ -35,7 +54,8 @@ jobs:
           run-id: ${{ inputs.build-run-id }}
           repository: ${{ github.repository }}
 
-      - name: Download the fabricator-adapter-typebox-v0 build
+      - name: Download `@ghostry/fabricator-adapter-typebox-v0`
+        if: contains(fromJSON('["fabricator-extension-faker-v10"]'), inputs.package)
         uses: actions/download-artifact@v8
         with:
           name: pkg-fabricator-adapter-typebox-v0
@@ -44,36 +64,14 @@ jobs:
           run-id: ${{ inputs.build-run-id }}
           repository: ${{ github.repository }}
 
-      - name: Download the fabricator-extension-faker-v10 build
+      - name: Download `${{ inputs.package }}`
         uses: actions/download-artifact@v8
         with:
-          name: pkg-fabricator-extension-faker-v10
-          path: pkg/fabricator-extension-faker-v10/dist
+          name: pkg-${{ inputs.package }}
+          path: ${{ inputs.path }}/dist
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ inputs.build-run-id }}
           repository: ${{ github.repository }}
 
-      - name: Download the fabricator-census build
-        uses: actions/download-artifact@v8
-        with:
-          name: pkg-fabricator-census
-          path: pkg/fabricator-census/dist
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ inputs.build-run-id }}
-          repository: ${{ github.repository }}
-
-      - name: Test fabricator
-        working-directory: pkg/fabricator
-        run: bun run test
-
-      - name: Test fabricator-adapter-typebox-v0
-        working-directory: pkg/fabricator-adapter-typebox-v0
-        run: bun run test
-
-      - name: Test fabricator-extension-faker-v10
-        working-directory: pkg/fabricator-extension-faker-v10
-        run: bun run test
-
-      - name: Test fabricator-census
-        working-directory: pkg/fabricator-census
-        run: bun run test
+      - name: Test
+        run: bun --cwd=${{ inputs.path }} run test
