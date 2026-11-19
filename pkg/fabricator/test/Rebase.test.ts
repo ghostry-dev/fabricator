@@ -2,7 +2,11 @@ import { expect, test } from "./index.ts";
 import { initialize } from "@ghostry/fabricator";
 
 function setup(salt: string) {
-  const instance = initialize({ salt });
+  /**
+   * `"derived"`: parity tests build two instances, and a wall clock captured a
+   * millisecond apart would draw differently.
+   */
+  const instance = initialize({ salt, clock: "derived" });
   const { T } = instance;
 
   /** `name` is uppercased by a later `.refine()` that reads the original. */

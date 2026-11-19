@@ -244,8 +244,9 @@ test("`.extend` after a `.refine()` replaced a field changes only its current ve
   });
 });
 test("a compute field replacing its own key reads that field's original draw", () => {
-  const plain = initialize({ salt: "compute-replace" });
-  const refined = initialize({ salt: "compute-replace" });
+  /** `"derived"`, so the two instances share a clock as well as a salt. */
+  const plain = initialize({ salt: "compute-replace", clock: "derived" });
+  const refined = initialize({ salt: "compute-replace", clock: "derived" });
 
   const shape = (T: typeof plain.T) =>
     T.object({
