@@ -35,6 +35,32 @@ export function stageOf(
 }
 
 /**
+ * The index of the earliest stage with an entry for `key`, or `-1`: the version
+ * every later one replaced, which `.rebase()` replaces.
+ */
+export function firstStageOf(
+  stages: ReadonlyArray<object>,
+  key: string,
+): number {
+  return stages.findIndex((stage) => has(stage, key));
+}
+
+/**
+ * Every key with an entry in `stages`: each of `order` (the visible keys), then
+ * each hidden one in stage order.
+ */
+export function stageKeys(
+  stages: Stages,
+  order: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  const keys = new Set(order);
+  for (const stage of stages) {
+    for (const key of Object.keys(stage)) keys.add(key);
+  }
+  return [...keys];
+}
+
+/**
  * The fields an entry reads: a compute field's `dependencies`
  * (`compute/Types.ts`), unless `.override()` fixed its value, in which case its
  * resolver never runs. Every other entry reads nothing.
@@ -74,6 +100,22 @@ export function withEntries(stages: Stages, entries: Definition): Stages {
   for (const [key, entry] of Object.entries(entries)) {
     const at = stageOf(next, key);
     put(next[at === -1 ? next.length - 1 : at]!, key, entry);
+  }
+
+  return next;
+}
+
+/**
+ * `entries` written over each key's earliest version where it stands
+ * (`.rebase()`), so every compute field reading that version, including one
+ * that replaced the key, reads the new entry. Later versions are untouched.
+ * Every key must already have an entry.
+ */
+export function withOriginals(stages: Stages, entries: Definition): Stages {
+  const next = stages.map((stage) => ({ ...stage }));
+
+  for (const [key, entry] of Object.entries(entries)) {
+    put(next[firstStageOf(next, key)]!, key, entry);
   }
 
   return next;

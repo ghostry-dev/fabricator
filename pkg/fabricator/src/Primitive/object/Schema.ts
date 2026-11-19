@@ -21,6 +21,8 @@ import type {
   Extension,
   Fabricated,
   Override,
+  Rebase,
+  Rebased,
   Refinement,
 } from "./Types.ts";
 
@@ -47,6 +49,17 @@ export interface Schema<
   override: (
     override: Override<$Definition>,
   ) => Schema<$Definition, $Adaptations>;
+
+  /**
+   * Replace each named field's original version — the one every `.refine()`
+   * since read, or replaced from — with the given schema: a reverse override.
+   * `.override()` and `.extend()` reach only a field's current version, so this
+   * is how a finished schema's computed field gets a different input. See
+   * `Registry.ts`'s `rebase`.
+   */
+  rebase: <const $Rebase extends Definition & Rebase<$Definition, $Rebase>>(
+    fields: $Rebase,
+  ) => Schema<Rebased<$Definition, $Rebase>, $Adaptations>;
 
   /**
    * Layer an opaque production on this schema's existing `[Meta]` — carrying

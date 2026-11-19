@@ -13,7 +13,15 @@ import { isObjectComputeSchema } from "./compute/Schema.ts";
 import { isObjectOmittableSchema } from "./omittable/Schema.ts";
 import { isObjectOptionalSchema } from "./optional/Schema.ts";
 import { isObjectSchema, Schema } from "./Schema.ts";
-import { prune, toDefinition, withEntries, type Stages } from "./Stages.ts";
+import {
+  firstStageOf,
+  prune,
+  stageKeys,
+  toDefinition,
+  withEntries,
+  withOriginals,
+  type Stages,
+} from "./Stages.ts";
 import type {
   Definition,
   PlainFields,
@@ -30,13 +38,14 @@ function normalizeDefinition<$Definition extends Definition>(
 }
 
 /**
- * {@link normalizeDefinition} for `T.object(...)` and `.extend(...)`, which take
- * ordinary fields only. A compute field reads the object as of the `.refine()`
- * stage that minted it, so it can only enter through that stage.
+ * {@link normalizeDefinition} for `T.object(...)`, `.extend(...)`, and
+ * `.rebase(...)`, which take ordinary fields only. A compute field reads the
+ * object as of the `.refine()` stage that minted it, so it can only enter
+ * through that stage.
  */
 function normalizeFields<$Definition extends Definition>(
   definition: $Definition,
-  operation: "object" | "extend",
+  operation: "object" | "extend" | "rebase",
 ): $Definition {
   const normalized = normalizeDefinition(definition);
   for (const [key, entry] of Object.entries(normalized)) {
@@ -115,6 +124,39 @@ function make<
       return make<any, $Adaptations>(
         [...stages, refinement],
         appendKeys(order, Object.keys(refinement)),
+        adaptations,
+      );
+    },
+
+    /**
+     * A reverse override: each named field's earliest version is replaced where
+     * it stands (`withOriginals`), whatever it was, so every compute field
+     * reading it follows — a `.refine()` that replaced the key included — and
+     * later versions stay. A schema that is finished can still have a computed
+     * field's input changed this way, which `.override()` and `.extend()` (the
+     * current version) cannot.
+     */
+    rebase: (fields) => {
+      const originals = normalizeFields(fields, "rebase");
+
+      /**
+       * A hidden key counts: `T.pick`/`T.omit` keep it because a kept compute
+       * field reads it, and that input is what `.rebase()` is for.
+       */
+      for (const key of Object.keys(originals)) {
+        if (firstStageOf(stages, key) === -1) {
+          throw new FabricatorError.UnknownFieldError(
+            key,
+            stageKeys(stages, order),
+            "rebase",
+          );
+        }
+      }
+
+      /** `any`, as in `extend`. */
+      return make<any, $Adaptations>(
+        withOriginals(stages, originals),
+        order,
         adaptations,
       );
     },

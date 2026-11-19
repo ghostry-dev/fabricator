@@ -328,9 +328,9 @@ export namespace FabricatorError {
 
   /**
    * A key names a field the object schema does not define — most often a typo,
-   * which is why the known fields are listed. One failure reached from four
-   * places: `.override()`, `T.pick`, `T.omit`, and a compute field's
-   * `.from([...])`, told apart by `operation`.
+   * which is why the known fields are listed. One failure reached from five
+   * places: `.override()`, `.rebase()`, `T.pick`, `T.omit`, and a compute
+   * field's `.from([...])`, told apart by `operation`.
    */
   export class UnknownFieldError extends FabricatorError {
     constructor(
@@ -348,7 +348,12 @@ export namespace FabricatorError {
       /**
        * What named the unknown field, worded to read as the message's verb.
        */
-      public readonly operation: "override" | "pick" | "omit" | "compute from",
+      public readonly operation:
+        | "override"
+        | "pick"
+        | "omit"
+        | "compute from"
+        | "rebase",
     ) {
       super();
       this.name = "@ghostry/fabricator:UnknownFieldError";
@@ -361,11 +366,18 @@ export namespace FabricatorError {
     }
   }
 
+  /** How `ComputeOutsideRefineError` names each place. */
+  const PLACES = {
+    object: "T.object",
+    extend: ".extend",
+    rebase: ".rebase",
+  } as const;
+
   /**
    * A `.refine()`-computed field placed in an object some other way: in
-   * `T.object(...)` or returned from `.extend(...)`. A computed field reads the
-   * object as of the `.refine()` stage that created it, so it only exists
-   * inside that stage.
+   * `T.object(...)`, or passed to `.extend(...)` or `.rebase(...)`. A computed
+   * field reads the object as of the `.refine()` stage that created it, so it
+   * only exists inside that stage.
    */
   export class ComputeOutsideRefineError extends FabricatorError {
     constructor(
@@ -377,12 +389,12 @@ export namespace FabricatorError {
       /**
        * Where it was placed.
        */
-      public readonly operation: "object" | "extend",
+      public readonly operation: "object" | "extend" | "rebase",
     ) {
       super();
       this.name = "@ghostry/fabricator:ComputeOutsideRefineError";
       this.message =
-        `Cannot place a computed field in \`${operation === "object" ? "T.object" : ".extend"}(...)\`: "${field}". `
+        `Cannot place a computed field in \`${PLACES[operation]}(...)\`: "${field}". `
         + "Add computed fields with `.refine(({ compute }) => ...)`.";
     }
   }

@@ -100,6 +100,77 @@ export type Extension<
 };
 
 /**
+ * Whether every compute entry of `$Definition` reading `$Key` — its own entry
+ * included, which reads the version `.rebase()` replaces — can take `$Value`
+ * for it. The type does not say which version each one reads, so one reading a
+ * later version, whose type a `.refine()` changed, constrains it too.
+ */
+type ReadersAccept<
+  $Definition extends Definition,
+  $Key extends PropertyKey,
+  $Value,
+> = false extends {
+  [$R in keyof $Definition]: $Key extends keyof ReaderInput<$Definition[$R]>
+    ? [$Value] extends [ReaderInput<$Definition[$R]>[$Key]]
+      ? true
+      : false
+    : true;
+}[keyof $Definition]
+  ? false
+  : true;
+
+/**
+ * Every key some compute entry of `$Definition` reads, its own key included.
+ * Unlike {@link ReadKeys}, this reaches a hidden key a visible compute entry
+ * reads, which `$Definition` itself no longer names.
+ */
+type InputKeys<$Definition extends Definition> = {
+  [$K in keyof $Definition]: keyof ReaderInput<$Definition[$K]>;
+}[keyof $Definition];
+
+/**
+ * What `.rebase(...)` may take: {@link PlainFields} naming only visible keys and
+ * keys a visible compute entry reads (hidden ones included), each of a type
+ * every compute entry reading that key can take.
+ */
+export type Rebase<
+  $Definition extends Definition,
+  $Rebase extends Definition,
+> = {
+  [$K in keyof $Rebase]: IsCompute<$Rebase[$K]> extends true
+    ? ComputeOutsideRefine
+    : $K extends keyof $Definition | InputKeys<$Definition>
+      ? ReadersAccept<$Definition, $K, FabricatedBy<$Rebase[$K]>> extends true
+        ? $Rebase[$K]
+        : `"${$K & string}" is read by a computed field, so it must keep its type`
+      : `"${$K & string}" is not a field of this object`;
+};
+
+/**
+ * The definition `.rebase(...)` produces. It replaces each named key's earliest
+ * version, so the visible entry changes only when that was the current one:
+ *
+ * - not a compute entry: no `.refine()` replaced it, so it was the only version,
+ *   and the rebased entry takes its place;
+ * - a compute entry reading its own key: it replaced an earlier version it still
+ *   reads, which is the one rebased, so it stays;
+ * - any other compute entry: whether an earlier version survived depends on what
+ *   else read it, which the type cannot see, so it is either.
+ */
+export type Rebased<
+  $Definition extends Definition,
+  $Rebase extends Definition,
+> = {
+  [$K in keyof $Definition]: $K extends keyof $Rebase
+    ? IsCompute<$Definition[$K]> extends true
+      ? $K extends keyof ReaderInput<$Definition[$K]>
+        ? $Definition[$K]
+        : $Definition[$K] | $Rebase[$K]
+      : $Rebase[$K]
+    : $Definition[$K];
+};
+
+/**
  * Every `object.omittable`- or `object.optional`-kind field's key, so
  * `Fabricated` can mark exactly those `?:` instead of required — matching
  * runtime, where a field whose roll lands on omission never has its key appear
