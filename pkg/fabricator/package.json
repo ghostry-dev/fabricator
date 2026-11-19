@@ -32,7 +32,6 @@
   "imports": {
     "#stack": {
       "types": "./src/Instance/Stack/Async.ts",
-      "deno": "./src/Instance/Stack/Async.ts",
       "node": "./dist/esm/Instance/Stack/Async.js",
       "bun": "./dist/esm/Instance/Stack/Async.js",
       "default": "./dist/esm/Instance/Stack/Sync.js"

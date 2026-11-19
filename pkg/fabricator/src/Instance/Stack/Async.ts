@@ -4,11 +4,15 @@ import { toVisible } from "./Visible.ts";
 
 /**
  * The asynchronous carrier, and the **only** module in this package importing
- * anything from `node:`. Nothing imports it directly: `Instance/Core.ts`
- * imports `#stack`, whose `node`/`bun`/`deno` conditions (`package.json`)
- * resolve here while `default` resolves to `./sync.ts`. That is what keeps the
- * package importable on a runtime with no `node:async_hooks` while every
- * runtime that has one gets async-safe `wrap` with nothing to configure.
+ * anything from `node:`. Nothing imports it directly: `src/index.ts` imports
+ * `#stack`, whose `node`/`bun` conditions (`package.json`) resolve here while
+ * `default` resolves to `./Sync.ts`. That is what keeps the package importable
+ * on a runtime with no `node:async_hooks` while every runtime that has one gets
+ * async-safe `wrap` with nothing to configure. Deno reaches this file both ways
+ * it can install the package: from npm through the `node` condition (built
+ * output, under `dist/`), and from JSR through `jsr.json`'s import map, which
+ * resolves `#stack` here when the package is published. A `deno` condition in
+ * `package.json` would serve both, but npm ships no `src/`.
  *
  * The store holds the whole open chain, not one `Frame`: `run` _replaces_ the
  * store for the duration of `block`, so `enter` rebuilds the chain with the new

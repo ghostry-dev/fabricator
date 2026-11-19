@@ -7,5 +7,6 @@
     "./adapting": "./src/adapting.ts",
     "./harnessing": "./src/harnessing.ts"
   },
-  "publish": { "exclude": ["test", "src/playground.ts"] }
+  "publish": { "exclude": ["test", "src/playground.ts"] },
+  "imports": { "#stack": "./src/Instance/Stack/Async.ts" }
 }
