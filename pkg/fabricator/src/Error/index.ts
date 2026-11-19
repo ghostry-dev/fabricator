@@ -261,17 +261,19 @@ export namespace FabricatorError {
   }
 
   /**
-   * A `.refine()`-computed field fabricated on its own. A computed field's
-   * value is derived from its sibling fields, so there is nothing to resolve
-   * against outside the object that owns it.
+   * A `.refine()`-computed field built or fabricated outside the object that
+   * owns it: placed in an array, tuple, or any other position, or a built
+   * field's `.fabricate()` called on its own. A computed field's value is
+   * derived from its sibling fields, so there is nothing to resolve against
+   * anywhere else.
    */
   export class DetachedComputeError extends FabricatorError {
     constructor() {
       super();
       this.name = "@ghostry/fabricator:DetachedComputeError";
       this.message =
-        "A `.refine()`-computed field can only be fabricated as part of its "
-        + "parent object, which supplies the already-fabricated fields its "
+        "A `.refine()`-computed field can only be built and fabricated as a "
+        + "field of the object that owns it, which supplies the fields its "
         + "resolver reads.";
     }
   }
@@ -360,24 +362,28 @@ export namespace FabricatorError {
   }
 
   /**
-   * Compute fields whose declared dependencies form a loop, so none of them can
-   * resolve first. A compute field only names fields that already exist, but a
-   * later `.refine()` or `.extend()` can replace one of those with a compute
-   * field that reads it back. Thrown by that call, while building the schema,
-   * never at fabrication.
+   * A `.refine()`-computed field placed in an object some other way: in
+   * `T.object(...)` or returned from `.extend(...)`. A computed field reads the
+   * object as of the `.refine()` stage that created it, so it only exists
+   * inside that stage.
    */
-  export class ComputeDependencyCycleError extends FabricatorError {
+  export class ComputeOutsideRefineError extends FabricatorError {
     constructor(
       /**
-       * The compute fields on the loop, in the order they were reached.
+       * The field the computed field was placed under.
        */
-      public readonly fields: ReadonlyArray<string>,
+      public readonly field: string,
+
+      /**
+       * Where it was placed.
+       */
+      public readonly operation: "object" | "extend",
     ) {
       super();
-      this.name = "@ghostry/fabricator:ComputeDependencyCycleError";
+      this.name = "@ghostry/fabricator:ComputeOutsideRefineError";
       this.message =
-        "Computed fields depend on each other in a cycle: "
-        + `${fields.map((k) => `"${k}"`).join(" -> ")}.`;
+        `Cannot place a computed field in \`${operation === "object" ? "T.object" : ".extend"}(...)\`: "${field}". `
+        + "Add computed fields with `.refine(({ compute }) => ...)`.";
     }
   }
 

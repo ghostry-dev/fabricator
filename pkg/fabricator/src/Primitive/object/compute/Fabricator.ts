@@ -37,14 +37,13 @@ export function isObjectComputeFabricator(
 /**
  * Turn an `object.compute` Schema into a live Fabricator. Unlike every other
  * kind, there's nothing of `source` to build here — a computed field's value
- * comes entirely from `resolve`, given the rest of the object. The node still
- * records `trace` so it can be rebuilt from a parent field's captured trace;
- * `.fabricate()` without the parent object throws `DetachedComputeError`.
+ * comes entirely from `resolve`, given the fields it reads. Only an `object`'s
+ * stage entries are built this way (`Constructor.ts`'s `buildField`); anywhere
+ * else is `DetachedComputeError` at build time, and so is `.fabricate()`
+ * without the fields.
  *
- * The parent hands over everything it has fabricated so far; a `narrowed` field
- * (`.from([...])`) passes its resolver only its `dependencies`, and only those
- * present, so an omitted dependency stays absent rather than becoming
- * `undefined`. Narrowing here keeps `object/Fabricator.ts` unaware of it.
+ * `object/Fabricator.ts` hands over exactly `[Meta].dependencies`, each at the
+ * version this field reads, so nothing is narrowed here.
  */
 export function Fabricator<
   $Fabricated extends PlainObject,
@@ -63,12 +62,7 @@ export function Fabricator<
       }
 
       const meta = schema[Meta];
-
-      const fabricated = meta.narrowed
-        ? narrow(params.fabricated, meta.dependencies)
-        : params.fabricated;
-
-      const resolved = meta.resolve({ fabricated });
+      const resolved = meta.resolve({ fabricated: params.fabricated });
 
       const sourceKind = meta.source[Kind];
       if (violatesKind(sourceKind, resolved)) {
@@ -81,15 +75,4 @@ export function Fabricator<
       return resolved;
     },
   };
-}
-
-function narrow<$Fabricated extends PlainObject>(
-  fabricated: $Fabricated,
-  dependencies: ReadonlyArray<string>,
-): $Fabricated {
-  const narrowed: PlainObject = {};
-  for (const key of dependencies) {
-    if (key in fabricated) narrowed[key] = fabricated[key];
-  }
-  return narrowed as $Fabricated;
 }

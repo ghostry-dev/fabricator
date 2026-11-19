@@ -66,10 +66,12 @@ function walk(node: any, draws: bigint, clock: number, limits: bigint[]): void {
 
   switch (node[Kind]) {
     case "object": {
-      const fields = { ...meta.definition, ...meta.hidden };
-      for (const field of Object.values<any>(fields)) {
-        if (Fixed in field) continue;
-        visit(field);
+      /** Every stage entry draws: hidden fields and earlier versions too. */
+      for (const stage of meta.stages) {
+        for (const field of Object.values<any>(stage)) {
+          if (Fixed in field) continue;
+          visit(field);
+        }
       }
       return;
     }

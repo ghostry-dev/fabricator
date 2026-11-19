@@ -173,7 +173,7 @@ test("a pinned clock reaches ProduceContext and T.date.past, and appears on the 
   expect(viaProduce.trace.clock).toBe(clock);
 });
 
-test("an object.compute field rebuilds from its trace but throws DetachedComputeError on fabricate", () => {
+test("an object.compute field cannot be rebuilt from its trace outside its object", () => {
   const { T, Fabricator } = initialize({
     salt: "trace-detached-compute",
     clock: "derived",
@@ -186,8 +186,7 @@ test("an object.compute field rebuilds from its trace but throws DetachedCompute
   const field = built[Children].b!;
   const fieldSchema = built.schema[Meta].definition.b;
 
-  const replayed = new Fabricator(fieldSchema, field.trace);
-  expect(() => replayed.fabricate()).toThrow(
+  expect(() => new Fabricator(fieldSchema, field.trace)).toThrow(
     FabricatorError.DetachedComputeError,
   );
   expect(built.fabricate().b).toBe(2);

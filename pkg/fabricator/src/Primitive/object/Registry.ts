@@ -2,10 +2,8 @@ import { mergeAdaptations } from "../../Adapter/Core.ts";
 import type { Adaptations } from "../../Adapter/Types.ts";
 import { FabricatorError } from "../../Error/index.ts";
 import { toSchema, toValueKind, violatesKind } from "../../Schema/Core.ts";
-import type { AnySchema } from "../../Schema/Types.ts";
 import { Adaptation, Fixed, Kind, Meta, Omitted } from "../../Types.ts";
 import { isPlainObject } from "../../Utility/Core.ts";
-import { shallowMerge } from "../../Utility/ShallowMerge.ts";
 import { type PlainObject } from "../../Utility/Types.ts";
 import { isNullableSchema } from "../nullable/Schema.ts";
 import { isNullishSchema } from "../nullish/Schema.ts";
@@ -15,9 +13,10 @@ import { isObjectComputeSchema } from "./compute/Schema.ts";
 import { isObjectOmittableSchema } from "./omittable/Schema.ts";
 import { isObjectOptionalSchema } from "./optional/Schema.ts";
 import { isObjectSchema, Schema } from "./Schema.ts";
+import { prune, toDefinition, withEntries, type Stages } from "./Stages.ts";
 import type {
   Definition,
-  Refinements,
+  PlainFields,
   Subsettable,
   Meta as ThisMeta,
 } from "./Types.ts";
@@ -31,77 +30,100 @@ function normalizeDefinition<$Definition extends Definition>(
 }
 
 /**
- * Drop every hidden field that `added` now defines visibly — the visible entry
- * replaces it, and a compute field depending on that key reads the new one —
- * and drop `hidden` itself once nothing is left in it, so `[Meta]` never
- * carries an empty one.
+ * {@link normalizeDefinition} for `T.object(...)` and `.extend(...)`, which take
+ * ordinary fields only. A compute field reads the object as of the `.refine()`
+ * stage that minted it, so it can only enter through that stage.
  */
-function unhide(
-  hidden: Definition | undefined,
-  added: Definition,
-): Definition | undefined {
-  if (!hidden) return undefined;
+function normalizeFields<$Definition extends Definition>(
+  definition: $Definition,
+  operation: "object" | "extend",
+): $Definition {
+  const normalized = normalizeDefinition(definition);
+  for (const [key, entry] of Object.entries(normalized)) {
+    if (isObjectComputeSchema(entry)) {
+      throw new FabricatorError.ComputeOutsideRefineError(key, operation);
+    }
+  }
+  return normalized;
+}
 
-  const remaining = Object.fromEntries(
-    Object.entries(hidden).filter(([key]) => !(key in added)),
-  );
-  return Object.keys(remaining).length > 0 ? remaining : undefined;
+/** `order` followed by each of `keys` it does not already have. */
+function appendKeys(
+  order: ReadonlyArray<string>,
+  keys: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  const known = new Set(order);
+  return [...order, ...keys.filter((key) => !known.has(key))];
 }
 
 /**
+ * Every object Schema is built here — `T.object`, each chained method,
+ * `T.pick`/`T.omit`, and `rehydrate` — from its `stages` (`Stages.ts`) and the
+ * visible key order. `prune` drops every entry nothing reads, and `definition`
+ * is derived from what is left, so the two never disagree.
+ *
  * `adaptations` is threaded through every branch rather than living on the
  * schema object: `extend`/`refine`/`override` each rebuild via `make`, so a map
  * left on the object alone would be dropped by the next chained call
- * (`Schema.ts`'s factory adds `as` and `satisfies` for this reason). `hidden`
- * (`Types.ts`'s `Meta`) is threaded the same way.
+ * (`Schema.ts`'s factory adds `as` and `satisfies` for this reason).
  *
- * Every object Schema is built here — `T.object`, each chained method,
- * `T.pick`/`T.omit`, and `rehydrate` — which is what makes it the one place
- * `assertAcyclic` needs to run for no cyclic Schema to exist at all.
+ * `.extend()` and `.override()` write each field where it stands
+ * (`withEntries`), so every compute field reading it follows. `.refine()`
+ * appends a stage: a key it replaces gets a new version, and the replacing
+ * field and every earlier compute field keep reading the previous one. A
+ * compute field only reads earlier stages, so no cycle can form.
  */
 function make<
   $Definition extends Definition,
   $Adaptations extends Adaptations = {},
 >(
-  definition: $Definition,
-  refinements: Refinements,
+  allStages: Stages,
+  order: ReadonlyArray<string>,
   adaptations?: $Adaptations | undefined,
-  hidden?: Definition | undefined,
 ): Schema<$Definition, $Adaptations> {
-  assertAcyclic({ ...hidden, ...definition });
+  const stages = prune(allStages, order);
+  const definition = toDefinition(stages, order) as $Definition;
 
   const schema: Schema<$Definition, $Adaptations> = Schema({
     [Kind]: "object",
-    [Meta]: hidden
-      ? { definition, refinements, hidden }
-      : { definition, refinements },
+    [Meta]: { definition, stages },
     ...(adaptations ? { [Adaptation]: adaptations } : undefined),
 
     extend: (extender) => {
-      const extension = normalizeDefinition(extender({ base: definition }));
-      const merged = shallowMerge(definition, extension);
-      return make(merged, refinements, adaptations, unhide(hidden, extension));
+      const extension = normalizeFields(
+        extender({ base: definition }),
+        "extend",
+      );
+      /**
+       * `any`: the merged definition's type is `Schema.ts`'s `ShallowMerge`,
+       * which nothing here can name, and `stages` carries no type to infer it
+       * from.
+       */
+      return make<any, $Adaptations>(
+        withEntries(stages, extension),
+        appendKeys(order, Object.keys(extension)),
+        adaptations,
+      );
     },
 
     refine: (refiner) => {
-      const compute = computer<$Definition>(Object.keys(definition));
+      const compute = computer<$Definition>(order);
       const refinement = normalizeDefinition(
         refiner({ base: schema, compute }),
       );
-      return make(
-        shallowMerge(definition, refinement),
-        [...refinements, refinement],
+      /** `any`, as in `extend`. */
+      return make<any, $Adaptations>(
+        [...stages, refinement],
+        appendKeys(order, Object.keys(refinement)),
         adaptations,
-        unhide(hidden, refinement),
       );
     },
 
     adapt: (adapter, produce) =>
-      make(
-        definition,
-        refinements,
+      make<$Definition, any>(
+        stages,
+        order,
         mergeAdaptations(adaptations, adapter, produce),
-        hidden,
       ),
 
     /**
@@ -111,11 +133,13 @@ function make<
      * `make`. A nested `object`-kind field recurses into its own
      * `.override(...)`, so deep-merging (and chained
      * `.override(a).override(b)`, `b` winning on conflicts) falls out: each
-     * call only replaces the definition entries its own keys name, and prior
-     * overrides already live in `definition`.
+     * call only replaces the entries its own keys name, and prior overrides
+     * already live in `definition`. Each fixed entry replaces the field's
+     * current version where it stands, so compute fields reading it read the
+     * fixed value.
      */
     override: (override) => {
-      const overridden: PlainObject = { ...definition };
+      const overridden: PlainObject = {};
 
       for (const key of Object.keys(override)) {
         const fieldSchema = definition[key];
@@ -243,7 +267,11 @@ function make<
         overridden[key] = { ...toSchema(fieldSchema), [Fixed]: value };
       }
 
-      return make(overridden as $Definition, refinements, adaptations, hidden);
+      return make<$Definition, $Adaptations>(
+        withEntries(stages, overridden as Definition),
+        order,
+        adaptations,
+      );
     },
   });
 
@@ -270,11 +298,10 @@ export function rehydrate<
   [Meta]: ThisMeta<$Definition>;
   readonly [Adaptation]?: $Adaptations;
 }): Schema<$Definition, $Adaptations> {
-  const rehydrated = make(
-    schema[Meta].definition,
-    schema[Meta].refinements,
+  const rehydrated = make<$Definition, $Adaptations>(
+    schema[Meta].stages,
+    Object.keys(schema[Meta].definition),
     schema[Adaptation],
-    schema[Meta].hidden,
   );
   return schema[Meta].produce
     ? rehydrated.as(schema[Meta].produce)
@@ -282,108 +309,24 @@ export function rehydrate<
 }
 
 /**
- * The fields a field entry needs fabricated beside it. A compute field needs
- * its `dependencies` (`compute/Types.ts`), unless `.override()` fixed its
- * value, in which case its resolver never runs. Every other entry needs
- * nothing.
- */
-function dependenciesOf(entry: AnySchema): ReadonlyArray<string> {
-  if (Fixed in entry) return [];
-  if (!isObjectComputeSchema(entry)) return [];
-  return entry[Meta].dependencies;
-}
-
-/**
- * Throw `ComputeDependencyCycleError` if compute fields in `all` (visible and
- * hidden alike) depend on each other in a loop. A dependency only ever names a
- * field that exists when the compute field is minted, but a later
- * `.refine()`/`.extend()` can replace that field with a compute field reading
- * it back. A `[Fixed]` compute field breaks a loop (`dependenciesOf`), since it
- * resolves in phase 1 without reading anything. Checked at build time so
- * `object/Fabricator.ts`'s `resolveComputed` can assume there is none.
- */
-function assertAcyclic(all: Definition): void {
-  const visiting: string[] = [];
-  const visited = new Set<string>();
-
-  const visit = (key: string): void => {
-    if (visited.has(key)) return;
-
-    const entry = all[key];
-    if (!entry) return;
-
-    if (visiting.includes(key)) {
-      const loop = visiting.slice(visiting.indexOf(key));
-      throw new FabricatorError.ComputeDependencyCycleError([...loop, key]);
-    }
-
-    visiting.push(key);
-    for (const dependency of dependenciesOf(entry)) visit(dependency);
-    visiting.pop();
-
-    visited.add(key);
-  };
-
-  for (const key of Object.keys(all)) visit(key);
-}
-
-/**
- * Every key `kept` needs fabricated, `kept` included, following compute fields'
- * dependencies transitively through `all` (visible and hidden fields alike). A
- * dependency that `all` does not define is still collected, and simply matches
- * no entry.
- */
-function requiredKeys(
-  kept: ReadonlyArray<string>,
-  all: Definition,
-): ReadonlySet<string> {
-  const needed = new Set(kept);
-  const pending = [...kept];
-
-  while (pending.length > 0) {
-    const entry = all[pending.pop()!];
-    if (!entry) continue;
-
-    for (const dependency of dependenciesOf(entry)) {
-      if (needed.has(dependency)) continue;
-      needed.add(dependency);
-      pending.push(dependency);
-    }
-  }
-
-  return needed;
-}
-
-function selectEntries(
-  definition: Definition,
-  keys: ReadonlySet<string>,
-): Definition {
-  return Object.fromEntries(
-    Object.entries(definition).filter(([key]) => keys.has(key)),
-  );
-}
-
-/**
  * Shared body of `T.pick`/`T.omit` (`pick/Registry.ts`, `omit/Registry.ts`),
  * kept here because it rebuilds through `make`. A pure Schema → Schema
  * transform, like `.override()`: the result is an ordinary `object` Schema over
- * the kept fields, in source order. A dependency of a kept compute field that
- * is not itself kept moves to `[Meta].hidden` — fabricated, so the resolver can
- * read it, but never emitted. A dropped field nothing depends on is gone
- * entirely.
+ * the kept fields, in source order. `make`'s `prune` keeps every version a kept
+ * compute field reads, hidden — fabricated, so the resolver can read it, but
+ * never emitted — and drops everything else.
  *
  * The source's own `produce` (`.as(...)`) and whole-object `[Adaptation]` are
  * not carried: both describe the source's full shape, not this one. Field
  * entries are reused as they are, so a kept or hidden field's own adaptation
- * and `[Fixed]` override come along. `refinements` is filtered down to the kept
- * fields.
+ * and `[Fixed]` override come along.
  */
 export function subset(
   source: Subsettable,
   keys: ReadonlyArray<string>,
   operation: "pick" | "omit",
 ): Schema<any> {
-  const { definition, refinements, hidden } = source[Meta];
+  const { definition, stages } = source[Meta];
   const available = Object.keys(definition);
 
   for (const key of keys) {
@@ -401,24 +344,15 @@ export function subset(
         return !named.has(key);
     }
   });
-  const keptSet = new Set(kept);
 
-  const all: Definition = { ...hidden, ...definition };
-  const required = requiredKeys(kept, all);
-  const hiddenKeys = new Set(
-    Object.keys(all).filter((key) => required.has(key) && !keptSet.has(key)),
-  );
-
-  return make(
-    selectEntries(definition, keptSet),
-    refinements
-      .map((refinement) => selectEntries(refinement, keptSet))
-      .filter((refinement) => Object.keys(refinement).length > 0),
-    undefined,
-    hiddenKeys.size > 0 ? selectEntries(all, hiddenKeys) : undefined,
-  );
+  return make(stages, kept);
 }
 
-export default <const $Definition extends Definition>(
+export default <
+  const $Definition extends Definition & PlainFields<$Definition>,
+>(
   definition: $Definition,
-): Schema<$Definition> => make(normalizeDefinition(definition), []);
+): Schema<$Definition> => {
+  const fields = normalizeFields(definition, "object");
+  return make<$Definition>([fields], Object.keys(fields));
+};

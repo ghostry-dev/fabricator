@@ -176,6 +176,20 @@ describe("capacity(schema)", () => {
     expect(capacity(T.pick(schema, ["label"]))).toBe(BigInt(2));
   });
 
+  test("a field a compute field replaces still counts, unless it is fixed", () => {
+    const { T, capacity } = initialize({ salt: "capacity-replaced" });
+    const base = T.object({ code: T.unique.enum.uniform(["x", "y"]) });
+    const replace = (schema: typeof base) =>
+      schema.refine(({ compute }) => ({
+        code: compute(T.string).as(
+          ({ fabricated }) => `code ${fabricated.code}`,
+        ),
+      }));
+
+    expect(capacity(replace(base))).toBe(BigInt(2));
+    expect(capacity(replace(base.override({ code: "x" })))).toBeUndefined();
+  });
+
   test("leaves of every kind report their size", () => {
     const clock = new Date(1_700_000_000_000);
     const { T, capacity } = initialize({ salt: "capacity-kinds", clock });

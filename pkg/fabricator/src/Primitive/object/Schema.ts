@@ -18,6 +18,7 @@ import type {
   Core,
   Definition,
   Extender,
+  Extension,
   Fabricated,
   Override,
   Refinement,
@@ -35,7 +36,9 @@ export interface Schema<
   $Definition extends Definition = Definition,
   $Adaptations extends Adaptations = {},
 > extends Core<$Definition, $Adaptations> {
-  extend: <const $Extension extends Definition>(
+  extend: <
+    const $Extension extends Definition & Extension<$Definition, $Extension>,
+  >(
     extender: Extender<$Definition, $Extension>,
   ) => Schema<ShallowMerge<$Definition, $Extension>, $Adaptations>;
   refine: <const $Refinement extends Refinement<$Definition>>(
@@ -47,7 +50,7 @@ export interface Schema<
 
   /**
    * Layer an opaque production on this schema's existing `[Meta]` — carrying
-   * `definition`/`refinements` forward, not discarding them, so
+   * `definition`/`stages` forward, not discarding them, so
    * `extend`/`refine`/`override` keep working (they drop the custom producer
    * again, falling back to definition-based fabrication) and a later `.as(...)`
    * (or future validation of `produce`) still has the definition to check
@@ -91,10 +94,10 @@ export interface Schema<
 /**
  * Unlike every other kind, `adapt` is _not_ added here but by `Registry.ts`'s
  * `make` alongside `extend`/`refine`/`override`: those three rebuild from
- * `definition`/`refinements` rather than deriving from this object, so the
- * adaptation map has to be threaded through `make` itself or chaining one of
- * them would drop it (see `make`'s `adapt`). `as` and `satisfies` are the
- * methods this factory attaches, so they are what the parameter omits.
+ * `stages` rather than deriving from this object, so the adaptation map has to
+ * be threaded through `make` itself or chaining one of them would drop it (see
+ * `make`'s `adapt`). `as` and `satisfies` are the methods this factory
+ * attaches, so they are what the parameter omits.
  */
 export function Schema<
   $Definition extends Definition,

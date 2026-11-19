@@ -5,6 +5,7 @@ import type { AnySchema } from "../../Schema/Types.ts";
 import { Adaptation, Kind, Meta, Omitted } from "../../Types.ts";
 import { never } from "../../Utility/Core.ts";
 import type { PlainObject } from "../../Utility/Types.ts";
+import { toDefinition } from "../object/Stages.ts";
 import { toStatedSize } from "../record/Admits.ts";
 
 /**
@@ -118,16 +119,17 @@ function terminateAt(schema: any, path: ReadonlyArray<string>): AnySchema {
         return next;
       };
 
-      const definition = terminateFields(s[Meta].definition);
-      if (!s[Meta].hidden) return withMeta(s, { ...s[Meta], definition });
-
       /**
-       * A hidden field (`object/Types.ts`'s `Meta`) is dispatched exactly as a
-       * visible one is, so its `self` needs the same stop — or the same
-       * `UnterminableRecursiveError`.
+       * Every stage entry (`object/Stages.ts`) is dispatched, hidden fields and
+       * earlier versions included, so each one's `self` needs the same stop —
+       * or the same `UnterminableRecursiveError`.
        */
-      const hidden = terminateFields(s[Meta].hidden);
-      return withMeta(s, { ...s[Meta], definition, hidden });
+      const stages = s[Meta].stages.map(terminateFields);
+      return withMeta(s, {
+        ...s[Meta],
+        stages,
+        definition: toDefinition(stages, Object.keys(s[Meta].definition)),
+      });
     }
 
     case "tuple": {
@@ -237,8 +239,9 @@ function containsSelf(schema: any): boolean {
 
     case "object": {
       const s = schema as Primitive.object.Schema;
-      const all = { ...s[Meta].hidden, ...s[Meta].definition };
-      return Object.keys(all).some((key) => containsSelf(all[key]!));
+      return s[Meta].stages.some((stage) =>
+        Object.keys(stage).some((key) => containsSelf(stage[key]!)),
+      );
     }
 
     case "tuple": {

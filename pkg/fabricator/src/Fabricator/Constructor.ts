@@ -2,6 +2,7 @@ import { FabricatorError } from "../Error/index.ts";
 import { toEffectiveSource } from "../Instance/Stack/Visible.ts";
 import type { Ancestry, Stack } from "../Instance/Types.ts";
 import { Primitive } from "../Primitive/index.ts";
+import { stageOf } from "../Primitive/object/Stages.ts";
 import { isLayered, normalizeSalt, toRandomSource } from "../Random/index.ts";
 import type {
   ConstructionPins,
@@ -303,10 +304,13 @@ export function Constructor(
         );
         return Primitive.derive.Fabricator({ ...common, schema: s }, from);
       }
-      case "object.compute": {
-        const s = schema as Primitive.object.compute.Schema<any, any>;
-        return Primitive.object.compute.Fabricator({ ...common, schema: s });
-      }
+      /**
+       * Only an `object`'s stage entries are compute fields, and those are
+       * built by `buildField`. Anywhere else (an array element, a tuple slot, a
+       * replay from a field's trace) has no sibling fields to resolve against.
+       */
+      case "object.compute":
+        throw new FabricatorError.DetachedComputeError();
       case "object.omittable": {
         const s = schema as Primitive.object.omittable.Schema;
         const inner = make(
@@ -335,77 +339,37 @@ export function Constructor(
         const s = schema as Primitive.object.Schema;
 
         /**
-         * One loop for visible and hidden fields alike (`object/Types.ts`'s
-         * `Meta`), each at `[...path, key]`: a hidden field is dispatched
-         * exactly as it would be visibly, so `T.pick`/`T.omit` leave every
-         * remaining field on the stream it had in the source.
+         * Every entry of every stage (`object/Stages.ts`), each at `[...path,
+         * key]`: a hidden field is dispatched exactly as it would be visibly,
+         * so `T.pick`/`T.omit` leave every remaining field on the stream it had
+         * in the source. Every version of a key shares that path. Only a
+         * `.refine()` adds a second version, and it is a compute field, which
+         * draws nothing, so each earlier version keeps its stream too.
          */
-        const build = (
-          definition: Primitive.object.Definition,
-        ): Primitive.object.Fields => {
-          const fields: Primitive.object.Fields = {};
-
-          for (const key in definition) {
-            const fieldSchema = definition[key]!;
-            const fieldPath = [...path, key];
-
-            fields[key] = inline(() => {
-              if (Fixed in fieldSchema) {
-                /**
-                 * Still dispatched — not for stream-parity: path keying means
-                 * skipping a dispatch can't shift any sibling's stream. The
-                 * dispatch is only to detect, via the built Fabricator's own
-                 * `[Kind]`, whether this field was an `object.compute` field,
-                 * so an overridden compute field resolves immediately in phase
-                 * 1 like any ordinary field instead of deferring to phase 2
-                 * (see below).
-                 */
-                const built = make(fieldSchema, fieldPath, context);
-                const value = fieldSchema[Fixed];
-
-                if (Primitive.object.compute.isObjectComputeFabricator(built)) {
-                  /**
-                   * Reassigning `[Kind]` off "object.compute" keeps this field
-                   * out of `object/Core.ts`'s `fabricate()` phase-2 deferral —
-                   * an overridden compute field resolves immediately in phase
-                   * 1, exactly like an ordinary field. `[Meta]` is left as the
-                   * compute shape; nothing reads it off of a `fields` entry.
-                   *
-                   * Source kind is read off the built Fabricator — its `[Meta]`
-                   * is the compute shape, which the field Schema after
-                   * `toSchema` does not expose as `AnySchema`.
-                   */
-                  return {
-                    ...built,
-                    [Kind]: built[Meta].source[Kind],
-                    fabricate: () => value,
-                  };
-                }
-
-                return { ...built, fabricate: () => value };
-              }
-
-              return make(fieldSchema, fieldPath, context);
-            });
+        const stages = s[Meta].stages.map((stage) => {
+          const built: Primitive.object.Fields = {};
+          for (const key of Object.keys(stage)) {
+            built[key] = buildField(stage[key]!, [...path, key], context);
           }
+          return built;
+        });
 
-          return fields;
-        };
-
-        const fields = build(s[Meta].definition);
-        const hidden = s[Meta].hidden ? build(s[Meta].hidden) : {};
+        const fields: Primitive.object.Fields = {};
+        for (const key of Object.keys(s[Meta].definition)) {
+          fields[key] = stages[stageOf(s[Meta].stages, key)]![key]!;
+        }
 
         /**
          * `Primitive.object.rehydrate(s)`, not the bare `s`: `toSchema` (above)
          * has already dropped `extend`/`refine` from `s`, but the Fabricator
          * this produces still needs a real, composable Schema for its own
-         * `.schema` — rebuilt here from `s[Meta]`'s `definition`/`refinements`,
-         * the only place left that still has them.
+         * `.schema` — rebuilt here from `s[Meta].stages`, the only place left
+         * that still has them.
          */
         return Primitive.object.Fabricator(
           { ...common, schema: Primitive.object.rehydrate(s) },
           fields,
-          hidden,
+          stages,
         );
       }
 
@@ -415,6 +379,56 @@ export function Constructor(
           "construction",
         );
     }
+  }
+
+  /**
+   * One `object` stage entry (`object/Stages.ts`), built at `path`. A compute
+   * entry is built here directly, the one place it may be: `make`'s own
+   * `"object.compute"` case rejects it everywhere else.
+   *
+   * A `[Fixed]` entry is still dispatched, and only its `fabricate` is replaced
+   * with the fixed value. Path keying means the dispatch can't shift any
+   * sibling's stream.
+   */
+  function buildField(
+    fieldSchema: any,
+    fieldPath: ReadonlyArray<string>,
+    context: ConstructionContext,
+  ): Fabricator<any> {
+    fieldSchema =
+      Fixed in fieldSchema
+        ? { ...toSchema(fieldSchema), [Fixed]: fieldSchema[Fixed] }
+        : toSchema(fieldSchema);
+
+    if (fieldSchema[Kind] === "object.compute") {
+      const s = fieldSchema as Primitive.object.compute.Schema<any, any>;
+      const built = Primitive.object.compute.Fabricator({
+        algorithm: context.algorithm,
+        trace: context.toTrace(fieldPath, "object.compute"),
+        exhaustion: context.exhaustion,
+        schema: s,
+      });
+
+      if (!(Fixed in fieldSchema)) return built;
+
+      /**
+       * Reassigning `[Kind]` off "object.compute" keeps this field out of
+       * `object/Fabricator.ts`'s phase-2 deferral — an overridden compute field
+       * resolves immediately in phase 1, exactly like an ordinary field.
+       * `[Meta]` is left as the compute shape; nothing reads it off of a built
+       * field.
+       */
+      const value = fieldSchema[Fixed];
+      return { ...built, [Kind]: s[Meta].source[Kind], fabricate: () => value };
+    }
+
+    if (Fixed in fieldSchema) {
+      const built = make(fieldSchema, fieldPath, context);
+      const value = fieldSchema[Fixed];
+      return { ...built, fabricate: () => value };
+    }
+
+    return make(fieldSchema, fieldPath, context);
   }
 
   /**

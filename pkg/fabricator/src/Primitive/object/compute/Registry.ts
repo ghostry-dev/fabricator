@@ -24,7 +24,7 @@ function make<$Definition extends Definition>(
       ): Schema<$Fabricated, $Source> =>
         Schema({
           [Kind]: "object.compute",
-          [Meta]: { source, resolve, dependencies: base, narrowed: false },
+          [Meta]: { source, resolve, dependencies: base },
         }),
 
       from: <const $Keys extends ReadonlyArray<keyof $Definition & string>>(
@@ -50,7 +50,7 @@ function make<$Definition extends Definition>(
           ): Schema<$Narrowed, $Source> =>
             Schema({
               [Kind]: "object.compute",
-              [Meta]: { source, resolve, dependencies: keys, narrowed: true },
+              [Meta]: { source, resolve, dependencies: keys },
             }),
         };
       },

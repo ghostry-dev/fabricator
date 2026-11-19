@@ -451,3 +451,45 @@ test("a pinned clock reaches every T.recursive expansion", () => {
 
   expect(ats).toEqual([7000, 7000, 7000, 7000]);
 });
+
+test("a compute field replacing a field that holds `self` is terminated like that field", () => {
+  const { T, Fabricator } = initialize({ salt: "recursive-replaced" });
+
+  /** Children ordered by `value`, read from the original `children` draw. */
+  const Sorted = T.recursive((self) =>
+    T.object({
+      value: T.number.integer.whereby({ min: 0, max: 9 }),
+      children: T.array(self).whereby({ length: { max: 3 } }),
+    }).refine(({ compute }) => ({
+      children: compute(T.opaque((): Node[] => []))
+        .from(["children"])
+        /**
+         * `self` is not yet bound inside the body, so its element type is
+         * `never` here (see `Fabricated<$Schema>`'s `$Bindings`).
+         */
+        .as(({ fabricated }) =>
+          [...(fabricated.children as Node[])].sort(
+            (a, b) => a.value - b.value,
+          ),
+        ),
+    })),
+  ).whereby({ depth: { max: 2 } });
+
+  const built = new Fabricator(Sorted);
+
+  const isSorted = (node: Node): boolean =>
+    node.children.every(
+      (child, i) =>
+        (i === 0 || node.children[i - 1]!.value <= child.value)
+        && isSorted(child),
+    );
+
+  let deepest = 0;
+  for (let i = 0; i < 50; i++) {
+    const tree: Node = built.fabricate();
+    expect(isSorted(tree)).toBe(true);
+    expect(depthOf(tree)).toBeLessThanOrEqual(2);
+    deepest = Math.max(deepest, depthOf(tree));
+  }
+  expect(deepest).toBe(2);
+});

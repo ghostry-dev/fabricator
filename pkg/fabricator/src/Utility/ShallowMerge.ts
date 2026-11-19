@@ -1,32 +1,11 @@
 import { Replace } from "../Types.ts";
-import { mergeableKeys } from "./Core.ts";
-import type { PlainObject, Pretty } from "./Types.ts";
+import type { Pretty } from "./Types.ts";
 
+/**
+ * The definition an `object` schema's `.extend()`/`.refine()` produces: each
+ * field of `$B` replaces the one of the same key in `$A` wholesale. Type only:
+ * at runtime that is `object/Stages.ts`.
+ */
 export type ShallowMerge<$A, $B> = $B extends { [Replace]: true }
   ? Pretty<Omit<$B, typeof Replace>>
   : Pretty<Omit<$A, keyof $B> & Omit<$B, typeof Replace>>;
-
-export function shallowMerge<$A extends PlainObject, $B extends PlainObject>(
-  a: $A,
-  b: $B,
-): ShallowMerge<$A, $B> {
-  const result: PlainObject = {};
-
-  if (Replace in b && b[Replace] === true) {
-    for (const key of mergeableKeys(b)) {
-      result[key] = b[key];
-    }
-
-    return result as ShallowMerge<$A, $B>;
-  }
-
-  for (const key of mergeableKeys(a)) {
-    result[key] = a[key];
-  }
-
-  for (const key of mergeableKeys(b)) {
-    result[key] = b[key];
-  }
-
-  return result as ShallowMerge<$A, $B>;
-}

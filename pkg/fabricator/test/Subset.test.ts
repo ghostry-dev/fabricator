@@ -3,6 +3,20 @@ import { initialize } from "@ghostry/fabricator";
 import { Meta } from "@ghostry/fabricator/internal";
 import { Adaptation } from "@ghostry/fabricator/adapting";
 
+/**
+ * Every key fabricated but not emitted: one with an entry in some stage that
+ * the visible `definition` does not show, sorted.
+ */
+function hiddenOf(schema: {
+  [Meta]: { definition: object; stages: ReadonlyArray<object> };
+}): string[] {
+  const visible = new Set(Object.keys(schema[Meta].definition));
+  const keys = new Set(
+    schema[Meta].stages.flatMap((stage) => Object.keys(stage)),
+  );
+  return [...keys].filter((key) => !visible.has(key)).sort();
+}
+
 function setup(salt: string) {
   const instance = initialize({ salt, clock: "derived" });
   const { T } = instance;
@@ -30,7 +44,7 @@ test("pick keeps exactly the named fields, in source order", () => {
     "id",
     "email",
   ]);
-  expect(picked[Meta].hidden).toBeUndefined();
+  expect(hiddenOf(picked)).toEqual([]);
 });
 
 test("omit drops exactly the named fields", () => {
@@ -44,7 +58,7 @@ test("omit drops exactly the named fields", () => {
     "last",
     "name",
   ]);
-  expect(omitted[Meta].hidden).toBeUndefined();
+  expect(hiddenOf(omitted)).toEqual([]);
 });
 
 test("a kept field fabricates the same value it does on the source", () => {
@@ -67,7 +81,7 @@ test("a kept compute field's dropped dependencies are fabricated hidden", () => 
 
   expect(Object.keys(result)).toEqual(["id", "name"]);
   expect(result.name).toMatch(/^\S{3,8} \S{3,8}$/);
-  expect(Object.keys(picked[Meta].hidden!).sort()).toEqual(["first", "last"]);
+  expect(hiddenOf(picked)).toEqual(["first", "last"]);
 });
 
 test("a hidden dependency yields the same compute value as on the source", () => {
@@ -101,11 +115,7 @@ test("dependencies are followed transitively, through compute fields with and wi
   const picked = T.pick(schema, ["a", "c"]);
 
   expect(new Fabricator(picked).fabricate()).toEqual({ a: 2, c: 25 });
-  expect(Object.keys(picked[Meta].hidden!).sort()).toEqual([
-    "b",
-    "unrelated",
-    "x",
-  ]);
+  expect(hiddenOf(picked)).toEqual(["b", "unrelated", "x"]);
 });
 
 test("a compute field with a fixed value needs none of its dependencies", () => {
@@ -114,7 +124,7 @@ test("a compute field with a fixed value needs none of its dependencies", () => 
   const picked = T.pick(User.override({ name: "Fixed Name" }), ["name"]);
 
   expect(new Fabricator(picked).fabricate()).toEqual({ name: "Fixed Name" });
-  expect(picked[Meta].hidden).toBeUndefined();
+  expect(hiddenOf(picked)).toEqual([]);
 });
 
 test("a fixed field and a field's own adaptation survive", () => {
@@ -187,7 +197,7 @@ test("hidden fields carry through a pick of a pick", () => {
   const twice = T.pick(once, ["name"]);
 
   expect(Object.keys(new Fabricator(twice).fabricate())).toEqual(["name"]);
-  expect(Object.keys(twice[Meta].hidden!).sort()).toEqual(["first", "last"]);
+  expect(hiddenOf(twice)).toEqual(["first", "last"]);
 });
 
 test("dropping the compute field drops its hidden dependencies too", () => {
@@ -195,7 +205,7 @@ test("dropping the compute field drops its hidden dependencies too", () => {
 
   const once = T.pick(User, ["id", "name"]);
 
-  expect(T.pick(once, ["id"])[Meta].hidden).toBeUndefined();
+  expect(hiddenOf(T.pick(once, ["id"]))).toEqual([]);
 });
 
 test("`.extend` with a hidden field's key makes it visible", () => {
@@ -208,7 +218,7 @@ test("`.extend` with a hidden field's key makes it visible", () => {
 
   expect(result.first).toBe("Ada");
   expect(result.name).toStartWith("Ada ");
-  expect(Object.keys(picked[Meta].hidden!)).toEqual(["last"]);
+  expect(hiddenOf(picked)).toEqual(["last"]);
 });
 
 test("a hidden field cannot be overridden", () => {

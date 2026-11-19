@@ -17,6 +17,7 @@ import {
 import { isObjectOmittableFabricator } from "./omittable/Fabricator.ts";
 import { isObjectOptionalFabricator } from "./optional/Fabricator.ts";
 import type { Schema } from "./Schema.ts";
+import { stageOf } from "./Stages.ts";
 import type {
   Definition,
   Fabricated,
@@ -66,8 +67,8 @@ export type Fields = Record<string, BaseFabricator<unknown>>;
  * built by `Constructor.ts` — which owns recursion into nested Schemas, so
  * `object` never calls `construct()` and there's no import cycle with
  * `Constructor.ts`. Schema-baked `.override()`-marked fields (`[Fixed]` in
- * `Types.ts`) are already resolved into literal-valued `fields` entries before
- * they reach here. `fabricate`'s `overrides` (below) is a separate per-call
+ * `Types.ts`) are already resolved into literal-valued entries before they
+ * reach here. `fabricate`'s `overrides` (below) is a separate per-call
  * mechanism; the two compose.
  *
  * `schema` is echoed as `.schema` unchanged — callers wanting a
@@ -75,26 +76,22 @@ export type Fields = Record<string, BaseFabricator<unknown>>;
  * `Constructor.ts`'s `make` passes `object.rehydrate(...)` so a top-level built
  * Fabricator's `.schema` still composes.
  *
- * A compute-kind field (from `.refine()`) needs the rest of the object already
- * fabricated (`object/compute/Fabricator.ts`), which isn't available until
- * every ordinary field has resolved. Two phases: ordinary fields first, then
- * compute fields against the accumulated result, in dependency order — each
- * after every compute field among its `dependencies` (`compute/Types.ts`) —
- * unless covered by `overrides`, in which case it resolves in phase 1 like any
- * other overridden field. Dependency order rather than definition order is what
- * lets `hidden` live in its own map: a hidden compute field can sit between two
- * visible ones in the chain, and no fixed visible/hidden order resolves that.
- *
- * `hidden` is `[Meta].hidden` built (`Types.ts`'s `Meta`): fabricated in both
- * phases exactly like `fields`, so compute fields can read them, then deleted
- * before returning. Per-call `overrides` only reach `fields` — `.override()`
- * rejects a hidden key, and `{ validate: false }` must not let one through.
- * `[Children]` stays `fields` alone, so enumeration never pins a hidden field.
+ * `stages` is `[Meta].stages` built (`Stages.ts`), and `fields` is each visible
+ * key's current version out of it, which is also `[Children]`, so enumeration
+ * never pins a hidden field or an earlier version. Two phases: every ordinary
+ * entry first, then the compute entries in stage order. A compute entry only
+ * reads earlier stages, so stage order is already dependency order. Each is
+ * handed exactly its `dependencies`, each at the version current before its
+ * stage, with an absent one left out. Hidden entries and earlier versions are
+ * fabricated like any other and never emitted. Per-call `overrides` reach only
+ * the visible current versions — `.override()` rejects a hidden key, and `{
+ * validate: false }` must not let one through — so a compute field reading an
+ * earlier version of an overridden key still reads that version.
  */
 export function Fabricator<$Definition extends Definition>(
   context: FabricatorContext<Schema<$Definition>>,
   fields: Fields,
-  hidden: Fields = {},
+  stages: ReadonlyArray<Fields>,
 ): Fabricator<Schema<$Definition>> {
   const { schema, algorithm, trace } = context;
   const meta = schema[Meta];
@@ -135,6 +132,24 @@ export function Fabricator<$Definition extends Definition>(
     };
   }
 
+  const entries = stages.flatMap((stage, at) =>
+    Object.keys(stage).map((key) => {
+      const field = stage[key]!;
+      return {
+        at,
+        key,
+        field,
+        visible: fields[key] === field,
+        reads: isObjectComputeFabricator(field)
+          ? field[Meta].dependencies.map(
+              (dependency) =>
+                [dependency, stageOf(stages, dependency, at)] as const,
+            )
+          : [],
+      };
+    }),
+  );
+
   const fabricate = (
     overrides?: Override<$Definition>,
     config?: { validate?: boolean },
@@ -144,27 +159,25 @@ export function Fabricator<$Definition extends Definition>(
       schema.override(overrides);
     }
 
-    const fabricated: PlainObject = {};
-    const deferred = new Map<string, ComputeFabricator<any, any>>();
+    /** Each stage's fabricated values; an absent key has no entry. */
+    const values = stages.map(() => new Map<string, unknown>());
+    const deferred: Array<(typeof entries)[number]> = [];
 
-    const entries = [
-      ...Object.entries(hidden).map(([k, v]) => [k, v, false] as const),
-      ...Object.entries(fields).map(([k, v]) => [k, v, true] as const),
-    ];
+    for (const entry of entries) {
+      const { at, key, field, visible } = entry;
 
-    for (const [k, v, visible] of entries) {
-      if (isPollutionKey(k)) {
-        throw new FabricatorError.PrototypePollutionError(k);
+      if (isPollutionKey(key)) {
+        throw new FabricatorError.PrototypePollutionError(key);
       }
 
-      if (visible && overrides && k in overrides) {
-        const value = overrides[k];
+      if (visible && overrides && key in overrides) {
+        const value = overrides[key];
 
         /**
          * The override stands in for this field's draw, so a `T.unique.*` leaf
          * beneath it records the value and never draws it later.
          */
-        recordOverride(v, value);
+        recordOverride(field, value);
 
         /**
          * Forces this key off entirely — never written, not even as
@@ -172,32 +185,51 @@ export function Fabricator<$Definition extends Definition>(
          */
         if (value === Omitted) continue;
 
-        fabricated[k] = isObjectFabricator(v)
-          ? v.fabricate(value as any, { validate: false })
-          : value;
+        values[at]!.set(
+          key,
+          isObjectFabricator(field)
+            ? field.fabricate(value as any, { validate: false })
+            : value,
+        );
 
         continue;
       }
 
-      if (isObjectOmittableFabricator(v) || isObjectOptionalFabricator(v)) {
+      if (
+        isObjectOmittableFabricator(field)
+        || isObjectOptionalFabricator(field)
+      ) {
         /**
          * Identical for both: `Omitted` means the key doesn't appear; anything
          * else — including `undefined`, for `object.optional`'s
          * present-as-`undefined` outcome — is written like an ordinary value.
          */
-        const value = v.fabricate();
-        if (value !== Omitted) fabricated[k] = value;
-      } else if (isObjectComputeFabricator(v)) {
-        deferred.set(k, v);
+        const value = field.fabricate();
+        if (value !== Omitted) values[at]!.set(key, value);
+      } else if (isObjectComputeFabricator(field)) {
+        deferred.push(entry);
       } else {
-        fabricated[k] = v.fabricate();
+        values[at]!.set(key, field.fabricate());
       }
     }
 
-    resolveComputed(deferred, fabricated);
+    for (const { at, key, field, reads } of deferred) {
+      const input: PlainObject = {};
+      for (const [dependency, from] of reads) {
+        const read = values[from];
+        if (read?.has(dependency)) input[dependency] = read.get(dependency);
+      }
 
-    for (const k of Object.keys(hidden)) {
-      delete fabricated[k];
+      values[at]!.set(
+        key,
+        (field as ComputeFabricator<any, any>).fabricate({ fabricated: input }),
+      );
+    }
+
+    const fabricated: PlainObject = {};
+    for (const key of Object.keys(fields)) {
+      const read = values[stageOf(stages, key)]!;
+      if (read.has(key)) fabricated[key] = read.get(key);
     }
 
     return fabricated as Fabricated<$Definition>;
@@ -211,35 +243,4 @@ export function Fabricator<$Definition extends Definition>(
     fabricate,
     schema,
   };
-}
-
-/**
- * Phase 2 of `fabricate`: resolve every deferred compute field into
- * `fabricated`, each after the deferred compute fields among its
- * `dependencies`. A dependency that is not deferred — an ordinary field, an
- * overridden compute field, or a key this object does not define — is already
- * settled by phase 1. Assumes no cycle: `Registry.ts`'s `make` rejects one when
- * the Schema is built (`assertAcyclic`).
- *
- * @mutates fabricated
- */
-function resolveComputed(
-  deferred: ReadonlyMap<string, ComputeFabricator<any, any>>,
-  fabricated: PlainObject,
-): void {
-  const resolved = new Set<string>();
-
-  const resolve = (key: string): void => {
-    if (resolved.has(key)) return;
-
-    const field = deferred.get(key);
-    if (!field) return;
-
-    for (const dependency of field[Meta].dependencies) resolve(dependency);
-
-    fabricated[key] = field.fabricate({ fabricated });
-    resolved.add(key);
-  };
-
-  for (const key of deferred.keys()) resolve(key);
 }

@@ -14,6 +14,7 @@ import {
 } from "../../Types.ts";
 import { type Pretty } from "../../Utility/Types.ts";
 import type { Schema as ComputeSchema } from "./compute/Schema.ts";
+import type { Stages } from "./Stages.ts";
 
 export type Definition<$Schema = AnySchema> = { [_ in string]: $Schema };
 
@@ -32,7 +33,71 @@ export type Extender<
   $Extension extends Definition,
 > = (params: { base: $Definition }) => $Extension;
 
-export type Refinements = ReadonlyArray<Definition>;
+/**
+ * What `T.object(...)`/`.extend(...)` expect in place of a compute entry, so
+ * the type error reads as the fix. `Registry.ts` throws
+ * `ComputeOutsideRefineError` for one that gets past the type.
+ */
+type ComputeOutsideRefine =
+  "Add computed fields with `.refine(({ compute }) => ...)`";
+
+/**
+ * Checked structurally, like `Override`: a compute `Schema` would bring
+ * `refine`'s contravariance with it.
+ */
+type IsCompute<$Entry> = $Entry extends { [Kind]: "object.compute" }
+  ? true
+  : false;
+
+/**
+ * `T.object(...)`'s fields, each compute entry swapped for
+ * {@link ComputeOutsideRefine}: a compute field reads the object as of the
+ * `.refine()` stage that minted it, so it only enters through that stage.
+ */
+export type PlainFields<$Definition extends Definition> = {
+  [$K in keyof $Definition]: IsCompute<$Definition[$K]> extends true
+    ? ComputeOutsideRefine
+    : $Definition[$K];
+};
+
+/**
+ * What a compute entry's resolver is handed, or `{}` for any other entry: not
+ * `never`, whose `keyof` is every key.
+ */
+type ReaderInput<$Entry> = $Entry extends {
+  [Kind]: "object.compute";
+  [Meta]: { resolve: (params: { fabricated: infer $Input }) => any };
+}
+  ? $Input
+  : {};
+
+/**
+ * Every key some compute entry of `$Definition` reads, other than the entry at
+ * that key itself: one that replaced its key reads the previous version, which
+ * `.extend()` never touches.
+ */
+type ReadKeys<$Definition extends Definition> = {
+  [$K in keyof $Definition]: Exclude<keyof ReaderInput<$Definition[$K]>, $K>;
+}[keyof $Definition];
+
+/**
+ * What `.extend(...)` may return: {@link PlainFields}, and a field some compute
+ * entry reads keeps a type that reader can take. `.extend()` replaces a field
+ * where it stands, so a reader would otherwise be handed a value its resolver
+ * was not typed for. A field nothing reads may change type freely.
+ */
+export type Extension<
+  $Definition extends Definition,
+  $Extension extends Definition,
+> = {
+  [$K in keyof $Extension]: IsCompute<$Extension[$K]> extends true
+    ? ComputeOutsideRefine
+    : $K extends ReadKeys<$Definition> & keyof $Definition
+      ? [FabricatedBy<$Extension[$K]>] extends [FabricatedBy<$Definition[$K]>]
+        ? $Extension[$K]
+        : `"${$K & string}" is read by a computed field, so it must keep its type`
+      : $Extension[$K];
+};
 
 /**
  * Every `object.omittable`- or `object.optional`-kind field's key, so
@@ -93,25 +158,30 @@ export type Override<$Definition extends Definition> = Pretty<{
 }>;
 
 /**
- * `definition`/`refinements` stay required regardless of `produce` — an opaque
- * `as` production layers on top rather than replacing them, so
+ * `definition`/`stages` stay required regardless of `produce` — an opaque `as`
+ * production layers on top rather than replacing them, so
  * `extend`/`refine`/`override` and `ToTypeBox`'s structural derivation keep
  * working, and a prior definition survives `as` for future validation of
  * `produce`.
  *
- * `hidden` holds fields that are fabricated but never emitted: the dependencies
- * of a kept compute field that `T.pick`/`T.omit` (`Registry.ts`) dropped from
- * `definition`. Absent when there are none. It sits outside `definition` so
- * that everything reading `definition` — the `Fabricated`/`Override` types,
- * `.override()`'s key check, `[Children]` (and so enumeration), and every
- * adapter — never sees a hidden field. Only `Constructor.ts`'s `make`,
- * `Fabricator.ts`'s `fabricate`, and `recursive/Terminate.ts` read it.
+ * `stages` (`Stages.ts`) is every field entry by `.refine()` stage, one entry
+ * per version of a key: stage 0 holds the `T.object(...)` fields, and each
+ * `.refine()` appends a stage holding its compute fields. A compute field reads
+ * each dependency from the latest stage before its own. `definition` is the
+ * visible view derived from it in `Registry.ts`'s `make`: each visible key at
+ * its current version. A key `stages` has and `definition` does not is hidden,
+ * fabricated because a compute field reads it but never emitted: a dependency
+ * `T.pick`/`T.omit` dropped, or an earlier version of a key a later `.refine()`
+ * replaced. Everything that reads `definition` — the `Fabricated`/`Override`
+ * types, `.override()`'s key check, `[Children]` (and so enumeration), and
+ * every adapter — never sees one. Only `Constructor.ts`'s `make`,
+ * `Fabricator.ts`'s `fabricate`, `recursive/Terminate.ts`, and
+ * `Unique/Capacity.ts` read `stages`.
  */
 export type Meta<$Definition extends Definition = Definition> = {
   definition: $Definition;
-  refinements: Refinements;
+  stages: Stages;
   produce?: Produce<Fabricated<$Definition>>;
-  hidden?: Definition;
 };
 
 /**
