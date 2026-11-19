@@ -6,7 +6,9 @@ import type { FakerExtension, Registry } from "./Types.ts";
 /**
  * Builds the whole `faker` namespace — every module and method
  * `FakerModules/Build.ts` covers, including `color`'s text/channels split —
- * against one shared `Faker` instance, plus the `use` hatch below.
+ * against one shared `Faker` instance, plus the `use` hatch below. `instance`
+ * builds that instance on first call; every call is inside a producer, so
+ * constructing the namespace loads nothing.
  *
  * Built eagerly as a plain nested object, never a `Proxy`: `registry.extend`'s
  * `deepMerge` only recurses where `isPlainObject` holds, and a `Proxy` over
@@ -26,13 +28,13 @@ import type { FakerExtension, Registry } from "./Types.ts";
  */
 export function construct(
   T: Registry,
-  faker: Faker,
+  instance: () => Faker,
   draw: <$T>(
     produce: (context: ProduceContext) => $T,
   ) => (context: ProduceContext) => $T,
 ): FakerExtension {
   return {
-    ...build(T, faker, draw),
+    ...build(T, instance, draw),
 
     /**
      * Escape hatch — see `Types.ts`'s `FakerExtension.use` for why it is a
@@ -43,12 +45,12 @@ export function construct(
      * is.
      */
     use: {
-      string: (produce) => T.string.as(draw(() => produce(faker))),
-      number: (produce) => T.number.as(draw(() => produce(faker))),
-      date: (produce) => T.date.as(draw(() => produce(faker))),
-      boolean: (produce) => T.boolean.as(draw(() => produce(faker))),
-      bigint: (produce) => T.bigint.as(draw(() => produce(faker))),
-      opaque: (produce) => T.opaque(draw(() => produce(faker))),
+      string: (produce) => T.string.as(draw(() => produce(instance()))),
+      number: (produce) => T.number.as(draw(() => produce(instance()))),
+      date: (produce) => T.date.as(draw(() => produce(instance()))),
+      boolean: (produce) => T.boolean.as(draw(() => produce(instance()))),
+      bigint: (produce) => T.bigint.as(draw(() => produce(instance()))),
+      opaque: (produce) => T.opaque(draw(() => produce(instance()))),
     },
   };
 }

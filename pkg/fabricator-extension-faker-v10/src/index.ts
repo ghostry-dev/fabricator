@@ -1,6 +1,12 @@
-import type { LocaleDefinition, Randomizer } from "@faker-js/faker";
-import { Faker } from "@faker-js/faker";
+import type {
+  allLocales,
+  Faker,
+  LocaleDefinition,
+  Randomizer,
+} from "@faker-js/faker";
 import type { ProduceContext } from "@ghostry/fabricator";
+import { isArray } from "@ghostry/fabricator/internal";
+import { load } from "#load";
 import { construct } from "./Construct.ts";
 import { FakerExtensionError } from "./Error.ts";
 import type { FakerExtension, Registry } from "./Types.ts";
@@ -29,6 +35,21 @@ export type { MethodName, ModuleName } from "./Types.ts";
 export type FakerConfig = ConstructorParameters<typeof Faker>[0]["config"];
 
 /**
+ * A locale faker defines, by name — a key of faker's `allLocales`. Naming a
+ * locale rather than importing its data is what keeps the data out of every
+ * module that builds schemas: the name is resolved when faker is loaded, at the
+ * first draw (see {@link fakerExtension}).
+ */
+export type LocaleName = keyof typeof allLocales;
+
+/**
+ * One entry of `Options.locale`: a name, or a `LocaleDefinition` object such as
+ * faker's own `en`. An object is a static reference to that locale's data, so
+ * it bundles wherever the module passing it does.
+ */
+export type Locale = LocaleName | LocaleDefinition;
+
+/**
  * No reference-date option. `Faker`'s `defaultRefDate` is wired to the active
  * fabrication's `clock` (below), so a second independently-configured clock
  * would be a second source of truth free to drift from `T.date.past` in the
@@ -39,10 +60,14 @@ export type FakerConfig = ConstructorParameters<typeof Faker>[0]["config"];
  * or let it compete with fabricator's seeding. `create` is the honest escape:
  * the caller builds the instance; it still receives this bridge's `randomizer`,
  * so reproducibility survives.
+ *
+ * `locale` loads faker through `#load`, which a browser bundle resolves to a
+ * loader that throws. `create` loads nothing — the caller imports faker — so it
+ * is the form for a bundle that fabricates in a browser.
  */
 export type Options =
   | {
-      locale: LocaleDefinition | LocaleDefinition[];
+      locale: Locale | ReadonlyArray<Locale>;
       config?: FakerConfig | undefined;
       create?: never;
     }
@@ -79,29 +104,66 @@ const randomizer: Randomizer = {
 };
 
 /**
- * Shared `Faker` instance the builders draw from. Wired once, at construction,
- * not per draw: `setDefaultRefDate` takes a `() => Date` source, so a `wrap({
- * clock }, ...)` active at fabricate time is picked up through
- * `current().clock` with nothing to re-push.
+ * The `Faker` instance one `fakerExtension(...)` call's builders draw from,
+ * built on first use. Wired once, at construction, not per draw:
+ * `setDefaultRefDate` takes a `() => Date` source, so a `wrap({ clock }, ...)`
+ * active at fabricate time is picked up through `current().clock` with nothing
+ * to re-push.
+ *
+ * Lazy for the `locale` form because building it means loading faker, which
+ * only a draw needs — building schemas and adapting them never reaches here.
+ * The first call runs inside a producer, so loading and constructing happen
+ * within a leaf's scope; neither draws randomness (`seed` is inert, and `new
+ * Faker` reads nothing from its randomizer), so the leaf's stream is exactly
+ * what it would be with the instance built ahead of time. A throw is never
+ * kept: a failed load or construction throws again on the next draw.
+ *
+ * `create` runs immediately instead. It loads nothing — the caller imported
+ * faker to write it — so there is nothing to defer, and an error in it belongs
+ * at the call the caller wrote.
  */
-function toFaker(options: Options): Faker {
-  if (options.create) return options.create(randomizer);
+function toInstance(options: Options): () => Faker {
+  if (options.create) {
+    const faker = options.create(randomizer);
+    return () => faker;
+  }
 
-  const faker = new Faker({
-    locale: options.locale,
-    randomizer,
-    ...(options.config ? { config: options.config } : {}),
-  });
+  const locales: ReadonlyArray<Locale> = isArray(options.locale)
+    ? options.locale
+    : [options.locale];
+  if (locales.length === 0) throw new FakerExtensionError.EmptyLocaleError();
+  const config = options.config;
 
-  /**
-   * `ProduceContext.clock` is epoch milliseconds, resolved once per
-   * fabrication; faker's `defaultRefDate` wants a `() => Date`. This is why
-   * `T.faker.date.past()` and core's `T.date.past` agree on "now" within one
-   * schema — both resolve against the same instance clock.
-   */
-  faker.setDefaultRefDate(() => new Date(current().clock));
+  let faker: Faker | undefined;
 
-  return faker;
+  return () => {
+    if (faker !== undefined) return faker;
+
+    const loaded = load();
+    const built = new loaded.Faker({
+      locale: locales.map((locale) => {
+        if (typeof locale !== "string") return locale;
+        const definition: LocaleDefinition | undefined = (
+          loaded.allLocales as Partial<Record<string, LocaleDefinition>>
+        )[locale];
+        if (definition === undefined)
+          throw new FakerExtensionError.UnknownLocaleError(locale);
+        return definition;
+      }),
+      randomizer,
+      ...(config ? { config } : {}),
+    });
+
+    /**
+     * `ProduceContext.clock` is epoch milliseconds, resolved once per
+     * fabrication; faker's `defaultRefDate` wants a `() => Date`. This is why
+     * `T.faker.date.past()` and core's `T.date.past` agree on "now" within one
+     * schema — both resolve against the same instance clock.
+     */
+    built.setDefaultRefDate(() => new Date(current().clock));
+
+    return (faker = built);
+  };
 }
 
 /**
@@ -145,9 +207,12 @@ function draw<$T>(
  * T.object({ name: T.faker.person.fullName() });
  * ```
  *
- * The `Faker` instance is built here, once per `fakerExtension(...)` call, not
- * per `extend` — so a configuration error (an empty `locale`) surfaces at the
- * call the caller wrote, not inside the registry machinery.
+ * Nothing from `@faker-js/faker` is imported here but types, and a `locale` is
+ * a name, so a module that builds the registry references no faker code or
+ * data: a bundle that only builds and adapts schemas contains none. Faker is
+ * loaded the first time one of this call's builders draws, once per
+ * `fakerExtension(...)` call, not per `extend` (see `toInstance`). An empty
+ * `locale` still throws here, at the call the caller wrote.
  *
  * `FakerExtension` (`./Types.ts`) is spelled out explicitly rather than
  * inferred. An inferred type would reach into each kind's `Schema` interface —
@@ -167,7 +232,7 @@ function draw<$T>(
 export function fakerExtension(
   options: Options,
 ): (params: { T: Registry }) => { faker: FakerExtension } {
-  const faker = toFaker(options);
+  const instance = toInstance(options);
 
-  return ({ T }) => ({ faker: construct(T, faker, draw) });
+  return ({ T }) => ({ faker: construct(T, instance, draw) });
 }

@@ -26,10 +26,22 @@
   "type": "module",
   "sideEffects": false,
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || ^22.13.0 || ^23.5.0 || >=24.0.0"
   },
   "types": "./dist/types/index.d.ts",
   "module": "./dist/esm/index.js",
+  "imports": {
+    "#load": {
+      "types": "./src/Load/Sync.ts",
+      "node": "./dist/esm/Load/Sync.js",
+      "bun": "./dist/esm/Load/Sync.js",
+      "default": "./dist/esm/Load/Unavailable.js"
+    },
+    "#internal/*": {
+      "types": "./dist/types/*.d.ts",
+      "default": "./dist/esm/*.js"
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",

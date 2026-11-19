@@ -34,4 +34,72 @@ export namespace FakerExtensionError {
         + "fabricated.";
     }
   }
+
+  /**
+   * `locale` names no locale. Checked at the `fakerExtension(...)` call rather
+   * than left to `new Faker(...)`, which only runs at the first draw (see
+   * `src/index.ts`'s `toInstance`): a configuration error belongs at the call
+   * the caller wrote.
+   */
+  export class EmptyLocaleError extends FakerExtensionError {
+    constructor() {
+      super();
+      this.name = "@ghostry/fabricator-extension-faker-v10:EmptyLocaleError";
+      this.message =
+        "fakerExtension({ locale }) was given no locale. Name at least one, "
+        + 'such as { locale: ["base", "en"] }.';
+    }
+  }
+
+  /**
+   * A `locale` name that is not a key of faker's `allLocales`. Only reachable
+   * from an untyped caller, since `LocaleName` is that key set, and only at the
+   * first draw, since resolving a name is what loads faker.
+   */
+  export class UnknownLocaleError extends FakerExtensionError {
+    constructor(public readonly locale: string) {
+      super();
+      this.name = "@ghostry/fabricator-extension-faker-v10:UnknownLocaleError";
+      this.message = `"${locale}" is not a locale faker defines.`;
+    }
+  }
+
+  /**
+   * A faker builder drew in a runtime that cannot load a module synchronously —
+   * a browser bundle, where `#load` resolves to `Load/Unavailable.ts`. Building
+   * schemas and adapting them never loads faker, so this fires only when
+   * something actually fabricates there. Such a bundle has to contain faker
+   * anyway, so it imports it itself and passes `create`.
+   */
+  export class UnloadableError extends FakerExtensionError {
+    constructor() {
+      super();
+      this.name = "@ghostry/fabricator-extension-faker-v10:UnloadableError";
+      this.message =
+        "A faker builder was fabricated in a runtime that cannot load "
+        + "@faker-js/faker synchronously, such as a browser bundle. To "
+        + "fabricate there, import faker yourself and pass `create`: "
+        + "fakerExtension({ create: (randomizer) => new Faker({ locale: "
+        + "[base, en], randomizer }) }).";
+    }
+  }
+
+  /**
+   * `FakerModules/Words.ts` reads faker's `FakerError` class off the error
+   * `helpers.arrayElement([])` throws, rather than importing it (a value import
+   * reaches the chunk holding the `Faker` class). Faker 10 always throws there,
+   * before drawing; this fires only for a faker release that does not, which is
+   * one this package's `lorem`/`word` builders have not been brought in line
+   * with (`test/Parity.test.ts`).
+   */
+  export class FakerErrorUnavailableError extends FakerExtensionError {
+    constructor() {
+      super();
+      this.name =
+        "@ghostry/fabricator-extension-faker-v10:FakerErrorUnavailableError";
+      this.message =
+        "faker.helpers.arrayElement([]) did not throw FakerError, so this "
+        + "faker release is not one the lorem/word builders support.";
+    }
+  }
 }

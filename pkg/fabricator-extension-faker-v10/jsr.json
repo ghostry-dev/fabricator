@@ -2,5 +2,6 @@
   "name": "@ghostry/fabricator-extension-faker-v10",
   "version": "0.0.4",
   "exports": "./src/index.ts",
-  "publish": { "exclude": ["test"] }
+  "publish": { "exclude": ["test"] },
+  "imports": { "#load": "./src/Load/Sync.ts" }
 }

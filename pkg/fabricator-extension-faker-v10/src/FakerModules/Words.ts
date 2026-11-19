@@ -40,9 +40,9 @@
  * @module
  */
 
-import type { Faker } from "@faker-js/faker";
-import { FakerError } from "@faker-js/faker";
+import type { Faker, FakerError } from "@faker-js/faker";
 import type { ProduceContext, Stream } from "@ghostry/fabricator";
+import { FakerExtensionError } from "../Error.ts";
 
 type Producer = (context: ProduceContext) => string;
 
@@ -52,6 +52,9 @@ type Count = NonNullable<Parameters<Faker["lorem"]["words"]>[0]>;
 
 /** Draws the next word; what the `lorem` compositions repeat. */
 type Word = () => string;
+
+/** Builds the error faker's own method would throw, with `message`. */
+type Fail = (message: string) => FakerError;
 
 /**
  * Faker's `WordModule` declares its category methods in this order, and
@@ -78,6 +81,7 @@ type Category = (typeof categories)[number];
  */
 function filterByLength(
   list: ReadonlyArray<string>,
+  fail: Fail,
   options: WordOptions = {},
 ): ReadonlyArray<string> {
   const { length, strategy = "fail" } =
@@ -99,7 +103,7 @@ function filterByLength(
 
   switch (strategy) {
     case "fail":
-      throw new FakerError("No words found that match the given length.");
+      throw fail("No words found that match the given length.");
     case "closest":
       return closest(list, range);
     case "shortest":
@@ -143,11 +147,13 @@ function closest(
  */
 function listOf(
   read: () => ReadonlyArray<string>,
+  fail: Fail,
   options: WordOptions,
 ): () => ReadonlyArray<string> {
   let resolved: ReadonlyArray<string> | undefined;
   return () => {
-    if (resolved === undefined) resolved = filterByLength(read(), options);
+    if (resolved === undefined)
+      resolved = filterByLength(read(), fail, options);
     return resolved;
   };
 }
@@ -157,14 +163,34 @@ function listOf(
  * length - 1 })` reduces to `Math.floor(u * length)` for a whole `max` and the
  * default `min`/`multipleOf`, and a one-element list draws nothing.
  */
-function pick<$T>(random: Stream, list: ReadonlyArray<$T>): $T {
-  if (list.length === 0) {
-    throw new FakerError("Cannot get value from empty dataset.");
-  }
+function pick<$T>(random: Stream, list: ReadonlyArray<$T>, fail: Fail): $T {
+  if (list.length === 0) throw fail("Cannot get value from empty dataset.");
   return list[list.length > 1 ? Math.floor(random.next() * list.length) : 0]!;
 }
 
 export function toWords(faker: Faker) {
+  /**
+   * Faker's `FakerError`, read off an error faker throws rather than imported:
+   * a value import reaches the chunk of `@faker-js/faker` that also holds the
+   * `Faker` class and the base locale, which a bundle that only builds schemas
+   * must not carry. `helpers.arrayElement([])` throws it before drawing
+   * anything, and it is reached only once one of these producers fails, so it
+   * costs nothing on the way to a value.
+   */
+  let FakerErrorClass: typeof FakerError | undefined;
+  const toFakerErrorClass = (): typeof FakerError => {
+    try {
+      faker.helpers.arrayElement([]);
+    } catch (error) {
+      return (error as FakerError).constructor as typeof FakerError;
+    }
+    throw new FakerExtensionError.FakerErrorUnavailableError();
+  };
+  const fail: Fail = (message) => {
+    if (FakerErrorClass === undefined) FakerErrorClass = toFakerErrorClass();
+    return new FakerErrorClass(message);
+  };
+
   const repeat = (count: Count, separator: string, next: () => string) =>
     faker.helpers.multiple(next, { count }).join(separator);
 
@@ -203,16 +229,16 @@ export function toWords(faker: Faker) {
    * `Word` over it per draw for `compose` to repeat.
    */
   const lorem = (compose: (word: Word, random: Stream) => string) => {
-    const list = listOf(() => faker.definitions.lorem.word, undefined);
+    const list = listOf(() => faker.definitions.lorem.word, fail, undefined);
     return ({ random }: ProduceContext) =>
-      compose(() => pick(random, list()), random);
+      compose(() => pick(random, list(), fail), random);
   };
 
   const category =
     (name: Category) =>
     (options?: WordOptions): Producer => {
-      const list = listOf(() => faker.definitions.word[name], options);
-      return ({ random }) => pick(random, list());
+      const list = listOf(() => faker.definitions.word[name], fail, options);
+      return ({ random }) => pick(random, list(), fail);
     };
 
   /**
@@ -222,19 +248,17 @@ export function toWords(faker: Faker) {
    */
   const sampler = (options: WordOptions) => {
     const lists = categories.map((name) =>
-      listOf(() => faker.definitions.word[name], options),
+      listOf(() => faker.definitions.word[name], fail, options),
     );
     return (random: Stream): string => {
       for (const list of faker.helpers.shuffle(lists)) {
         try {
-          return pick(random, list());
+          return pick(random, list(), fail);
         } catch {
           continue;
         }
       }
-      throw new FakerError(
-        "No matching word data available for the current locale",
-      );
+      throw fail("No matching word data available for the current locale");
     };
   };
 
@@ -251,10 +275,11 @@ export function toWords(faker: Faker) {
         lorem((word) => sentences(word, count, separator)),
       slug: (count?: Count): Producer =>
         lorem((word) => faker.helpers.slugify(words(word, count))),
-      text: (): Producer => lorem((word, random) => pick(random, texts)(word)),
+      text: (): Producer =>
+        lorem((word, random) => pick(random, texts, fail)(word)),
       word: (options?: WordOptions): Producer => {
-        const list = listOf(() => faker.definitions.lorem.word, options);
-        return ({ random }) => pick(random, list());
+        const list = listOf(() => faker.definitions.lorem.word, fail, options);
+        return ({ random }) => pick(random, list(), fail);
       },
       words: (count?: Count): Producer => lorem((word) => words(word, count)),
     },

@@ -33,12 +33,11 @@ npm install @ghostry/fabricator-extension-faker-v10 @ghostry/fabricator @faker-j
 `fakerExtension` returns a `registry.extend` callback, so faker's builders arrive as `T.faker.*` on an ordinary extended registry, alongside every core kind:
 
 ```ts
-import { en } from "@faker-js/faker";
 import { initialize, registry } from "@ghostry/fabricator";
 import { fakerExtension } from "@ghostry/fabricator-extension-faker-v10";
 
 const { T, Fabricator } = initialize({
-  types: registry.extend(fakerExtension({ locale: en })),
+  types: registry.extend(fakerExtension({ locale: ["base", "en"] })),
 });
 
 const UserSchema = T.object({
@@ -51,7 +50,17 @@ const UserSchema = T.object({
 new Fabricator(UserSchema).fabricate();
 ```
 
-`locale` takes faker's own locale definitions rather than a locale name, exactly as `new Faker({ locale })` does — importing the ones you use keeps the rest out of your bundle.
+`locale` names faker's locales (the keys of its `allLocales`), and faker is loaded the first time a faker builder fabricates. Building schemas and converting them with an adapter never loads it, so a browser app that reuses the same schemas only for validation or types bundles no faker at all. A locale definition object (`import { en } from "@faker-js/faker"`) works too, but it puts that locale's data in every bundle that imports the module that passes it in.
+
+Loading happens synchronously, on Node 20.19 and later, Bun, and Deno. To fabricate in a browser bundle, import faker yourself and pass `create` instead:
+
+```ts
+import { base, en, Faker } from "@faker-js/faker";
+
+fakerExtension({
+  create: (randomizer) => new Faker({ locale: [base, en], randomizer }),
+});
+```
 
 Faker's relative-date methods resolve against the same instance `clock` that `T.date.past`/`T.date.future` do — the two never disagree about what "now" is within one schema.
 
